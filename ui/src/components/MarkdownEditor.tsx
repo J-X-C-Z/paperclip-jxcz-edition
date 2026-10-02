@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   Component,
   type ClipboardEvent,
@@ -59,6 +60,7 @@ import { unescapeBlockquoteMarkers } from "../lib/blockquote-markdown";
 import { pasteNormalizationPlugin } from "../lib/paste-normalization";
 import { cn } from "../lib/utils";
 import { useEditorAutocomplete, type SlashCommandOption } from "../context/EditorAutocompleteContext";
+import "@mdxeditor/editor/style.css";
 
 /* ---- Mention types ---- */
 
@@ -95,8 +97,10 @@ interface MarkdownEditorProps {
   mentions?: MentionOption[];
   /** Capability-aware action commands supplied by the owning composer. */
   actionCommands?: SlashCommandOption[];
-  /** Called on Cmd/Ctrl+Enter */
+  /** Called on the configured submit key. */
   onSubmit?: () => void;
+  /** Enter submits and Shift+Enter inserts a line break when set to `enter`. */
+  submitKey?: "enter" | "mod-enter";
   /** Render the rich editor without allowing edits. */
   readOnly?: boolean;
 }
@@ -105,6 +109,16 @@ export interface MarkdownEditorRef {
   focus: () => void;
   insertMarkdown: (markdown: string) => void;
   clear: () => void;
+}
+
+/** IME confirmation keys must stay with the active composition, not editor shortcuts. */
+export function isImeComposingKeyEvent(event: {
+  isComposing?: boolean;
+  nativeEvent?: { isComposing?: boolean; keyCode?: number };
+}): boolean {
+  return event.isComposing === true
+    || event.nativeEvent?.isComposing === true
+    || event.nativeEvent?.keyCode === 229;
 }
 
 class MarkdownEditorRichErrorBoundary extends Component<
@@ -715,6 +729,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   mentions,
   actionCommands = [],
   onSubmit,
+  submitKey = "mod-enter",
   readOnly = false,
 }: MarkdownEditorProps, forwardedRef) {
   const editorValue = useMemo(() => prepareMarkdownForEditor(value), [value]);
@@ -1342,7 +1357,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           }}
           onBlur={() => onBlur?.()}
           onKeyDown={(event) => {
-            if (onSubmit && event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            if (isImeComposingKeyEvent(event)) return;
+            const wantsSubmit = submitKey === "enter"
+              ? !event.shiftKey
+              : event.metaKey || event.ctrlKey;
+            if (onSubmit && event.key === "Enter" && wantsSubmit) {
               event.preventDefault();
               onSubmit();
             }
@@ -1367,8 +1386,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
       )}
       onKeyDownCapture={(e) => {
         if (readOnly) return;
-        // Cmd/Ctrl+Enter to submit
-        if (onSubmit && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        if (isImeComposingKeyEvent(e)) return;
+        // Preserve Cmd/Ctrl+Enter as the default; chat composers can use plain Enter.
+        if (submitKey === "mod-enter" && onSubmit && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
           e.stopPropagation();
           onSubmit();
@@ -1421,6 +1441,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               return;
             }
           }
+        }
+
+        if (
+          submitKey === "enter" &&
+          onSubmit &&
+          e.key === "Enter" &&
+          !e.shiftKey
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          onSubmit();
         }
       }}
       onDragEnter={(evt) => {
@@ -1617,28 +1648,22 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
                 )}
                 {option.kind === "issue" && (
                   <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground">
-                    Task
+                    {uiText("Task")}
                   </span>
                 )}
                 {option.kind === "project" && option.projectId && (
-                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground">
-                    Project
-                  </span>
+                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground"> {uiText("Project")} </span>
                 )}
                 {option.kind === "user" && (
                   <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground">
-                    User
+                    {uiText("User")}
                   </span>
                 )}
                 {option.kind === "skill" && (
-                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground">
-                    Skill
-                  </span>
+                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground"> {uiText("Skill")} </span>
                 )}
                 {option.kind === "routine" && (
-                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground">
-                    Routine
-                  </span>
+                  <span className="ml-auto text-(length:--text-nano) uppercase tracking-wide text-muted-foreground"> {uiText("Routine")} </span>
                 )}
                 {option.kind === "action" && (
                   <span className="ml-auto max-w-28 truncate text-(length:--text-nano) text-muted-foreground">

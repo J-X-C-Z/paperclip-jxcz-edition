@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { EmailMessageCard } from "./EmailMessageCard";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -78,7 +79,7 @@ function EmailDelivery({
     <div className="space-y-2 text-xs text-muted-foreground">
       {p.request && !p.providerMessageId && (
         <article
-          aria-label="Email send intent"
+          aria-label={uiText("Email send intent")}
           className="space-y-3 rounded-lg border border-border p-4"
         >
           <p className="font-semibold">{p.request.subject ?? "Email reply"}</p>
@@ -88,8 +89,7 @@ function EmailDelivery({
           </div>
         </article>
       )}
-      <p>
-        Email {p.outcome}
+      <p> {uiText("Email")} {p.outcome}
         {p.error ? ` — ${p.error}` : ""}
       </p>
       {p.outcome === "uncertain" && (

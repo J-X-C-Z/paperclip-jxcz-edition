@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { MotionConfig } from "motion/react";
 
@@ -105,7 +106,7 @@ export function ConnectModelPreview({
         <div className="pt-6">
           <OnboardingHeading
             center
-            title="Connect a model"
+            title={uiText("Connect a model")}
             lede="Paperclip works with your existing subscription or API keys."
           />
         </div>

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-01",
+  "url": "http://127.0.0.1:3100/ORI/departments",
+  "goal": "Loaded workspace navigation displays real departments within one second",
+  "normal_navigation_ms": [
+    22.6,
+    30.5,
+    24.2
+  ],
+  "early_navigation_while_bootstrap_pending_ms": 3397,
+  "api_single_read_before_seconds": 8.399,
+  "api_single_read_after_seconds": 4.467,
+  "measure_method": "Temporary capture click timestamp to MutationObserver verifying department heading, both departments, desktop group and management button; browser performance.now. Separate normal navigation and early cold bootstrap samples. Instrumentation removed.",
+  "preserved": {
+    "departments": 2,
+    "teams": 5,
+    "members": 15,
+    "team_project_membership_unchanged": true,
+    "minister_assignment_preserved": true
+  },
+  "checks": {
+    "ui_targeted_tests_passed": 21,
+    "plugin_targeted_tests_passed": 33,
+    "ui_typecheck": "pass",
+    "plugin_typecheck": "pass",
+    "production_builds": "pass",
+    "plugin_sql_integration_scripts": 2,
+    "token_gates": "clean",
+    "git_diff_check": "clean",
+    "lockfile_unchanged": true
+  },
+  "limitations": [
+    "Cold application startup / clicking before organization warmup finishes still takes several seconds over remote database. Normal page switching is under one second.",
+    "Not a clean-cache or universal network benchmark. No whole repository suite claim."
+  ],
+  "changes": [
+    "One company-scoped aggregate SQL read replaces SDK pagination and per-team issue RPCs.",
+    "Resolve the existing plugin manifest key directly, removing client discovery request.",
+    "Prepare the authorized company organization query and department module on workspace entry.",
+    "Keep existing department content if background refresh fails, with visible retry."
+  ],
+  "deployment": "Production static files overlaid retaining old assets; existing plugin worker disabled and enabled to pick up build; core service, database and tunnel not restarted."
+}

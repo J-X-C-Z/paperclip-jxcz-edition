@@ -1,3 +1,7 @@
+import { uiText } from "@/i18n";
+import { useUiTranslator } from "@/i18n";
+import { useWorkScope } from "@/hooks/useWorkScope";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Download, ScrollText, ShieldAlert } from "lucide-react";
@@ -100,6 +104,7 @@ function AuditActor({
   agentMap: Map<string, Agent>;
   userProfileMap: Map<string, CompanyUserProfile>;
 }) {
+  const tr = useUiTranslator();
   // Agent names are company-readable through the same authorization-filtered
   // directory used by this page. The basic audit tier strips privileged
   // attribution (`agentId`) but retains the acting principal (`actorId`), so
@@ -150,6 +155,7 @@ function AuditActor({
  * that would duplicate the verb.
  */
 function AuditEntityNode({ record }: { record: AuditActionRecord }) {
+  const tr = useUiTranslator();
   const { issue, document } = record.entity;
   const issueRef = issue?.identifier ?? issue?.id ?? null;
 
@@ -176,6 +182,7 @@ function AuditRow({
   agentMap: Map<string, Agent>;
   userProfileMap: Map<string, CompanyUserProfile>;
 }) {
+  const tr = useUiTranslator();
   const verb = formatActivityVerb(record.action, record.details, { agentMap, userProfileMap });
   const responsible = record.responsibleUserId ? userProfileMap.get(record.responsibleUserId) : null;
   // Suppress the "on behalf of" chip when the human actor *is* the responsible user.
@@ -218,7 +225,7 @@ function AuditRow({
                 to={`/agents/${record.agentId}/runs/${record.runId}`}
                 className="text-primary hover:underline"
               >
-                View run
+                {tr("View run")}
               </Link>
             ) : null}
             <span className="font-mono text-(length:--text-micro) opacity-70">{record.action}</span>
@@ -238,12 +245,13 @@ function AuditRow({
 
 /** The permission-denied / upsell state shown when the caller lacks the grant. */
 function AuditUpsell() {
+  const tr = useUiTranslator();
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
         <ShieldAlert className="h-10 w-10 text-muted-foreground/50" />
         <div>
-          <p className="text-sm font-medium text-foreground">Agent audit is a Paperclip Enterprise view</p>
+          <p className="text-sm font-medium text-foreground">{tr("Agent audit is a Paperclip Enterprise view")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             The agent audit log gives you a searchable, exportable record of everything your agents
             did — every comment, task change, approval, and run — with the responsible person for
@@ -264,7 +272,11 @@ export function AuditFeed({
   mode,
   onModeChange,
 }: AuditFeedProps) {
+  const tr = useUiTranslator();
   const { pushToast } = useToastActions();
+  const workScope = useWorkScope();
+  // Entity detail feeds retain direct access; only the global feed follows the board scope.
+  const projectId = lockedAgentId ? null : workScope.projectId;
   const [agent, setAgent] = useState<string>(ALL);
   const [responsibleUser, setResponsibleUser] = useState<string>(ALL);
   const [actionDomain, setActionDomain] = useState<string>(ALL);
@@ -299,6 +311,7 @@ export function AuditFeed({
   const resolvedMode: AuditFeedMode = lockedAgentId ? "agents" : mode ?? "all";
 
   const filters: AuditActionFilters = {
+    ...(projectId ? { projectId } : {}),
     actorScope: resolvedMode,
     agentId: lockedAgentId ?? (agent === ALL ? undefined : agent),
     responsibleUserId: responsibleUser === ALL ? undefined : responsibleUser,
@@ -319,6 +332,7 @@ export function AuditFeed({
 
   const feed = useInfiniteQuery({
     queryKey: queryKeys.audit.agentActions(companyId, {
+      ...(projectId ? { projectId } : {}),
       actorScope: filters.actorScope,
       agentId: filters.agentId,
       responsibleUserId: filters.responsibleUserId,
@@ -329,6 +343,7 @@ export function AuditFeed({
     }),
     queryFn: ({ pageParam }) =>
       auditApi.listAgentActions(companyId, { ...filters, limit: PAGE_SIZE, cursor: pageParam ?? undefined }),
+    enabled: workScope.ready,
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     retry: (count, error) => !(error instanceof ApiError && error.status === 403) && count < 2,
@@ -426,7 +441,8 @@ export function AuditFeed({
     setExporting(true);
     try {
       const blob = await auditApi.exportAgentActionsCsv(companyId, {
-        actorScope: filters.actorScope,
+        ...(projectId ? { projectId } : {}),
+      actorScope: filters.actorScope,
         agentId: filters.agentId,
         responsibleUserId: filters.responsibleUserId,
         action: filters.action,
@@ -444,10 +460,10 @@ export function AuditFeed({
       // Browsers may read blob URLs lazily after click(), so keep the URL alive
       // long enough for the download to start.
       window.setTimeout(() => URL.revokeObjectURL(url), 5_000);
-      pushToast({ title: "Audit exported", body: "Your CSV download has started.", tone: "success" });
+      pushToast({ title: uiText("Audit exported"), body: "Your CSV download has started.", tone: "success" });
     } catch (error) {
       pushToast({
-        title: "Export failed",
+        title: uiText("Export failed"),
         body: error instanceof Error ? error.message : "Could not export the audit log.",
         tone: "error",
       });
@@ -455,6 +471,9 @@ export function AuditFeed({
       setExporting(false);
     }
   };
+
+  if (workScope.error) return <p role="alert" className="text-sm text-destructive">{workScope.error.message}</p>;
+  if (workScope.loading) return <PageSkeleton variant="list" />;
 
   if (permissionDenied && !recoveringFromAccessDowngrade && !fallingBackToAllActivity) {
     return <AuditUpsell />;
@@ -465,10 +484,10 @@ export function AuditFeed({
       {!hideHeader ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Activity</h1>
+            <h1 className="text-lg font-semibold text-foreground">{tr("Activity")}</h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               {resolvedMode === "agents"
-                ? "Every recorded agent action, newest first — with the responsible person and run behind each one."
+                ? uiText("Every recorded agent action, newest first — with the responsible person and run behind each one.")
                 : "Everything happening in your company, newest first — people, agents, and the system. Each line is one recorded action."}
             </p>
           </div>
@@ -477,9 +496,9 @@ export function AuditFeed({
 
       {showModeToggle ? (
         <Tabs value={resolvedMode} onValueChange={(value) => onModeChange?.(value as AuditFeedMode)}>
-          <TabsList aria-label="Activity scope">
-            <TabsTrigger value="all">All activity</TabsTrigger>
-            <TabsTrigger value="agents">Agent actions</TabsTrigger>
+          <TabsList aria-label={tr("Activity scope")}>
+            <TabsTrigger value="all">{tr("All activity")}</TabsTrigger>
+            <TabsTrigger value="agents">{tr("Agent actions")}</TabsTrigger>
           </TabsList>
         </Tabs>
       ) : null}
@@ -489,10 +508,10 @@ export function AuditFeed({
           {!lockedAgentId ? (
             <Select value={agent} onValueChange={setAgent}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Agent" />
+                <SelectValue placeholder={tr("Agent")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>All agents</SelectItem>
+                <SelectItem value={ALL}>{tr("All agents")}</SelectItem>
                 {(agents.data ?? []).map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.name}
@@ -504,10 +523,10 @@ export function AuditFeed({
           <Select value={responsibleUser} onValueChange={setResponsibleUser}>
             {/* Wide enough for "All responsible users" — w-44 truncated it. */}
             <SelectTrigger className="w-52">
-              <SelectValue placeholder="Responsible user" />
+              <SelectValue placeholder={tr("Responsible user")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>All responsible users</SelectItem>
+              <SelectItem value={ALL}>{tr("All responsible users")}</SelectItem>
               {(userDirectory.data?.users ?? []).map((u) => (
                 <SelectItem key={u.principalId} value={u.principalId}>
                   {u.user?.name ?? u.user?.email ?? u.principalId.slice(0, 8)}
@@ -517,7 +536,7 @@ export function AuditFeed({
           </Select>
           <Select value={actionDomain} onValueChange={setActionDomain}>
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Action" />
+              <SelectValue placeholder={tr("Action")} />
             </SelectTrigger>
             <SelectContent>
               {ACTION_DOMAINS.map((d) => (
@@ -529,7 +548,7 @@ export function AuditFeed({
           </Select>
           <Select value={entityType} onValueChange={setEntityType}>
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Entity" />
+              <SelectValue placeholder={tr("Entity")} />
             </SelectTrigger>
             <SelectContent>
               {ENTITY_TYPES.map((e) => (
@@ -541,7 +560,7 @@ export function AuditFeed({
           </Select>
           <Input
             type="date"
-            aria-label="From date"
+            aria-label={tr("From date")}
             value={dateFrom}
             max={dateTo || undefined}
             onChange={(e) => setDateFrom(e.target.value)}
@@ -549,7 +568,7 @@ export function AuditFeed({
           />
           <Input
             type="date"
-            aria-label="To date"
+            aria-label={tr("To date")}
             value={dateTo}
             min={dateFrom || undefined}
             onChange={(e) => setDateTo(e.target.value)}
@@ -557,7 +576,7 @@ export function AuditFeed({
           />
           {hasActiveFilters ? (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear filters
+              {tr("Clear filters")}
             </Button>
           ) : null}
           <Button
@@ -568,7 +587,7 @@ export function AuditFeed({
             disabled={exporting || feed.isLoading || items.length === 0}
           >
             <Download className="mr-1.5 h-4 w-4" />
-            {exporting ? "Exporting…" : "Export CSV"}
+            {exporting ? "Exporting…" : uiText("Export CSV")}
           </Button>
         </div>
       ) : null}
@@ -576,21 +595,21 @@ export function AuditFeed({
       {recoveringFromAccessDowngrade || fallingBackToAllActivity ? (
         <Card>
           <CardContent className="py-14 text-center text-sm text-muted-foreground">
-            Refreshing audit access…
+            {tr("Refreshing audit access…")}
           </CardContent>
         </Card>
       ) : feed.isLoading ? (
         <Card>
-          <CardContent className="py-14 text-center text-sm text-muted-foreground">Loading…</CardContent>
+          <CardContent className="py-14 text-center text-sm text-muted-foreground">{tr("Loading…")}</CardContent>
         </Card>
       ) : feed.error ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
             <p className="text-sm text-muted-foreground">
-              {feed.error instanceof Error ? feed.error.message : "Failed to load the audit log."}
+              {feed.error instanceof Error ? feed.error.message : uiText("Failed to load the audit log.")}
             </p>
             <Button variant="outline" size="sm" onClick={() => feed.refetch()}>
-              Try again
+              {tr("Try again")}
             </Button>
           </CardContent>
         </Card>
@@ -600,19 +619,19 @@ export function AuditFeed({
             <ScrollText className="h-10 w-10 text-muted-foreground/40" />
             <div>
               <p className="text-sm font-medium text-foreground">
-                {hasActiveFilters ? "No actions match these filters" : "Nothing here yet"}
+                {hasActiveFilters ? uiText("No actions match these filters") : uiText("Nothing here yet")}
               </p>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
                 {hasActiveFilters
-                  ? "Try a wider date range or different filters."
+                  ? uiText("Try a wider date range or different filters.")
                   : resolvedMode === "agents"
-                    ? "As soon as your agents start doing things, their actions show up here."
+                    ? uiText("As soon as your agents start doing things, their actions show up here.")
                     : "As soon as anyone in your company does something, it shows up here."}
               </p>
             </div>
             {hasActiveFilters ? (
               <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear filters
+                {tr("Clear filters")}
               </Button>
             ) : null}
           </CardContent>
@@ -642,13 +661,13 @@ export function AuditFeed({
             onClick={() => feed.fetchNextPage()}
             disabled={feed.isFetchingNextPage}
           >
-            {feed.isFetchingNextPage ? "Loading…" : "Load more"}
+            {feed.isFetchingNextPage ? uiText("Loading…") : uiText("Load more")}
           </Button>
         </div>
       ) : null}
 
       <p className="text-xs text-muted-foreground">
-        Recorded by Paperclip — entries can't be edited. Sensitive values are never stored.
+        {tr("Recorded by Paperclip — entries can't be edited. Sensitive values are never stored.")}
       </p>
     </div>
   );

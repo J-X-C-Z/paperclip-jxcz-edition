@@ -7,6 +7,25 @@ import type { Agent, ExecutionWorkspace, Project, RoutineVariable } from "@paper
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RoutineRunVariablesDialog } from "./RoutineRunVariablesDialog";
 
+const { addMembershipMock } = vi.hoisted(() => ({ addMembershipMock: vi.fn() }));
+
+vi.mock("../hooks/useScopedAgents", () => ({
+  projectAssigneeChoices: (
+    agents: Array<{ id: string }>,
+    memberships: Array<{ agentId: string }>,
+    projectScoped: boolean,
+    currentAssigneeId?: string | null,
+  ) => !projectScoped
+    ? agents
+    : agents.filter((agent) => memberships.some(({ agentId }) => agentId === agent.id) || agent.id === currentAssigneeId),
+  useScopedAgents: (projectId: string | null) => ({
+    projectScoped: Boolean(projectId),
+    memberships: [{ agentId: "member-agent" }],
+    isMember: (agentId: string | null | undefined) => agentId === "member-agent",
+    saveMembership: { isPending: false, isError: Boolean(projectId), mutate: addMembershipMock },
+  }),
+}));
+
 let issueWorkspaceDraftCalls = 0;
 let issueWorkspaceDraft: Record<string, unknown> | null = {
   executionWorkspaceId: null as string | null,
@@ -188,6 +207,7 @@ function createQueryClient() {
 async function renderRoutineRunDialog(container: HTMLDivElement, props: {
   variables: RoutineVariable[];
   onSubmit?: (data: unknown) => void;
+  defaultProjectId?: string;
 }) {
   const root = createRoot(container);
   const queryClient = createQueryClient();
@@ -200,8 +220,9 @@ async function renderRoutineRunDialog(container: HTMLDivElement, props: {
           open
           onOpenChange={() => {}}
           companyId="company-1"
-          projects={[]}
+          projects={props.defaultProjectId ? [createProject()] : []}
           agents={[createAgent()]}
+          defaultProjectId={props.defaultProjectId}
           defaultAssigneeAgentId="agent-1"
           variables={props.variables}
           isPending={false}
@@ -620,5 +641,23 @@ describe("RoutineRunVariablesDialog", () => {
     await flushUi(() => {
       root.unmount();
     });
+  });
+
+  it("keeps a legacy assignee selected when adding it to project membership fails", async () => {
+    addMembershipMock.mockClear();
+    const { root } = await renderRoutineRunDialog(container, {
+      variables: [],
+      defaultProjectId: "project-1",
+    });
+
+    const addButton = Array.from(document.querySelectorAll("button"))
+      .find((button) => button.textContent?.includes("Add current assignee to project")) as HTMLButtonElement | undefined;
+    expect(addButton).toBeDefined();
+    expect(document.body.textContent).toContain("The selected agent is unchanged.");
+    await flushUi(() => addButton?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(addMembershipMock).toHaveBeenCalledWith({ agentId: "agent-1" });
+
+    expect(findRunButton()?.disabled).toBe(false);
+    await flushUi(() => root.unmount());
   });
 });

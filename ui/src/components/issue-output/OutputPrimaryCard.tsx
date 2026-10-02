@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Download, ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,7 @@ export function OutputPrimaryCard({ item, creatorName, onMediaClick }: OutputPri
             <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-(length:--text-micro) text-muted-foreground">
               {item.isPrimary && (
                 <Badge variant="secondary" className="px-1.5 py-0 text-(length:--text-nano)">
-                  Primary
+                  {uiText("Primary")}
                 </Badge>
               )}
               {meta && <span>{meta.contentType}</span>}
@@ -108,15 +109,13 @@ export function OutputPrimaryCard({ item, creatorName, onMediaClick }: OutputPri
             {!isMedia || !onMediaClick || isVideo ? (
               <Button asChild variant="outline" size="sm" className="max-md:flex-1">
                 <a href={meta.openPath} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  Open
-                </a>
+                  <ExternalLink className="h-4 w-4" /> {uiText("Open")} </a>
               </Button>
             ) : null}
             <Button asChild size="sm" className="max-md:flex-1">
               <a href={meta.downloadPath} aria-label={`Download ${filename}`}>
                 <Download className="h-4 w-4" />
-                Download
+                {uiText("Download")}
               </a>
             </Button>
           </div>

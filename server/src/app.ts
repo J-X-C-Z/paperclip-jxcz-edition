@@ -1,4 +1,5 @@
 import { aiConnectionRoutes } from "./routes/ai-connections.js";
+import { startExchangeRateUpdates } from "./services/exchange-rate.js";
 import { projectToolRoutes } from "./routes/project-tools.js";
 import { emailChannelService } from "./services/email-channels.js";
 import { emailRoutes, emailWebhookRoutes } from "./routes/email.js";
@@ -1102,6 +1103,7 @@ export async function createApp(
 
   jobCoordinator.start();
   scheduler.start();
+  const stopExchangeRateUpdates = process.env.NODE_ENV === "test" ? () => {} : startExchangeRateUpdates();
   let feedbackExportShuttingDown = false;
   let feedbackExportTimer: ReturnType<typeof setInterval> | null = null;
   const disableFeedbackExportFlushes = () => {
@@ -1290,6 +1292,7 @@ export async function createApp(
       // The scheduler tick queries the database. Stop it here, inside the
       // awaited teardown, so no tick runs after the caller ends the pool.
       scheduler.stop();
+      stopExchangeRateUpdates();
       jobCoordinator.stop();
       disableFeedbackExportFlushes();
       unsubscribeChatPublicationSignals();

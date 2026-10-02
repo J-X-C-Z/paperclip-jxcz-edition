@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   useCallback,
   useEffect,
@@ -275,7 +276,7 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
       return (
         <FileViewerStateView
           icon={<AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />}
-          title="Image preview unavailable"
+          title={uiText("Image preview unavailable")}
         />
       );
     }
@@ -298,7 +299,7 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
       return (
         <FileViewerStateView
           icon={<AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />}
-          title="Video preview unavailable"
+          title={uiText("Video preview unavailable")}
         />
       );
     }
@@ -320,7 +321,7 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
     return (
       <FileViewerStateView
         icon={<AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />}
-        title="Preview not supported for this file type"
+        title={uiText("Preview not supported for this file type")}
         body={resource.contentType ? `Content type: ${resource.contentType}` : undefined}
       />
     );
@@ -382,15 +383,15 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
       <div className="absolute right-3 top-3 z-20">
         <div
           role="group"
-          aria-label="Markdown preview mode"
+          aria-label={uiText("Markdown preview mode")}
           className="inline-flex rounded-md border border-border bg-background/95 p-0.5 shadow-sm backdrop-blur"
         >
           <Button
             type="button"
             variant={markdownMode === "rendered" ? "secondary" : "ghost"}
             size="icon-sm"
-            aria-label="Show rendered Markdown"
-            title="Rendered Markdown"
+            aria-label={uiText("Show rendered Markdown")}
+            title={uiText("Rendered Markdown")}
             aria-pressed={markdownMode === "rendered"}
             onClick={() => setMarkdownMode("rendered")}
             className={cn(
@@ -404,8 +405,8 @@ export function FileContentViewer({ content, highlightedLine, onLoaded }: FileCo
             type="button"
             variant={markdownMode === "raw" ? "secondary" : "ghost"}
             size="icon-sm"
-            aria-label="Show raw Markdown"
-            title="Raw Markdown"
+            aria-label={uiText("Show raw Markdown")}
+            title={uiText("Raw Markdown")}
             aria-pressed={markdownMode === "raw"}
             onClick={() => setMarkdownMode("raw")}
             className={cn(
@@ -761,10 +762,10 @@ export function FileViewerSheet({
                   size="sm"
                   onClick={() => viewer.backToFiles()}
                   className="h-7 gap-1 px-2 text-xs"
-                  aria-label="Back to files"
+                  aria-label={uiText("Back to files")}
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Back to files
+                  {uiText("Back to files")}
                 </Button>
               ) : null}
               {state ? (
@@ -778,8 +779,8 @@ export function FileViewerSheet({
                     <a
                       href={downloadUrl}
                       download={resolvedResource?.title ?? basename(state.path)}
-                      aria-label="Download file"
-                      title="Download file"
+                      aria-label={uiText("Download file")}
+                      title={uiText("Download file")}
                     >
                       <Download className="h-4 w-4" />
                     </a>
@@ -830,8 +831,8 @@ export function FileViewerSheet({
                 size="icon-sm"
                 onClick={() => handleOpenChange(false)}
                 className="h-7 w-7"
-                aria-label="Close file viewer"
-                title="Close"
+                aria-label={uiText("Close file viewer")}
+                title={uiText("Close")}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -871,7 +872,7 @@ export function FileViewerSheet({
               <div
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize file tree"
+                aria-label={uiText("Resize file tree")}
                 aria-valuemin={MIN_FILE_TREE_WIDTH}
                 aria-valuemax={MAX_FILE_TREE_WIDTH}
                 aria-valuenow={fileTreeWidth}
@@ -956,7 +957,7 @@ export function FileViewerBody({
       return (
         <FileViewerStateView
           icon={<FileSearch aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
-          title="File not found"
+          title={uiText("File not found")}
           body="That file was not found in the active workspace."
           actions={
             <>
@@ -966,8 +967,7 @@ export function FileViewerBody({
                 </Button>
               ) : null}
               <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
-                <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> Retry
-              </Button>
+                <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> {uiText("Retry")} </Button>
             </>
           }
         />
@@ -977,7 +977,7 @@ export function FileViewerBody({
       return (
         <FileViewerStateView
           icon={<FolderOpen aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
-          title="No workspace available"
+          title={uiText("No workspace available")}
           body="This issue does not have a workspace that supports preview yet."
         />
       );
@@ -990,8 +990,7 @@ export function FileViewerBody({
         body={denial.body}
         actions={
           <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
-            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> Retry
-          </Button>
+            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> {uiText("Retry")} </Button>
         }
       />
     );
@@ -1004,7 +1003,7 @@ export function FileViewerBody({
     return (
       <FileViewerStateView
         icon={<Cloud aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
-        title="Remote workspace preview coming soon"
+        title={uiText("Remote workspace preview coming soon")}
         body="This workspace is hosted remotely; inline previews are not supported yet."
       />
     );
@@ -1029,8 +1028,7 @@ export function FileViewerBody({
         body={denial.body}
         actions={
           <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
-            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> Retry
-          </Button>
+            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> {uiText("Retry")} </Button>
         }
       />
     );

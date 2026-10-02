@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   useEffect,
   useId,
@@ -141,7 +142,7 @@ function WorkspaceFileBreadcrumbs({
   if (!rootLabel && segments.length === 0) return null;
 
   return (
-    <nav aria-label="Current folder" className="min-w-0 overflow-hidden text-(length:--text-micro) text-muted-foreground">
+    <nav aria-label={uiText("Current folder")} className="min-w-0 overflow-hidden text-(length:--text-micro) text-muted-foreground">
       <ol className="flex min-w-0 items-center gap-1 overflow-hidden">
         {rootLabel ? (
           <li className="min-w-0 shrink">
@@ -417,7 +418,7 @@ function WorkspaceFileTree({
                   style={{ paddingLeft: `${1 + (node.depth + 1) * 0.875}rem` }}
                 >
                   <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
-                  <span>Loading folder…</span>
+                  <span>{uiText("Loading folder…")}</span>
                 </div>
               ) : null}
               {truncated ? (
@@ -428,7 +429,7 @@ function WorkspaceFileTree({
                   style={{ paddingLeft: `${1 + (node.depth + 1) * 0.875}rem` }}
                 >
                   <span className="h-3.5 w-3.5 shrink-0" />
-                  <span>Load more from this folder</span>
+                  <span>{uiText("Load more from this folder")}</span>
                 </button>
               ) : null}
             </>
@@ -453,7 +454,7 @@ function WorkspaceFileTree({
   }
 
   return (
-    <div role="tree" id={listboxId} aria-label="Workspace files" className="space-y-0.5 py-1">
+    <div role="tree" id={listboxId} aria-label={uiText("Workspace files")} className="space-y-0.5 py-1">
       {nodes.map(renderNode)}
     </div>
   );
@@ -987,7 +988,7 @@ export function WorkspaceFileBrowser({
     body = (
       <StateMessage
         icon={<FolderOpen aria-hidden="true" className="h-5 w-5 text-muted-foreground" />}
-        title="No organization selected"
+        title={uiText("No organization selected")}
         body="Choose an organization before browsing another project workspace."
       />
     );
@@ -995,7 +996,7 @@ export function WorkspaceFileBrowser({
     body = (
       <StateMessage
         icon={<Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-muted-foreground" />}
-        title="Loading project workspaces"
+        title={uiText("Loading project workspaces")}
         body="Registered workspaces will appear here."
       />
     );
@@ -1003,7 +1004,7 @@ export function WorkspaceFileBrowser({
     body = (
       <StateMessage
         icon={<FolderOpen aria-hidden="true" className="h-5 w-5 text-muted-foreground" />}
-        title="No project workspaces"
+        title={uiText("No project workspaces")}
         body="No same-organization project has a registered workspace to browse."
       />
     );
@@ -1048,8 +1049,7 @@ export function WorkspaceFileBrowser({
             disabled={!queriesEnabled}
             onClick={() => void listQuery.refetch()}
           >
-            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> Retry
-          </Button>
+            <RefreshCcw aria-hidden="true" className="mr-1 h-3 w-3" /> {uiText("Retry")} </Button>
         ) : null}
       />
     );
@@ -1100,8 +1100,8 @@ export function WorkspaceFileBrowser({
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Search files by name or path…"
-            aria-label="Search workspace files"
+            placeholder={uiText("Search files by name or path…")}
+            aria-label={uiText("Search workspace files")}
             role="combobox"
             aria-expanded={items.length > 0}
             aria-controls={items.length > 0 ? listboxId : undefined}
@@ -1118,8 +1118,8 @@ export function WorkspaceFileBrowser({
           size="icon-sm"
           onClick={() => void listQuery.refetch()}
           disabled={!queriesEnabled || listQuery.isFetching}
-          aria-label="Refresh workspace files"
-          title="Refresh workspace files"
+          aria-label={uiText("Refresh workspace files")}
+          title={uiText("Refresh workspace files")}
           className="h-8 w-8 shrink-0"
         >
           <RefreshCcw aria-hidden="true" className={cn("h-3.5 w-3.5", listQuery.isFetching && "animate-spin")} />
@@ -1146,10 +1146,10 @@ export function WorkspaceFileBrowser({
               onClick={() => loadMoreFolder(currentFolderKey)}
               className="rounded px-1 py-0.5 text-left hover:bg-accent hover:text-foreground"
             >
-              Load more from this folder
+              {uiText("Load more from this folder")}
             </button>
           ) : (
-            <>Showing first {items.length} — refine the search to narrow.</>
+            <>{uiText("Showing first {count} — refine the search to narrow.", { count: items.length })}</>
           )}
         </div>
       ) : null}

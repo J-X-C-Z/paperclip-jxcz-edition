@@ -50,3 +50,26 @@ If budget utilization is above 80%, focus on critical tasks only. At 100%, the a
 - Check budget early in the heartbeat to avoid wasted work
 - Above 80% utilization, skip low-priority tasks
 - If you're running out of budget mid-task, leave a comment and exit gracefully
+
+### Subscription token reference costs
+
+`subscription_included` runs with token usage and a reported zero now resolve to
+`estimated` when the exact provider/model has a verified price, or `unpriced`
+when it does not. A metered API's actual reported zero remains `reported`.
+New run usage metadata includes `estimatedCostUsd` and `costEstimate` with
+source, verification date, and the standard API reference assumptions.
+
+The cost dashboard's grouping endpoints expose `costCents` as reported charges
+plus reference estimates, with separate `reportedCostCents`,
+`estimatedCostCents`, and `unpricedEventCount`. Estimates retain fractional
+cents through aggregation, so small runs are not rounded away individually.
+`summary.referenceCostCents` uses this same display total; `summary.spendCents`
+and budget utilization remain incremental billed spend. Subscription reference
+values never raise the stored monthly billed totals or trigger budget hard stops.
+
+Historical subscription zero rows are estimated when read, without rewriting
+cost events or budgets. A missing historical model can use the model recorded
+in that same run's usage metadata; it never uses an agent's current configuration.
+An unknown price remains explicitly unpriced. Per-request service tiers, cache
+write breakdowns, region, tools, and context premiums are not available in this
+aggregate usage, so these are reference estimates rather than subscription bills.

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ToolProfileWithDetails } from "@paperclipai/shared";
 import { Link } from "@/lib/router";
 import { cn } from "@/lib/utils";
@@ -32,9 +33,9 @@ export function AppsToolsPanel({
           <table className="w-full min-w-(--sz-32rem) text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-left text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-2.5">App</th>
-                <th className="px-4 py-2.5">Tools</th>
-                <th className="px-4 py-2.5">Status</th>
+                <th className="px-4 py-2.5">{uiText("App")}</th>
+                <th className="px-4 py-2.5">{uiText("Tools")}</th>
+                <th className="px-4 py-2.5">{uiText("Status")}</th>
                 <th className="px-4 py-2.5 text-right" />
               </tr>
             </thead>
@@ -54,7 +55,7 @@ export function AppsToolsPanel({
                       ) : null}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {app.toolCount} {app.toolCount === 1 ? "tool" : "tools"}
+                      {app.toolCount} {app.toolCount === 1 ? "tool" : uiText("tools")}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -65,7 +66,7 @@ export function AppsToolsPanel({
                             : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
                         )}
                       >
-                        {app.needsAttention ? "Needs attention" : "Healthy"}
+                        {app.needsAttention ? uiText("Needs attention") : uiText("Healthy")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">

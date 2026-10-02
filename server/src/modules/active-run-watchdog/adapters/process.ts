@@ -10,6 +10,8 @@ const SESSIONED_LOCAL_ADAPTERS = new Set([
   "gemini_local",
   "hermes_local",
   "kimi_local",
+  "dsh_local",
+  "mimocode_local",
   "opencode_local",
   "pi_local",
 ]);

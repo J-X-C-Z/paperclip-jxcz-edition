@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeBilledCostCents,
   resolveCacheAdjustedCostUsd,
   resolveLedgerCostStatus,
 } from "../services/heartbeat.js";
 
 describe("heartbeat cost accounting", () => {
+  it("keeps subscription-included API-equivalent estimates out of billed spend", () => {
+    expect(normalizeBilledCostCents(12.5, "subscription_included")).toBe(0);
+    expect(normalizeBilledCostCents(12.5, "metered_api")).toBe(1250);
+  });
   it("marks token-bearing CLI usage without a reported cost as unpriced", () => {
     expect(resolveLedgerCostStatus({
       costUsd: null,

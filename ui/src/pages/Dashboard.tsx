@@ -12,6 +12,7 @@ import { activityApi } from "../api/activity";
 import { accessApi } from "../api/access";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
+import { useWorkScope } from "../hooks/useWorkScope";
 import { projectsApi } from "../api/projects";
 import { buildCompanyUserProfileMap } from "../lib/company-members";
 import { useCompany } from "../context/CompanyContext";
@@ -38,6 +39,7 @@ import { InlineBanner } from "../components/InlineBanner";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { SmokeLabDashboardCard } from "../components/SmokeLabDashboardCard";
+import { useUiTranslator } from "@/i18n";
 
 const DASHBOARD_ACTIVITY_LIMIT = 10;
 
@@ -71,7 +73,10 @@ export function derivePausedAgentBanner(agents: Agent[] | undefined): PausedAgen
 }
 
 export function Dashboard() {
+  const tr = useUiTranslator();
   const { selectedCompanyId, companies } = useCompany();
+  const workScope = useWorkScope();
+  const projectId = workScope.projectId;
   const { openOnboarding } = useDialogActions();
   const location = useLocation();
   const { setBreadcrumbs } = useBreadcrumbs();
@@ -83,11 +88,20 @@ export function Dashboard() {
   // `isFetching` is read alongside the data: a cached list is served while its
   // refetch runs, and an empty one from before the first hire must not pass
   // for the company's current state — see `shouldRouteAgentlessCompanyToOnboarding`.
-  const { data: agents, isFetching: agentsRefreshing } = useQuery({
+  const { data: companyAgents, isFetching: agentsRefreshing } = useQuery({
     queryKey: queryKeys.agents.list(selectedCompanyId!),
     queryFn: () => agentsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && workScope.ready,
   });
+
+  const memberships = useQuery({
+    queryKey: queryKeys.projects.agentMemberships(selectedCompanyId!, projectId ?? "__none__"),
+    queryFn: () => projectsApi.listAgentMemberships(projectId!, selectedCompanyId!),
+    enabled: !!selectedCompanyId && workScope.ready && !!projectId,
+  });
+  const agents = projectId
+    ? companyAgents?.filter((agent) => memberships.data?.some((member) => member.agentId === agent.id))
+    : companyAgents;
 
   // Bulk resume for agents parked by a company import. Sequential on purpose
   // (mirrors the import page's activation checklist); a per-agent failure is
@@ -109,7 +123,7 @@ export function Dashboard() {
     onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(selectedCompanyId!) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(selectedCompanyId!, projectId) }),
       ]);
     },
   });
@@ -144,7 +158,7 @@ export function Dashboard() {
   // wizard that was deliberately closed. `claimOnboardingOffer` holds the
   // companies already offered; see it for why that outlives this component.
   useEffect(() => {
-    if (!shouldOpenOnboarding || !selectedCompanyId) return;
+    if (!shouldOpenOnboarding || !selectedCompanyId || projectId || !workScope.ready) return;
     if (!claimOnboardingOffer(selectedCompanyId)) return;
     openOnboarding({
       companyId: selectedCompanyId,
@@ -152,56 +166,56 @@ export function Dashboard() {
     });
     // No mission lookup to wait on any more: the step this opens is the same
     // whatever the goals say, so waiting only delayed the open.
-  }, [shouldOpenOnboarding, selectedCompanyId, openOnboarding]);
+  }, [shouldOpenOnboarding, selectedCompanyId, openOnboarding, projectId, workScope.ready]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Dashboard" }]);
-  }, [setBreadcrumbs]);
+    setBreadcrumbs([{ label: tr("Dashboard") }]);
+  }, [setBreadcrumbs, tr]);
 
-  const dashboardQueryKey = queryKeys.dashboard(selectedCompanyId!);
+  const dashboardQueryKey = queryKeys.dashboard(selectedCompanyId!, projectId);
   const sharedDashboard = useSharedPollingQuery({
     companyId: selectedCompanyId,
     resourceKey: "dashboard",
     queryKey: dashboardQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && workScope.ready,
   });
   const { data, isLoading, error, dataUpdatedAt: dashboardUpdatedAt } = useQuery({
     queryKey: dashboardQueryKey,
-    queryFn: () => dashboardApi.summary(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryFn: () => dashboardApi.summary(selectedCompanyId!, projectId),
+    enabled: !!selectedCompanyId && workScope.ready,
   });
   usePublishSharedQueryData(sharedDashboard, data, dashboardUpdatedAt);
 
-  const activityQueryKey = [...queryKeys.activity(selectedCompanyId!), { limit: DASHBOARD_ACTIVITY_LIMIT }] as const;
+  const activityQueryKey = [...queryKeys.activity(selectedCompanyId!, projectId), { limit: DASHBOARD_ACTIVITY_LIMIT, ...(projectId ? { projectId } : {}) }] as const;
   const sharedActivity = useSharedPollingQuery({
     companyId: selectedCompanyId,
     resourceKey: `activity:limit:${DASHBOARD_ACTIVITY_LIMIT}`,
     queryKey: activityQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && workScope.ready,
   });
   const { data: activity, dataUpdatedAt: activityUpdatedAt } = useQuery({
     queryKey: activityQueryKey,
-    queryFn: () => activityApi.list(selectedCompanyId!, { limit: DASHBOARD_ACTIVITY_LIMIT }),
-    enabled: !!selectedCompanyId,
+    queryFn: () => activityApi.list(selectedCompanyId!, { limit: DASHBOARD_ACTIVITY_LIMIT, ...(projectId ? { projectId } : {}) }),
+    enabled: !!selectedCompanyId && workScope.ready,
   });
   usePublishSharedQueryData(sharedActivity, activity, activityUpdatedAt);
 
   const { data: issues } = useQuery({
-    queryKey: queryKeys.issues.list(selectedCompanyId!),
-    queryFn: () => issuesApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: projectId ? queryKeys.issues.listByProject(selectedCompanyId!, projectId) : queryKeys.issues.list(selectedCompanyId!),
+    queryFn: () => issuesApi.list(selectedCompanyId!, projectId ? { projectId } : undefined),
+    enabled: !!selectedCompanyId && workScope.ready,
   });
 
   const { data: projects } = useQuery({
     queryKey: queryKeys.projects.list(selectedCompanyId!, { includeArchived: true }),
     queryFn: () => projectsApi.list(selectedCompanyId!, { includeArchived: true }),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && workScope.ready,
   });
 
   const { data: companyMembers } = useQuery({
     queryKey: queryKeys.access.companyUserDirectory(selectedCompanyId!),
     queryFn: () => accessApi.listUserDirectory(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && workScope.ready,
   });
 
   const userProfileMap = useMemo(
@@ -220,7 +234,7 @@ export function Dashboard() {
     seenActivityIdsRef.current = new Set();
     hydratedActivityRef.current = false;
     setAnimatedActivityIds(new Set());
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, projectId]);
 
   useEffect(() => {
     if (recentActivity.length === 0) return;
@@ -297,25 +311,27 @@ export function Dashboard() {
       return (
         <EmptyState
           icon={LayoutDashboard}
-          message="Welcome to Paperclip. Set up your first organization and agent to get started."
-          action="Get Started"
+          message={tr("Welcome to Paperclip. Set up your first organization and agent to get started.")}
+          action={tr("Get Started")}
           onAction={openOnboarding}
         />
       );
     }
     return (
-      <EmptyState icon={LayoutDashboard} message="Create or select an organization to view the dashboard." />
+      <EmptyState icon={LayoutDashboard} message={tr("Create or select an organization to view the dashboard.")} />
     );
   }
 
-  if (isLoading) {
+  if (workScope.error) return <p role="alert" className="text-sm text-destructive">{workScope.error.message}</p>;
+
+  if (workScope.loading || isLoading || (projectId && memberships.isLoading)) {
     return <PageSkeleton variant="dashboard" />;
   }
 
   // Same rule as the auto-offer above: a list still being refreshed may be the
   // empty one cached before the first hire, and the banner's "Create one here"
   // opens the same agent step the offer does.
-  const hasNoAgents = agents !== undefined && !agentsRefreshing && agents.length === 0;
+  const hasNoAgents = !projectId && agents !== undefined && !agentsRefreshing && agents.length === 0;
   const pausedBanner = derivePausedAgentBanner(agents);
   const pausedImportedCount =
     pausedBanner?.kind === "imported" ? pausedBanner.pausedImportedAgentIds.length : 0;
@@ -328,7 +344,7 @@ export function Dashboard() {
         <InlineBanner
           tone="warning"
           icon={PauseCircle}
-          title={`${pausedImportedCount} imported agent${pausedImportedCount === 1 ? " is" : "s are"} paused and will not run.`}
+          title={`${pausedImportedCount} ${tr(pausedImportedCount === 1 ? "imported agent is paused and will not run." : "imported agents are paused and will not run.")}`}
           actions={
             <Button
               size="sm"
@@ -336,24 +352,24 @@ export function Dashboard() {
               disabled={resumeImportedAgents.isPending}
               data-testid="dashboard-resume-imported-agents"
             >
-              {resumeImportedAgents.isPending ? "Resuming…" : "Resume all"}
+              {resumeImportedAgents.isPending ? tr("Resuming…") : tr("Resume all")}
             </Button>
           }
         >
-          Agents from an organization import arrive paused as a safety default. Resume them so assigned tasks can start.
+          {tr("Agents from an organization import arrive paused as a safety default. Resume them so assigned tasks can start.")}
         </InlineBanner>
       ) : pausedBanner?.kind === "all-paused" ? (
         <InlineBanner
           tone="warning"
           icon={PauseCircle}
-          title="All agents in this organization are paused — nothing will run."
+          title={tr("All agents in this organization are paused — nothing will run.")}
           actions={
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/agents">Review agents</Link>
+              <Link to="/agents">{tr("Review agents")}</Link>
             </Button>
           }
         >
-          Resume at least one agent to let assigned tasks start.
+          {tr("Resume at least one agent to let assigned tasks start.")}
         </InlineBanner>
       ) : null}
 
@@ -362,37 +378,37 @@ export function Dashboard() {
           <div className="flex items-center gap-2.5">
             <Bot className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <p className="text-sm text-amber-900 dark:text-amber-100">
-              You have no agents.
+              {tr("You have no agents.")}
             </p>
           </div>
           <button
             onClick={() => openOnboarding({ initialStep: 3, companyId: selectedCompanyId! })}
             className="text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 underline underline-offset-2 shrink-0"
           >
-            Create one here
+            {tr("Create one here")}
           </button>
         </div>
       )}
 
-      <ActiveAgentsPanel companyId={selectedCompanyId!} />
+      <ActiveAgentsPanel companyId={selectedCompanyId!} projectId={projectId} />
 
       {data && (
         <>
-          {data.budgets.activeIncidents > 0 ? (
+          {!projectId && data.budgets.activeIncidents > 0 ? (
             <div className="flex items-start justify-between gap-3 rounded-xl border border-red-500/20 bg-(image:--gradient-extract-1) px-4 py-3">
               <div className="flex items-start gap-2.5">
                 <PauseCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-700 dark:text-red-300" />
                 <div>
                   <p className="text-sm font-medium text-red-950 dark:text-red-50">
-                    {data.budgets.activeIncidents} active budget incident{data.budgets.activeIncidents === 1 ? "" : "s"}
+                    {data.budgets.activeIncidents}{tr(data.budgets.activeIncidents === 1 ? " active budget incident" : " active budget incidents")}
                   </p>
                   <p className="text-xs text-red-900/70 dark:text-red-100/70">
-                    {data.budgets.pausedAgents} agents paused · {data.budgets.pausedProjects} projects paused · {data.budgets.pendingApprovals} pending budget approvals
+                    {data.budgets.pausedAgents} {tr("agents paused")} · {data.budgets.pausedProjects} {tr("projects paused")} · {data.budgets.pendingApprovals} {tr("pending budget approvals")}
                   </p>
                 </div>
               </div>
               <Link to="/costs" className="text-sm underline underline-offset-2 text-red-900 dark:text-red-100">
-                Open budgets
+                {tr("Open budgets")}
               </Link>
             </div>
           ) : null}
@@ -401,90 +417,91 @@ export function Dashboard() {
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
-              label="Agents Enabled"
+              label={tr("Agents Enabled")}
               to="/agents"
               description={
                 <span>
-                  {data.agents.running} running{", "}
-                  {data.agents.paused} paused{", "}
-                  {data.agents.error} errors
+                  {data.agents.running} {tr("running")}{", "}
+                  {data.agents.paused} {tr("paused")}{", "}
+                  {data.agents.error} {tr("errors")}
                 </span>
               }
             />
             <MetricCard
               icon={CircleDot}
               value={data.tasks.inProgress}
-              label="Tasks In Progress"
+              label={tr("Tasks In Progress")}
               to="/issues"
               description={
                 <span>
-                  {data.tasks.open} open{", "}
-                  {data.tasks.blocked} blocked
+                  {data.tasks.open} {tr("open")}{", "}
+                  {data.tasks.blocked} {tr("blocked")}
                 </span>
               }
             />
             <MetricCard
               icon={DollarSign}
               value={formatCents(data.costs.monthSpendCents)}
-              label="Month Spend"
+              label={tr("Month Spend")}
               to="/costs"
               description={
                 <span>
-                  {data.costs.monthBudgetCents > 0
-                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
-                    : "Unlimited budget"}
+                  {projectId ? "项目归因支出" : data.costs.monthBudgetCents > 0
+                    ? `${data.costs.monthUtilizationPercent}% · ${formatCents(data.costs.monthBudgetCents)} ${tr("budget")}`
+                    : tr("Unlimited budget")}
                 </span>
               }
             />
-            <MetricCard
+            {!projectId && <MetricCard
               icon={ShieldCheck}
               value={data.pendingApprovals + data.budgets.pendingApprovals}
-              label="Pending Approvals"
+              label={tr("Pending Approvals")}
               to="/approvals"
               description={
                 <span>
                   {data.budgets.pendingApprovals > 0
-                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
-                    : "Awaiting board review"}
+                    ? `${data.budgets.pendingApprovals} ${tr("budget overrides awaiting board review")}`
+                    : tr("Awaiting board review")}
                 </span>
               }
             />
+            }
           </div>
 
-          <SmokeLabDashboardCard companyId={selectedCompanyId!} />
+          {!projectId && <SmokeLabDashboardCard companyId={selectedCompanyId!} />}
 
           <div className={cn("grid grid-cols-2 gap-4", SHOW_TASK_PRIORITY_UI ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
-            <ChartCard title="Run Activity" subtitle="Last 14 days">
+            <ChartCard title={tr("Run Activity")} subtitle={tr("Last 14 days")}>
               <RunActivityChart activity={data.runActivity} />
             </ChartCard>
             {/* PAP-411: "Tasks by Priority" chart hidden behind SHOW_TASK_PRIORITY_UI. */}
             {SHOW_TASK_PRIORITY_UI && (
-              <ChartCard title="Tasks by Priority" subtitle="Last 14 days">
+              <ChartCard title={tr("Tasks by Priority")} subtitle={tr("Last 14 days")}>
                 <PriorityChart issues={issues ?? []} />
               </ChartCard>
             )}
-            <ChartCard title="Tasks by Status" subtitle="Last 14 days">
+            <ChartCard title={tr("Tasks by Status")} subtitle={tr("Last 14 days")}>
               <IssueStatusChart issues={issues ?? []} />
             </ChartCard>
-            <ChartCard title="Success Rate" subtitle="Last 14 days">
+            <ChartCard title={tr("Success Rate")} subtitle={tr("Last 14 days")}>
               <SuccessRateChart activity={data.runActivity} />
             </ChartCard>
           </div>
 
-          <PluginSlotOutlet
+          {!projectId && <PluginSlotOutlet
             slotTypes={["dashboardWidget"]}
             context={{ companyId: selectedCompanyId }}
             className="grid gap-4 md:grid-cols-2"
             // design-allow(card-pattern): class-string prop consumed by the plugin outlet; a component can't be passed here (C5a Run 3)
             itemClassName="rounded-lg border bg-card p-4 shadow-sm"
-          />
+          />}
 
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Recent Activity */}
+            {/* 最近活动 */}
             {recentActivity.length > 0 && (
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Recent Activity
+                  {tr("Recent Activity")}
                 </h3>
                 <Card className="@container block py-0 divide-y divide-border overflow-hidden">
                   {recentActivity.map((event) => (
@@ -502,14 +519,14 @@ export function Dashboard() {
               </div>
             )}
 
-            {/* Recent Tasks */}
+            {/* 最近任务 */}
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Recent Tasks
+                {tr("Recent Tasks")}
               </h3>
               {recentIssues.length === 0 ? (
                 <Card className="block p-4">
-                  <p className="text-sm text-muted-foreground">No tasks yet.</p>
+                  <p className="text-sm text-muted-foreground">{tr("No tasks yet.")}</p>
                 </Card>
               ) : (
                 <Card className="@container block py-0 divide-y divide-border overflow-hidden">

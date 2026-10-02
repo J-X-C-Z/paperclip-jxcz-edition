@@ -50,6 +50,23 @@ const CODEX_LOCAL_ASTRA_REASONING_EFFORTS = [
   "ultra",
 ] as const;
 
+const CODEX_LOCAL_GPT6_REASONING_EFFORTS = [
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+  "ultra",
+] as const;
+
+const CODEX_LOCAL_GPT6_LUNA_REASONING_EFFORTS = [
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+] as const;
+
 export type CodexLocalReasoningEffort =
   | (typeof CODEX_LOCAL_DEFAULT_REASONING_EFFORTS)[number]
   | (typeof CODEX_LOCAL_ASTRA_REASONING_EFFORTS)[number];
@@ -62,9 +79,13 @@ export function normalizeCodexModel(model: string | null | undefined): string {
 export function codexLocalReasoningEffortsForModel(
   model: string | null | undefined,
 ): readonly CodexLocalReasoningEffort[] {
-  return normalizeCodexModel(model) === "gpt-6-astra"
-    ? CODEX_LOCAL_ASTRA_REASONING_EFFORTS
-    : CODEX_LOCAL_DEFAULT_REASONING_EFFORTS;
+  const normalizedModel = normalizeCodexModel(model);
+  if (normalizedModel === "gpt-6-astra") return CODEX_LOCAL_ASTRA_REASONING_EFFORTS;
+  if (normalizedModel === "gpt-6-luna") return CODEX_LOCAL_GPT6_LUNA_REASONING_EFFORTS;
+  if (normalizedModel === "gpt-6.1-sol" || normalizedModel === "gpt-6-sol") {
+    return CODEX_LOCAL_GPT6_REASONING_EFFORTS;
+  }
+  return CODEX_LOCAL_DEFAULT_REASONING_EFFORTS;
 }
 
 export function isCodexLocalKnownModel(model: string | null | undefined): boolean {
@@ -93,7 +114,10 @@ export function isCodexLocalFastModeSupported(model: string | null | undefined):
 export const models = [
   // DEFAULT_CODEX_LOCAL_MODEL is gpt-5.6-sol, so it doubles as the first (default) 5.6 entry.
   { id: DEFAULT_CODEX_LOCAL_MODEL, label: DEFAULT_CODEX_LOCAL_MODEL },
+  { id: "gpt-6.1-sol", label: "gpt-6.1-sol" },
   { id: "gpt-6-astra", label: "gpt-6-astra" },
+  { id: "gpt-6-sol", label: "gpt-6-sol" },
+  { id: "gpt-6-luna", label: "gpt-6-luna" },
   { id: "gpt-5.6-terra", label: "gpt-5.6-terra" },
   { id: "gpt-5.6-luna", label: "gpt-5.6-luna" },
   { id: "gpt-5.4", label: "gpt-5.4" },

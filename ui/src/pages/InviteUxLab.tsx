@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 // token-extraction: allowlisted — intentional one-off decoration (DECISION-SHEET.md B1
 // user ruling). The bg-[...gradient...] / shadow-[...] literals in this demo/UX-lab page
 // are deliberate one-off decoration, reverted from --gradient-extract-*/--shadow-extract-*
@@ -210,7 +211,7 @@ function InviteSummaryPanel({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <MetaCard label="Organization" value="Acme Robotics" />
+        <MetaCard label={uiText("Organization")} value="Acme Robotics" />
         <MetaCard label="Invited by" value="Board User" />
         <MetaCard label="Requested access" value={requestedAccess} />
         <MetaCard label="Invite expires" value="Mar 7, 2027" />
@@ -291,12 +292,12 @@ function InlineAuthPreview({
       <form className="space-y-4">
         {mode === "sign_up" ? (
           <label className="block text-sm">
-            <span className="mb-1 block text-zinc-400">Name</span>
+            <span className="mb-1 block text-zinc-400">{uiText("Name")}</span>
             <input name="name" className={fieldClassName} defaultValue="Jane Example" readOnly />
           </label>
         ) : null}
         <label className="block text-sm">
-          <span className="mb-1 block text-zinc-400">Email</span>
+          <span className="mb-1 block text-zinc-400">{uiText("Email")}</span>
           <input name="email" type="email" className={fieldClassName} defaultValue="jane@example.com" readOnly />
         </label>
         <label className="block text-sm">
@@ -332,7 +333,7 @@ function AgentRequestPreview() {
         </p>
       </div>
       <label className="block text-sm">
-        <span className="mb-1 block text-zinc-400">Agent name</span>
+        <span className="mb-1 block text-zinc-400">{uiText("Agent name")}</span>
         <input className={fieldClassName} defaultValue="Acme Ops Agent" readOnly />
       </label>
       <label className="block text-sm">
@@ -344,7 +345,7 @@ function AgentRequestPreview() {
         </select>
       </label>
       <label className="block text-sm">
-        <span className="mb-1 block text-zinc-400">Capabilities</span>
+        <span className="mb-1 block text-zinc-400">{uiText("Capabilities")}</span>
         <textarea
           className={fieldClassName}
           rows={4}
@@ -472,7 +473,7 @@ function AuthScreenPreview({ mode, error }: { mode: "sign_in" | "sign_up"; error
             <div className="mt-6 space-y-4">
               {mode === "sign_up" ? (
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Name</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">{uiText("Name")}</span>
                   <input
                     className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
                     defaultValue="Jane Example"
@@ -481,7 +482,7 @@ function AuthScreenPreview({ mode, error }: { mode: "sign_in" | "sign_up"; error
                 </label>
               ) : null}
               <label className="block">
-                <span className="mb-1 block text-xs text-muted-foreground">Email</span>
+                <span className="mb-1 block text-xs text-muted-foreground">{uiText("Email")}</span>
                 <input
                   className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
                   defaultValue="jane@example.com"
@@ -560,9 +561,7 @@ function CompanyInvitesPreview() {
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{option.label}</span>
                       {option.value === "operator" ? (
-                        <Badge variant="outline" className="border-border text-muted-foreground">
-                          Default
-                        </Badge>
+                        <Badge variant="outline" className="border-border text-muted-foreground"> {uiText("Default")} </Badge>
                       ) : null}
                     </span>
                     <span className="block max-w-2xl text-sm text-muted-foreground">{option.description}</span>
@@ -591,9 +590,7 @@ function CompanyInvitesPreview() {
                 </div>
               </div>
               <div className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
-                <Check className="h-3.5 w-3.5" />
-                Copied
-              </div>
+                <Check className="h-3.5 w-3.5" /> {uiText("Copied")} </div>
             </div>
             <button
               type="button"
@@ -631,11 +628,11 @@ function CompanyInvitesPreview() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="px-5 py-3 font-medium text-muted-foreground">State</th>
-                  <th className="px-5 py-3 font-medium text-muted-foreground">Role</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">{uiText("Role")}</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Invited by</th>
-                  <th className="px-5 py-3 font-medium text-muted-foreground">Created</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">{uiText("Created")}</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Join request</th>
-                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Action</th>
+                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">{uiText("Action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -663,9 +660,7 @@ function CompanyInvitesPreview() {
                     </td>
                     <td className="px-5 py-3 text-right align-top">
                       {invite.action === "Revoke" ? (
-                        <Button type="button" size="sm" variant="outline">
-                          Revoke
-                        </Button>
+                        <Button type="button" size="sm" variant="outline"> {uiText("Revoke")} </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">Inactive</span>
                       )}

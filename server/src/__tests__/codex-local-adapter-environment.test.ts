@@ -65,6 +65,17 @@ describe("codex_local environment diagnostics", () => {
     expect(result.checks).toContainEqual(expect.objectContaining({ code: "codex_hello_probe_auth_required" }));
   });
 
+  itPosix("explains subscription usage limits without asking for a new login", async () => {
+    const error = "You’ve hit your usage limit. Try again at 4:35 PM.";
+    const { result } = await runProbeFixture({ error });
+    expect(result.status).toBe("fail");
+    expect(result.checks).toContainEqual(expect.objectContaining({
+      code: "codex_hello_probe_usage_limited", detail: error,
+      hint: expect.stringContaining("select another subscription"),
+    }));
+    expect(result.checks.some(check => ["codex_hello_probe_auth_required", "codex_hello_probe_failed"].includes(check.code))).toBe(false);
+  });
+
   itPosix("keeps hello probes free of plugin synchronization and repository instructions", async () => {
     const { capture } = await runProbeFixture();
     expect(capture.args).toContain("features.plugins=false");

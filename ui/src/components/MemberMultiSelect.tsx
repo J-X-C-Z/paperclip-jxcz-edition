@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Identity } from "@/components/Identity";
@@ -178,7 +179,7 @@ export function MemberMultiSelect({
                 );
               })}
               {filteredMembers.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-muted-foreground">No matches.</div>
+                <div className="px-3 py-4 text-sm text-muted-foreground">{uiText("No matches.")}</div>
               ) : null}
             </div>
           )}
@@ -188,9 +189,7 @@ export function MemberMultiSelect({
             </span>
             <div className="flex items-center gap-2">
               {staged ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={pending}>
-                  Cancel
-                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={pending}> {uiText("Cancel")} </Button>
               ) : null}
               <Button
                 type="button"
@@ -201,7 +200,7 @@ export function MemberMultiSelect({
                 }}
                 disabled={pending}
               >
-                {staged ? (pending ? "Saving…" : "Save") : "Done"}
+                {staged ? (pending ? uiText("Saving…") : uiText("Save")) : uiText("Done")}
               </Button>
             </div>
           </div>
@@ -216,8 +215,7 @@ export function MemberMultiSelect({
           ))}
           {selectedMembers.length > 3 ? (
             <p className="px-1.5 pt-0.5 text-xs text-muted-foreground">
-              and {selectedMembers.length - 3} more
-            </p>
+              and {selectedMembers.length - 3} {uiText("more")} </p>
           ) : null}
         </div>
       ) : null}

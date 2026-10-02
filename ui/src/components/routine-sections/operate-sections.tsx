@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useState } from "react";
 import { Activity as ActivityIcon, Play, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +57,9 @@ export function RunsSection() {
 
   const activeFilters = useMemo<FilterValue[]>(() => {
     const list: FilterValue[] = [];
-    if (sourceFilter !== "any") list.push({ key: "source", label: "Source", value: sourceFilter });
+    if (sourceFilter !== "any") list.push({ key: "source", label: uiText("Source"), value: sourceFilter });
     if (statusFilter !== "any") {
-      list.push({ key: "status", label: "Status", value: statusFilter.replaceAll("_", " ") });
+      list.push({ key: "status", label: uiText("Status"), value: statusFilter.replaceAll("_", " ") });
     }
     if (dateFilter !== "any") {
       const label = DATE_WINDOW_OPTIONS.find((option) => option.value === dateFilter)?.label ?? dateFilter;
@@ -99,7 +100,7 @@ export function RunsSection() {
             <div className="flex flex-wrap items-center gap-2">
               <Select value={sourceFilter} onValueChange={setSourceFilter}>
                 <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by source">
-                  <span className="text-muted-foreground">Source:</span>
+                  <span className="text-muted-foreground">{uiText("Source:")}</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -113,7 +114,7 @@ export function RunsSection() {
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by status">
-                  <span className="text-muted-foreground">Status:</span>
+                  <span className="text-muted-foreground">{uiText("Status:")}</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -127,7 +128,7 @@ export function RunsSection() {
               </Select>
               <Select value={dateFilter} onValueChange={setDateFilter}>
                 <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by date">
-                  <span className="text-muted-foreground">Date:</span>
+                  <span className="text-muted-foreground">{uiText("Date:")}</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

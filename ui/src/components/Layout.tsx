@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { uiText } from "@/i18n";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate, useNavigationType, useParams } from "@/lib/router";
 import { Sidebar } from "./Sidebar";
@@ -12,10 +13,7 @@ import { SkillsContextualSidebar } from "./SkillsContextualSidebar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { CommandPalette } from "./CommandPalette";
-import { NewIssueDialog } from "./NewIssueDialog";
-import { NewProjectDialog } from "./NewProjectDialog";
-import { NewGoalDialog } from "./NewGoalDialog";
-import { NewAgentDialog } from "./NewAgentDialog";
+import { DeferredCreationDialogs } from "./DeferredCreationDialogs";
 import { KeyboardShortcutsCheatsheet } from "./KeyboardShortcutsCheatsheet";
 import { ToastViewport } from "./ToastViewport";
 import { AnnouncementWell } from "./AnnouncementWell";
@@ -24,6 +22,7 @@ import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
 import { StandaloneBrowserControls } from "./StandaloneBrowserControls";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
+import { PaperclipLoading } from "./AnimatedPaperclipIcon";
 import { SidebarShell } from "./SidebarShell";
 import { SecondarySidebar } from "./SecondarySidebar";
 import { ContextualSidebarFrame } from "./ContextualSidebarFrame";
@@ -58,6 +57,7 @@ import {
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
 import { PluginSlotMount, resolveRouteSidebarSlot, usePluginSlots } from "../plugins/slots";
+import { useOptionalProjectScope } from "@/context/ProjectScopeContext";
 
 function getCompanyRouteSegment(pathname: string, companyPrefix: string | undefined): string | null {
   return getCompanyPathSegments(pathname, companyPrefix)[0]?.toLowerCase() ?? null;
@@ -114,6 +114,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
   const location = useLocation();
   const navigationType = useNavigationType();
   const { enabled: streamlinedUiEnabled } = useStreamlinedUiEnabled();
+  const projectScope = useOptionalProjectScope();
   const shellRoute = classifyShellRoute(location.pathname, companyPrefix);
   const isCompanySettingsRoute = shellRoute.builtInContextualSurface === "settings";
   const companyPathSegments = shellRoute.companySegments;
@@ -628,9 +629,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-(--z-200) focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        Skip to Main Content
-      </a>
+      > {uiText("Skip to Main Content")} </a>
       <WorktreeBanner />
       <DevRestartBanner devServer={health?.devServer} />
       <div className={cn("min-h-0 flex-1", isMobile ? "w-full" : "flex overflow-clip")}>
@@ -639,7 +638,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
             type="button"
             className="fixed inset-0 z-40 bg-black/50"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Close sidebar"
+            aria-label={uiText("Close sidebar")}
           />
         )}
 
@@ -759,7 +758,12 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
                     : "overflow-visible pb-(--sz-calc-14)"
                   : "overflow-auto [scrollbar-gutter:stable]",
               )}
-            >
+              >
+              {projectScope?.enabled && projectScope.projectId && !["groups", "departments"].includes(getCompanyRouteSegment(location.pathname, companyPrefix) ?? "") ? (
+                <div className="mb-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" aria-label={uiText("Active project scope")}>
+                  当前项目：{projectScope.projects.find((project) => project.id === projectScope.projectId)?.name ?? "Project"}
+                </div>
+              ) : null}
               {hasUnknownCompanyPrefix ? (
                 <NotFoundPage
                   scope="invalid_company_prefix"
@@ -767,7 +771,9 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
                 />
               ) : (
                 <RouteErrorBoundary>
-                  <Outlet />
+                  <Suspense fallback={<PaperclipLoading />}>
+                    <Outlet />
+                  </Suspense>
                 </RouteErrorBoundary>
               )}
               </main>
@@ -778,10 +784,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
       </div>
       {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
       <CommandPalette />
-      <NewIssueDialog />
-      <NewProjectDialog />
-      <NewGoalDialog />
-      <NewAgentDialog />
+      <DeferredCreationDialogs />
       <KeyboardShortcutsCheatsheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <ToastViewport />
       <AnnouncementWell health={health} />

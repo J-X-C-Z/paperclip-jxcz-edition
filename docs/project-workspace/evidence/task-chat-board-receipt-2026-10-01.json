@@ -1,0 +1,21 @@
+[
+  {
+    "file": "task-chat-desktop-2026-10-01.png",
+    "attachmentId": "aa1a41ce-988e-4e83-8ed6-38f97e77b528",
+    "workProductId": "ac6193b6-1a8e-46a5-b0de-c834928f2b0a",
+    "contentPath": "/api/attachments/aa1a41ce-988e-4e83-8ed6-38f97e77b528/content"
+  },
+  {
+    "file": "task-chat-mobile-2026-10-01.png",
+    "attachmentId": "22222a67-673b-4099-aae5-b3aa348c9ed0",
+    "workProductId": "eebbc5f2-17e4-4ced-9992-cd61226484de",
+    "contentPath": "/api/attachments/22222a67-673b-4099-aae5-b3aa348c9ed0/content"
+  },
+  {
+    "file": "task-chat-acceptance-2026-10-01.json",
+    "attachmentId": "76ed81a8-13a6-4f92-aa1e-ccb6c6a99ddd",
+    "workProductId": "bfbd0df8-92c7-473c-8ad0-c72cfa6655f8",
+    "contentPath": "/api/attachments/76ed81a8-13a6-4f92-aa1e-ccb6c6a99ddd/content",
+    "previousAttachmentId": "45ed268d-d23f-47ab-8039-bb1223150af6"
+  }
+]

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 // @vitest-environment jsdom
 
 import type { ComponentProps, ReactNode } from "react";
@@ -19,6 +20,8 @@ const mockInstanceSettingsApi = vi.hoisted(() => ({ getExperimental: vi.fn() }))
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 const mockSummarySlotCard = vi.hoisted(() => vi.fn());
 
+const mockProjectScope = vi.hoisted(() => ({ enabled: false, projectId: null as string | null, loading: false, error: null as Error | null }));
+vi.mock("../context/ProjectScopeContext", () => ({ useOptionalProjectScope: () => mockProjectScope }));
 vi.mock("../api/execution-workspaces", () => ({ executionWorkspacesApi: mockExecutionWorkspacesApi }));
 vi.mock("../api/instanceSettings", () => ({ instanceSettingsApi: mockInstanceSettingsApi }));
 vi.mock("../context/CompanyContext", () => ({
@@ -122,6 +125,7 @@ describe("Workspaces", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
+    Object.assign(mockProjectScope, { enabled: false, projectId: null, loading: false, error: null });
     container = document.createElement("div");
     document.body.appendChild(container);
     mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableIsolatedWorkspaces: true });
@@ -134,6 +138,38 @@ describe("Workspaces", () => {
     root = null;
     container.remove();
     vi.clearAllMocks();
+  });
+
+  it("scope errors block company-wide queries", async () => {
+    Object.assign(mockProjectScope, { enabled: true, error: new Error("Project unavailable") });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const testContainer = document.createElement("div");
+    document.body.append(testContainer);
+    const testRoot = createRoot(testContainer);
+    await act(async () => {
+      testRoot.render(<QueryClientProvider client={client}><Workspaces /></QueryClientProvider>);
+    });
+    await flushQueries();
+    expect(mockExecutionWorkspacesApi.listOverview).not.toHaveBeenCalled();
+    expect(testContainer.querySelector('[role="alert"]')?.textContent).toBe("Project unavailable");
+    await act(async () => testRoot.unmount());
+    testContainer.remove();
+  });
+
+  it("scope loading block company-wide queries", async () => {
+    Object.assign(mockProjectScope, { enabled: true, loading: true });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const testContainer = document.createElement("div");
+    document.body.append(testContainer);
+    const testRoot = createRoot(testContainer);
+    await act(async () => {
+      testRoot.render(<QueryClientProvider client={client}><Workspaces /></QueryClientProvider>);
+    });
+    await flushQueries();
+    expect(mockExecutionWorkspacesApi.listOverview).not.toHaveBeenCalled();
+
+    await act(async () => testRoot.unmount());
+    testContainer.remove();
   });
 
   it("uses the bounded overview endpoint and renders grouped workspace cards with linked task summaries", async () => {
@@ -187,20 +223,20 @@ describe("Workspaces", () => {
     expect(mockSummarySlotCard).toHaveBeenCalledWith(expect.objectContaining({
       companyId: "company-1",
       scopeKind: "workspaces_overview",
-      title: "Workspace summary",
+      title: uiText("Workspace summary"),
     }));
-    const heading = Array.from(container.querySelectorAll("h2")).find((node) => node.textContent === "Workspaces");
+    const heading = Array.from(container.querySelectorAll("h2")).find((node) => node.textContent === uiText("Workspaces"));
     const summaryCard = container.querySelector('[data-testid="summary-slot-card"]');
     expect(heading && summaryCard ? Boolean(heading.compareDocumentPosition(summaryCard) & Node.DOCUMENT_POSITION_FOLLOWING) : false).toBe(true);
     expect(container.textContent).toContain("Paperclip App");
     expect(container.textContent).toContain("Workspace Alpha");
     expect(container.textContent).toContain("PAP-11916");
-    expect(container.textContent).toContain("+1 more");
-    expect(container.textContent).toContain("Showing 1 of 2 workspaces.");
+    expect(container.textContent).toContain(`+1 ${uiText("more")}`);
+    expect(container.textContent).toContain(`${uiText("Showing")} 1 ${uiText("workspaces")} ${uiText("of")} 2 ${uiText("workspaces")}.`);
     expect(container.querySelector('a[href="/projects/paperclip-app/workspaces"]')).not.toBeNull();
 
     const loadMoreButton = Array.from(container.querySelectorAll("button"))
-      .find((button) => button.textContent === "Load more");
+      .find((button) => button.textContent === uiText("Load more"));
     expect(loadMoreButton).not.toBeNull();
     await act(async () => {
       loadMoreButton!.dispatchEvent(new MouseEvent("click", { bubbles: true }));

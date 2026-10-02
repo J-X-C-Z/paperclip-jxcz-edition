@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   forwardRef,
   useImperativeHandle,
@@ -164,6 +165,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
   }
 
   function handleKeyDown(evt: ReactKeyboardEvent<HTMLTextAreaElement>) {
+    if (evt.nativeEvent.isComposing || evt.nativeEvent.keyCode === 229) return;
     if (evt.key !== "Enter") return;
     const wantsSubmit =
       submitKey === "mod-enter"
@@ -342,8 +344,8 @@ export const ChatComposer = forwardRef<ChatComposerHandle, ChatComposerProps>(fu
               type="button"
               onClick={triggerFilePicker}
               disabled={disabled || attaching}
-              aria-label="Attach files"
-              title="Attach files"
+              aria-label={uiText("Attach files")}
+              title={uiText("Attach files")}
               className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}

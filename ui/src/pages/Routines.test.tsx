@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 // @vitest-environment jsdom
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
@@ -26,8 +27,10 @@ const markdownEditorRenderMock = vi.fn((props: { mentions?: Array<{ id: string; 
 const issuesListRenderMock = vi.fn(({ issues }: { issues: Issue[] }) => (
   <div data-testid="issues-list">{issues.map((issue) => issue.title).join(", ")}</div>
 ));
-const inlineEntitySelectorRenderMock = vi.fn((props: { options?: Array<{ id: string }> }) => props);
+const inlineEntitySelectorRenderMock = vi.fn((props: { options?: Array<{ id: string }>; value?: string }) => props);
 
+const mockProjectScope = vi.hoisted(() => ({ enabled: false, projectId: null as string | null, loading: false, error: null as Error | null }));
+vi.mock("../context/ProjectScopeContext", () => ({ useOptionalProjectScope: () => mockProjectScope }));
 vi.mock("@/lib/router", () => ({
   Navigate: ({ to }: { to: string }) => <a data-redirect href={to}>Redirect</a>,
   Link: ({ to, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { to: string; children: ReactNode }) => (
@@ -42,6 +45,7 @@ vi.mock("@/lib/router", () => ({
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({ selectedCompanyId: "company-1" }),
+  useOptionalCompany: () => ({ selectedCompanyId: "company-1" }),
 }));
 
 vi.mock("../context/BreadcrumbContext", () => ({
@@ -262,7 +266,7 @@ vi.mock("../components/MarkdownEditor", () => ({
 }));
 
 vi.mock("../components/InlineEntitySelector", () => ({
-  InlineEntitySelector: (props: { options?: Array<{ id: string }> }) => {
+  InlineEntitySelector: (props: { options?: Array<{ id: string }>; value?: string }) => {
     inlineEntitySelectorRenderMock(props);
     return <button type="button">selector</button>;
   },
@@ -381,6 +385,7 @@ describe("Routines page", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
+    Object.assign(mockProjectScope, { enabled: false, projectId: null, loading: false, error: null });
     container = document.createElement("div");
     document.body.appendChild(container);
     currentSearch = "";
@@ -403,6 +408,55 @@ describe("Routines page", () => {
   afterEach(() => {
     container.remove();
     document.body.innerHTML = "";
+  });
+
+  it("scope defaults the new routine project to the active project", async () => {
+    Object.assign(mockProjectScope, { enabled: true, projectId: "project-1" });
+    routinesListMock.mockResolvedValue([]);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<QueryClientProvider client={client}><Routines /></QueryClientProvider>);
+    });
+    await act(async () => { await flush(); });
+    const button = Array.from(container.querySelectorAll("button")).find((item) => item.textContent?.includes(uiText("Create routine")));
+    expect(button).toBeTruthy();
+    await act(async () => { button!.click(); await flush(); });
+    const projectPicker = inlineEntitySelectorRenderMock.mock.calls.findLast(([props]) => props.options?.some((option) => option.id === "project-1"));
+    expect(projectPicker?.[0].value).toBe("project-1");
+    await act(async () => root.unmount());
+  });
+
+  it("scope errors block company-wide queries", async () => {
+    Object.assign(mockProjectScope, { enabled: true, error: new Error("Project unavailable") });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const testContainer = document.createElement("div");
+    document.body.append(testContainer);
+    const testRoot = createRoot(testContainer);
+    await act(async () => {
+      testRoot.render(<QueryClientProvider client={client}><Routines /></QueryClientProvider>);
+    });
+    await act(async () => { await flush(); });
+    expect(routinesListMock).not.toHaveBeenCalled();
+    expect(testContainer.querySelector('[role="alert"]')?.textContent).toBe("Project unavailable");
+    await act(async () => testRoot.unmount());
+    testContainer.remove();
+  });
+
+  it("scope loading block company-wide queries", async () => {
+    Object.assign(mockProjectScope, { enabled: true, loading: true });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const testContainer = document.createElement("div");
+    document.body.append(testContainer);
+    const testRoot = createRoot(testContainer);
+    await act(async () => {
+      testRoot.render(<QueryClientProvider client={client}><Routines /></QueryClientProvider>);
+    });
+    await act(async () => { await flush(); });
+    expect(routinesListMock).not.toHaveBeenCalled();
+
+    await act(async () => testRoot.unmount());
+    testContainer.remove();
   });
 
   it("groups routines by project using project names for the section labels", () => {
@@ -446,7 +500,7 @@ describe("Routines page", () => {
       new Map(),
     );
 
-    expect(groups.map((group) => group.label)).toEqual(["Project Alpha", "Built-in routines"]);
+    expect(groups.map((group) => group.label)).toEqual(["Project Alpha", uiText("Built-in routines")]);
     expect(groups[0]?.items.map((item) => item.title)).toEqual(["Morning sync"]);
     expect(groups[1]?.items.map((item) => item.title)).toEqual(["Reflection review"]);
   });
@@ -467,7 +521,7 @@ describe("Routines page", () => {
       ]),
     );
 
-    expect(groups.map((group) => group.label)).toEqual(["RPI", "Test", "Unfiled"]);
+    expect(groups.map((group) => group.label)).toEqual(["RPI", "Test", uiText("Unfiled")]);
     expect(groups[0]?.items.map((item) => item.title)).toEqual(["RPI review"]);
     expect(groups[1]?.items.map((item) => item.title)).toEqual(["Test summary"]);
     expect(groups[2]?.items.map((item) => item.title)).toEqual(["Unfiled sweep"]);
@@ -489,7 +543,7 @@ describe("Routines page", () => {
       ]),
     );
 
-    expect(groups.map((group) => group.label)).toEqual(["Beta", "Alpha", "Unfiled"]);
+    expect(groups.map((group) => group.label)).toEqual(["Beta", "Alpha", uiText("Unfiled")]);
     expect(groups.map((group) => group.key)).toEqual(["folder-beta", "folder-alpha", "__unfiled"]);
   });
 
@@ -512,7 +566,7 @@ describe("Routines page", () => {
       new Map([["folder-rpi", { name: "RPI" }]]),
     );
 
-    expect(groups.map((group) => group.label)).toEqual(["RPI", "Unfiled", "Built-in routines"]);
+    expect(groups.map((group) => group.label)).toEqual(["RPI", uiText("Unfiled"), uiText("Built-in routines")]);
     expect(groups[0]?.items.map((item) => item.title)).toEqual(["RPI review"]);
     expect(groups[1]?.items.map((item) => item.title)).toEqual(["Unfiled sweep"]);
     expect(groups[2]?.items.map((item) => item.title)).toEqual(["Reflection review"]);
@@ -590,14 +644,14 @@ describe("Routines page", () => {
       await flush();
     });
 
-    let sortButton = container.querySelector<HTMLButtonElement>('button[title="Sort"]');
-    let groupButton = container.querySelector<HTMLButtonElement>('button[title="Group"]');
+    let sortButton = container.querySelector<HTMLButtonElement>(`button[title="${uiText("Sort")}"]`);
+    let groupButton = container.querySelector<HTMLButtonElement>(`button[title="${uiText("Group")}"]`);
     for (let attempts = 0; attempts < 5 && (!sortButton || !groupButton); attempts += 1) {
       await act(async () => {
         await flush();
       });
-      sortButton = container.querySelector<HTMLButtonElement>('button[title="Sort"]');
-      groupButton = container.querySelector<HTMLButtonElement>('button[title="Group"]');
+      sortButton = container.querySelector<HTMLButtonElement>(`button[title="${uiText("Sort")}"]`);
+      groupButton = container.querySelector<HTMLButtonElement>(`button[title="${uiText("Group")}"]`);
     }
 
     expect(sortButton).not.toBeNull();
@@ -680,7 +734,7 @@ describe("Routines page", () => {
 
     const sectionLabels = Array.from(container.querySelectorAll("[data-routine-section-label]"))
       .map((element) => element.textContent);
-    expect(sectionLabels).toEqual(["RPI", "Test", "Unfiled"]);
+    expect(sectionLabels).toEqual(["RPI", "Test", uiText("Unfiled")]);
 
     const text = container.textContent ?? "";
     expect(text.indexOf("RPI review")).toBeLessThan(text.indexOf("Test summary"));
@@ -723,15 +777,15 @@ describe("Routines page", () => {
       await flush();
     });
 
-    for (let attempts = 0; attempts < 5 && !container.textContent?.includes("Built-in routines"); attempts += 1) {
+    for (let attempts = 0; attempts < 5 && !container.textContent?.includes(uiText("Built-in routines")); attempts += 1) {
       await act(async () => {
         await flush();
       });
     }
 
     const text = container.textContent ?? "";
-    expect(text.indexOf("Morning sync")).toBeLessThan(text.indexOf("Built-in routines"));
-    expect(text.indexOf("Built-in routines")).toBeLessThan(text.indexOf("Reflection review"));
+    expect(text.indexOf("Morning sync")).toBeLessThan(text.indexOf(uiText("Built-in routines")));
+    expect(text.indexOf(uiText("Built-in routines"))).toBeLessThan(text.indexOf("Reflection review"));
 
     await act(async () => {
       root.unmount();
@@ -827,14 +881,14 @@ describe("Routines page", () => {
       );
       await flush();
     });
-    for (let attempts = 0; attempts < 5 && !container.textContent?.includes("This folder is empty"); attempts += 1) {
+    for (let attempts = 0; attempts < 5 && !container.textContent?.includes(uiText("This folder is empty.")); attempts += 1) {
       await act(async () => {
         await flush();
       });
     }
 
-    expect(container.textContent).toContain("This folder is empty");
-    expect(container.textContent).toContain("New routine in this folder");
+    expect(container.textContent).toContain(uiText("This folder is empty."));
+    expect(container.textContent).toContain(uiText("New routine in this folder"));
 
     await act(async () => {
       secondRoot.unmount();
@@ -941,14 +995,14 @@ describe("Routines page", () => {
     });
 
     let createButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Create routine"),
+      button.textContent?.includes(uiText("Create routine")),
     );
     for (let attempts = 0; attempts < 5 && !createButton; attempts += 1) {
       await act(async () => {
         await flush();
       });
       createButton = Array.from(container.querySelectorAll("button")).find((button) =>
-        button.textContent?.includes("Create routine"),
+        button.textContent?.includes(uiText("Create routine")),
       );
     }
 
@@ -991,14 +1045,14 @@ describe("Routines page", () => {
     });
 
     let createButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Create routine"),
+      button.textContent?.includes(uiText("Create routine")),
     );
     for (let attempts = 0; attempts < 5 && !createButton; attempts += 1) {
       await act(async () => {
         await flush();
       });
       createButton = Array.from(container.querySelectorAll("button")).find((button) =>
-        button.textContent?.includes("Create routine"),
+        button.textContent?.includes(uiText("Create routine")),
       );
     }
 

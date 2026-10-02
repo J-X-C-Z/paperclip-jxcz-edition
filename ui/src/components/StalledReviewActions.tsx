@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, RotateCcw, Undo2 } from "lucide-react";
@@ -104,7 +105,7 @@ export function StalledReviewActions({
       <Textarea
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        placeholder="Add a note — required to request changes, optional otherwise…"
+        placeholder={uiText("Add a note — required to request changes, optional otherwise…")}
         className="min-h-16 text-sm"
         data-testid="stalled-review-note"
         disabled={pending}
@@ -157,9 +158,7 @@ export function StalledReviewActions({
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
             ) : (
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-            )}
-            Approve
-          </Button>
+            )} {uiText("Approve")} </Button>
         </div>
       </div>
     </div>

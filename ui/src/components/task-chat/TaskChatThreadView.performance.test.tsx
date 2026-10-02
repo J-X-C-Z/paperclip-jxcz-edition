@@ -69,9 +69,9 @@ it("uses the current gallery callback after the provider changes", () => {
     </IssueGalleryContext.Provider>,
   ));
   render(firstGallery);
-  flushSync(() => host.querySelector<HTMLButtonElement>("button")!.click());
+  flushSync(() => host.querySelector<HTMLButtonElement>("[data-thread-anchor] button")!.click());
   render(nextGallery);
-  flushSync(() => host.querySelector<HTMLButtonElement>("button")!.click());
+  flushSync(() => host.querySelector<HTMLButtonElement>("[data-thread-anchor] button")!.click());
   expect(firstGallery).toHaveBeenCalledExactlyOnceWith("image.png");
   expect(nextGallery).toHaveBeenCalledExactlyOnceWith("image.png");
 });

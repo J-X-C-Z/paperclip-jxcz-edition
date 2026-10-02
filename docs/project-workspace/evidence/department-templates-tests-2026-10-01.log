@@ -1,0 +1,92 @@
+Department and custom agent templates verification — 2026-10-01
+
+Evidence format: This file is a faithful summary of real tool outputs from this
+turn, not a raw captured terminal transcript. The original outputs were returned
+by exec_command/write_stdin and were not persisted as log files. No tests were
+rerun when producing this summary.
+
+Working directory: /Users/jxcz/Agent Workspace/Paperclip
+Local runtime: node + the repository node_modules executables; no pnpm install,
+service restart, git commit or production agent creation was performed.
+
+Final distinct passing tests: 146, with no skipped tests counted as passing.
+
+1. Shared/UI/template-service verification (21 passing)
+   Command:
+   node node_modules/vitest/vitest.mjs run packages/shared/src/agent-templates.test.ts server/src/__tests__/agent-templates.test.ts ui/src/components/new-agent/AgentTemplateSelection.test.tsx ui/src/components/new-agent/NewAgentSetup.templates.test.tsx ui/src/pages/AgentTemplates.test.tsx
+   Actual final output:
+     Test Files  5 passed (5)
+          Tests  21 passed (21)
+       Start at  14:40:26
+       Duration  3.56s
+   Coverage includes: four valid presets; neutral custom authority; department
+   manager choices; custom position/model/instructions overrides; existing member
+   review manager requirement; direct template-page creation entries.
+
+2. Server template/defaults/task-policy/routes verification (60 passing)
+   Command:
+   node node_modules/vitest/vitest.mjs run server/src/__tests__/agent-templates.test.ts server/src/__tests__/agent-template-defaults.test.ts server/src/__tests__/agent-template-task-policy.test.ts server/src/__tests__/agent-adapter-validation-routes.test.ts
+   Actual final output:
+     Test Files  4 passed (4)
+          Tests  60 passed (60)
+       Start at  14:41:02
+       Duration  16.02s
+   Seven agent-templates service tests also occur in item 1, so these two commands
+   contribute 21 + 60 - 7 = 74 distinct passing tests.
+   Coverage includes: minister/custom creation and provenance; cross-company
+   manager rejection before writes; minimum authority defaults; compatible
+   existing template overrides; department hire/management boundaries; existing
+   team-member submission/review policy preservation.
+
+3. Real isolated PostgreSQL authorization and task-service verification
+   Actual temporary PostgreSQL admin URL:
+   postgres://paperclip@127.0.0.1:55439/postgres
+   Command:
+   PAPERCLIP_TEST_POSTGRES_ADMIN_URL=postgres://paperclip@127.0.0.1:55439/postgres node node_modules/vitest/vitest.mjs run server/src/__tests__/authorization-service.test.ts server/src/__tests__/agent-template-task-service.test.ts
+   Actual final output:
+     Test Files  2 passed (2)
+          Tests  72 passed (72)
+       Start at  14:41:58
+       Duration  10.34s
+   These 72 tests actually executed against fresh randomly named databases on
+   the isolated local PostgreSQL cluster, with zero skips. The test helper cleaned
+   up those databases in afterAll. The cluster lifecycle remained owned by the
+   parent task; this agent neither started nor stopped it.
+   Coverage includes: department-head task assignment to direct preset leaders
+   and legacy AW -lead agents; rejection of peer leaders and indirect members;
+   custom template denial despite CEO shortcut/explicit broad grants; existing
+   native member review/return/accept behavior and wider authorization regressions.
+
+Final arithmetic: 21 + 60 - 7 duplicate service tests + 72 PostgreSQL tests = 146.
+
+Type checks
+  node node_modules/typescript/bin/tsc -p ui/tsconfig.json --noEmit
+    Final run: exit code 0, no diagnostics.
+  node node_modules/typescript/bin/tsc -p server/tsconfig.json --noEmit
+    Final run: exit code 0, no diagnostics.
+  node node_modules/typescript/bin/tsc -p packages/shared/tsconfig.json --noEmit
+    Exit code 0, no diagnostics.
+
+UI token gates
+  node scripts/check-token-gates.mjs
+    Files scanned: 1032
+    Allowlist entries loaded: 33
+    Allowlisted issues skipped: 109
+    Gate 1 (color literals): CLEAN
+    Gate 2 (arbitrary bracket vals): CLEAN
+    Gate 3 (raw font-size): CLEAN
+    Gate 4 (legacy hsl(var())): CLEAN
+    All gates clean; exit code 0.
+
+Relevant-file git diff --check: exit code 0, no diagnostics.
+
+Earlier diagnostic attempts, excluded from final passing count:
+  - An initial legacy shared-template assertion expected two presets and failed
+    after four were added. It was updated, and the final shared suite passed.
+  - The obsolete port 54329 admin URL was unavailable, so a preliminary database
+    invocation skipped its DB suites (7 non-DB service tests passed, 72 skipped).
+    Those skipped results were replaced by the real 55439 PostgreSQL execution
+    above and are not counted as successful validation.
+
+Limits: This subtask did not build UI/server release artifacts or perform live
+browser verification; those integration steps belong to the parent task.

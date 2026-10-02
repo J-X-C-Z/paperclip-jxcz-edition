@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useContext, useState, type ReactNode } from "react";
 import { useEmailComment } from "@/components/EmailMessageCard";
 import type { IssueAttachment } from "@paperclipai/shared";
@@ -374,7 +375,7 @@ function TaskChatBubbleContent({
       ) : null}
       {item.optimistic ? (
         <span className="flex items-center gap-1 px-1 text-(length:--text-micro) text-muted-foreground">
-          <span>{item.optimistic === "queued" ? "Queued" : "Sending…"}</span>
+          <span>{item.optimistic === "queued" ? uiText("Queued") : uiText("Sending…")}</span>
           {item.optimistic === "queued" ? queuedAction : null}
         </span>
       ) : attachedTurn ? (
@@ -412,7 +413,7 @@ function TaskChatBubbleContent({
       ) : item.timestamp || sentFromIMessage ? (
         // Timestamps are always visible (round 9) — no longer hover-revealed.
         <span className="px-1 text-(length:--text-micro) text-muted-foreground">
-          {sentFromIMessage ? "Sent from iMessage" : null}
+          {sentFromIMessage ? uiText("Sent from iMessage") : null}
           {sentFromIMessage && item.timestamp ? " · " : null}
           {item.timestamp}
         </span>

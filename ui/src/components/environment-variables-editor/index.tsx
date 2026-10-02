@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   forwardRef,
   useCallback,
@@ -374,7 +375,7 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
       }
     }
     updateDraft(working);
-    toast?.pushToast({ title: `Imported ${pairs.length} variable${pairs.length === 1 ? "" : "s"}`, tone: "success" });
+    toast?.pushToast({ title: uiText("Imported {count} variable(s)", { count: pairs.length }), tone: "success" });
     return true;
   }
 
@@ -450,8 +451,8 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
         <>
           {/* Header (desktop only) */}
           <div className="hidden gap-x-1.5 @[40rem]/env:grid @[40rem]/env:grid-cols-(--gtc-14)">
-            <span className="text-(length:--text-micro) font-medium uppercase tracking-wide text-muted-foreground">Name</span>
-            <span className="text-(length:--text-micro) font-medium uppercase tracking-wide text-muted-foreground">Value</span>
+            <span className="text-(length:--text-micro) font-medium uppercase tracking-wide text-muted-foreground">{uiText("Name")}</span>
+            <span className="text-(length:--text-micro) font-medium uppercase tracking-wide text-muted-foreground">{uiText("Value")}</span>
             <span />
           </div>
 
@@ -529,7 +530,7 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex items-center gap-2 text-sm font-medium">
               <span className="size-2 rounded-full bg-amber-500 shadow-(--shadow-extract-13)" />
-              <span>Unsaved changes</span>
+              <span>{uiText("Unsaved changes")}</span>
             </div>
             {changeSummaryText ? (
               <p className="min-w-0 truncate pl-4 text-xs text-amber-950/80 dark:text-amber-100/80" title={changeSummaryText}>
@@ -543,17 +544,13 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
               onClick={revertDraft}
               className="inline-flex h-9 items-center gap-1.5 rounded-md border border-amber-500/30 bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-amber-500/10 dark:bg-background/80"
             >
-              <RotateCcw className="size-4" />
-              Revert
-            </button>
+              <RotateCcw className="size-4" /> {uiText("Revert")} </button>
             <button
               type="button"
               onClick={saveDraft}
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              <Save className="size-4" />
-              Save
-            </button>
+              <Save className="size-4" /> {uiText("Save")} </button>
           </div>
         </div>
       ) : null}

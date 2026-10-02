@@ -17,7 +17,7 @@ vi.mock("node:child_process", async (importOriginal) => {
   };
 });
 
-import { fetchCodexQuota, getQuotaWindows } from "./quota.js";
+import { fetchCodexQuota, fetchCodexRpcQuota, getQuotaWindows } from "./quota.js";
 
 function createChildThatErrorsOnMicrotask(err: Error): ChildProcess {
   const child = new EventEmitter() as ChildProcess;
@@ -220,5 +220,44 @@ describe("CodexRpcClient spawn failures", () => {
     expect(result.windows).toEqual([]);
     expect(result.error).toContain("Codex app-server");
     expect(result.error).toContain("spawn codex ENOENT");
+  });
+});
+
+
+describe("isolated Codex RPC verification", () => {
+  function respondingChild(rejectLimits: boolean): ChildProcess {
+    const child = new EventEmitter() as ChildProcess;
+    Object.assign(child, { stdout: Object.assign(new EventEmitter(), { setEncoding: () => {} }),
+      stderr: Object.assign(new EventEmitter(), { setEncoding: () => {} }), stdin: { write: vi.fn() }, kill: vi.fn() });
+    const stdout = child.stdout!;
+    Object.assign(child.stdin!, { write: (line: string) => {
+      const request = JSON.parse(line);
+      if (request.id == null) return;
+      const response = request.method === "account/rateLimits/read"
+        ? rejectLimits ? { error: { code: -32000, message: "rejected" } }
+          : { result: { rateLimits: { primary: { usedPercent: 10 } } } }
+        : request.method === "account/read" ? { result: { account: { type: "chatgpt", planType: "plus" } } }
+        : { result: {} };
+      queueMicrotask(() => stdout.emit("data", JSON.stringify({ id: request.id, ...response }) + "\n"));
+    } });
+    return child;
+  }
+  afterEach(() => vi.resetAllMocks());
+  it("passes the selected login home only to the child process", async () => {
+    const child = respondingChild(false);
+    mockSpawn.mockReturnValue(child);
+    const previous = process.env.CODEX_HOME;
+    await expect(fetchCodexRpcQuota("/isolated/attempt")).resolves.toMatchObject({ planType: "plus" });
+    expect(mockSpawn).toHaveBeenCalledWith("codex", ["-s", "read-only", "-a", "never", "app-server"], expect.objectContaining({
+      env: expect.objectContaining({ CODEX_HOME: "/isolated/attempt" }),
+    }));
+    expect(process.env.CODEX_HOME).toBe(previous);
+    expect(child.kill).toHaveBeenCalledWith("SIGTERM");
+  });
+  it("rejects RPC error replies instead of treating them as empty success", async () => {
+    const child = respondingChild(true);
+    mockSpawn.mockReturnValue(child);
+    await expect(fetchCodexRpcQuota("/isolated/attempt")).rejects.toThrow("could not verify");
+    expect(child.kill).toHaveBeenCalledWith("SIGTERM");
   });
 });

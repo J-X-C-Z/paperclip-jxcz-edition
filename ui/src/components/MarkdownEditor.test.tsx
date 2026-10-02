@@ -352,6 +352,69 @@ describe("MarkdownEditor", () => {
     });
   });
 
+  it.each([
+    ["isComposing", { isComposing: true }],
+    ["legacy IME keyCode", { keyCode: 229 }],
+  ] as const)("does not submit from the rich editor during IME confirmation (%s)", async (_label, composing) => {
+    const onSubmit = vi.fn();
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<MarkdownEditor value="中文候选" onChange={() => {}} onSubmit={onSubmit} />);
+    });
+    await flush();
+
+    const event = new KeyboardEvent("keydown", {
+      key: "Enter",
+      metaKey: true,
+      ...composing,
+      bubbles: true,
+      cancelable: true,
+    });
+    if ("keyCode" in composing) {
+      Object.defineProperty(event, "keyCode", { value: composing.keyCode });
+    }
+    act(() => {
+      container.querySelector('[data-testid="mdx-editor"]')!.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+  });
+
+  it.each([
+    ["isComposing", { isComposing: true }],
+    ["legacy IME keyCode", { keyCode: 229 }],
+  ] as const)("does not submit from the fallback textarea during IME confirmation (%s)", async (_label, composing) => {
+    mdxEditorMockState.emitMountParseError = true;
+    const onSubmit = vi.fn();
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<MarkdownEditor value="中文候选" onChange={() => {}} onSubmit={onSubmit} />);
+    });
+    await flush();
+
+    const event = new KeyboardEvent("keydown", {
+      key: "Enter",
+      ctrlKey: true,
+      ...composing,
+      bubbles: true,
+      cancelable: true,
+    });
+    if ("keyCode" in composing) {
+      Object.defineProperty(event, "keyCode", { value: composing.keyCode });
+    }
+    await vi.waitFor(() => expect(container.querySelector("textarea")).not.toBeNull());
+    const textarea = container.querySelector("textarea")!;
+    act(() => {
+      textarea.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+  });
+
   it("keeps the external value when the unfocused editor emits an empty mount reset", async () => {
     mdxEditorMockState.emitMountEmptyReset = true;
     const handleChange = vi.fn();
@@ -1088,6 +1151,31 @@ describe("MarkdownEditor", () => {
     expect(shouldAcceptAutocompleteKey("Enter", "skill", true)).toBe(true);
     expect(shouldAcceptAutocompleteKey("Enter", "mention")).toBe(true);
     expect(shouldAcceptAutocompleteKey("Tab", "skill")).toBe(true);
+  });
+
+  it.each([
+    ["isComposing", { isComposing: true }],
+    ["legacy IME keyCode", { keyCode: 229 }],
+  ] as const)("does not intercept an IME confirmation in the mention menu (%s)", async (_label, composing) => {
+    const handleChange = vi.fn();
+    const { root } = await openMentionMenuFor(handleChange);
+    const editorScope = container.querySelector('[data-testid="mdx-editor"]')?.parentElement!;
+    const event = new KeyboardEvent("keydown", {
+      key: "Enter",
+      ...composing,
+      bubbles: true,
+      cancelable: true,
+    });
+    if ("keyCode" in composing) {
+      Object.defineProperty(event, "keyCode", { value: composing.keyCode });
+    }
+    act(() => {
+      editorScope.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(handleChange).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
   });
 
   it("keeps the same autocomplete session active while the slash query is unchanged", () => {

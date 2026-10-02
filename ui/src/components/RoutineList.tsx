@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ReactNode } from "react";
 import { MoreHorizontal, Play } from "lucide-react";
 import { Link } from "@/lib/router";
@@ -132,7 +133,7 @@ export function RoutineListRow<TRoutine extends RoutineListRowItem>({
           <span className="truncate text-sm font-medium">{routine.title}</span>
           {(isArchived || routine.status === "paused" || isDraft) ? (
             <span className="text-xs text-muted-foreground">
-              {isArchived ? "archived" : isDraft ? "draft" : "paused"}
+              {isArchived ? "archived" : isDraft ? "draft" : uiText("paused")}
             </span>
           ) : null}
           {managedByLabel ? (
@@ -145,7 +146,7 @@ export function RoutineListRow<TRoutine extends RoutineListRowItem>({
               className="h-2.5 w-2.5 shrink-0 rounded-sm"
               style={{ backgroundColor: project?.color ?? "var(--project-none)" }}
             />
-            <span>{routine.projectId ? (project?.name ?? "Unknown project") : "No project"}</span>
+            <span>{routine.projectId ? (project?.name ?? "Unknown project") : uiText("No project")}</span>
           </span>
           <span className="flex items-center gap-2">
             {agent?.icon ? <AgentIcon icon={agent.icon} className="h-3.5 w-3.5 shrink-0" /> : null}
@@ -183,7 +184,7 @@ export function RoutineListRow<TRoutine extends RoutineListRowItem>({
             aria-label={enabled ? `Disable ${routine.title}` : `Enable ${routine.title}`}
           />
           <span className="w-12 text-xs text-muted-foreground">
-            {isArchived ? "Archived" : isDraft ? "Draft" : enabled ? "On" : "Off"}
+            {isArchived ? uiText("Archived") : isDraft ? "Draft" : enabled ? "On" : "Off"}
           </span>
         </div>
 
@@ -221,7 +222,7 @@ export function RoutineListRow<TRoutine extends RoutineListRowItem>({
                 onClick={() => onToggleArchived(routine)}
                 disabled={isStatusPending}
               >
-                {routine.status === "archived" ? "Restore" : "Archive"}
+                {routine.status === "archived" ? uiText("Restore") : uiText("Archive")}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

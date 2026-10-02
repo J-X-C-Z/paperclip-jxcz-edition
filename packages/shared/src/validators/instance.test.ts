@@ -5,6 +5,14 @@ import {
 } from "./instance.js";
 
 describe("instance experimental settings validators", () => {
+  it("defaults Project Workspace off and accepts explicit boolean patches", () => {
+    expect(instanceExperimentalSettingsSchema.parse({}).enableProjectWorkspace).toBe(false);
+    for (const enabled of [true, false]) {
+      expect(patchInstanceExperimentalSettingsSchema.parse({ enableProjectWorkspace: enabled }))
+        .toEqual({ enableProjectWorkspace: enabled });
+    }
+    expect(patchInstanceExperimentalSettingsSchema.safeParse({ enableProjectWorkspace: "true" }).success).toBe(false);
+  });
   it("defaults chat connectors off independently of Apps and accepts only explicit boolean patches", () => {
     expect(instanceExperimentalSettingsSchema.parse({}).enableChatConnectors).toBe(false);
     expect(instanceExperimentalSettingsSchema.parse({ enableApps: true }).enableChatConnectors).toBe(false);

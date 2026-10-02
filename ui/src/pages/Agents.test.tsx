@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Agent, Environment, EnvironmentCapabilities } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/i18n";
 import { ToastProvider } from "../context/ToastContext";
 import type { BuiltInAgentState } from "../api/builtInAgents";
 import { Agents } from "./Agents";
@@ -39,6 +40,10 @@ const mockHeartbeatsApi = vi.hoisted(() => ({
 
 const mockInstanceSettingsApi = vi.hoisted(() => ({
   get: vi.fn(),
+  getExperimental: vi.fn(),
+}));
+const mockProjectsApi = vi.hoisted(() => ({
+  listAgentMemberships: vi.fn(),
 }));
 
 const mockResourceMembershipsApi = vi.hoisted(() => ({
@@ -49,6 +54,8 @@ const mockResourceMembershipsApi = vi.hoisted(() => ({
 const mockOpenNewAgent = vi.hoisted(() => vi.fn());
 const mockSetBreadcrumbs = vi.hoisted(() => vi.fn());
 const mockSidebarState = vi.hoisted(() => ({ isMobile: false }));
+const mockCompanyState = vi.hoisted(() => ({ selectedCompanyId: "company-1" }));
+const mockProjectScopeState = vi.hoisted(() => ({ projectId: "project-1" as string | null }));
 
 vi.mock("@/lib/router", () => ({
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
@@ -59,7 +66,12 @@ vi.mock("@/lib/router", () => ({
 }));
 
 vi.mock("../context/CompanyContext", () => ({
-  useCompany: () => ({ selectedCompanyId: "company-1" }),
+  useCompany: () => ({ selectedCompanyId: mockCompanyState.selectedCompanyId }),
+  useOptionalCompany: () => ({ selectedCompanyId: mockCompanyState.selectedCompanyId }),
+}));
+
+vi.mock("../context/ProjectScopeContext", () => ({
+  useOptionalProjectScope: () => ({ enabled: true, projectId: mockProjectScopeState.projectId, loading: false, error: null }),
 }));
 
 vi.mock("../context/DialogContext", () => ({
@@ -93,6 +105,8 @@ vi.mock("../api/heartbeats", () => ({
 vi.mock("../api/instanceSettings", () => ({
   instanceSettingsApi: mockInstanceSettingsApi,
 }));
+
+vi.mock("../api/projects", () => ({ projectsApi: mockProjectsApi }));
 
 vi.mock("../api/resourceMemberships", () => ({
   resourceMembershipsApi: mockResourceMembershipsApi,
@@ -299,8 +313,11 @@ describe("Agents", () => {
   let root: ReturnType<typeof createRoot> | null;
   let queryClient: QueryClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     mockRouterState.pathname = "/agents/all";
+    mockCompanyState.selectedCompanyId = "company-1";
+    mockProjectScopeState.projectId = null;
     mockRouterState.navigate.mockClear();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -331,6 +348,8 @@ describe("Agents", () => {
     ]);
     mockEnvironmentsApi.capabilities.mockResolvedValue(environmentCapabilities);
     mockInstanceSettingsApi.get.mockResolvedValue(makeInstanceSettings());
+    mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableProjectWorkspace: true });
+    mockProjectsApi.listAgentMemberships.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([]);
     mockResourceMembershipsApi.listMine.mockResolvedValue({
       projectMemberships: {},
@@ -429,6 +448,7 @@ describe("Agents", () => {
       );
     });
     await flushReact();
+    await flushReact();
 
     const listToggle = container.querySelector<HTMLButtonElement>('button[aria-label="List view"]');
     const orgToggle = container.querySelector<HTMLButtonElement>('button[aria-label="Org chart view"]');
@@ -522,6 +542,76 @@ describe("Agents", () => {
     expect(row?.textContent).not.toContain("Pause");
   });
 
+  it("combines title and status filters and clears the title when company scope changes", async () => {
+    await i18n.changeLanguage("zh-CN");
+    mockProjectScopeState.projectId = "project-1";
+    mockRouterState.pathname = "/agents/active";
+    mockAgentsApi.list.mockResolvedValue([
+      makeAgent({ id: "active-legacy", name: "Active legacy role", title: "旧岗位", status: "active" }),
+      makeAgent({ id: "paused-legacy", name: "Paused legacy role", title: "旧岗位", status: "paused" }),
+      makeAgent({ id: "active-standard", name: "Active standard role", title: "组长", status: "active" }),
+    ]);
+    mockProjectsApi.listAgentMemberships.mockResolvedValue([
+      { agentId: "active-legacy" },
+      { agentId: "paused-legacy" },
+      { agentId: "active-standard" },
+    ]);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider><Agents /></ToastProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    const titleSelect = container.querySelector<HTMLSelectElement>('select[aria-label="按头衔筛选"]');
+    expect(titleSelect).not.toBeNull();
+    await act(async () => {
+      titleSelect!.value = "旧岗位";
+      titleSelect!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("Active legacy role");
+    expect(container.textContent).not.toContain("Paused legacy role");
+    expect(container.textContent).not.toContain("Active standard role");
+
+    mockCompanyState.selectedCompanyId = "company-2";
+    mockAgentsApi.list.mockImplementation(async (companyId: string) => [
+      makeAgent({ id: "company-2-agent", companyId, name: "Company two agent", title: "总管", status: "active" }),
+    ]);
+    mockProjectsApi.listAgentMemberships.mockResolvedValue([{ agentId: "company-2-agent" }]);
+    await act(async () => {
+      root!.render(
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider><Agents /></ToastProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    await flushReact();
+
+    expect(container.querySelector<HTMLSelectElement>('select[aria-label="按头衔筛选"]')?.value).toBe("");
+    expect(container.textContent).toContain("Company two agent");
+
+    const scopedTitleSelect = container.querySelector<HTMLSelectElement>('select[aria-label="按头衔筛选"]');
+    await act(async () => {
+      scopedTitleSelect!.value = "总管";
+      scopedTitleSelect!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    mockProjectScopeState.projectId = "project-2";
+    await act(async () => {
+      root!.render(
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider><Agents /></ToastProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+    expect(container.querySelector<HTMLSelectElement>('select[aria-label="按头衔筛选"]')?.value).toBe("");
+  });
+
   it("uses the built-in agents route segment as the built-in filter", async () => {
     mockRouterState.pathname = "/agents/builtin";
     mockInstanceSettingsApi.get.mockResolvedValue(makeInstanceSettings({ enableBuiltInAgents: true }));
@@ -604,7 +694,7 @@ describe("Agents", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Daytona Sandbox");
-    expect(container.textContent).toContain("Daytona sandbox provider");
+    expect(container.textContent).toContain("Daytona 沙箱服务商");
   });
 
   it("uses configured names for local-driver environments", async () => {
@@ -637,7 +727,7 @@ describe("Agents", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Dev Laptop");
-    expect(container.textContent).toContain("Paperclip host");
+    expect(container.textContent).toContain("Paperclip 主机");
   });
 
   it("reserves the environment column while environment metadata is loading", async () => {
@@ -871,7 +961,7 @@ describe("Agents", () => {
     await flushReact();
 
     expect(container.textContent).toContain("Custom Sandbox");
-    expect(container.textContent).toContain("acme_sandbox sandbox provider");
+    expect(container.textContent).toContain("acme_sandbox 沙箱服务商");
   });
 
   it("does not show environment filter or grouping controls yet", async () => {

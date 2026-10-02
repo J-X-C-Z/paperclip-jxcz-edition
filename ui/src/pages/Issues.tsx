@@ -1,3 +1,4 @@
+import { useUiTranslator } from "@/i18n";
 import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "@/lib/router";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ import { IssuesList } from "../components/IssuesList";
 import { CircleDot } from "lucide-react";
 import type { Issue } from "@paperclipai/shared";
 import { useStreamlinedUiEnabled } from "../hooks/useStreamlinedUiEnabled";
+import { useOptionalProjectScope } from "../context/ProjectScopeContext";
 
 const WORKSPACE_FILTER_ISSUE_LIMIT = 1000;
 const ISSUES_PAGE_SIZE = 100;
@@ -66,9 +68,13 @@ export function buildIssuesSearchUrl(currentHref: string, search: string): strin
 }
 
 export function Issues() {
+  const tr = useUiTranslator();
   const { enabled: streamlinedUiEnabled } = useStreamlinedUiEnabled();
   const issuesPresentation = resolveIssuesPresentation(streamlinedUiEnabled);
   const { selectedCompanyId } = useCompany();
+  const projectScope = useOptionalProjectScope() ?? {
+    enabled: false, projectId: null, loading: false, error: null,
+  };
   const { setBreadcrumbs } = useBreadcrumbs();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -137,8 +143,8 @@ export function Issues() {
   );
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Tasks" }]);
-  }, [setBreadcrumbs]);
+    setBreadcrumbs([{ label: tr("Tasks") }]);
+  }, [setBreadcrumbs, tr]);
 
   const issuePageSize = workspaceIdFilter ? WORKSPACE_FILTER_ISSUE_LIMIT : ISSUES_PAGE_SIZE;
 
@@ -151,7 +157,9 @@ export function Issues() {
     fetchNextPage,
   } = useInfiniteQuery({
     queryKey: [
-      ...queryKeys.issues.list(selectedCompanyId!),
+      ...(projectScope.enabled && projectScope.projectId
+        ? queryKeys.issues.listByProject(selectedCompanyId ?? "__none__", projectScope.projectId)
+        : queryKeys.issues.list(selectedCompanyId ?? "__none__")),
       "participant-agent",
       participantAgentId ?? "__all__",
       "workspace",
@@ -164,6 +172,7 @@ export function Issues() {
     queryFn: ({ pageParam, signal }) => issuesApi.listCompact(selectedCompanyId!, {
       participantAgentId,
       workspaceId: workspaceIdFilter,
+      projectId: projectScope.enabled ? projectScope.projectId ?? undefined : undefined,
       includeRoutineExecutions: true,
       limit: issuePageSize,
       offset: pageParam,
@@ -173,8 +182,7 @@ export function Issues() {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       getNextIssuesPageOffset(lastPage.length, lastPageParam, issuePageSize),
-    enabled: !!selectedCompanyId,
-    placeholderData: (previousData) => previousData,
+    enabled: !!selectedCompanyId && !projectScope.loading && !projectScope.error,
   });
 
   const issues = useMemo(() => mergeIssuePagesStable(issuePages?.pages ?? []) as Issue[], [issuePages]);
@@ -202,14 +210,23 @@ export function Issues() {
       <EmptyState
         icon={CircleDot}
         message={streamlinedUiEnabled
-          ? "Select an organization to view tasks."
-          : "Select a company to view tasks."}
+          ? tr("Select an organization to view tasks.")
+          : tr("Select a company to view tasks.")}
       />
     );
   }
 
+  if (projectScope.enabled && projectScope.loading) {
+    return <EmptyState icon={CircleDot} message="正在验证项目范围…" />;
+  }
+  if (projectScope.enabled && projectScope.error) {
+    return <EmptyState icon={CircleDot} message="无法验证项目范围，请刷新后重试。" />;
+  }
+
   return (
     <IssuesList
+      key={projectScope.enabled ? `${selectedCompanyId}:${projectScope.projectId ?? "company"}` : "company"}
+      projectId={projectScope.enabled ? projectScope.projectId ?? undefined : undefined}
       issues={issues ?? []}
       isLoading={isLoading}
       isLoadingMoreIssues={isFetchingNextPage}
@@ -217,7 +234,7 @@ export function Issues() {
       agents={agents}
       projects={projects}
       liveIssueIds={liveIssueIds}
-      viewStateKey="paperclip:issues-view"
+      viewStateKey={projectScope.enabled ? `paperclip:issues-view:${selectedCompanyId}:${projectScope.projectId ?? "company"}` : "paperclip:issues-view"}
       rowPresentation={issuesPresentation.rowPresentation}
       toolbarPresentation={issuesPresentation.toolbarPresentation}
       issueLinkState={issueLinkState}

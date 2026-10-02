@@ -3,6 +3,7 @@ import { GOAL_LEVELS, GOAL_STATUSES } from "../constants.js";
 import { objectWithoutDefaults } from "./partial.js";
 
 export const createGoalSchema = z.object({
+  projectId: z.string().guid().optional(),
   title: z.string().min(1),
   description: z.string().optional().nullable(),
   level: z.enum(GOAL_LEVELS).optional().default("task"),
@@ -13,6 +14,6 @@ export const createGoalSchema = z.object({
 
 export type CreateGoal = z.infer<typeof createGoalSchema>;
 
-export const updateGoalSchema = objectWithoutDefaults(createGoalSchema).partial();
+export const updateGoalSchema = objectWithoutDefaults(createGoalSchema.omit({ projectId: true })).partial();
 
 export type UpdateGoal = z.infer<typeof updateGoalSchema>;

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { AlertTriangle, ExternalLink, Loader2, Lock, RefreshCw } from "lucide-react";
 import type { PipelineCaseLiveness } from "@paperclipai/shared";
 import { Button } from "@/components/ui/button";
@@ -169,7 +170,7 @@ export function PipelineLivenessBanner({
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          {retryPending ? "Retrying…" : view.retryLabel}
+          {retryPending ? uiText("Retrying…") : view.retryLabel}
         </Button>
       ) : null}
     </section>

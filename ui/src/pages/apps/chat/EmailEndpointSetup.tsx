@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -201,7 +202,7 @@ export function EmailEndpointSetup() {
           ? "Email tasks stay inside the configured project or root task boundary. Output is quarantined for trusted review."
           : "Email can contain malicious instructions. We recommend Low-trust review to limit the agent’s access to Paperclip work."}
       </p>
-      <p className="text-xs text-muted-foreground">Low-trust execution also requires isolated workspaces and an active sandbox environment in the agent’s runtime settings.</p>
+      <p className="text-xs text-muted-foreground">{uiText("Low-trust execution also requires isolated workspaces and an active sandbox environment in the agent’s runtime settings.")}</p>
       <Button
         size="sm"
         variant="outline"
@@ -286,9 +287,9 @@ export function EmailEndpointSetup() {
         >
           <section className="space-y-4 rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold">
-              Add your AgentMail API key
+              {uiText("Add your AgentMail API key")}
             </h2>
-            <Label htmlFor="email-api-key">API key</Label>
+            <Label htmlFor="email-api-key">{uiText("API key")}</Label>
             <Input
               id="email-api-key"
               type="password"
@@ -303,12 +304,12 @@ export function EmailEndpointSetup() {
               rel="noreferrer"
               className="text-sm underline"
             >
-              Get a key in AgentMail ↗
+              {uiText("Get a key in AgentMail ↗")}
             </a>
           </section>
           <div className="flex justify-between">
             <Button type="button" variant="ghost" onClick={() => setStep(0)}>
-              Back
+              {uiText("Back")}
             </Button>
             <Button disabled={!apiKey.trim() || connect.isPending}>
               {connect.isPending ? "Connecting…" : "Connect AgentMail"}
@@ -318,9 +319,9 @@ export function EmailEndpointSetup() {
       )}
       {step === 2 && (
         <section className="space-y-5 rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold">AgentMail is connected</h2>
+          <h2 className="text-lg font-semibold">{uiText("AgentMail is connected")}</h2>
           <p className="text-sm text-muted-foreground">
-            Next, give an agent an email address from Permissions.
+            {uiText("Next, give an agent an email address from Permissions.")}
           </p>
           <div className="flex justify-end">
             <Button
@@ -335,12 +336,12 @@ export function EmailEndpointSetup() {
         <>
           <section className="space-y-4 rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold">
-              Who should handle this inbox?
+              {uiText("Who should handle this inbox?")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Incoming email will create tasks assigned to this agent.
+              {uiText("Incoming email will create tasks assigned to this agent.")}
             </p>
-            <Label>Agent</Label>
+            <Label>{uiText("Agent")}</Label>
             <SearchableSelect
               value={agentId}
               placeholder="Choose an agent"
@@ -385,8 +386,7 @@ export function EmailEndpointSetup() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Activating this inbox also adds the agent to this connection’s
-              allowed agents.
+              {uiText("Activating this inbox also adds the agent to this connection’s allowed agents.")}
             </p>
           </section>
           {trustNotice}
@@ -413,7 +413,7 @@ export function EmailEndpointSetup() {
             />
             {addressMode === "new" ? (
               <div className="space-y-2">
-                <Label htmlFor="email-name">Email address</Label>
+                <Label htmlFor="email-name">{uiText("Email address")}</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="email-name"
@@ -427,14 +427,14 @@ export function EmailEndpointSetup() {
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="email-existing">Available inbox</Label>
+                <Label htmlFor="email-existing">{uiText("Available inbox")}</Label>
                 <select
                   id="email-existing"
                   className={selectClass}
                   value={inboxId}
                   onChange={(e) => setInboxId(e.target.value)}
                 >
-                  <option value="">Choose an inbox</option>
+                  <option value="">{uiText("Choose an inbox")}</option>
                   {inspected.data?.inboxes.map((i) => (
                     <option
                       key={i.inbox_id}
@@ -455,12 +455,12 @@ export function EmailEndpointSetup() {
             )}
             <details className="border-t border-border pt-4">
               <summary className="cursor-pointer text-sm text-muted-foreground">
-                Advanced options
+                {uiText("Advanced options")}
               </summary>
               <div className="space-y-4 pt-4">
                 {addressMode === "new" && (
                   <>
-                    <Label htmlFor="email-domain">Domain</Label>
+                    <Label htmlFor="email-domain">{uiText("Domain")}</Label>
                     <select
                       id="email-domain"
                       value={domain}
@@ -480,11 +480,11 @@ export function EmailEndpointSetup() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Set up a custom domain in AgentMail ↗
+                      {uiText("Set up a custom domain in AgentMail ↗")}
                     </a>
                   </>
                 )}
-                <Label htmlFor="email-mode">Receiving</Label>
+                <Label htmlFor="email-mode">{uiText("Receiving")}</Label>
                 <select
                   id="email-mode"
                   value={mode}
@@ -492,10 +492,10 @@ export function EmailEndpointSetup() {
                   className={selectClass}
                 >
                   <option value="websocket">
-                    Live connection — works locally
+                    {uiText("Live connection — works locally")}
                   </option>
                   <option value="webhook">
-                    Webhook — requires public HTTPS
+                    {uiText("Webhook — requires public HTTPS")}
                   </option>
                 </select>
               </div>
@@ -510,7 +510,7 @@ export function EmailEndpointSetup() {
           {trustNotice}
           <section className="space-y-4 rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold">
-              Ready to start receiving email?
+              {uiText("Ready to start receiving email?")}
             </h2>
             <p className="text-lg font-semibold">{address}</p>
             <p className="text-sm">
@@ -518,8 +518,7 @@ export function EmailEndpointSetup() {
               {mode === "websocket" ? "Live connection" : "Signed webhook"}
             </p>
             <p className="text-sm text-muted-foreground">
-              New conversations create tasks. Replies stay in the same task.
-              Task comments stay internal.
+              {uiText("New conversations create tasks. Replies stay in the same task. Task comments stay internal.")}
             </p>
           </section>
         </>
@@ -533,7 +532,7 @@ export function EmailEndpointSetup() {
           <p className="text-lg font-semibold">{setup.data?.address}</p>
           <EmailSafetyNotice />
           <Button onClick={() => navigate(`/apps/${connectionId}/permissions`)}>
-            Back to permissions
+            {uiText("Back to permissions")}
           </Button>
         </section>
       )}
@@ -548,7 +547,7 @@ export function EmailEndpointSetup() {
             }
           >
             <ArrowLeft className="size-4" />
-            Back
+              {uiText("Back")}
           </Button>
           <Button
             disabled={
@@ -584,10 +583,9 @@ export function EmailEndpointSetup() {
       <Dialog open={trustOpen} onOpenChange={setTrustOpen}>
         <DialogContent className="max-h-screen overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Trust settings · {chosen?.name}</DialogTitle>
+            <DialogTitle>{uiText("Trust settings ·")} {chosen?.name}</DialogTitle>
             <DialogDescription>
-              Changes apply to all of this agent’s work. Use a dedicated email
-              agent if its other tasks need broader access.
+              {uiText("Changes apply to all of this agent’s work. Use a dedicated email agent if its other tasks need broader access.")}
             </DialogDescription>
           </DialogHeader>
           <TrustPresetSection
@@ -606,8 +604,7 @@ export function EmailEndpointSetup() {
             candidatesLoading={projects.isPending || boundaryIssues.isPending}
           />
           <p className="text-xs text-muted-foreground">
-            Low trust limits Paperclip access; it does not sandbox the runtime.
-            Review filesystem, tool, and secret access separately.
+            {uiText("Low trust limits Paperclip access; it does not sandbox the runtime. Review filesystem, tool, and secret access separately.")}
           </p>
           {(trust.error || projects.error || boundaryIssues.error) && (
             <p role="alert" className="text-sm text-destructive">
@@ -616,7 +613,7 @@ export function EmailEndpointSetup() {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setTrustOpen(false)}>
-              Cancel
+              {uiText("Cancel")}
             </Button>
             <Button
               disabled={
@@ -628,7 +625,7 @@ export function EmailEndpointSetup() {
               }
               onClick={() => trust.mutate()}
             >
-              Save trust settings
+              {uiText("Save trust settings")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -669,10 +666,10 @@ export function EmailConnectionInboxes({
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">
-            Give an agent an email address
+            {uiText("Give an agent an email address")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Each email conversation becomes a task.
+            {uiText("Each email conversation becomes a task.")}
           </p>
         </div>
         {canConfigure && (
@@ -680,7 +677,7 @@ export function EmailConnectionInboxes({
             <Link
               to={`/apps/chat/connect?provider=agentmail&connectionId=${connectionId}`}
             >
-              Give an agent an email address
+              {uiText("Give an agent an email address")}
             </Link>
           </Button>
         )}
@@ -755,7 +752,7 @@ export function EmailEndpointSettings({
     },
   });
   if (removed)
-    return <p>Inbox disconnected. Email history remains in its tasks.</p>;
+    return <p>{uiText("Inbox disconnected. Email history remains in its tasks.")}</p>;
   if (!inbox)
     return (
       <p role={query.error ? "alert" : undefined}>
@@ -767,14 +764,13 @@ export function EmailEndpointSettings({
       <h1 className="text-xl font-bold">{inbox.address}</h1>
       <p className="text-sm text-muted-foreground">
         {inbox.status} ·{" "}
-        {inbox.receiveMode === "websocket" ? "Live connection" : "Webhook"}
+        {inbox.receiveMode === "websocket" ? uiText("Live connection") : uiText("Webhook")}
       </p>
       <p className="text-sm text-muted-foreground">
-        Last mail check: {inbox.lastSyncAt ? new Date(inbox.lastSyncAt).toLocaleString() : "Not checked yet"}
+        {uiText("Last mail check:")} {inbox.lastSyncAt ? new Date(inbox.lastSyncAt).toLocaleString() : uiText("Not checked yet")}
       </p>
       <p className="text-sm">
-        Each email conversation is a task. Task comments stay internal; use
-        Email reply to send.
+        {uiText("Each email conversation is a task. Task comments stay internal; use Email reply to send.")}
       </p>
       {inbox.lastError && (
         <p role="alert" className="text-sm text-destructive">
@@ -796,12 +792,12 @@ export function EmailEndpointSettings({
           disabled={control.isPending}
           onClick={() => control.mutate("remove")}
         >
-          Disconnect inbox
+          {uiText("Disconnect inbox")}
         </Button>
       </div>
       <div className="space-y-2">
         <Label htmlFor="email-reconnect-key">
-          Reconnect this inbox with a new API key
+          {uiText("Reconnect this inbox with a new API key")}
         </Label>
         <Input
           id="email-reconnect-key"
@@ -810,7 +806,7 @@ export function EmailEndpointSettings({
           value={replacementKey}
           onChange={(e) => setReplacementKey(e.target.value)}
         />
-        <Label htmlFor="email-reconnect-mode">Receiving mode</Label>
+        <Label htmlFor="email-reconnect-mode">{uiText("Receiving mode")}</Label>
         <select
           id="email-reconnect-mode"
           className={selectClass}
@@ -819,15 +815,15 @@ export function EmailEndpointSettings({
             setReceiveMode(e.target.value as "websocket" | "webhook")
           }
         >
-          <option value="websocket">Live connection</option>
-          <option value="webhook">Webhook</option>
+          <option value="websocket">{uiText("Live connection")}</option>
+          <option value="webhook">{uiText("Webhook")}</option>
         </select>
         <Button
           variant="outline"
           disabled={!replacementKey || reconnect.isPending}
           onClick={() => reconnect.mutate()}
         >
-          Reconnect inbox
+          {uiText("Reconnect inbox")}
         </Button>
       </div>
       {reconnect.error && (

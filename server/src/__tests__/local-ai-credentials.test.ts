@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { readVerifiedLocalAiCredential } from "../services/local-ai-credentials.js";
 const mocks = vi.hoisted(() => ({ claude: vi.fn(), claudeQuota: vi.fn(), codex: vi.fn(), codexQuota: vi.fn(), readFile: vi.fn(), credentialFile: vi.fn() }));
 vi.mock("@paperclipai/adapter-claude-local/server", () => ({ readClaudeToken: mocks.claude, fetchClaudeQuota: mocks.claudeQuota }));
-vi.mock("@paperclipai/adapter-codex-local/server", () => ({ readCodexAuthInfo: mocks.codex, fetchCodexQuota: mocks.codexQuota }));
+vi.mock("@paperclipai/adapter-codex-local/server", () => ({ readCodexAuthInfo: mocks.codex, fetchCodexRpcQuota: mocks.codexQuota }));
 vi.mock("../services/local-ai-credential-file.js", () => ({ readLocalAiCredentialFile: mocks.credentialFile }));
 vi.mock("node:fs/promises", () => ({ default: { readFile: mocks.readFile } }));
 afterEach(() => { vi.resetAllMocks(); vi.unstubAllGlobals(); });
@@ -39,8 +39,20 @@ describe("explicit local subscription import", () => {
     mocks.codex.mockResolvedValue({ accessToken: "access", refreshToken: "refresh", idToken: "identity", accountId: "account", lastRefresh: "date" });
     const result = JSON.parse(await readVerifiedLocalAiCredential("openai", "/isolated/login"));
     expect(result.tokens).toEqual({ access_token: "access", refresh_token: "refresh", id_token: "identity", account_id: "account" });
-    expect(mocks.codexQuota).toHaveBeenCalledWith("access", "account");
+    expect(mocks.codexQuota).toHaveBeenCalledWith("/isolated/login");
     expect(mocks.codex).toHaveBeenCalledWith("/isolated/login");
+  });
+  it("saves rotated credentials after Codex verifies the isolated account", async () => {
+    mocks.codex.mockResolvedValueOnce({ accessToken: "old", refreshToken: "old-refresh", idToken: "identity" })
+      .mockResolvedValueOnce({ accessToken: "new", refreshToken: "new-refresh", idToken: "identity" });
+    const result = JSON.parse(await readVerifiedLocalAiCredential("openai", "/isolated/login"));
+    expect(result.tokens.access_token).toBe("new");
+    expect(result.tokens.refresh_token).toBe("new-refresh");
+  });
+  it("rejects failed Codex verification without leaking provider errors", async () => {
+    mocks.codex.mockResolvedValue({ accessToken: "access", refreshToken: "refresh", idToken: "identity" });
+    mocks.codexQuota.mockRejectedValue(new Error("secret-provider-error"));
+    await expect(readVerifiedLocalAiCredential("openai", "/isolated/login")).rejects.toThrow("sign-in command shown");
   });
   it("verifies a Grok subscription against a fixed endpoint before saving", async () => {
     const credential = JSON.stringify({ "https://issuer.x.ai::11111111-1111-4111-8111-111111111111": { key: "fixture-key", refresh_token: "fixture-refresh" } });

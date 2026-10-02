@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ActivityEvent } from "@paperclipai/shared";
 import { useProjectCreatedItems } from "@/hooks/useProjectCreatedItems";
 import { requiresExecutionReconciliation } from "@paperclipai/shared";
@@ -399,6 +400,8 @@ export type TaskChatThreadProps = ComponentProps<typeof IssueChatThread> & {
   conversationMode?: boolean;
   creationActivity?: ActivityEvent[];
   initialHistoryPending?: boolean;
+  /** Saved comments can be read while supplementary execution records load. */
+  initialMessagesPending?: boolean;
   initialHistoryError?: boolean;
   onRetryInitialHistory?: () => void;
 };
@@ -469,6 +472,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
   const { enabled: streamlinedUiEnabled } = useStreamlinedUiEnabled();
   const {
     initialHistoryPending = false,
+    initialMessagesPending = initialHistoryPending,
     initialHistoryError = false,
     onRetryInitialHistory,
     comments,
@@ -2702,17 +2706,17 @@ export function TaskChatThread(props: TaskChatThreadProps) {
         : Boolean(logErrorsByRun?.has(run.id)),
     );
   const [revealedIssue, setRevealedIssue] = useState<string | null | undefined>(
-    () => (historyPending ? undefined : issueId),
+    () => (initialMessagesPending ? undefined : issueId),
   );
   const historyRevealed = revealedIssue === issueId;
-  // Mount and measure the real thread while concealed, then reveal in one
-  // commit. A frame also lets ancestor navigation scroll restoration finish.
-  // Readiness is latched per issue: refetches never hide existing conversation.
+  // Reveal saved comments without waiting for every run's log, plan or
+  // attachment. Supplementary rows reconcile through the reading anchor.
+  // Readiness stays latched: background refreshes never hide the conversation.
   useEffect(() => {
-    if (historyRevealed || historyPending) return;
+    if (historyRevealed || initialMessagesPending) return;
     const frame = requestAnimationFrame(() => setRevealedIssue(issueId));
     return () => cancelAnimationFrame(frame);
-  }, [historyPending, historyRevealed, issueId]);
+  }, [initialMessagesPending, historyRevealed, issueId]);
   const retryHistory = () => {
     onRetryInitialHistory?.();
     retryLogs?.();
@@ -2722,7 +2726,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
 
   return (
     <TaskChatExpansionState.Provider value={expansionState.current}>
-      <TaskChatScrollReady.Provider value={!historyPending}>
+      <TaskChatScrollReady.Provider value={!initialMessagesPending}>
         <TaskChatWindowScroll
           contentKey={isMobile ? autoFollowContentKey : 0}
           enabled={isMobile && historyRevealed}
@@ -2741,15 +2745,14 @@ export function TaskChatThread(props: TaskChatThreadProps) {
               )}
               aria-busy={!historyRevealed}
             >
+              {historyRevealed && historyPending && !historyError ? <p role="status" className="shrink-0 px-4 py-2 text-xs text-muted-foreground">{uiText("Loading execution details. Messages are ready to read.")}</p> : null}
               {historyError ? (
                 <div
                   role="status"
-                  className="absolute inset-x-0 top-0 z-20 mx-auto flex w-full max-w-(--tc-shell-max-w) items-center gap-2 border border-border bg-background px-4 py-2 text-sm text-muted-foreground"
+                  className="mx-auto flex w-full max-w-(--tc-shell-max-w) shrink-0 items-center gap-2 border border-border bg-background px-4 py-2 text-sm text-muted-foreground"
                 >
-                  Some task history could not be loaded.
-                  <Button variant="ghost" size="sm" onClick={retryHistory}>
-                    Retry
-                  </Button>
+                  {uiText("Some task history could not be loaded.")}
+                  <Button variant="ghost" size="sm" onClick={retryHistory}> {uiText("Retry")} </Button>
                 </div>
               ) : null}
               {!historyRevealed ? (
@@ -2757,7 +2760,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
                   className="absolute inset-0 z-10 overflow-hidden bg-background"
                   data-testid="task-chat-history-loading"
                   role="status"
-                  aria-label="Loading conversation"
+                  aria-label={uiText("Loading conversation")}
                 >
                   <div className="mx-auto flex w-full max-w-(--tc-shell-max-w) flex-col gap-4 px-4 py-3">
                     {threadHeader}

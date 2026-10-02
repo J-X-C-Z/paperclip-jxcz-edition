@@ -469,7 +469,7 @@ describe("DiscoveryGrid IA presentation", () => {
     expect(props.onCreateFolder).not.toHaveBeenCalled();
   });
 
-  it("removes category and folder browse rails while keeping search available", async () => {
+  it("keeps folder browsing while the streamlined view hides category navigation", async () => {
     const node = await renderDiscoveryGrid({
       ...projectFolderGridProps(),
       categories: [{ slug: "design", count: 1 }],
@@ -477,7 +477,7 @@ describe("DiscoveryGrid IA presentation", () => {
       showBrowseRails: false,
     });
 
-    expect(node.querySelector('nav[aria-label="Skill folders"]')).toBeNull();
+    expect(node.querySelector('nav[aria-label="Skill folders"]')).not.toBeNull();
     expect(node.querySelector("aside")).toBeNull();
     expect(node.textContent).not.toContain("Browse by category");
     expect(node.querySelector('input[aria-label="Search installed skills"]')).not.toBeNull();

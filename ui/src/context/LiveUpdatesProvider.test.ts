@@ -16,6 +16,16 @@ import { __liveUpdatesTestUtils } from "./LiveUpdatesProvider";
 import { queryKeys } from "../lib/queryKeys";
 
 describe("LiveUpdatesProvider issue invalidation", () => {
+  it("refreshes organization task summaries on task state changes without reloading for comments", () => {
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", { entityType: "issue", entityId: "task-1", action: "issue.updated", actorType: "system" }, { userId: "user-1", agentId: null });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["organization-groups", "company-1"] });
+    invalidate.mockClear();
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", { entityType: "issue", entityId: "task-1", action: "issue.comment_added", actorType: "system" }, { userId: "user-1", agentId: null });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["organization-groups", "company-1"] });
+    client.clear();
+  });
   it.each(["issue.attachment_added", "issue.attachment_removed", "issue.work_product_created", "issue.work_product_updated"])("refreshes visible delivered files for %s", action => {
     const client = new QueryClient();
     client.setQueryData(queryKeys.issues.detail("issue-1"), { id: "issue-1", companyId: "company-1", identifier: "PAP-1" });

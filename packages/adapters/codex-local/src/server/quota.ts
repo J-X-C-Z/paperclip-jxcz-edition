@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -468,18 +468,19 @@ type PendingRequest = {
 };
 
 class CodexRpcClient {
-  private proc = spawn(
-    "codex",
-    ["-s", "read-only", "-a", "untrusted", "app-server"],
-    { stdio: ["pipe", "pipe", "pipe"], env: process.env },
-  );
+  private proc: ChildProcessWithoutNullStreams;
 
   private nextId = 1;
   private buffer = "";
   private pending = new Map<number, PendingRequest>();
   private stderr = "";
 
-  constructor() {
+  constructor(codexHome?: string) {
+    this.proc = spawn(
+      "codex",
+      ["-s", "read-only", "-a", "never", "app-server"],
+      { stdio: ["pipe", "pipe", "pipe"], env: codexHome ? { ...process.env, CODEX_HOME: codexHome } : process.env },
+    );
     this.proc.stdout.setEncoding("utf8");
     this.proc.stderr.setEncoding("utf8");
     this.proc.stdout.on("data", (chunk: string) => this.onStdout(chunk));
@@ -555,7 +556,8 @@ class CodexRpcClient {
 
   async fetchRateLimits(): Promise<CodexRpcRateLimitsResult> {
     const message = await this.request("account/rateLimits/read");
-    return (message.result as CodexRpcRateLimitsResult | undefined) ?? {};
+    if (message.error || !message.result) throw new Error("Codex could not verify account rate limits.");
+    return message.result as CodexRpcRateLimitsResult;
   }
 
   async fetchAccount(): Promise<CodexRpcAccountResult | null> {
@@ -572,8 +574,8 @@ class CodexRpcClient {
   }
 }
 
-export async function fetchCodexRpcQuota(): Promise<CodexRpcQuotaSnapshot> {
-  const client = new CodexRpcClient();
+export async function fetchCodexRpcQuota(codexHome?: string): Promise<CodexRpcQuotaSnapshot> {
+  const client = new CodexRpcClient(codexHome);
   try {
     await client.initialize();
     const [limits, account] = await Promise.all([

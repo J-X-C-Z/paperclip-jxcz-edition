@@ -1,3 +1,4 @@
+import { readAgentTemplateMetadata } from "../agent-templates.js";
 import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import type { CreateIssueThreadInteraction } from "@paperclipai/shared";
@@ -1564,6 +1565,14 @@ export async function commitNativeStatusDecision(input: {
     if (issue.conversationAgentId && input.decision.statusAction === "done") {
       input = { ...input, decision: { ...input.decision, statusAction: "preserve", toStatus: issue.status as NativeStatusDecision["toStatus"], effects: [] } };
     }
+    const templateRunActor = await tx.select({ agentId: heartbeatRuns.agentId }).from(heartbeatRuns)
+      .where(and(eq(heartbeatRuns.id, input.runId), eq(heartbeatRuns.companyId, input.companyId))).limit(1).then(rows => rows[0] ?? null);
+    const nativeTemplateActor = templateRunActor ? await tx.select().from(agents)
+      .where(and(eq(agents.id, templateRunActor.agentId), eq(agents.companyId, input.companyId))).limit(1).then(rows => rows[0] ?? null) : null;
+    if (readAgentTemplateMetadata(nativeTemplateActor?.metadata)?.role === "member" && input.decision.statusAction === "done") {
+      input = { ...input, decision: { ...input.decision, statusAction: "in_review", toStatus: "in_review",
+        effects: [...input.decision.effects, ...(nativeTemplateActor?.reportsTo ? [{ kind: "notify_owner" as const, agentId: nativeTemplateActor.reportsTo, reason: "template_member_review_requested" }] : [])] } };
+    }
     if (coordinator.phase === "committed" && coordinator.decisionId) {
       if (input.supersedesCommittedDecisionId) {
         if (
@@ -1861,7 +1870,7 @@ export async function commitNativeStatusDecision(input: {
           statusVersion: input.priorStatusVersion + 1,
           lastStatusDecisionId: decisionRow.id,
           unblockDescriptor: input.decision.unblockDescriptor,
-          actorAgentId: null,
+          actorAgentId: readAgentTemplateMetadata(nativeTemplateActor?.metadata) ? nativeTemplateActor!.id : null,
           actorUserId: null,
         },
         tx,

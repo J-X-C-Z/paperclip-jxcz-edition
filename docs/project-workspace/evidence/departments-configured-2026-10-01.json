@@ -1,0 +1,204 @@
+{
+  "companyId": "2ae03c21-9745-4209-b202-edf4ffa70a6a",
+  "departments": [
+    {
+      "id": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "name": "开发部",
+      "headAgentId": null
+    },
+    {
+      "id": "91353b4f-6942-4204-a2ea-497ed4af6181",
+      "name": "运营部",
+      "headAgentId": null
+    }
+  ],
+  "teams": [
+    {
+      "id": "036468f3-4cec-4783-9bde-d6d86e1b626d",
+      "name": "桌面端开发小组",
+      "projectId": "a2e2d79d-7cf0-4abc-a8d7-d3c41c93bc18",
+      "departmentId": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "members": [
+        {
+          "agentId": "745dc8a8-cd4f-48d4-a644-d09c2d6e16a4",
+          "role": "team_member"
+        },
+        {
+          "agentId": "0cb117a3-537b-4c6c-abb2-12b66d0c7c13",
+          "role": "team_lead"
+        },
+        {
+          "agentId": "c4468aab-cccf-4b7d-bb9a-14f974e46d9b",
+          "role": "team_member"
+        }
+      ],
+      "active_cycle_id": null,
+      "active_cycle_number": null,
+      "active_issue_id": null,
+      "projectName": "桌面端开发",
+      "active_issue_status": null
+    },
+    {
+      "id": "3fc54191-f24d-4b01-9563-4b8e48c646b8",
+      "name": "手机端开发小组",
+      "projectId": "c274ed34-61fc-4100-adcd-bf8903b40424",
+      "departmentId": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "members": [
+        {
+          "agentId": "2a3aa362-157b-4b7c-94d8-ac0f453c3e90",
+          "role": "team_lead"
+        },
+        {
+          "agentId": "db280b6c-bd64-4cba-8479-000e4c372a09",
+          "role": "team_member"
+        },
+        {
+          "agentId": "913c18b1-31cb-4a31-94d8-54655eac3ba6",
+          "role": "team_member"
+        }
+      ],
+      "active_cycle_id": null,
+      "active_cycle_number": null,
+      "active_issue_id": null,
+      "projectName": "手机端开发",
+      "active_issue_status": null
+    },
+    {
+      "id": "50570fc7-fdb2-4e20-991d-c45472940078",
+      "name": "手环端开发小组",
+      "projectId": "c6e4f308-bc9e-4f92-b867-1e87937506c6",
+      "departmentId": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "members": [
+        {
+          "agentId": "c3554cb4-7f9a-4ae4-be1b-2cbbae212c81",
+          "role": "team_member"
+        },
+        {
+          "agentId": "bf6056db-c9ac-4fb5-b3f4-dca0e06d6558",
+          "role": "team_lead"
+        },
+        {
+          "agentId": "2beea5f3-8a6c-4100-a776-23a3056bc249",
+          "role": "team_member"
+        }
+      ],
+      "active_cycle_id": null,
+      "active_cycle_number": null,
+      "active_issue_id": null,
+      "projectName": "手环端开发",
+      "active_issue_status": null
+    },
+    {
+      "id": "e6d78940-12b8-4892-8432-11219ae19146",
+      "name": "插件端开发小组",
+      "projectId": "4d6a9a6a-5e8f-4328-994d-ee8afafc646f",
+      "departmentId": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "members": [
+        {
+          "agentId": "7c62159b-d540-4a58-a083-ebb0a3fec96d",
+          "role": "team_lead"
+        },
+        {
+          "agentId": "de5d6973-6057-4a3c-bfe3-d0110b9a37d0",
+          "role": "team_member"
+        },
+        {
+          "agentId": "5a56a151-882f-455a-8108-3d66f03cb6d5",
+          "role": "team_member"
+        }
+      ],
+      "active_cycle_id": null,
+      "active_cycle_number": null,
+      "active_issue_id": null,
+      "projectName": "插件端开发",
+      "active_issue_status": null
+    },
+    {
+      "id": "927f68f8-7372-4267-b378-4bf5dc7fd527",
+      "name": "服务端开发小组",
+      "projectId": "225a8b4b-d043-4c40-984b-fb58178b47eb",
+      "departmentId": "cf464a50-9e5d-445a-b5a2-feb978011d92",
+      "members": [
+        {
+          "agentId": "f5f80c05-36f5-4855-9274-da61598539c3",
+          "role": "team_member"
+        },
+        {
+          "agentId": "0bd3e9dd-d7f0-400b-8da7-ee659cbaf4ad",
+          "role": "team_lead"
+        },
+        {
+          "agentId": "fa535596-98a9-4e90-82fc-3f33de7a0f1c",
+          "role": "team_member"
+        }
+      ],
+      "active_cycle_id": null,
+      "active_cycle_number": null,
+      "active_issue_id": null,
+      "projectName": "服务端开发",
+      "active_issue_status": null
+    }
+  ],
+  "configurationReceipts": [
+    {
+      "teamId": "036468f3-4cec-4783-9bde-d6d86e1b626d",
+      "name": "桌面端开发小组",
+      "projectId": "a2e2d79d-7cf0-4abc-a8d7-d3c41c93bc18",
+      "leadAgentId": "0cb117a3-537b-4c6c-abb2-12b66d0c7c13",
+      "memberAgentIds": [
+        "0cb117a3-537b-4c6c-abb2-12b66d0c7c13",
+        "745dc8a8-cd4f-48d4-a644-d09c2d6e16a4",
+        "c4468aab-cccf-4b7d-bb9a-14f974e46d9b"
+      ],
+      "preservedExisting": true
+    },
+    {
+      "teamId": "3fc54191-f24d-4b01-9563-4b8e48c646b8",
+      "name": "手机端开发小组",
+      "projectId": "c274ed34-61fc-4100-adcd-bf8903b40424",
+      "leadAgentId": "2a3aa362-157b-4b7c-94d8-ac0f453c3e90",
+      "memberAgentIds": [
+        "2a3aa362-157b-4b7c-94d8-ac0f453c3e90",
+        "db280b6c-bd64-4cba-8479-000e4c372a09",
+        "913c18b1-31cb-4a31-94d8-54655eac3ba6"
+      ],
+      "preservedExisting": true
+    },
+    {
+      "teamId": "50570fc7-fdb2-4e20-991d-c45472940078",
+      "name": "手环端开发小组",
+      "projectId": "c6e4f308-bc9e-4f92-b867-1e87937506c6",
+      "leadAgentId": "bf6056db-c9ac-4fb5-b3f4-dca0e06d6558",
+      "memberAgentIds": [
+        "bf6056db-c9ac-4fb5-b3f4-dca0e06d6558",
+        "c3554cb4-7f9a-4ae4-be1b-2cbbae212c81",
+        "2beea5f3-8a6c-4100-a776-23a3056bc249"
+      ],
+      "preservedExisting": true
+    },
+    {
+      "teamId": "e6d78940-12b8-4892-8432-11219ae19146",
+      "name": "插件端开发小组",
+      "projectId": "4d6a9a6a-5e8f-4328-994d-ee8afafc646f",
+      "leadAgentId": "7c62159b-d540-4a58-a083-ebb0a3fec96d",
+      "memberAgentIds": [
+        "7c62159b-d540-4a58-a083-ebb0a3fec96d",
+        "de5d6973-6057-4a3c-bfe3-d0110b9a37d0",
+        "5a56a151-882f-455a-8108-3d66f03cb6d5"
+      ],
+      "preservedExisting": false
+    },
+    {
+      "teamId": "927f68f8-7372-4267-b378-4bf5dc7fd527",
+      "name": "服务端开发小组",
+      "projectId": "225a8b4b-d043-4c40-984b-fb58178b47eb",
+      "leadAgentId": "0bd3e9dd-d7f0-400b-8da7-ee659cbaf4ad",
+      "memberAgentIds": [
+        "f5f80c05-36f5-4855-9274-da61598539c3",
+        "0bd3e9dd-d7f0-400b-8da7-ee659cbaf4ad",
+        "fa535596-98a9-4e90-82fc-3f33de7a0f1c"
+      ],
+      "preservedExisting": false
+    }
+  ]
+}

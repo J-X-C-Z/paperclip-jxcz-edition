@@ -200,7 +200,7 @@ export function shutdownSentry(): Promise<void> {
  */
 interface SentryModuleLike {
   httpIntegration(options: { breadcrumbs: boolean }): { name: string };
-  onUnhandledRejectionIntegration(options: { mode: string }): { name: string };
+  onUnhandledRejectionIntegration(options: { mode: "strict" }): { name: string };
 }
 
 /** The `Sentry.init` options this gate builds. */

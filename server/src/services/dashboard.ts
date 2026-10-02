@@ -1,6 +1,7 @@
+import { projectRunCondition } from "./project-scope.js";
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { agents, approvals, companies, costEvents, heartbeatRuns, issues } from "@paperclipai/db";
+import { agents, approvals, companies, costEvents, heartbeatRuns, issues, projectAgentMemberships, issueApprovals } from "@paperclipai/db";
 import { notFound } from "../errors.js";
 import { budgetService } from "./budgets.js";
 import { executionIssueCondition } from "./issue-visibility.js";
@@ -26,7 +27,40 @@ function getRecentUtcDateKeys(now: Date, days: number): string[] {
 export function dashboardService(db: Db) {
   const budgets = budgetService(db);
   return {
-    summary: async (companyId: string) => {
+    // Sidebar alerts need neither run history nor full budget-policy hydration.
+    alertSummary: async (companyId: string) => {
+      const company = await db
+        .select({ budgetMonthlyCents: companies.budgetMonthlyCents })
+        .from(companies)
+        .where(eq(companies.id, companyId))
+        .then((rows) => rows[0] ?? null);
+      if (!company) throw notFound("Company not found");
+
+      const monthStart = getUtcMonthStart(new Date());
+      const [errorRows, spendRows] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(agents)
+          .where(and(eq(agents.companyId, companyId), eq(agents.status, "error"))),
+        db
+          .select({ monthSpend: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::double precision` })
+          .from(costEvents)
+          .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, monthStart))),
+      ]);
+      const monthSpendCents = Number(spendRows[0]?.monthSpend ?? 0);
+      const utilization = company.budgetMonthlyCents > 0
+        ? (monthSpendCents / company.budgetMonthlyCents) * 100
+        : 0;
+      return {
+        agents: { error: Number(errorRows[0]?.count ?? 0) },
+        costs: {
+          monthSpendCents,
+          monthBudgetCents: company.budgetMonthlyCents,
+          monthUtilizationPercent: Number(utilization.toFixed(2)),
+        },
+      };
+    },
+    summary: async (companyId: string, projectId?: string) => {
       const company = await db
         .select()
         .from(companies)
@@ -38,19 +72,29 @@ export function dashboardService(db: Db) {
       const agentRows = await db
         .select({ status: agents.status, count: sql<number>`count(*)` })
         .from(agents)
-        .where(eq(agents.companyId, companyId))
+        .where(and(eq(agents.companyId, companyId), projectId ? sql`EXISTS (
+          SELECT 1 FROM ${projectAgentMemberships}
+          WHERE ${projectAgentMemberships.companyId} = ${companyId}
+            AND ${projectAgentMemberships.projectId} = ${projectId}
+            AND ${projectAgentMemberships.agentId} = ${agents.id}
+        )` : undefined))
         .groupBy(agents.status);
 
       const taskRows = await db
         .select({ status: issues.status, count: sql<number>`count(*)` })
         .from(issues)
-        .where(and(eq(issues.companyId, companyId), executionIssueCondition()))
+        .where(and(eq(issues.companyId, companyId), executionIssueCondition(), projectId ? eq(issues.projectId, projectId) : undefined))
         .groupBy(issues.status);
 
       const pendingApprovals = await db
         .select({ count: sql<number>`count(*)` })
         .from(approvals)
-        .where(and(eq(approvals.companyId, companyId), eq(approvals.status, "pending")))
+        .where(and(eq(approvals.companyId, companyId), eq(approvals.status, "pending"), projectId ? sql`EXISTS (
+          SELECT 1 FROM ${issueApprovals} INNER JOIN ${issues} ON ${issues.id} = ${issueApprovals.issueId}
+          WHERE ${issueApprovals.companyId} = ${companyId} AND ${issues.companyId} = ${companyId}
+            AND ${issues.projectId} = ${projectId} AND ${issues.hiddenAt} IS NULL
+            AND ${issueApprovals.approvalId} = ${approvals.id}
+        )` : undefined))
         .then((rows) => Number(rows[0]?.count ?? 0));
 
       const agentCounts: Record<string, number> = {
@@ -93,6 +137,7 @@ export function dashboardService(db: Db) {
           and(
             eq(costEvents.companyId, companyId),
             gte(costEvents.occurredAt, monthStart),
+            projectId ? eq(costEvents.projectId, projectId) : undefined,
           ),
         );
 
@@ -113,6 +158,7 @@ export function dashboardService(db: Db) {
           JOIN ${heartbeatRuns} AS parent ON parent.id = child.retry_of_run_id
           WHERE child.company_id = ${companyId}
             AND child.status = 'succeeded'
+            AND ${projectId ? projectRunCondition(companyId, projectId, sql`child`) : sql`true`}
             AND child.created_at >= ${runActivityStart.toISOString()}::timestamptz
           UNION
           SELECT parent.id
@@ -129,6 +175,7 @@ export function dashboardService(db: Db) {
           count(*)::double precision AS count
         FROM ${heartbeatRuns} AS run
         WHERE run.company_id = ${companyId}
+          AND ${projectId ? projectRunCondition(companyId, projectId, sql`run`) : sql`true`}
           AND run.created_at >= ${runActivityStart.toISOString()}::timestamptz
         GROUP BY date, run.status, run.error_code, recovered
       `)) as unknown as Iterable<{
@@ -180,13 +227,16 @@ export function dashboardService(db: Db) {
       }
 
       const utilization =
-        company.budgetMonthlyCents > 0
+        !projectId && company.budgetMonthlyCents > 0
           ? (monthSpendCents / company.budgetMonthlyCents) * 100
           : 0;
-      const budgetOverview = await budgets.overview(companyId);
+      const budgetOverview = projectId ? {
+        activeIncidents: [], pendingApprovalCount: 0, pausedAgentCount: 0, pausedProjectCount: 0,
+      } : await budgets.overview(companyId);
 
       return {
         companyId,
+        ...(projectId ? { projectId } : {}),
         agents: {
           active: agentCounts.active,
           running: agentCounts.running,
@@ -196,7 +246,7 @@ export function dashboardService(db: Db) {
         tasks: taskCounts,
         costs: {
           monthSpendCents,
-          monthBudgetCents: company.budgetMonthlyCents,
+          monthBudgetCents: projectId ? 0 : company.budgetMonthlyCents,
           monthUtilizationPercent: Number(utilization.toFixed(2)),
         },
         pendingApprovals,

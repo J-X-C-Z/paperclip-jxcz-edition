@@ -1,3 +1,6 @@
+import { uiText } from "@/i18n";
+import { useOptionalProjectScope } from "@/context/ProjectScopeContext";
+import { Suspense } from "react";
 import {
   useCallback,
   useEffect,
@@ -23,10 +26,7 @@ import { AppDetailSidebar } from "./AppConnectionSidebar.production";
 import { BreadcrumbBar } from "./BreadcrumbBar.production";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { CommandPalette } from "./CommandPalette";
-import { NewIssueDialog } from "./NewIssueDialog";
-import { NewProjectDialog } from "./NewProjectDialog";
-import { NewGoalDialog } from "./NewGoalDialog";
-import { NewAgentDialog } from "./NewAgentDialog";
+import { DeferredCreationDialogs } from "./DeferredCreationDialogs";
 import { KeyboardShortcutsCheatsheet } from "./KeyboardShortcutsCheatsheet";
 import { ToastViewport } from "./ToastViewport";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -34,6 +34,7 @@ import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
 import { StandaloneBrowserControls } from "./StandaloneBrowserControls";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
+import { PaperclipLoading } from "./AnimatedPaperclipIcon";
 import { SidebarShell } from "./SidebarShell.production";
 import { SecondarySidebar } from "./SecondarySidebar.production";
 import { SidebarAccountMenu } from "./SidebarAccountMenu.production";
@@ -114,6 +115,7 @@ function isSkillsStoreRoute(
 }
 
 export function Layout() {
+  const projectScope = useOptionalProjectScope();
   const {
     sidebarOpen,
     setSidebarOpen,
@@ -650,9 +652,7 @@ export function Layout() {
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-(--z-200) focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          Skip to Main Content
-        </a>
+        > {uiText("Skip to Main Content")} </a>
         <WorktreeBanner />
         <DevRestartBanner devServer={health?.devServer} />
         <div
@@ -666,7 +666,7 @@ export function Layout() {
               type="button"
               className="fixed inset-0 z-40 bg-black/50"
               onClick={() => setSidebarOpen(false)}
-              aria-label="Close sidebar"
+              aria-label={uiText("Close sidebar")}
             />
           )}
 
@@ -755,7 +755,12 @@ export function Layout() {
                     : "overflow-auto [scrollbar-gutter:stable]",
                 )}
               >
-                {hasUnknownCompanyPrefix ? (
+                {projectScope?.enabled && projectScope.projectId && !["groups", "departments"].includes(getCompanyRouteSegment(location.pathname, companyPrefix) ?? "") ? (
+                <div className="mb-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" aria-label={uiText("Active project scope")}>
+                  当前项目：{projectScope.projects.find((project) => project.id === projectScope.projectId)?.name ?? "项目"}
+                </div>
+              ) : null}
+              {hasUnknownCompanyPrefix ? (
                   <NotFoundPage
                     scope="invalid_company_prefix"
                     requestedPrefix={
@@ -764,7 +769,9 @@ export function Layout() {
                   />
                 ) : (
                   <RouteErrorBoundary>
-                    <Outlet />
+                    <Suspense fallback={<PaperclipLoading />}>
+                      <Outlet />
+                    </Suspense>
                   </RouteErrorBoundary>
                 )}
               </main>
@@ -774,10 +781,7 @@ export function Layout() {
         </div>
         {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
         <CommandPalette />
-        <NewIssueDialog />
-        <NewProjectDialog />
-        <NewGoalDialog />
-        <NewAgentDialog />
+        <DeferredCreationDialogs />
         <KeyboardShortcutsCheatsheet
           open={shortcutsOpen}
           onOpenChange={setShortcutsOpen}

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PatchInstanceGeneralSettings, BackupRetentionPolicy } from "@paperclipai/shared";
@@ -30,8 +31,8 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
   useEffect(() => {
     if (embedded) return;
     setBreadcrumbs([
-      { label: "Settings", href: "/company/settings" },
-      { label: "General" },
+      { label: uiText("Settings"), href: "/company/settings" },
+      { label: uiText("General") },
     ]);
   }, [embedded, setBreadcrumbs]);
 
@@ -62,7 +63,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
   });
 
   if (generalQuery.isLoading || healthQuery.isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading general settings...</div>;
+    return <div className="text-sm text-muted-foreground">{uiText("Loading general settings...")}</div>;
   }
 
   if (generalQuery.error) {
@@ -107,7 +108,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
-            <h1 className="text-lg font-semibold">General</h1>
+            <h1 className="text-lg font-semibold">{uiText("General")}</h1>
           </div>
           <p className="text-sm text-muted-foreground">
             Configure instance-wide preferences
@@ -126,7 +127,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">Deployment and auth</h2>
+            <h2 className="text-sm font-semibold">{uiText("Deployment and auth")}</h2>
             <ModeBadge
               deploymentMode={healthQuery.data?.deploymentMode}
               deploymentExposure={healthQuery.data?.deploymentExposure}
@@ -161,7 +162,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">Censor username in logs</h2>
+            <h2 className="text-sm font-semibold">{uiText("Censor username in logs")}</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Hide the username segment in home-directory paths and similar operator-visible log output. Standalone
               username mentions outside of paths are not yet masked in the live transcript view. This is off by
@@ -172,7 +173,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
             checked={censorUsernameInLogs}
             onCheckedChange={() => updateGeneralMutation.mutate({ censorUsernameInLogs: !censorUsernameInLogs })}
             disabled={updateGeneralMutation.isPending || signOutMutation.isPending}
-            aria-label="Toggle username log censoring"
+            aria-label={uiText("Toggle username log censoring")}
           />
         </div>
       </section>
@@ -182,7 +183,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
+            <h2 className="text-sm font-semibold">{uiText("Keyboard shortcuts")}</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Enable app keyboard shortcuts, including inbox navigation and global shortcuts like creating tasks or
               toggling panels. This is off by default.
@@ -192,7 +193,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
             checked={keyboardShortcuts}
             onCheckedChange={() => updateGeneralMutation.mutate({ keyboardShortcuts: !keyboardShortcuts })}
             disabled={updateGeneralMutation.isPending || signOutMutation.isPending}
-            aria-label="Toggle keyboard shortcuts"
+            aria-label={uiText("Toggle keyboard shortcuts")}
           />
         </div>
       </section>
@@ -202,7 +203,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="space-y-5">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">Backup retention</h2>
+            <h2 className="text-sm font-semibold">{uiText("Backup retention")}</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Configure how long automatic database backups are retained. Backups run roughly
               every hour and are compressed with gzip. Within the daily window all backups are
@@ -211,7 +212,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
           </div>
 
           <div className="space-y-1.5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Daily</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{uiText("Daily")}</h3>
             <div className="flex flex-wrap gap-2">
               {DAILY_RETENTION_PRESETS.map((days) => {
                 const active = backupRetention.dailyDays === days;
@@ -240,7 +241,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
           </div>
 
           <div className="space-y-1.5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Weekly</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{uiText("Weekly")}</h3>
             <div className="flex flex-wrap gap-2">
               {WEEKLY_RETENTION_PRESETS.map((weeks) => {
                 const active = backupRetention.weeklyWeeks === weeks;
@@ -270,7 +271,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
           </div>
 
           <div className="space-y-1.5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Monthly</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{uiText("Monthly")}</h3>
             <div className="flex flex-wrap gap-2">
               {MONTHLY_RETENTION_PRESETS.map((months) => {
                 const active = backupRetention.monthlyMonths === months;
@@ -306,7 +307,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">AI feedback sharing</h2>
+            <h2 className="text-sm font-semibold">{uiText("AI feedback sharing")}</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Control whether thumbs up and thumbs down votes can send the voted AI output to
               Paperclip Labs. Votes are always saved locally.
@@ -332,12 +333,12 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
             {[
               {
                 value: "allowed",
-                label: "Always allow",
+                label: uiText("Always allow"),
                 description: "Share voted AI outputs automatically.",
               },
               {
                 value: "not_allowed",
-                label: "Don't allow",
+                label: uiText("Don't allow"),
                 description: "Keep voted AI outputs local only.",
               },
             ].map((option) => {
@@ -385,7 +386,7 @@ export function InstanceGeneralSettings({ embedded = false }: { embedded?: boole
       <section>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold">Sign out</h2>
+            <h2 className="text-sm font-semibold">{uiText("Sign out")}</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Sign out of this Paperclip instance. You will be redirected to the login page.
             </p>

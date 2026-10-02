@@ -24,9 +24,18 @@ export interface CostEvent {
 
 export interface CostSummary {
   companyId: string;
+  /** Project work costs; company governance budget fields are zero in this mode. */
+  projectId?: string;
+  /** Incremental billed spend used by budget enforcement. */
   spendCents: number;
+  /** Billed spend plus standard API reference estimates. May contain fractional cents. */
+  referenceCostCents?: number;
   budgetCents: number;
   utilizationPercent: number;
+  reportedCostCents?: number;
+  estimatedCostCents?: number;
+  unpricedEventCount?: number;
+  trackingEnabled?: boolean;
 }
 
 export interface IssueCostSummary {
@@ -44,7 +53,13 @@ export interface IssueCostSummary {
   runtimeMs: number;
 }
 
-export interface CostByAgent {
+export interface CostReferenceTotals {
+  reportedCostCents?: number;
+  estimatedCostCents?: number;
+  unpricedEventCount?: number;
+}
+
+export interface CostByAgent extends CostReferenceTotals {
   agentId: string;
   agentName: string | null;
   agentStatus: string | null;
@@ -59,7 +74,7 @@ export interface CostByAgent {
   subscriptionOutputTokens: number;
 }
 
-export interface CostByProviderModel {
+export interface CostByProviderModel extends CostReferenceTotals {
   provider: string;
   biller: string;
   billingType: BillingType;
@@ -75,7 +90,7 @@ export interface CostByProviderModel {
   subscriptionOutputTokens: number;
 }
 
-export interface CostByBiller {
+export interface CostByBiller extends CostReferenceTotals {
   biller: string;
   costCents: number;
   inputTokens: number;
@@ -91,7 +106,7 @@ export interface CostByBiller {
 }
 
 /** per-agent breakdown by provider + model, for identifying token-hungry agents */
-export interface CostByAgentModel {
+export interface CostByAgentModel extends CostReferenceTotals {
   agentId: string;
   agentName: string | null;
   provider: string;
@@ -105,7 +120,7 @@ export interface CostByAgentModel {
 }
 
 /** spend per provider for a fixed rolling time window */
-export interface CostWindowSpendRow {
+export interface CostWindowSpendRow extends CostReferenceTotals {
   provider: string;
   biller: string;
   /** duration label, e.g. "5h", "24h", "7d" */
@@ -118,12 +133,30 @@ export interface CostWindowSpendRow {
   outputTokens: number;
 }
 
-/** cost attributed to a project via heartbeat run → activity log → issue → project chain */
+/** Reported plus reference-estimated costs, using stored project, issue, or unambiguous run attribution. */
 export interface CostByProject {
+  reportedCostCents?: number;
+  estimatedCostCents?: number;
+  unpricedEventCount?: number;
   projectId: string | null;
   projectName: string | null;
   costCents: number;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
+}
+
+/** Costs grouped by current project-scoped team membership; null means unassigned or ambiguous. */
+export interface CostByTeam extends Omit<CostByProject, "projectId" | "projectName"> {
+  teamId: string | null;
+  teamName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+}
+
+export interface CostByDepartment extends Omit<CostByProject, "projectId" | "projectName"> {
+  departmentId: string | null;
+  departmentName: string | null;
 }

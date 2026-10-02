@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { TaskChatPausedTakeover, type TaskComposerPause } from "./task-chat/TaskChatPausedTakeover";
 import { useEmailComment } from "./EmailMessageCard";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
@@ -29,6 +30,7 @@ import {
   type ReactNode,
 } from "react";
 import { Link, useLocation } from "@/lib/router";
+import { useOptionalProjectScope } from "@/context/ProjectScopeContext";
 import type {
   Agent,
   FeedbackDataSharingPreference,
@@ -820,7 +822,7 @@ export function IssueAssigneePausedNotice({
               disabled={resuming}
               data-testid="issue-assignee-paused-resume"
             >
-              {resuming ? "Resuming…" : "Resume agent"}
+              {resuming ? uiText("Resuming…") : "Resume agent"}
             </Button>
           ) : undefined
         }
@@ -888,11 +890,10 @@ function IssueChatFallbackThread({
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="space-y-1">
             <p className="font-medium">
-              Chat renderer hit an internal state error.
+              {uiText("Chat renderer hit an internal state error.")}
             </p>
             <p className="text-xs opacity-80">
-              Showing a safe fallback transcript instead of crashing the tasks
-              page.
+              {uiText("Showing a safe fallback transcript instead of crashing the tasks page.")}
             </p>
           </div>
         </div>
@@ -940,7 +941,7 @@ function IssueChatFallbackThread({
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No message content.
+                      {uiText("No message content.")}
                     </p>
                   )}
                 </div>
@@ -1555,8 +1556,8 @@ function CopyablePreBlock({
           "absolute right-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity hover:text-foreground group-hover/pre:opacity-100",
           copied && "opacity-100",
         )}
-        title="Copy"
-        aria-label="Copy"
+        title={uiText("Copy")}
+        aria-label={uiText("Copy")}
         onClick={() => {
           void copyTextToClipboard(children)
             .then(() => {
@@ -1565,7 +1566,7 @@ function CopyablePreBlock({
             })
             .catch((error) => {
               toastActions?.pushToast({
-                title: "Copy failed",
+                title: uiText("Copy failed"),
                 body:
                   error instanceof Error
                     ? error.message
@@ -1674,9 +1675,7 @@ function IssueChatToolPart({
           <div className="mt-1 space-y-2 pb-1">
             {nonIntentDetails.length > 0 ? (
               <div>
-                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground/60">
-                  Input
-                </div>
+                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground/60"> {uiText("Input")} </div>
                 <dl className="space-y-1.5">
                   {nonIntentDetails.map((detail) => (
                     <div key={`${detail.label}:${detail.value}`}>
@@ -1698,9 +1697,7 @@ function IssueChatToolPart({
               </div>
             ) : rawArgsText ? (
               <div>
-                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground/60">
-                  Input
-                </div>
+                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground/60"> {uiText("Input")} </div>
                 <CopyablePreBlock className="overflow-x-auto rounded-md bg-accent/30 p-2 text-(length:--text-micro) leading-4 text-foreground/70">
                   {rawArgsText}
                 </CopyablePreBlock>
@@ -1709,7 +1706,7 @@ function IssueChatToolPart({
             {result !== undefined ? (
               <div>
                 <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground/60">
-                  Result
+                  {uiText("Result")}
                 </div>
                 <CopyablePreBlock className="overflow-x-auto rounded-md bg-accent/30 p-2 text-(length:--text-micro) leading-4 text-foreground/70">
                   {resultText}
@@ -1859,14 +1856,14 @@ function IssueChatProviderActivity({
                     <span>{String(source.title ?? "Unavailable source")}</span>
                   )}{" "}
                   <span className="text-muted-foreground">
-                    (provider-reported)
+                    {uiText("(provider-reported)")}
                   </span>
                 </div>
               );
             })}
             {effectiveModel ? (
               <div>
-                <span className="text-muted-foreground">Model</span>{" "}
+                <span className="text-muted-foreground">{uiText("Model")}</span>{" "}
                 {requestedModel && requestedModel !== effectiveModel
                   ? `${requestedModel} → `
                   : ""}
@@ -2088,7 +2085,7 @@ function IssueChatUserMessage({
             variant="outline"
             className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow)"
           >
-            Follow-up
+            {uiText("Follow-up")}
           </Badge>
         ) : null}
       </div>
@@ -2135,16 +2132,12 @@ function IssueChatUserMessage({
                 variant="outline"
                 className="h-6 border-amber-300 px-2 text-(length:--text-micro) text-amber-900 hover:bg-amber-100/80 hover:text-amber-950 dark:border-amber-500/40 dark:text-amber-100 dark:hover:bg-amber-500/10"
                 onClick={() => onCancelQueued(commentId)}
-              >
-                Cancel
-              </Button>
+              > {uiText("Cancel")} </Button>
             ) : null}
           </div>
         ) : null}
         {deleted ? (
-          <div className="text-sm italic text-muted-foreground">
-            Comment deleted
-          </div>
+          <div className="text-sm italic text-muted-foreground"> {uiText("Comment deleted")} </div>
         ) : (
           <div className="min-w-0 max-w-full space-y-3">
             <IssueChatTextParts
@@ -2157,7 +2150,7 @@ function IssueChatUserMessage({
 
       {sentFromIMessage && !deleted ? (
         <div className="mt-1 px-1 text-xs text-muted-foreground">
-          Sent from iMessage
+          {uiText("Sent from iMessage")}
         </div>
       ) : null}
       {pending ? (
@@ -2167,7 +2160,7 @@ function IssueChatUserMessage({
             isCurrentUser ? "justify-end" : "justify-start",
           )}
         >
-          Sending...
+          {uiText("Sending...")}
         </div>
       ) : (
         <div
@@ -2193,8 +2186,8 @@ function IssueChatUserMessage({
             <button
               type="button"
               className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-              title="Copy message"
-              aria-label="Copy message"
+              title={uiText("Copy message")}
+              aria-label={uiText("Copy message")}
               onClick={() => {
                 const text = message.content
                   .filter(
@@ -2210,7 +2203,7 @@ function IssueChatUserMessage({
                   })
                   .catch((error) => {
                     toastActions?.pushToast({
-                      title: "Copy failed",
+                      title: uiText("Copy failed"),
                       body:
                         error instanceof Error
                           ? error.message
@@ -2231,8 +2224,8 @@ function IssueChatUserMessage({
             <button
               type="button"
               className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
-              title="Delete comment"
-              aria-label="Delete comment"
+              title={uiText("Delete comment")}
+              aria-label={uiText("Delete comment")}
               onClick={handleDeleteComment}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -2268,20 +2261,18 @@ function IssueChatUserMessage({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete comment?</DialogTitle>
+            <DialogTitle>{uiText("Delete comment?")}</DialogTitle>
             <DialogDescription>
-              This will replace the comment with a deleted-comment marker.
+              {uiText("This will replace the comment with a deleted-comment marker.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
+            > {uiText("Cancel")} </Button>
             <Button variant="destructive" onClick={confirmDeleteComment}>
-              Delete comment
+              {uiText("Delete comment")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2443,8 +2434,8 @@ function IssueChatAssistantMessage({
       <button
         type="button"
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Copy message"
-        aria-label="Copy message"
+        title={uiText("Copy message")}
+        aria-label={uiText("Copy message")}
         onClick={() => {
           void copyTextToClipboard(copyText)
             .then(() => {
@@ -2453,7 +2444,7 @@ function IssueChatAssistantMessage({
             })
             .catch((error) => {
               toastActions?.pushToast({
-                title: "Copy failed",
+                title: uiText("Copy failed"),
                 body:
                   error instanceof Error
                     ? error.message
@@ -2496,8 +2487,8 @@ function IssueChatAssistantMessage({
             variant="ghost"
             size="icon-xs"
             className="text-muted-foreground hover:text-foreground"
-            title="More actions"
-            aria-label="More actions"
+            title={uiText("More actions")}
+            aria-label={uiText("More actions")}
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </Button>
@@ -2507,7 +2498,7 @@ function IssueChatAssistantMessage({
             onClick={() => {
               void copyTextToClipboard(copyText).catch((error) => {
                 toastActions?.pushToast({
-                  title: "Copy failed",
+                  title: uiText("Copy failed"),
                   body:
                     error instanceof Error
                       ? error.message
@@ -2517,9 +2508,7 @@ function IssueChatAssistantMessage({
               });
             }}
           >
-            <Copy className="mr-2 h-3.5 w-3.5" />
-            Copy message
-          </DropdownMenuItem>
+            <Copy className="mr-2 h-3.5 w-3.5" /> {uiText("Copy message")} </DropdownMenuItem>
           {canStopRun && onStopRun && runId ? (
             <DropdownMenuItem
               disabled={isStoppingRun}
@@ -2543,9 +2532,7 @@ function IssueChatAssistantMessage({
           {runHref ? (
             <DropdownMenuItem asChild>
               <Link to={runHref} target="_blank" rel="noreferrer noopener">
-                <Search className="mr-2 h-3.5 w-3.5" />
-                View run
-              </Link>
+                <Search className="mr-2 h-3.5 w-3.5" /> {uiText("View run")} </Link>
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -2591,7 +2578,7 @@ function IssueChatAssistantMessage({
                 variant="outline"
                 className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow)"
               >
-                Follow-up
+                {uiText("Follow-up")}
               </Badge>
             ) : null}
           </div>
@@ -2606,9 +2593,7 @@ function IssueChatAssistantMessage({
             )}
           >
             {deleted ? (
-              <div className="text-sm italic text-muted-foreground">
-                Comment deleted
-              </div>
+              <div className="text-sm italic text-muted-foreground"> {uiText("Comment deleted")} </div>
             ) : (
               <div className="min-w-0 max-w-full space-y-3">
                 <IssueChatAssistantParts message={message} hasCoT={false} />
@@ -2683,7 +2668,7 @@ function IssueChatAssistantMessage({
                   variant="outline"
                   className="text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow)"
                 >
-                  Follow-up
+                  {uiText("Follow-up")}
                 </Badge>
               ) : null}
               {isRunning ? (
@@ -2697,16 +2682,14 @@ function IssueChatAssistantMessage({
                   )}
                 >
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Running
+                  {uiText("Running")}
                 </Badge>
               ) : null}
             </div>
           )}
 
           {deleted ? (
-            <div className="rounded-sm bg-muted/40 px-3 py-2 text-sm italic text-muted-foreground">
-              Comment deleted
-            </div>
+            <div className="rounded-sm bg-muted/40 px-3 py-2 text-sm italic text-muted-foreground"> {uiText("Comment deleted")} </div>
           ) : !folded ? (
             <>
               <div className="space-y-3">
@@ -2851,8 +2834,8 @@ function IssueChatFeedbackButtons({
             ? "text-green-600 dark:text-green-400"
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
-        title="Helpful"
-        aria-label="Helpful"
+        title={uiText("Helpful")}
+        aria-label={uiText("Helpful")}
         onClick={handleThumbsUp}
       >
         <ThumbsUp className="h-3.5 w-3.5" />
@@ -2868,8 +2851,8 @@ function IssueChatFeedbackButtons({
                 ? "text-amber-600 dark:text-amber-400"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
-            title="Needs work"
-            aria-label="Needs work"
+            title={uiText("Needs work")}
+            aria-label={uiText("Needs work")}
             onClick={handleThumbsDown}
           >
             <ThumbsDown className="h-3.5 w-3.5" />
@@ -2877,12 +2860,12 @@ function IssueChatFeedbackButtons({
         </PopoverTrigger>
         <PopoverContent side="top" align="start" className="w-80 p-3">
           <div className="mb-2 text-sm font-medium">
-            What could have been better?
+            {uiText("What could have been better?")}
           </div>
           <Textarea
             value={downvoteReason}
             onChange={(event) => setDownvoteReason(event.target.value)}
-            placeholder="Add a short note"
+            placeholder={uiText("Add a short note")}
             className="min-h-20 resize-y bg-background text-sm"
             disabled={isSaving}
           />
@@ -2896,16 +2879,14 @@ function IssueChatFeedbackButtons({
                 setReasonOpen(false);
                 setDownvoteReason("");
               }}
-            >
-              Dismiss
-            </Button>
+            > {uiText("Dismiss")} </Button>
             <Button
               type="button"
               size="sm"
               disabled={isSaving || !downvoteReason.trim()}
               onClick={handleSubmitReason}
             >
-              {isSaving ? "Saving..." : "Save note"}
+              {isSaving ? uiText("Saving...") : "Save note"}
             </Button>
           </div>
         </PopoverContent>
@@ -2922,23 +2903,20 @@ function IssueChatFeedbackButtons({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save your feedback sharing preference</DialogTitle>
+            <DialogTitle>{uiText("Save your feedback sharing preference")}</DialogTitle>
             <DialogDescription>
-              Choose whether voted AI outputs can be shared with Paperclip Labs.
-              This answer becomes the default for future thumbs up and thumbs
-              down votes.
+              {uiText("Choose whether voted AI outputs can be shared with Paperclip Labs. This answer becomes the default for future thumbs up and thumbs down votes.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>This vote is always saved locally.</p>
-            <p>
-              Choose{" "}
-              <span className="font-medium text-foreground">Always allow</span>{" "}
+            <p>{uiText("This vote is always saved locally.")}</p>
+            <p> {uiText("Choose")}{" "}
+              <span className="font-medium text-foreground">{uiText("Always allow")}</span>{" "}
               to share this vote and future voted AI outputs. Choose{" "}
-              <span className="font-medium text-foreground">Don't allow</span>{" "}
+              <span className="font-medium text-foreground">{uiText("Don't allow")}</span>{" "}
               to keep this vote and future votes local.
             </p>
-            <p>You can change this later in Settings &gt; General.</p>
+            <p>{uiText("You can change this later in Settings > General.")}</p>
             {termsUrl ? (
               <a
                 href={termsUrl}
@@ -2946,7 +2924,7 @@ function IssueChatFeedbackButtons({
                 rel="noreferrer"
                 className="inline-flex text-sm text-foreground underline underline-offset-4"
               >
-                Read our terms of service
+                {uiText("Read our terms of service")}
               </a>
             ) : null}
           </div>
@@ -2965,7 +2943,7 @@ function IssueChatFeedbackButtons({
                 ).then(() => setPendingSharingDialog(null));
               }}
             >
-              {isSaving ? "Saving..." : "Don't allow"}
+              {isSaving ? uiText("Saving...") : uiText("Don't allow")}
             </Button>
             <Button
               type="button"
@@ -2980,7 +2958,7 @@ function IssueChatFeedbackButtons({
                 }).then(() => setPendingSharingDialog(null));
               }}
             >
-              {isSaving ? "Saving..." : "Always allow"}
+              {isSaving ? uiText("Saving...") : uiText("Always allow")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3045,7 +3023,7 @@ function ExpiredRequestConfirmationActivity({
         )}
       >
         <span className="font-medium text-foreground">{actorName}</span>
-        <span className="text-muted-foreground">updated this task</span>
+        <span className="text-muted-foreground">{uiText("updated this task")}</span>
         <a
           href={anchorId ? `#${anchorId}` : undefined}
           className="text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
@@ -3324,7 +3302,7 @@ function StaleDispositionWarningDetails({
   if (sections.length === 0) {
     return (
       <div className="text-xs leading-5 text-muted-foreground">
-        No additional details.
+        {uiText("No additional details.")}
       </div>
     );
   }
@@ -3382,7 +3360,7 @@ function StaleDispositionWarningRow({
             onClick={() => setOpen((value) => !value)}
           >
             <span className="text-sm font-medium text-foreground/80">
-              Stale disposition warning
+              {uiText("Stale disposition warning")}
             </span>
             <span className="ml-auto flex items-center gap-1.5">
               {message.createdAt ? (
@@ -3587,7 +3565,7 @@ function SystemNoticeCommentContent({
       })
       .catch((error) => {
         toastActions?.pushToast({
-          title: "Copy failed",
+          title: uiText("Copy failed"),
           body:
             error instanceof Error
               ? error.message
@@ -3607,7 +3585,7 @@ function SystemNoticeCommentContent({
       })
       .catch((error) => {
         toastActions?.pushToast({
-          title: "Copy failed",
+          title: uiText("Copy failed"),
           body:
             error instanceof Error
               ? error.message
@@ -3668,8 +3646,8 @@ function SystemNoticeCommentContent({
             <button
               type="button"
               className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-              title="Copy link"
-              aria-label="Copy link to system notice"
+              title={uiText("Copy link")}
+              aria-label={uiText("Copy link to system notice")}
               onClick={handleCopyLink}
             >
               {copiedLink ? (
@@ -3682,8 +3660,8 @@ function SystemNoticeCommentContent({
           <button
             type="button"
             className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-            title="Copy notice text"
-            aria-label="Copy system notice"
+            title={uiText("Copy notice text")}
+            aria-label={uiText("Copy system notice")}
             onClick={handleCopy}
           >
             {copied ? (
@@ -3849,9 +3827,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
 
         {statusChange ? (
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70">
-              Status
-            </span>
+            <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70"> {uiText("Status")} </span>
             <span className="text-muted-foreground">
               {humanizeValue(statusChange.from)}
             </span>
@@ -3870,9 +3846,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
                 isCurrentUser && "justify-end",
               )}
             >
-              <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70">
-                Assignee
-              </span>
+              <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70"> {uiText("Assignee")} </span>
               <AssigneeChip
                 assignee={assigneeChange.from}
                 resolvers={handoffResolvers}
@@ -3895,9 +3869,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
 
         {workspaceChange ? (
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70">
-              Workspace
-            </span>
+            <span className="text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70"> {uiText("Workspace")} </span>
             <span className="text-muted-foreground">
               {formatTimelineWorkspaceLabel(workspaceChange.from)}
             </span>
@@ -3939,7 +3911,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
           >
             {displayedRunAgentName}
           </Link>
-          <span className="text-muted-foreground">run</span>
+          <span className="text-muted-foreground">{uiText("run")}</span>
           <Link
             to={`/agents/${runAgentId}/runs/${runId}`}
             className="inline-flex items-center rounded-md border border-border bg-accent/40 px-1.5 py-0.5 font-mono text-(length:--text-nano) text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
@@ -4573,7 +4545,7 @@ function IssueChatDeletedComment({
       </div>
       <div className="min-w-0 rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
         <span className="font-medium text-foreground/80">{authorName}</span>
-        <span> deleted this comment</span>
+        <span>{uiText(" deleted this comment")}</span>
         {deletedDateLabel ? (
           <span className="text-xs"> · {deletedDateLabel}</span>
         ) : null}
@@ -5365,11 +5337,10 @@ const IssueChatComposer = forwardRef<
             </span>
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">
-                Drop to upload
+                {uiText("Drop to upload")}
               </div>
               <div className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                Images insert into the reply. Other files are added to this
-                task.
+                {uiText("Images insert into the reply. Other files are added to this task.")}
               </div>
             </div>
           </div>
@@ -5382,8 +5353,7 @@ const IssueChatComposer = forwardRef<
           className="mb-3 space-y-2 rounded-md border border-border bg-muted p-3 text-sm"
         >
           <p>
-            We couldn’t confirm whether this comment was saved. It may already
-            be in the conversation. Review it before starting another draft.
+            {uiText("We couldn’t confirm whether this comment was saved. It may already be in the conversation. Review it before starting another draft.")}
           </p>
           <Button
             type="button"
@@ -5409,16 +5379,15 @@ const IssueChatComposer = forwardRef<
               }
             }}
           >
-            Review conversation
+            {uiText("Review conversation")}
           </Button>
           {reviewError ? (
-            <p>Couldn’t refresh the conversation. Try reviewing it again.</p>
+            <p>{uiText("Couldn’t refresh the conversation. Try reviewing it again.")}</p>
           ) : null}
           {uncertainSubmission.reviewed ? (
             <>
               <p>
-                Discarding this draft does not remove any saved comment or
-                uploaded file.
+                {uiText("Discarding this draft does not remove any saved comment or uploaded file.")}
               </p>
               <Button
                 type="button"
@@ -5433,7 +5402,7 @@ const IssueChatComposer = forwardRef<
                   setUncertainSubmission(null);
                 }}
               >
-                Discard draft and start new
+                {uiText("Discard draft and start new")}
               </Button>
             </>
           ) : null}
@@ -5444,9 +5413,10 @@ const IssueChatComposer = forwardRef<
         readOnly={!!uncertainSubmission}
         value={body}
         onChange={changeBody}
-        placeholder="Reply"
+        placeholder={uiText("Reply")}
         mentions={mentions}
         onSubmit={handleSubmit}
+        submitKey="enter"
         imageUploadHandler={
           canAcceptFiles
             ? async (file) => {
@@ -5569,7 +5539,7 @@ const IssueChatComposer = forwardRef<
                 size="icon-sm"
                 onClick={() => attachInputRef.current?.click()}
                 disabled={attaching}
-                title="Attach file"
+                title={uiText("Attach file")}
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
@@ -5632,7 +5602,7 @@ const IssueChatComposer = forwardRef<
                   );
                 })}
                 <div className="mt-1 border-t px-2 py-1.5 text-(length:--text-nano) text-muted-foreground">
-                  Cmd/Ctrl+. cycles modes
+                  {uiText("Cmd/Ctrl+. cycles modes")}
                 </div>
               </PopoverContent>
             </Popover>
@@ -5644,16 +5614,16 @@ const IssueChatComposer = forwardRef<
             ref={reassignTriggerRef}
             value={reassignTarget}
             options={reassignOptions}
-            placeholder="Responsible"
+            placeholder={uiText("Responsible")}
             noneLabel="No responsible"
             searchPlaceholder="Search responsible..."
-            emptyMessage="No responsible found."
+            emptyMessage={uiText("No responsible found.")}
             onChange={setReassignTarget}
             className="h-8 text-xs"
             renderTriggerValue={(option) => {
               if (!option)
                 return (
-                  <span className="text-muted-foreground">Responsible</span>
+                  <span className="text-muted-foreground">{uiText("Responsible")}</span>
                 );
               const agentId = option.id.startsWith("agent:")
                 ? option.id.slice("agent:".length)
@@ -5699,7 +5669,7 @@ const IssueChatComposer = forwardRef<
             disabled={stopControl.stopping}
             onClick={() => void stopControl.stop()}
             aria-label={stopControl.stopping ? "Stopping…" : "Stop"}
-            title="Stop response"
+            title={uiText("Stop response")}
           >
             {stopControl.stopping ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -5739,11 +5709,9 @@ const IssueChatComposer = forwardRef<
           }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>No responsible selected</AlertDialogTitle>
+            <AlertDialogTitle>{uiText("No responsible selected")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This comment will be posted without an assignee, so no agent will
-              be woken to act on it. Go back to pick a responsible, or send
-              anyway.
+              {uiText("This comment will be posted without an assignee, so no agent will be woken to act on it. Go back to pick a responsible, or send anyway.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -5753,7 +5721,7 @@ const IssueChatComposer = forwardRef<
                 focusAssigneeOnDialogCloseRef.current = true;
               }}
             >
-              Go back
+              {uiText("Go back")}
             </AlertDialogCancel>
             <AlertDialogAction
               data-testid="issue-chat-no-assignee-send-anyway"
@@ -5761,7 +5729,7 @@ const IssueChatComposer = forwardRef<
                 void submitComment();
               }}
             >
-              Send anyway
+              {uiText("Send anyway")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -5868,6 +5836,7 @@ export function IssueChatThread({
   linkCaseReferences = false,
 }: IssueChatThreadProps) {
   const location = useLocation();
+  const projectScope = useOptionalProjectScope();
   const lastScrolledHashRef = useRef<string | null>(null);
   const didInitialHashScrollDecisionRef = useRef(false);
   const virtualizedThreadRef =
@@ -6580,6 +6549,11 @@ export function IssueChatThread({
     <AssistantRuntimeProvider runtime={runtime}>
       <IssueChatCtx.Provider value={chatCtx}>
         <div className={cn(variant === "embedded" ? "space-y-3" : "space-y-4")}>
+          {projectScope?.enabled && projectScope.projectId && projectId && projectScope.projectId !== projectId ? (
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" role="status">
+              This task belongs to {projectScope.projects.find((project) => project.id === projectId)?.name ?? "another project"}. Your active project scope is {projectScope.projects.find((project) => project.id === projectScope.projectId)?.name ?? "different"}; this task remains open here.
+            </div>
+          ) : null}
           {resolvedShowJumpToLatest ? (
             <div className="flex justify-end">
               <button
@@ -6587,7 +6561,7 @@ export function IssueChatThread({
                 onClick={handleJumpToLatest}
                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                Jump to latest
+                {uiText("Jump to latest")}
               </button>
             </div>
           ) : null}

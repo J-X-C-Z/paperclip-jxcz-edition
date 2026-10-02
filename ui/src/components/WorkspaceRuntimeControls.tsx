@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type {
   WorkspaceCommandDefinition,
   RuntimeExposureStatus,
@@ -506,7 +507,7 @@ function CommandSection({
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   ) : null}
-                  {item.port ? <div>Port {item.port}</div> : null}
+                  {item.port ? <div>{uiText("Port")} {item.port}</div> : null}
                   {item.command ? <div className="break-all font-mono">{item.command}</div> : null}
                   {item.cwd && !hideHostPaths ? <div className="break-all font-mono">{item.cwd}</div> : null}
                   {item.disabledReason ? <div>{item.disabledReason}</div> : null}
@@ -566,7 +567,7 @@ export function WorkspaceRuntimeControls({
     <div className={cn("space-y-4", className)}>
       <div className={cn("border border-border/70 bg-background p-3", square ? "rounded-none" : "rounded-xl")}>
         <div className="space-y-1">
-          <div className="text-xs font-medium uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Workspace commands</div>
+          <div className="text-xs font-medium uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Workspace commands")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline"
               className={cn(
@@ -590,7 +591,7 @@ export function WorkspaceRuntimeControls({
       </div>
 
       <CommandSection
-        title="Services"
+        title={uiText("Services")}
         description="Long-running commands that Paperclip can supervise for this workspace."
         items={resolvedSections.services}
         emptyMessage={resolvedServiceEmptyMessage}
@@ -602,7 +603,7 @@ export function WorkspaceRuntimeControls({
       />
 
       <CommandSection
-        title="Jobs"
+        title={uiText("Jobs")}
         description="One-shot commands that run now and exit when they finish."
         items={resolvedSections.jobs}
         emptyMessage={jobEmptyMessage}
@@ -614,7 +615,7 @@ export function WorkspaceRuntimeControls({
 
       {resolvedSections.otherServices.length > 0 ? (
         <CommandSection
-          title="Untracked services"
+          title={uiText("Untracked services")}
           description="Running services that no longer match the current workspace command config."
           items={resolvedSections.otherServices}
           emptyMessage=""

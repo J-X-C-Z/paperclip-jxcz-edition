@@ -1,4 +1,5 @@
 import type { CompanySkillVersion } from "@paperclipai/shared";
+import { useUiTranslator } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -68,10 +69,11 @@ export function AgentSkillReleasePicker({
   disabled = false,
   onChange,
 }: AgentSkillReleasePickerProps) {
+  const tr = useUiTranslator();
   const selected = value ? releases.find((release) => release.id === value) ?? null : null;
   // Closed trigger shows the release name only; the `· released <date>` suffix
   // lives in the open menu, where dates are meaningful for comparing options.
-  const triggerLabel = selected ? releaseName(selected) : DEFAULT_LABEL;
+  const triggerLabel = selected ? releaseName(selected) : tr(DEFAULT_LABEL);
 
   return (
     <Select
@@ -82,12 +84,12 @@ export function AgentSkillReleasePicker({
       <SelectTrigger
         size="sm"
         className="w-full max-w-(--sz-16rem) sm:w-(--sz-16rem)"
-        aria-label="Skill release"
+        aria-label={tr("Skill release")}
       >
-        <SelectValue placeholder={DEFAULT_LABEL}>{triggerLabel}</SelectValue>
+        <SelectValue placeholder={tr(DEFAULT_LABEL)}>{triggerLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent align="end" className="max-w-(--sz-20rem)">
-        <SelectItem value={RELEASE_DEFAULT_VALUE}>{DEFAULT_LABEL}</SelectItem>
+        <SelectItem value={RELEASE_DEFAULT_VALUE}>{tr(DEFAULT_LABEL)}</SelectItem>
         {releases.map((release) => (
           <SelectItem key={release.id} value={release.id}>
             <span className="flex items-center gap-2">

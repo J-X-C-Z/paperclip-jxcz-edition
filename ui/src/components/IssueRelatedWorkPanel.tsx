@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { IssueRelatedWorkItem, IssueRelatedWorkSummary } from "@paperclipai/shared";
 import { IssueReferencePill } from "./IssueReferencePill";
 import { ExternalObjectPill } from "./ExternalObjectPill";
@@ -111,30 +112,28 @@ function ExternalObjectsSection({
   return (
     <section className="space-y-3 rounded-lg border border-border p-3">
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold">External objects</h3>
+        <h3 className="text-sm font-semibold">{uiText("External objects")}</h3>
         <p className="text-xs text-muted-foreground">
-          Remote work referenced from this issue — pull requests, deployments, tickets in other systems, and more.
+          {uiText("Remote work referenced from this issue — pull requests, deployments, tickets in other systems, and more.")}
         </p>
       </div>
 
       {isError ? (
         <p className="text-xs text-muted-foreground">
-          Couldn't load external objects.{" "}
+          {uiText("Couldn’t load external objects.")}{" "}
           {onRetry ? (
             <button
               type="button"
               onClick={onRetry}
               className="text-primary underline-offset-2 hover:underline"
-            >
-              Retry
-            </button>
+            > {uiText("Retry")} </button>
           ) : null}
         </p>
       ) : isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading external objects…</p>
+        <p className="text-xs text-muted-foreground">{uiText("Loading external objects…")}</p>
       ) : sorted.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          This issue does not reference any external objects yet.
+          {uiText("This issue does not reference any external objects yet.")}
         </p>
       ) : (
         <ul className="-mx-1 flex flex-col">
@@ -191,10 +190,10 @@ export function IssueRelatedWorkPanel({
   return (
     <div className="space-y-3">
       <Section
-        title="References"
-        description="Other tasks this task currently points at in its title, description, comments, or documents."
+        title={uiText("References")}
+        description={uiText("Other tasks this task currently points at in its title, description, comments, or documents.")}
         items={outbound}
-        emptyLabel="This task does not reference any other tasks yet."
+        emptyLabel={uiText("This task does not reference any other tasks yet.")}
       />
       {externalObjectsEnabled ? (
         <ExternalObjectsSection
@@ -205,10 +204,10 @@ export function IssueRelatedWorkPanel({
         />
       ) : null}
       <Section
-        title="Referenced by"
-        description="Other tasks that currently point at this task."
+        title={uiText("Referenced by")}
+        description={uiText("Other tasks that currently point at this task.")}
         items={inbound}
-        emptyLabel="No other tasks reference this task yet."
+        emptyLabel={uiText("No other tasks reference this task yet.")}
       />
     </div>
   );

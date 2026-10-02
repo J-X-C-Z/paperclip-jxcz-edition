@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, ExternalLink, Loader2, RefreshCw } from "lucide-react";
@@ -75,7 +76,7 @@ export function ServicesPanel({
   /** A toolkit connecting adds a child connection, so the app-wide lists have to be re-read. */
   const invalidateConnectionLists = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.tools.composioServices(connectionId) });
-    queryClient.invalidateQueries({ queryKey: ["tools"] });
+    queryClient.invalidateQueries({ queryKey: [uiText("tools")] });
     queryClient.invalidateQueries({ queryKey: ["apps"] });
   };
 
@@ -96,7 +97,7 @@ export function ServicesPanel({
       window.open(target.url, "_blank", "noopener,noreferrer");
       pushToast({
         title: `Finish connecting ${row.name} in Composio`,
-        body: "We opened Composio in a new tab. This list updates as soon as it reports back.",
+        body: uiText("We opened Composio in a new tab. This list updates as soon as it reports back."),
         tone: "info",
       });
       void servicesQuery.refetch();
@@ -104,7 +105,7 @@ export function ServicesPanel({
     onError: (error, row) =>
       pushToast({
         title: `Couldn't connect ${row.name}`,
-        body: error instanceof Error ? error.message : "Please try again.",
+        body: error instanceof Error ? error.message : uiText("Please try again."),
         tone: "error",
       }),
     onSettled: () => setBusySlug(null),
@@ -118,7 +119,7 @@ export function ServicesPanel({
     onError: (error, row) =>
       pushToast({
         title: `Couldn't check ${row.name}`,
-        body: error instanceof Error ? error.message : "Please try again.",
+        body: error instanceof Error ? error.message : uiText("Please try again."),
         tone: "error",
       }),
     onSettled: () => setBusySlug(null),
@@ -140,7 +141,7 @@ export function ServicesPanel({
     onError: (error, row) =>
       pushToast({
         title: `Couldn't disconnect ${row.name}`,
-        body: error instanceof Error ? error.message : "Please try again.",
+        body: error instanceof Error ? error.message : uiText("Please try again."),
         tone: "error",
       }),
     onSettled: () => setBusySlug(null),
@@ -193,7 +194,7 @@ export function ServicesPanel({
 function ServicesIntro({ appName, connectedCount }: { appName: string; connectedCount: number }) {
   return (
     <div className="max-w-2xl space-y-1">
-      <h2 className="text-lg font-semibold">Services</h2>
+      <h2 className="text-lg font-semibold">{uiText("Services")}</h2>
       <p className="text-sm leading-6 text-muted-foreground">
         {appName} brokers these services. Connect one and it becomes its own app in Paperclip, which
         you then give to agents on its Permissions tab.
@@ -213,7 +214,7 @@ function ServicesIntro({ appName, connectedCount }: { appName: string; connected
 function ServicesEmptyState() {
   return (
     <div className="rounded-xl border border-border bg-card p-6">
-      <p className="text-sm font-medium">No services available yet</p>
+      <p className="text-sm font-medium">{uiText("No services available yet")}</p>
       <p className="mt-1 max-w-xl text-sm text-muted-foreground">
         This Composio project has no toolkits Paperclip can offer. Add a toolkit and an auth
         configuration in Composio, then check back.
@@ -226,9 +227,9 @@ function ServicesLoadError({ message, onRetry }: { message: string | null; onRet
   return (
     <div className="space-y-3 py-8">
       <p className="text-sm text-destructive">
-        {message ?? "Couldn’t load services from Composio."}
+        {message ?? uiText("Couldn’t load services from Composio.")}
       </p>
-      <Button size="sm" variant="outline" onClick={onRetry}>Try again</Button>
+      <Button size="sm" variant="outline" onClick={onRetry}>{uiText("Try again")}</Button>
     </div>
   );
 }
@@ -292,7 +293,7 @@ export function ServiceRow({
       <div className="flex shrink-0 items-center gap-2">
         {row.state === "connected" && row.childConnectionId && (
           <Button asChild size="sm" variant="ghost">
-            <Link to={appTabHref(row.childConnectionId, "permissions")}>Manage</Link>
+            <Link to={appTabHref(row.childConnectionId, "permissions")}>{uiText("Manage")}</Link>
           </Button>
         )}
         {row.state === "pending" && (
@@ -311,16 +312,14 @@ export function ServiceRow({
         {row.state === "not_connected" ? (
           <Button size="sm" disabled={busy} onClick={() => onConnect(row)}>
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (
-              <>
-                Connect
-                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+              <> {uiText("Connect")} <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
               </>
             )}
           </Button>
         ) : row.state === "attention" ? (
           <>
             <Button size="sm" disabled={busy} onClick={() => onConnect(row)}>
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reconnect"}
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : uiText("Reconnect")}
             </Button>
             <Button size="sm" variant="ghost" disabled={busy} onClick={() => onDisconnect(row)}>
               Disconnect
@@ -346,12 +345,12 @@ function serviceDetailLine(row: ComposioServiceRow): string {
     ? `${row.toolCount} ${row.toolCount === 1 ? "action" : "actions"}`
     : null;
   if (row.state === "pending") {
-    return "Waiting for Composio to confirm the connection.";
+    return uiText("Waiting for Composio to confirm the connection.");
   }
   if (row.state === "attention") {
     return row.connectedAccountStatus
       ? `Composio reports this connection as ${row.connectedAccountStatus.toLowerCase()}. Reconnect to fix it.`
-      : "This connection is no longer usable. Reconnect to fix it.";
+      : uiText("This connection is no longer usable. Reconnect to fix it.");
   }
   if (row.state === "connected") {
     return [toolCount, "available to agents you install it for"].filter(Boolean).join(" · ");
@@ -359,15 +358,15 @@ function serviceDetailLine(row: ComposioServiceRow): string {
   return [
     row.description,
     toolCount,
-    row.noAuth ? "No sign-in needed" : null,
-  ].filter(Boolean).join(" · ") || "Not connected";
+    row.noAuth ? uiText("No sign-in needed") : null,
+  ].filter(Boolean).join(" · ") || uiText("Not connected");
 }
 
 const STATE_LABEL: Record<ComposioServiceState, string> = {
-  not_connected: "Not connected",
-  pending: "Pending",
-  connected: "Connected",
-  attention: "Needs attention",
+  not_connected: uiText("Not connected"),
+  pending: uiText("Pending"),
+  connected: uiText("Connected"),
+  attention: uiText("Needs attention"),
 };
 
 /**
@@ -418,7 +417,7 @@ function DisconnectDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending} autoFocus>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending} autoFocus>{uiText("Cancel")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
             onClick={(event) => {

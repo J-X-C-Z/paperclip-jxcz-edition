@@ -1,0 +1,30 @@
+部门 PostgreSQL 验证记录（2026-10-01）
+
+本记录根据本轮实际执行的工具结果整理；原始终端输出未单独保存为文件。
+生成本记录时没有重复运行测试，也没有操作服务。
+
+验证脚本：
+/Users/jxcz/dev/paperclip-plugins/paperclip-improvement-teams/tests/departments.sql.integration.mjs
+适配器：/tmp/paperclip-departments-postgres-verify.mjs
+
+环境：独立本地 PostgreSQL 测试实例 127.0.0.1:55439；创建随机 disposable database；连接池 max=8。
+执行期间使用最新 worker 源码，并调用宿主 migration/runtime SQL validators。
+没有使用业务数据库。随机测试数据库由适配器 finally 关闭连接并 DROP 清理。
+
+实际验证：
+- 全部四个插件迁移执行成功，004 部门迁移和原子保存语句通过宿主 SQL validator。
+- 空部门及没有任何小组的公司可以创建部门；部长可以为空、换任或清除。
+- 部长角色不与模板绑定，未改 reportsTo。
+- 公司隔离、重复部门名及跨公司 composite FK 拒绝通过。
+- 一个部门可以包含不同项目的小组；完整 teamIds 保存会增加和移除小组。
+- 已归属其他部门的小组必须先明确释放；拒绝时原部门名称和归属不变。
+- 8 个调用全部通过应用层预校验后同步进入原子 SQL，竞争同一无部门小组，恰好 1 个成功。
+- 2 个同名部门并发创建时只有 1 个成功，失败方的小组归属原子回滚。
+- 24 个并发保存使用两个互不重叠的完整小组集合，最终部门名称与最终完整集合对应，没有合并集合。
+- 项目、成员版本、原成员记录、周期和归档与执行前快照逐字段一致。
+
+终端实际成功输出：
+PASS: departments migration, empty department/company, optional head and reassignment, company isolation, name uniqueness, complete membership replacement, explicit release before transfer, composite company FK, eight competing claims, concurrent-name conflict atomic rollback, 24 concurrent replacement saves, project/member/cycle/archive invariants
+Disposable eight-connection departments PostgreSQL database dropped.
+
+该次进程 exit_code=0。

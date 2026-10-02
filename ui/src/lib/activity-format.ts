@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { Agent } from "@paperclipai/shared";
 import type { CompanyUserProfile } from "./company-members";
 import { formatReviewPolicyValue } from "./review-policy";
@@ -229,7 +230,7 @@ function formatInteractionOutcomeLabel(action: string, details: ActivityDetails)
       : null;
   if (!table) return null;
   const kind = typeof details?.interactionKind === "string" ? details.interactionKind : null;
-  return kind ? table[kind] ?? null : null;
+  return kind && table[kind] ? uiText(table[kind]) : null;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -238,8 +239,8 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function humanizeValue(value: unknown): string {
-  if (typeof value !== "string") return String(value ?? "none");
-  return value.replace(/_/g, " ");
+  if (typeof value !== "string") return uiText(String(value ?? "none"));
+  return uiText(value.replace(/_/g, " "));
 }
 
 function isActivityParticipant(value: unknown): value is ActivityParticipant {
@@ -265,17 +266,17 @@ function readIssueReferences(details: ActivityDetails, key: string): ActivityIss
 }
 
 function formatUserLabel(userId: string | null | undefined, options: ActivityFormatOptions = {}): string {
-  if (!userId || userId === "local-board") return "Board";
-  if (options.currentUserId && userId === options.currentUserId) return "You";
+  if (!userId || userId === "local-board") return uiText("Board");
+  if (options.currentUserId && userId === options.currentUserId) return uiText("You");
   const profile = options.userProfileMap?.get(userId);
   if (profile) return profile.label;
-  return `user ${userId.slice(0, 5)}`;
+  return uiText("user {value0}", { value0: userId.slice(0, 5) });
 }
 
 function formatParticipantLabel(participant: ActivityParticipant, options: ActivityFormatOptions): string {
   if (participant.type === "agent") {
     const agentId = participant.agentId ?? "";
-    return options.agentMap?.get(agentId)?.name ?? "agent";
+    return options.agentMap?.get(agentId)?.name ?? uiText("agent");
   }
   return formatUserLabel(participant.userId, options);
 }
@@ -284,7 +285,7 @@ function formatIssueReferenceLabel(reference: ActivityIssueReference): string {
   if (reference.identifier) return reference.identifier;
   if (reference.title) return reference.title;
   if (reference.id) return reference.id.slice(0, 8);
-  return "task";
+  return uiText("task");
 }
 
 function formatChangedEntityLabel(
@@ -292,9 +293,9 @@ function formatChangedEntityLabel(
   plural: string,
   labels: string[],
 ): string {
-  if (labels.length <= 0) return plural;
-  if (labels.length === 1) return `${singular} ${labels[0]}`;
-  return `${labels.length} ${plural}`;
+  if (labels.length <= 0) return uiText(plural);
+  if (labels.length === 1) return uiText("{value0} {value1}", { value0: uiText(singular), value1: labels[0] });
+  return uiText("{value0} {value1}", { value0: labels.length, value1: uiText(plural) });
 }
 
 function readNumber(value: unknown): number | null {
@@ -315,13 +316,13 @@ function formatAcceptedPlanDecompositionDetail(details: ActivityDetails): string
   const newlyCreated = readStringArrayLength(details.newlyCreatedChildIssueIds);
   const reused = Math.max(0, totalChildren - newlyCreated);
   const parts: string[] = [];
-  if (newlyCreated > 0) parts.push(`created ${newlyCreated} new`);
-  if (reused > 0) parts.push(`reused ${reused} existing`);
-  if (parts.length === 0 && requested !== null) parts.push(`${requested} requested`);
+  if (newlyCreated > 0) parts.push(uiText("created {value0} new", { value0: newlyCreated }));
+  if (reused > 0) parts.push(uiText("reused {value0} existing", { value0: reused }));
+  if (parts.length === 0 && requested !== null) parts.push(uiText("{value0} requested", { value0: requested }));
   const summary = parts.length > 0 ? parts.join(", ") : null;
-  if (status === "completed" && summary) return `decomposition completed (${summary})`;
-  if (status === "completed") return "decomposition completed";
-  if (status === "in_flight" && summary) return `decomposition in flight (${summary})`;
+  if (status === "completed" && summary) return uiText("decomposition completed ({value0})", { value0: summary });
+  if (status === "completed") return uiText("decomposition completed");
+  if (status === "in_flight" && summary) return uiText("decomposition in flight ({value0})", { value0: summary });
   return summary;
 }
 
@@ -331,14 +332,14 @@ function formatIssueUpdatedVerb(details: ActivityDetails): string | null {
   if (details.status !== undefined) {
     const from = previous.status;
     return from
-      ? `changed status from ${humanizeValue(from)} to ${humanizeValue(details.status)} on`
-      : `changed status to ${humanizeValue(details.status)} on`;
+      ? uiText("changed status from {value0} to {value1} on", { value0: humanizeValue(from), value1: humanizeValue(details.status) })
+      : uiText("changed status to {value0} on", { value0: humanizeValue(details.status) });
   }
   if (details.priority !== undefined) {
     const from = previous.priority;
     return from
-      ? `changed priority from ${humanizeValue(from)} to ${humanizeValue(details.priority)} on`
-      : `changed priority to ${humanizeValue(details.priority)} on`;
+      ? uiText("changed priority from {value0} to {value1} on", { value0: humanizeValue(from), value1: humanizeValue(details.priority) })
+      : uiText("changed priority to {value0} on", { value0: humanizeValue(details.priority) });
   }
   return null;
 }
@@ -348,7 +349,7 @@ function formatAssigneeName(details: ActivityDetails, options: ActivityFormatOpt
   const agentId = details.assigneeAgentId;
   const userId = details.assigneeUserId;
   if (typeof agentId === "string" && agentId) {
-    return options.agentMap?.get(agentId)?.name ?? "agent";
+    return options.agentMap?.get(agentId)?.name ?? uiText("agent");
   }
   if (typeof userId === "string" && userId) {
     return formatUserLabel(userId, options);
@@ -365,29 +366,29 @@ function formatIssueUpdatedAction(details: ActivityDetails, options: ActivityFor
     const from = previous.status;
     parts.push(
       from
-        ? `changed the status from ${humanizeValue(from)} to ${humanizeValue(details.status)}`
-        : `changed the status to ${humanizeValue(details.status)}`,
+        ? uiText("changed the status from {value0} to {value1}", { value0: humanizeValue(from), value1: humanizeValue(details.status) })
+        : uiText("changed the status to {value0}", { value0: humanizeValue(details.status) }),
     );
   }
   if (details.priority !== undefined) {
     const from = previous.priority;
     parts.push(
       from
-        ? `changed the priority from ${humanizeValue(from)} to ${humanizeValue(details.priority)}`
-        : `changed the priority to ${humanizeValue(details.priority)}`,
+        ? uiText("changed the priority from {value0} to {value1}", { value0: humanizeValue(from), value1: humanizeValue(details.priority) })
+        : uiText("changed the priority to {value0}", { value0: humanizeValue(details.priority) }),
     );
   }
   if (details.assigneeAgentId !== undefined || details.assigneeUserId !== undefined) {
     const assigneeName = formatAssigneeName(details, options);
-    parts.push(assigneeName ? `made ${assigneeName} responsible for the task` : "cleared the responsible");
+    parts.push(assigneeName ? uiText("made {value0} responsible for the task", { value0: assigneeName }) : "cleared the responsible");
   }
   if (details.reviewPolicy !== undefined) {
     // `null` is the default ("anyone can approve"), so it must not read as
     // "changed the review policy to none" (PAP-16506).
-    parts.push(`changed who can approve to ${formatReviewPolicyValue(details.reviewPolicy)}`);
+    parts.push(uiText("changed who can approve to {value0}", { value0: uiText(formatReviewPolicyValue(details.reviewPolicy)) }));
   }
-  if (details.title !== undefined) parts.push("updated the title");
-  if (details.description !== undefined) parts.push("updated the description");
+  if (details.title !== undefined) parts.push(uiText("updated the title"));
+  if (details.description !== undefined) parts.push(uiText("updated the description"));
 
   return parts.length > 0 ? parts.join(", ") : null;
 }
@@ -406,11 +407,11 @@ function formatStructuredIssueChange(input: {
     const removed = readIssueReferences(details, "removedBlockedByIssues").map(formatIssueReferenceLabel);
     if (added.length > 0 && removed.length === 0) {
       const changed = formatChangedEntityLabel("blocker", "blockers", added);
-      return input.forIssueDetail ? `added ${changed}` : `added ${changed} to`;
+      return input.forIssueDetail ? uiText("added {value0}", { value0: changed }) : uiText("added {value0} to", { value0: changed });
     }
     if (removed.length > 0 && added.length === 0) {
       const changed = formatChangedEntityLabel("blocker", "blockers", removed);
-      return input.forIssueDetail ? `removed ${changed}` : `removed ${changed} from`;
+      return input.forIssueDetail ? uiText("removed {value0}", { value0: changed }) : uiText("removed {value0} from", { value0: changed });
     }
     return input.forIssueDetail ? "updated blockers" : "updated blockers on";
   }
@@ -422,13 +423,13 @@ function formatStructuredIssueChange(input: {
     const plural = input.action === "issue.reviewers_updated" ? "reviewers" : "approvers";
     if (added.length > 0 && removed.length === 0) {
       const changed = formatChangedEntityLabel(singular, plural, added);
-      return input.forIssueDetail ? `added ${changed}` : `added ${changed} to`;
+      return input.forIssueDetail ? uiText("added {value0}", { value0: changed }) : uiText("added {value0} to", { value0: changed });
     }
     if (removed.length > 0 && added.length === 0) {
       const changed = formatChangedEntityLabel(singular, plural, removed);
-      return input.forIssueDetail ? `removed ${changed}` : `removed ${changed} from`;
+      return input.forIssueDetail ? uiText("removed {value0}", { value0: changed }) : uiText("removed {value0} from", { value0: changed });
     }
-    return input.forIssueDetail ? `updated ${plural}` : `updated ${plural} on`;
+    return input.forIssueDetail ? uiText("updated {value0}", { value0: uiText(plural) }) : uiText("updated {value0} on", { value0: uiText(plural) });
   }
 
   return null;
@@ -447,13 +448,13 @@ export function formatActivityVerb(
         : "an app action";
     const tool = rawTool.replace(/[._-]+/g, " ");
     const isTest = details?.source === "test";
-    if (action === "tool_gateway.call_completed") return `${isTest ? "tested" : "used"} ${tool} on`;
-    if (action === "tool_gateway.call_allowed") return `${isTest ? "started a test of" : "was allowed to use"} ${tool} on`;
-    if (action === "tool_gateway.call_denied") return `was blocked from using ${tool} on`;
-    if (action === "tool_gateway.approval_requested") return `asked to use ${tool} on`;
-    if (action === "tool_gateway.session_created") return "opened an app session for";
-    if (action === "tool_gateway.session_rejected") return "was blocked from opening an app session for";
-    if (action === "tool_gateway.discovery") return "discovered app actions for";
+    if (action === "tool_gateway.call_completed") return uiText("{value0} {value1} on", { value0: uiText(isTest ? "tested" : "used"), value1: tool });
+    if (action === "tool_gateway.call_allowed") return uiText("{value0} {value1} on", { value0: uiText(isTest ? "started a test of" : "was allowed to use"), value1: tool });
+    if (action === "tool_gateway.call_denied") return uiText("was blocked from using {value0} on", { value0: tool });
+    if (action === "tool_gateway.approval_requested") return uiText("asked to use {value0} on", { value0: tool });
+    if (action === "tool_gateway.session_created") return uiText("opened an app session for");
+    if (action === "tool_gateway.session_rejected") return uiText("was blocked from opening an app session for");
+    if (action === "tool_gateway.discovery") return uiText("discovered app actions for");
   }
 
   if (action === "issue.updated") {
@@ -463,12 +464,12 @@ export function formatActivityVerb(
 
   if (action === "issue.stalled_review_decided") {
     const decision = typeof details?.action === "string" ? details.action : null;
-    const label = decision ? STALLED_REVIEW_DECISION_LABELS[decision] : null;
-    if (label) return `${label} on`;
+    const label = decision && STALLED_REVIEW_DECISION_LABELS[decision] ? uiText(STALLED_REVIEW_DECISION_LABELS[decision]) : null;
+    if (label) return uiText("{value0} on", { value0: uiText(label) });
   }
 
   const outcomeLabel = formatInteractionOutcomeLabel(action, details);
-  if (outcomeLabel) return `${outcomeLabel} on`;
+  if (outcomeLabel) return uiText("{value0} on", { value0: outcomeLabel });
 
   const structuredChange = formatStructuredIssueChange({
     action,
@@ -478,7 +479,7 @@ export function formatActivityVerb(
   });
   if (structuredChange) return structuredChange;
 
-  return ACTIVITY_ROW_VERBS[action] ?? action.replace(/[._]/g, " ");
+  return uiText(ACTIVITY_ROW_VERBS[action] ?? action.replace(/[._]/g, " "));
 }
 
 export function formatIssueActivityAction(
@@ -506,7 +507,7 @@ export function formatIssueActivityAction(
 
   if (action === "issue.stalled_review_decided") {
     const decision = typeof details?.action === "string" ? details.action : null;
-    const label = decision ? STALLED_REVIEW_DECISION_LABELS[decision] : null;
+    const label = decision && STALLED_REVIEW_DECISION_LABELS[decision] ? uiText(STALLED_REVIEW_DECISION_LABELS[decision]) : null;
     if (label) return label;
   }
 
@@ -517,8 +518,8 @@ export function formatIssueActivityAction(
     const serviceName = typeof details.serviceName === "string" && details.serviceName.trim()
       ? details.serviceName.trim()
       : null;
-    const base = ISSUE_ACTIVITY_LABELS[action] ?? action.replace(/[._]/g, " ");
-    return serviceName ? `${base} for ${serviceName}` : base;
+    const base = uiText(ISSUE_ACTIVITY_LABELS[action] ?? action.replace(/[._]/g, " "));
+    return serviceName ? uiText("{value0} for {value1}", { value0: base, value1: serviceName }) : base;
   }
 
   if (
@@ -532,9 +533,9 @@ export function formatIssueActivityAction(
     details
   ) {
     const key = typeof details.key === "string" ? details.key : "document";
-    const title = typeof details.title === "string" && details.title ? ` (${details.title})` : "";
-    return `${ISSUE_ACTIVITY_LABELS[action] ?? action} ${key}${title}`;
+    const title = typeof details.title === "string" && details.title ? uiText(" ({value0})", { value0: details.title }) : "";
+    return uiText("{value0} {value1}{value2}", { value0: uiText(ISSUE_ACTIVITY_LABELS[action] ?? action), value1: key, value2: title });
   }
 
-  return ISSUE_ACTIVITY_LABELS[action] ?? action.replace(/[._]/g, " ");
+  return uiText(ISSUE_ACTIVITY_LABELS[action] ?? action.replace(/[._]/g, " "));
 }

@@ -48,6 +48,7 @@ import {
   startAdapterExecutionTargetPaperclipBridge,
 } from "@paperclipai/adapter-utils/execution-target";
 import { agentService } from "./agents.js";
+import { resolveRunCost } from "./cost-estimation.js";
 import { normalizeLegacyRunnerProvider } from "@paperclipai/adapter-utils";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -835,6 +836,8 @@ const GIT_SENSITIVE_LOCAL_ADAPTER_TYPES = new Set([
   "grok_local",
   "hermes_local",
   "kimi_local",
+  "dsh_local",
+  "mimocode_local",
   "opencode_local",
   "pi_local",
 ]);
@@ -1224,6 +1227,8 @@ const SESSIONED_LOCAL_ADAPTERS = new Set([
   "gemini_local",
   "hermes_local",
   "kimi_local",
+  "dsh_local",
+  "mimocode_local",
   "opencode_local",
   "pi_local",
 ]);
@@ -5158,7 +5163,7 @@ function resolveLedgerBiller(result: AdapterExecutionResult): string {
   );
 }
 
-function normalizeBilledCostCents(
+export function normalizeBilledCostCents(
   costUsd: number | null | undefined,
   billingType: BillingType,
 ): number {
@@ -19363,19 +19368,17 @@ export function heartbeatService(
     const outputTokens = usage?.outputTokens ?? 0;
     const cachedInputTokens = usage?.cachedInputTokens ?? 0;
     const billingType = normalizeLedgerBillingType(result.billingType);
-    const billedCostUsd = resolveCacheAdjustedCostUsd(result);
+    const resolvedCost = resolveRunCost({
+      ...result, billingType, inputTokens, cachedInputTokens, outputTokens,
+    });
+    const billedCostUsd = resolvedCost.costUsd;
     const additionalCostCents = normalizeBilledCostCents(
       billedCostUsd,
       billingType,
     );
     const hasTokenUsage =
       inputTokens > 0 || outputTokens > 0 || cachedInputTokens > 0;
-    const costStatus = resolveLedgerCostStatus({
-      costUsd: billedCostUsd,
-      inputTokens,
-      cachedInputTokens,
-      outputTokens,
-    });
+    const costStatus = resolvedCost.costStatus;
     const provider = result.provider ?? "unknown";
     const biller = resolveLedgerBiller(result);
     const ledgerScope = await resolveLedgerScopeForRun(
@@ -24388,6 +24391,13 @@ export function heartbeatService(
                 : "failed";
 
         const cacheAdjustedCostUsd = resolveCacheAdjustedCostUsd(adapterResult);
+        const resolvedCost = resolveRunCost({
+          ...adapterResult,
+          billingType: normalizeLedgerBillingType(adapterResult.billingType),
+          inputTokens: normalizedUsage?.inputTokens ?? 0,
+          cachedInputTokens: normalizedUsage?.cachedInputTokens ?? 0,
+          outputTokens: normalizedUsage?.outputTokens ?? 0,
+        });
         const usageJson =
           normalizedUsage ||
           adapterResult.costUsd != null ||
@@ -24434,12 +24444,11 @@ export function heartbeatService(
                 ...(cacheAdjustedCostUsd != null
                   ? { cacheAdjustedCostUsd }
                   : {}),
-                costStatus: resolveLedgerCostStatus({
-                  costUsd: cacheAdjustedCostUsd,
-                  inputTokens: normalizedUsage?.inputTokens ?? 0,
-                  cachedInputTokens: normalizedUsage?.cachedInputTokens ?? 0,
-                  outputTokens: normalizedUsage?.outputTokens ?? 0,
-                }),
+                ...(resolvedCost.estimate ? {
+                  estimatedCostUsd: resolvedCost.estimate.costUsd,
+                  costEstimate: resolvedCost.estimate,
+                } : {}),
+                costStatus: resolvedCost.costStatus,
                 billingType: normalizeLedgerBillingType(
                   adapterResult.billingType,
                 ),

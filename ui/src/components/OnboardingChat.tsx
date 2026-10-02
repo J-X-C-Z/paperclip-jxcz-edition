@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IssueComment } from "@paperclipai/shared";
@@ -432,7 +433,7 @@ function WelcomeMessage({
             </span>
           </div>
           <p>
-            Hi! Thanks for bringing me on to lead <strong>{companyName}</strong>.
+            Hi! Thanks for bringing me on to lead <strong>{companyName}</strong>{uiText(".")}
           </p>
           <p className="mt-1">
             Our mission is: <em>{companyGoal}</em>

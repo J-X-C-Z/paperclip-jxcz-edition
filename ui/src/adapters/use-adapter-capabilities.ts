@@ -27,6 +27,8 @@ const KNOWN_DEFAULTS: Record<string, AdapterCapabilities> = {
   gemini_local: { supportsInstructionsBundle: true, supportsSkills: true, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: true, supportsAcp: true },
   grok_local: { supportsInstructionsBundle: true, supportsSkills: true, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: true, supportsAcp: false, login: { panelMode: "displayed_code", timeoutPolicy: "caller_bounded" } },
   kimi_local: { supportsInstructionsBundle: true, supportsSkills: true, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: true, supportsAcp: true },
+  dsh_local: { supportsInstructionsBundle: true, supportsSkills: false, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: false, supportsAcp: true },
+  mimocode_local: { supportsInstructionsBundle: true, supportsSkills: false, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: false, supportsAcp: true },
   opencode_local: { supportsInstructionsBundle: true, supportsSkills: true, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: true, supportsAcp: false },
   pi_local: { supportsInstructionsBundle: true, supportsSkills: true, supportsLocalAgentJwt: true, requiresMaterializedRuntimeSkills: true, supportsAcp: false },
   openclaw_gateway: ALL_FALSE,

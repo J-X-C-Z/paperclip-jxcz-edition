@@ -20,6 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useUiTranslator } from "@/i18n";
 
 export function aiProviderForAdapter(
   adapterType: string,
@@ -30,6 +31,7 @@ export function aiProviderForAdapter(
       codex_local: "openai",
       opencode_local: "openrouter",
       grok_local: "xai",
+      mimocode_local: "xiaomi_mimo",
     } as Record<string, AiProvider>
   )[adapterType];
 }
@@ -56,6 +58,7 @@ export function AiConnectionField({
   legacy?: boolean;
   readOnly?: boolean;
 }) {
+  const tr = useUiTranslator();
   const provider = aiProviderForAdapter(adapterType);
   const returnFocus = useRef<HTMLElement | null>(null);
   const restoreFocus = (event: Event) => { event.preventDefault(); returnFocus.current?.focus(); };
@@ -74,7 +77,7 @@ export function AiConnectionField({
   });
   const method: AiAuthMethod = (value?.mode !== "responsible_user" ? value?.method : undefined)
     ?? accounts.data?.connections.find((account) => account.provider === provider && account.isDefault)?.method
-    ?? (provider === "openrouter" ? "api_key" : "subscription");
+    ?? (provider === "openrouter" || provider === "xiaomi_mimo" ? "api_key" : "subscription");
   if (!provider) return null;
   if (legacy && !value && !adopting)
     return (
@@ -87,8 +90,7 @@ export function AiConnectionField({
     <div className="space-y-4">
       {value && (adapterType !== "opencode_local" || Boolean(model)) && !isAiConnectionCompatible(value, adapterType, model) && (
         <p role="alert" className="text-sm text-destructive">
-          This connection does not support the current harness and model. Choose
-          a compatible connection before saving.
+          {tr("This connection does not support the current harness and model. Choose a compatible connection before saving.")}
         </p>
       )}
       <AiConnectionPicker
@@ -115,30 +117,27 @@ export function AiConnectionField({
       >
         <DialogContent className="max-h-(--sz-85vh) overflow-y-auto sm:max-w-2xl" onCloseAutoFocus={restoreFocus}>
           <DialogHeader>
-            <DialogTitle>Adopt Connections for {agentName}</DialogTitle>
+            <DialogTitle>{tr("Adopt Connections for")} {agentName}</DialogTitle>
             <DialogDescription>
-              Saving tests this account in {agentName}’s environment before
-              replacing its existing authentication. Other agents keep their
-              current configuration.
+              {tr("Saving tests this account in")} {agentName}{tr("’s environment before replacing its existing authentication. Other agents keep their current configuration.")}
             </DialogDescription>
           </DialogHeader>
           <p className="text-sm">
             {pendingAdoption?.mode === "responsible_user"
-              ? `Responsible user’s default. For you: ${accounts.data?.connections.find((account) => account.isDefault && account.provider === provider)?.name ?? "Not connected"}. Other users use their own default.`
+              ? `${tr("Responsible user’s default. For you:")} ${accounts.data?.connections.find((account) => account.isDefault && account.provider === provider)?.name ?? tr("Not connected")}. ${tr("Other users use their own default.")}`
               : accounts.data?.connections.find(
                   (account) => account.id === pendingAdoption?.connectionId,
                 )?.name}
           </p>
           <p className="text-xs text-muted-foreground">
-            After adoption, missing credentials block execution. Previous
-            authentication will not be used as a fallback.
+            {tr("After adoption, missing credentials block execution. Previous authentication will not be used as a fallback.")}
           </p>
           <DialogFooter>
             <Button
               variant="ghost"
               onClick={() => setPendingAdoption(undefined)}
             >
-              Cancel
+              {tr("Cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -146,7 +145,7 @@ export function AiConnectionField({
                 setPendingAdoption(undefined);
               }}
             >
-              Use this binding when saved
+              {tr("Use this binding when saved")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -154,13 +153,13 @@ export function AiConnectionField({
       <Dialog open={connecting} onOpenChange={setConnecting}>
         <DialogContent className="max-h-(--sz-85vh) overflow-y-auto sm:max-w-2xl" onCloseAutoFocus={restoreFocus}>
           <DialogHeader>
-            <DialogTitle>Connect account</DialogTitle>
+            <DialogTitle>{tr("Connect account")}</DialogTitle>
           </DialogHeader>
           <AiConnectionCredentialStep
             companyId={companyId}
             provider={provider}
             initialMethod={method}
-            name={`My ${provider === "anthropic" ? "Claude" : provider === "openai" ? "OpenAI" : provider === "xai" ? "Grok" : "OpenRouter"} ${method === "subscription" ? "subscription" : "API"}`}
+            name={`${tr("My")} ${provider === "anthropic" ? "Claude" : provider === "openai" ? "OpenAI" : provider === "xai" ? "Grok" : provider === "xiaomi_mimo" ? "Xiaomi MiMo" : "OpenRouter"} ${tr(method === "subscription" ? "subscription" : "API")}`}
             ownership="personal"
             agentIds={agentId ? [agentId] : []}
             allAgents={false}

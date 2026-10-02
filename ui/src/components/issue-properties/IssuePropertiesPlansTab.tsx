@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Issue, IssueThreadInteraction } from "@paperclipai/shared";
@@ -57,7 +58,7 @@ export function IssuePropertiesPlansTab({ issue }: IssuePropertiesPlansTabProps)
           "Loading plan…"
         ) : issue.workMode === "planning" ? (
           <div className="space-y-2">
-            <p>This task is in plan mode but no plan document has been written yet.</p>
+            <p>{uiText("This task is in plan mode but no plan document has been written yet.")}</p>
             {pendingPlanConfirmation ? (
               <p className="text-amber-foreground">
                 A plan confirmation is pending, but the plan document it should confirm is missing.

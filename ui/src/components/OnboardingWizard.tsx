@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { healthApi } from "@/api/health";
 import { LocalProviderLoginInstructions } from "./AdapterLoginChrome";
 import { useLocalAiLogin } from "./ai-connections/useLocalAiLogin";
@@ -1346,9 +1347,9 @@ function OnboardingWizardInner({
     connectProgress
       ? { label: adapterEnvLoading ? "Testing…" : connectProgress, icon: "spinner", disabled: true }
       : connectPhase === "waiting"
-      ? { label: "Waiting for code", icon: "spinner", disabled: true }
+      ? { label: uiText("Waiting for code"), icon: "spinner", disabled: true }
       : connectPhase === "connecting"
-        ? { label: "Connecting", icon: "spinner", disabled: true }
+        ? { label: uiText("Connecting"), icon: "spinner", disabled: true }
         : connectPhase === "ready"
           ? connectStepNeedsLogin
             ? {
@@ -1357,14 +1358,14 @@ function OnboardingWizardInner({
                 disabled: !connectAuthUrl,
               }
             : {
-                label: "Connect",
+                label: uiText("Connect"),
                 icon: "arrow",
                 disabled:
                   !connectStepReady || (credentialMode === "api" && !apiKey.trim() && !selectedApiKey),
               }
           : // Nothing is chosen on arrival, and the row is what chooses. Until
             // it has been answered the button has nothing to do.
-            { label: "Next", icon: "arrow", disabled: true };
+            { label: uiText("Next"), icon: "arrow", disabled: true };
 
   /**
    * Back, on the connect step, unwinds the sign-in before it leaves the step.
@@ -2513,7 +2514,7 @@ function OnboardingWizardInner({
                       // sentence restating it only pushes the fields down.
                       lede={
                         step === 3 ? undefined : step === 4 ? (
-                          <>Paperclip works with your subscription or API keys.</>
+                          <>{uiText("Paperclip works with your subscription or API keys.")}</>
                         ) : (
                           <>{agentName.trim() || "Your first agent"} is ready to work!</>
                         )
@@ -2536,7 +2537,7 @@ function OnboardingWizardInner({
                 <div className="mx-auto w-full space-y-9">
                   <OnboardingHeading
                     center
-                    title="What is the name of your organization?"
+                    title={uiText("What is the name of your organization?")}
                     lede="Welcome to Paperclip — let's set up your organization."
                   />
                   {/* The field takes the agent step's measure rather than the
@@ -2551,9 +2552,7 @@ function OnboardingWizardInner({
                           ? "text-foreground"
                           : "text-muted-foreground group-focus-within:text-foreground"
                       )}
-                    >
-                      Name
-                    </label>
+                    > {uiText("Name")} </label>
                     <input
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
                       placeholder="e.g. Northwind Labs"
@@ -2580,7 +2579,7 @@ function OnboardingWizardInner({
               {step === 3 && (
                 <div className="mx-auto flex w-full flex-col gap-9">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="onboarding-agent-name">Agent name</Label>
+                    <Label htmlFor="onboarding-agent-name">{uiText("Agent name")}</Label>
                     {/*
                       Filled, not outlined, and the column's full width — the
                       same field the naming step before the hand-off draws.
@@ -2671,8 +2670,8 @@ function OnboardingWizardInner({
                     >
                       <div className="-ml-3 mt-1">
                         <CredentialModeLink mode={credentialMode} onChange={setCredentialMode} />
-                        {savedKeys.options.length > 0 && <p className="px-3 text-sm text-muted-foreground">{savedKeys.options.length} saved API {savedKeys.options.length === 1 ? "key available" : "keys available"}.</p>}
-                        {credentialMode === "subscription" && authSignalStatus === "present" && <p className="px-3 text-sm text-muted-foreground">An existing provider connection is available.</p>}
+                        {savedKeys.options.length > 0 && <p className="px-3 text-sm text-muted-foreground">{savedKeys.options.length} saved API {savedKeys.options.length === 1 ? uiText("key available") : uiText("keys available")}.</p>}
+                        {credentialMode === "subscription" && authSignalStatus === "present" && <p className="px-3 text-sm text-muted-foreground">{uiText("An existing provider connection is available.")}</p>}
                       </div>
                     </motion.div>
                   </div>
@@ -2729,8 +2728,8 @@ function OnboardingWizardInner({
                           setApiKey("");
                         }} />
                         {!selectedApiKey && <OnboardingCardField
-                          label="API key"
-                          placeholder="Enter API key here"
+                          label={uiText("API key")}
+                          placeholder={uiText("Enter API key here")}
                           masked
                           // The card is the answer to the tile just pressed, so
                           // the field is unambiguously the next thing. Carried
@@ -2841,7 +2840,7 @@ function OnboardingWizardInner({
                     ) : hasSavedSubscription || localLogin.status === "ready" ? null : connectStepHasNoSandbox ? (
                       canUseLocalLogin && managedProvider ? (
                         <LocalProviderLoginInstructions adapterType={adapterType} login={{ ...localLogin, retry: () => { autoConnectStartedRef.current = false; setError(null); localLogin.retry(); } }} />
-                      ) : <p className="text-xs text-muted-foreground">This environment does not support browser sign-in. Choose another sign-in environment or connect with an API key.</p>
+                      ) : <p className="text-xs text-muted-foreground">{uiText("This environment does not support browser sign-in. Choose another sign-in environment or connect with an API key.")}</p>
                     ) : null}
                   </motion.div>
 
@@ -2886,7 +2885,7 @@ function OnboardingWizardInner({
                             style={{ "--sc": "var(--status-task-done)" } as CSSProperties}
                           >
                             <Check className="size-3.5 shrink-0" />
-                            <span className="font-medium">Passed</span>
+                            <span className="font-medium">{uiText("Passed")}</span>
                           </div>
                           {/* Show the checks on a pass too, so the target and the
                               auth signals stay visible before the hire. */}
@@ -2922,7 +2921,7 @@ function OnboardingWizardInner({
 
                       {adapterEnvResult && adapterEnvResult.status === "fail" && (
                         <div className="rounded-md border border-border/70 bg-muted/20 px-2.5 py-2 text-(length:--text-micro) space-y-1.5">
-                          <p className="font-medium">Manual debug</p>
+                          <p className="font-medium">{uiText("Manual debug")}</p>
                           <p className="text-muted-foreground font-mono break-all">
                             {adapterType === "cursor"
                               ? `${effectiveAdapterCommand} -p --mode ask --output-format json \"Respond with hello.\"`
@@ -2968,7 +2967,7 @@ function OnboardingWizardInner({
                                         ? "kimi login"
                                       : "opencode auth login"}
                               </span>
-                              .
+                              {uiText(".")}
                             </p>
                           ) : (
                             <p className="text-muted-foreground">
@@ -2987,8 +2986,8 @@ function OnboardingWizardInner({
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">
                         {adapterType === "openclaw_gateway"
-                          ? "Gateway URL"
-                          : "Webhook URL"}
+                          ? uiText("Gateway URL")
+                          : uiText("Webhook URL")}
                       </label>
                       <input
                         className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"

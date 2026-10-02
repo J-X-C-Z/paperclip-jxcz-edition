@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { brandChipBadge, type BrandChipColor } from "@/lib/status-colors";

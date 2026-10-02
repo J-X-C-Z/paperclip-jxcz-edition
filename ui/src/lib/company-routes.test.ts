@@ -127,6 +127,25 @@ describe("company routes", () => {
     expect(toCompanyRelativePath("/PAP/timeline")).toBe("/timeline");
   });
 
+  it("keeps the templates page scoped to the selected company", () => {
+    expect(isBoardPathWithoutPrefix("/templates")).toBe(true);
+    expect(extractCompanyPrefixFromPath("/templates")).toBeNull();
+    expect(applyCompanyPrefix("/templates", "ORI")).toBe("/ORI/templates");
+    expect(toCompanyRelativePath("/ORI/templates")).toBe("/templates");
+  });
+  it("keeps organization group navigation in the active company", () => {
+    expect(isBoardPathWithoutPrefix("/groups")).toBe(true);
+    expect(extractCompanyPrefixFromPath("/groups")).toBeNull();
+    expect(applyCompanyPrefix("/groups", "ORI")).toBe("/ORI/groups");
+    expect(toCompanyRelativePath("/ORI/groups")).toBe("/groups");
+  });
+  it("keeps department navigation in the active company", () => {
+    expect(isBoardPathWithoutPrefix("/departments")).toBe(true);
+    expect(extractCompanyPrefixFromPath("/departments")).toBeNull();
+    expect(applyCompanyPrefix("/departments", "ORI")).toBe("/ORI/departments");
+    expect(toCompanyRelativePath("/ORI/departments")).toBe("/departments");
+  });
+
   it("treats Skill Studio create mode as an unprefixed board route", () => {
     expect(isBoardPathWithoutPrefix("/skills/studio/new")).toBe(true);
     expect(extractCompanyPrefixFromPath("/skills/studio/new")).toBeNull();

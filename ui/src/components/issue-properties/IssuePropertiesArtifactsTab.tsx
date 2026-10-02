@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,16 +60,16 @@ function workProductStatusBadge(status: string): { label: string; cssVar: string
   switch (status) {
     case "active":
     case "draft":
-      return { label: "In progress", cssVar: "--status-task-in_progress" };
+      return { label: uiText("In progress"), cssVar: "--status-task-in_progress" };
     case "ready_for_review":
-      return { label: "For review", cssVar: "--status-task-in_review" };
+      return { label: uiText("For review"), cssVar: "--status-task-in_review" };
     case "approved":
     case "merged":
-      return { label: "Done", cssVar: "--status-task-done" };
+      return { label: uiText("Done"), cssVar: "--status-task-done" };
     case "changes_requested":
-      return { label: "Changes requested", cssVar: "--status-task-todo" };
+      return { label: uiText("Changes requested"), cssVar: "--status-task-todo" };
     case "failed":
-      return { label: "Failed", cssVar: "--status-task-blocked" };
+      return { label: uiText("Failed"), cssVar: "--status-task-blocked" };
     default:
       return null;
   }
@@ -149,7 +150,7 @@ function MarkdownWorkProductRow({
   if (tooLarge) {
     expandedBody = (
       <p className="text-sm text-muted-foreground">
-        This Markdown file is too large to preview. Use Raw or Download instead.
+        {uiText("This Markdown file is too large to preview. Use Raw or Download instead.")}
       </p>
     );
   } else if (reviewDoc) {
@@ -169,15 +170,15 @@ function MarkdownWorkProductRow({
         <MarkdownBody>{reviewDoc.body}</MarkdownBody>
       </IssueDocumentAnnotations>
     ) : (
-      <p className="text-sm text-muted-foreground">Document is empty.</p>
+      <p className="text-sm text-muted-foreground">{uiText("Document is empty.")}</p>
     );
   } else if (ensure.isError) {
     expandedBody = (
       <div className="flex flex-col items-start gap-1.5">
         <p className="text-sm text-muted-foreground">
           {unsupportedError
-            ? "This file can't be previewed as Markdown. Use Raw or Download instead."
-            : "Preview failed to load."}
+            ? uiText("This file can't be previewed as Markdown. Use Raw or Download instead.")
+            : uiText("Preview failed to load.")}
         </p>
         {!unsupportedError ? (
           <button
@@ -187,14 +188,12 @@ function MarkdownWorkProductRow({
               ensure.reset();
               ensure.mutate();
             }}
-          >
-            Retry
-          </button>
+          > {uiText("Retry")} </button>
         ) : null}
       </div>
     );
   } else {
-    expandedBody = <p className="text-sm text-muted-foreground">Preparing preview…</p>;
+    expandedBody = <p className="text-sm text-muted-foreground">{uiText("Preparing preview…")}</p>;
   }
 
   return (
@@ -236,7 +235,7 @@ function MarkdownWorkProductRow({
           target="_blank"
           rel="noreferrer"
           aria-label={`Open raw ${workProduct.title}`}
-          title="Open raw"
+          title={uiText("Open raw")}
           className="shrink-0 px-1.5 py-1.5 text-muted-foreground hover:text-foreground"
         >
           <ExternalLink className="h-3 w-3" />
@@ -244,7 +243,7 @@ function MarkdownWorkProductRow({
         <a
           href={metadata.downloadPath}
           aria-label={`Download ${workProduct.title}`}
-          title="Download"
+          title={uiText("Download")}
           className="shrink-0 py-1.5 pr-2 pl-0.5 text-muted-foreground hover:text-foreground"
         >
           <Download className="h-3 w-3" />
@@ -338,7 +337,7 @@ function DocumentRow({
               <MarkdownBody>{doc.body}</MarkdownBody>
             </IssueDocumentAnnotations>
           ) : (
-            <p className="text-sm text-muted-foreground">Document is empty.</p>
+            <p className="text-sm text-muted-foreground">{uiText("Document is empty.")}</p>
           )}
         </div>
       ) : null}

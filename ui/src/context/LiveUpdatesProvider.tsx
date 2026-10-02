@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { getPageVisibility, usePageVisibility } from "../lib/page-visibility";
 import {
   createContext,
@@ -33,6 +34,7 @@ import type { RunForIssue } from "../api/activity";
 import type { ActiveRunForIssue, LiveRunForIssue } from "../api/heartbeats";
 import type { CompanyUserDirectoryResponse } from "../api/access";
 import { issuesApi } from "../api/issues";
+import { organizationGroupsKey } from "../api/improvementTeams";
 import { authApi } from "../api/auth";
 import type { CompanyListResult } from "../api/companies-query";
 import { healthApi } from "../api/health";
@@ -1124,7 +1126,7 @@ function buildRunStatusToast(
     body,
     tone,
     ttlMs: status === "succeeded" ? 5000 : 7000,
-    action: { label: "View run", href: `/agents/${agentId}/runs/${runId}` },
+    action: { label: uiText("View run"), href: `/agents/${agentId}/runs/${runId}` },
     dedupeKey: `run-status:${runId}:${status}`,
   };
 }
@@ -1263,6 +1265,13 @@ function invalidateActivityQueries(
   const actorType = readString(payload.actorType);
   const actorId = readString(payload.actorId);
   const details = readRecord(payload.details);
+  if (
+    entityType === "agent" || action === "organization.updated" ||
+    (entityType === "issue" && ["issue.created", "issue.updated", "issue.deleted", "issue.status_decision_recorded"].includes(action ?? ""))
+  ) {
+    queryClient.invalidateQueries({ queryKey: organizationGroupsKey(companyId) });
+  }
+
   const ownActorActivity =
     (actorType === "user" &&
       !!currentActor.userId &&

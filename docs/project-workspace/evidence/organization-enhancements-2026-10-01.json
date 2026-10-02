@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-01",
+  "features": [
+    "department and group reporting defaults",
+    "standard title choices and filter",
+    "project organization selection",
+    "template Markdown defaults",
+    "ongoing tasks and conversation links"
+  ],
+  "liveApiChecks": [
+    "template instructions persisted",
+    "new agent AGENTS.md inherited",
+    "existing agent instructions preserved",
+    "members report to lead",
+    "lead reports to department head",
+    "cycle rejected atomically",
+    "title persisted",
+    "project affiliations persisted without moving group",
+    "empty selections persisted",
+    "department detach clears generated edge"
+  ],
+  "taskChecksPassed": true,
+  "browserChecks": [
+    "group excludes outside tasks",
+    "department includes head and group member tasks",
+    "conversation opens task chat",
+    "task state changes update cards without reload",
+    "existing Orialis department shows six current tasks"
+  ],
+  "fixtureCleanedUp": true,
+  "noAgentsExecuted": true,
+  "uiFeatureTests": 32,
+  "nativeOrganizationTests": 9,
+  "pluginTests": 33,
+  "sqlIntegrationScripts": 3,
+  "liveRefreshTest": 1,
+  "typechecks": [
+    "shared",
+    "db",
+    "server",
+    "ui",
+    "plugin"
+  ],
+  "frontendBuild": "passed",
+  "tokenGates": "passed",
+  "broaderRegression": "Broader existing agent/config UI tests contain localization assertion and login-flow failures; not represented as a passing full-repository regression."
+}

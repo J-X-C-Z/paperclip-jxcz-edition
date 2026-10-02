@@ -193,6 +193,10 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   );
 }
 
+export function useOptionalDialogActions() {
+  return useContext(DialogActionsContext);
+}
+
 export function useDialogActions() {
   const ctx = useContext(DialogActionsContext);
   if (!ctx) {

@@ -26,6 +26,7 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { i18n } from "../i18n";
 import {
   canBoardManageRuntime,
   canBoardResolveRecoveryAction,
@@ -1292,7 +1293,8 @@ describe("IssueDetail", () => {
   let queryClient: QueryClient;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     localStorage.clear();
     sessionStorage.clear();
     mockPanelState.panelVisible = true;

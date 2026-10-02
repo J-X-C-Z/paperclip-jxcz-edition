@@ -16,6 +16,10 @@ export const agentPermissionsSchema = z.object({
   // No schema default: the server derives the default (enabled unless the
   // permissions record marks the agent low-trust) when the field is omitted.
   canCreateAgents: z.boolean().optional(),
+  canCreateTasks: z.boolean().optional(),
+  canAssignTasks: z.boolean().optional(),
+  canReviewTasks: z.boolean().optional(),
+  canManageAgents: z.boolean().optional(),
   canCreateSkills: z.boolean().optional().default(true),
   trustPreset: trustPresetSchema.optional(),
   authorizationPolicy: trustAuthorizationPolicySchema.optional(),
@@ -77,6 +81,7 @@ export const agentRuntimeConfigSchema = z.object({
 
 export const createAgentSchema = z.object({
   name: z.string().min(1),
+  templateId: z.string().trim().min(1).max(128).optional(),
   role: z.enum(AGENT_ROLES).optional().default("general"),
   title: z.string().optional().nullable(),
   icon: z.enum(AGENT_ICON_NAMES).optional().nullable(),
@@ -136,7 +141,7 @@ export const createAgentHireSchema = createAgentSchema.extend({
 export type CreateAgentHire = z.infer<typeof createAgentHireSchema>;
 
 export const updateAgentSchema = objectWithoutDefaults(
-  createAgentSchema.omit({ permissions: true, onboardingFirstAgent: true }),
+  createAgentSchema.omit({ permissions: true, onboardingFirstAgent: true, templateId: true }),
 )
   .partial()
   .extend({
@@ -279,6 +284,9 @@ export const updateAgentPermissionsSchema = z.object({
   canCreateAgents: z.boolean(),
   canCreateSkills: z.boolean().optional(),
   canAssignTasks: z.boolean(),
+  canCreateTasks: z.boolean().optional(),
+  canReviewTasks: z.boolean().optional(),
+  canManageAgents: z.boolean().optional(),
   trustPreset: trustPresetSchema.optional(),
   authorizationPolicy: trustAuthorizationPolicySchema.optional(),
 });

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plug, Plus, Search, X } from "lucide-react";
 import { Link } from "@/lib/router";
@@ -74,7 +75,7 @@ export function WizardToolsStep(props: WizardToolsStepProps) {
       .filter((entry) => entry.tools.length > 0);
   }, [appGroups, search, capabilityFilter]);
 
-  if (catalogLoading) return <LoadingState label="Loading tools…" />;
+  if (catalogLoading) return <LoadingState label={uiText("Loading tools…")} />;
 
   // Cold state A (AP17): nothing connected at all.
   if (appGroups.length === 0) {
@@ -82,14 +83,11 @@ export function WizardToolsStep(props: WizardToolsStepProps) {
       <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-12 text-center">
         <Plug className="h-6 w-6 text-muted-foreground" />
         <div>
-          <p className="text-sm font-medium text-foreground">App connections are coming soon</p>
-          <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-            Profiles will be available once app connections are ready. Browse the planned integrations in the
-            meantime.
-          </p>
+          <p className="text-sm font-medium text-foreground">{uiText("App connections are coming soon")}</p>
+          <p className="mx-auto max-w-sm text-sm text-muted-foreground">{uiText("Profiles will be available once app connections are ready. Browse the planned integrations in the meantime.")}</p>
         </div>
         <Button asChild variant="outline">
-          <Link to="/apps">Browse app connections</Link>
+          <Link to="/apps">{uiText("Browse app connections")}</Link>
         </Button>
       </div>
     );
@@ -103,7 +101,7 @@ export function WizardToolsStep(props: WizardToolsStepProps) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tools…"
+            placeholder={uiText("Search tools…")}
             className="pl-8"
           />
         </div>
@@ -129,7 +127,7 @@ export function WizardToolsStep(props: WizardToolsStepProps) {
       {filteredGroups.length === 0 ? (
         // Cold state B (AP17): a search/filter that matches nothing.
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-10 text-center">
-          <p className="text-sm font-medium text-foreground">No tools match “{search}”.</p>
+          <p className="text-sm font-medium text-foreground">{uiText("No tools match “{search}”.", { search })}</p>
           <button
             type="button"
             onClick={() => {
@@ -137,9 +135,7 @@ export function WizardToolsStep(props: WizardToolsStepProps) {
               setCapabilityFilter(null);
             }}
             className="text-sm font-medium text-primary hover:underline"
-          >
-            Clear search
-          </button>
+          >{uiText("Clear search")}</button>
         </div>
       ) : (
         <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
@@ -202,13 +198,12 @@ function AppRow({
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
           <span className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">
-              All {group.name} tools ({group.tools.length})
+            <span className="text-sm font-medium text-foreground">{uiText("All {name} tools ({count})", { name: group.name, count: group.tools.length })}
             </span>
             <span className="text-xs text-muted-foreground">
               {state === "indeterminate"
                 ? appSelectionLabel(group, selection)
-                : "includes tools " + group.name + " adds later"}
+                : uiText("includes tools {name} adds later", { name: group.name })}
             </span>
           </span>
         </button>
@@ -258,19 +253,19 @@ function NewToolsRadio({
   const options: Array<{ value: NewToolsAction; label: string; hint: string; recommended?: boolean }> = [
     {
       value: "deny",
-      label: "Stay blocked until someone allows them",
-      hint: "New tools an app adds later won't be usable until you review them.",
+      label: uiText("Stay blocked until someone allows them"),
+      hint: uiText("New tools an app adds later won't be usable until you review them."),
       recommended: true,
     },
     {
       value: "allow",
-      label: "Allowed automatically",
-      hint: "Any tool an app adds later becomes usable right away.",
+      label: uiText("Allowed automatically"),
+      hint: uiText("Any tool an app adds later becomes usable right away."),
     },
   ];
   return (
     <fieldset className="space-y-2 rounded-lg border border-border p-4">
-      <legend className="px-1 text-sm font-medium text-foreground">New tools that appear later</legend>
+      <legend className="px-1 text-sm font-medium text-foreground">{uiText("New tools that appear later")}</legend>
       <div className="space-y-2">
         {options.map((opt) => (
           <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
@@ -285,11 +280,9 @@ function NewToolsRadio({
               <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                 {opt.label}
                 {opt.recommended ? (
-                  <Badge variant="outline" className="text-(length:--text-nano)">
-                    Recommended
-                  </Badge>
+                  <Badge variant="outline" className="text-(length:--text-nano)">{uiText("Recommended")}</Badge>
                 ) : (
-                  <span className="text-xs font-normal text-amber-600">(risky)</span>
+                  <span className="text-xs font-normal text-amber-600">{uiText("(risky)")}</span>
                 )}
               </span>
               <span className="text-xs text-muted-foreground">{opt.hint}</span>
@@ -302,9 +295,9 @@ function NewToolsRadio({
 }
 
 const RULE_KIND_OPTIONS: Array<{ value: AdvancedRuleKind; label: string }> = [
-  { value: "tool_name", label: "Tool name pattern" },
-  { value: "risk_level", label: "Risk level" },
-  { value: "catalog_entry", label: "By tool ID" },
+  { value: "tool_name", label: uiText("Tool name pattern") },
+  { value: "risk_level", label: uiText("Risk level") },
+  { value: "catalog_entry", label: uiText("By tool ID") },
 ];
 
 function createAdvancedRuleId() {
@@ -314,7 +307,7 @@ function createAdvancedRuleId() {
 }
 
 function ruleSummary(rule: AdvancedRule): string {
-  const verb = rule.effect === "include" ? "Allow" : "Block";
+  const verb = rule.effect === "include" ? uiText("Allow") : uiText("Block");
   if (rule.kind === "tool_name") return `${verb} tools matching ${rule.value}`;
   if (rule.kind === "risk_level") return `${verb} ${rule.riskLevel ?? rule.value} tools`;
   return `${verb} tool ${rule.value}`;
@@ -349,14 +342,11 @@ function AdvancedRules({
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="rounded-lg border border-border">
       <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left">
-        <span className="text-sm font-medium text-foreground">Advanced rules</span>
+        <span className="text-sm font-medium text-foreground">{uiText("Advanced rules")}</span>
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-3 border-t border-border px-4 py-3">
-        <p className="text-xs text-muted-foreground">
-          Match tools by a name pattern, a risk level, or a specific tool ID. These run on top of the choices
-          above.
-        </p>
+        <p className="text-xs text-muted-foreground">{uiText("Match tools by a name pattern, a risk level, or a specific tool ID. These run on top of the choices above.")}</p>
 
         {rules.length > 0 ? (
           <ul className="space-y-1.5">
@@ -368,7 +358,7 @@ function AdvancedRules({
                 <span className="text-foreground">{ruleSummary(rule)}</span>
                 <button
                   type="button"
-                  aria-label="Remove rule"
+                  aria-label={uiText("Remove rule")}
                   onClick={() => onChange(rules.filter((r) => r.id !== rule.id))}
                   className="text-muted-foreground hover:text-destructive"
                 >
@@ -385,8 +375,8 @@ function AdvancedRules({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="include">Allow</SelectItem>
-              <SelectItem value="exclude">Block</SelectItem>
+              <SelectItem value="include">{uiText("Allow")}</SelectItem>
+              <SelectItem value="exclude">{uiText("Block")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={kind} onValueChange={(v) => setKind(v as AdvancedRuleKind)}>
@@ -407,9 +397,9 @@ function AdvancedRules({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="read">Read-only</SelectItem>
-                <SelectItem value="write">Makes changes</SelectItem>
-                <SelectItem value="destructive">Destructive</SelectItem>
+                <SelectItem value="read">{uiText("Read-only")}</SelectItem>
+                <SelectItem value="write">{uiText("Makes changes")}</SelectItem>
+                <SelectItem value="destructive">{uiText("Destructive")}</SelectItem>
               </SelectContent>
             </Select>
           ) : (
@@ -421,9 +411,7 @@ function AdvancedRules({
             />
           )}
           <Button type="button" variant="outline" size="sm" onClick={addRule}>
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Add rule
-          </Button>
+            <Plus className="mr-1 h-3.5 w-3.5" />{uiText("Add rule")}</Button>
         </div>
       </CollapsibleContent>
     </Collapsible>

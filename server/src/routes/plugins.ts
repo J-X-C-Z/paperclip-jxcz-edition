@@ -55,6 +55,7 @@ import {
 } from "../services/plugin-loader.js";
 import { logActivity } from "../services/activity-log.js";
 import { publishGlobalLiveEvent } from "../services/live-events.js";
+import { improvementTeamOrganizationService, IMPROVEMENT_ORGANIZATION_ACTIONS, IMPROVEMENT_TEAMS_PLUGIN_KEY } from "../services/improvement-team-organization.js";
 import { issueService } from "../services/issues.js";
 import type { PluginJobScheduler } from "../services/plugin-job-scheduler.js";
 import type { PluginJobStore } from "../services/plugin-job-store.js";
@@ -541,6 +542,21 @@ export function pluginRoutes(
     workerManager: bridgeDeps?.workerManager ?? webhookDeps?.workerManager,
   });
   const issuesSvc = issueService(db);
+  const organizationSvc = improvementTeamOrganizationService(db);
+  async function saveNativeOrganization(req: Request, pluginKey: string, key: string, params: Record<string, unknown>) {
+    if (pluginKey !== IMPROVEMENT_TEAMS_PLUGIN_KEY || !IMPROVEMENT_ORGANIZATION_ACTIONS.has(key)) return null;
+    assertBoard(req);
+    assertCompanyAccess(req, String(params.companyId ?? ""));
+    const result = await organizationSvc.save(key, params);
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId: String(params.companyId), actorType: actor.actorType, actorId: actor.actorId,
+      action: "organization.updated", entityType: key === "save-team" ? "project" : "company",
+      entityId: String(key === "save-team" ? params.projectId : params.companyId),
+      details: { plugin: pluginKey, action: key, ...result },
+    });
+    return result;
+  }
 
   function matchScopedApiRoute(route: PluginApiRouteDeclaration, method: string, requestPath: string) {
     if (route.method !== method) return null;
@@ -1528,8 +1544,15 @@ export function pluginRoutes(
     }
 
     const companyId = assertPluginBridgeScope(req, body.companyId);
+    const authorizedParams = actionParamsWithAuthorizedCompanyScope(body.params, companyId);
+    if (plugin.pluginKey === IMPROVEMENT_TEAMS_PLUGIN_KEY && IMPROVEMENT_ORGANIZATION_ACTIONS.has(body.key)) {
+      assertBoard(req);
+      assertCompanyAccess(req, String(authorizedParams.companyId ?? ""));
+    }
 
     try {
+      const nativeOrganization = await saveNativeOrganization(req, plugin.pluginKey, body.key, authorizedParams);
+      if (nativeOrganization) { res.json({ data: nativeOrganization }); return; }
       const result = await bridgeDeps.workerManager.call(
         plugin.id,
         "performAction",
@@ -1712,8 +1735,15 @@ export function pluginRoutes(
     } | undefined;
 
     const companyId = assertPluginBridgeScope(req, body?.companyId);
+    const authorizedParams = actionParamsWithAuthorizedCompanyScope(body?.params, companyId);
+    if (plugin.pluginKey === IMPROVEMENT_TEAMS_PLUGIN_KEY && IMPROVEMENT_ORGANIZATION_ACTIONS.has(key)) {
+      assertBoard(req);
+      assertCompanyAccess(req, String(authorizedParams.companyId ?? ""));
+    }
 
     try {
+      const nativeOrganization = await saveNativeOrganization(req, plugin.pluginKey, key, authorizedParams);
+      if (nativeOrganization) { res.json({ data: nativeOrganization }); return; }
       const result = await bridgeDeps.workerManager.call(
         plugin.id,
         "performAction",

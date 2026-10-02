@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { cloneElement, isValidElement, useState } from "react";
 import { CalendarRange } from "lucide-react";
 import {
@@ -48,9 +49,7 @@ export function DecisionDateChips({ value, custom, onChange }: DecisionDateChips
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto space-y-2 p-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-(length:--text-nano) font-medium uppercase tracking-wide text-muted-foreground">
-              From
-            </label>
+            <label className="text-(length:--text-nano) font-medium uppercase tracking-wide text-muted-foreground"> {uiText("From")} </label>
             <input
               type="date"
               value={custom.from ?? ""}
@@ -60,9 +59,7 @@ export function DecisionDateChips({ value, custom, onChange }: DecisionDateChips
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-(length:--text-nano) font-medium uppercase tracking-wide text-muted-foreground">
-              To
-            </label>
+            <label className="text-(length:--text-nano) font-medium uppercase tracking-wide text-muted-foreground"> {uiText("To")} </label>
             <input
               type="date"
               value={custom.to ?? ""}
@@ -80,9 +77,7 @@ export function DecisionDateChips({ value, custom, onChange }: DecisionDateChips
                 onChange("all", { from: null, to: null });
                 setOpen(false);
               }}
-            >
-              Clear
-            </Button>
+            > {uiText("Clear")} </Button>
           </div>
         </PopoverContent>
       </Popover>

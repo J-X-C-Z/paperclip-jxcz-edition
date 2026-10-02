@@ -1,0 +1,2 @@
+PASS: migration, atomic/concurrent membership snapshots, rollback, stale snapshot isolation, lead assignment, archive-ID selection, live-cycle transition, atomic archival, duplicate protection, project assignment preserving historical archives, busy-team and external-company rejection, future-cycle target, failed-start marker cleanup, 12 overlapping cycle/assignment callers (real PostgreSQL)
+Isolated PostgreSQL database cleaned.

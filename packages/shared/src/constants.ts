@@ -36,6 +36,8 @@ export const AGENT_ADAPTER_TYPES = [
   "hermes_gateway",
   "hermes_local",
   "kimi_local",
+  "dsh_local",
+  "mimocode_local",
   "opencode_local",
   "pi_local",
   "cursor",
@@ -833,7 +835,7 @@ export const BILLING_TYPES = [
 ] as const;
 export type BillingType = (typeof BILLING_TYPES)[number];
 
-export const COST_STATUSES = ["reported", "unpriced"] as const;
+export const COST_STATUSES = ["reported", "estimated", "unpriced"] as const;
 export type CostStatus = (typeof COST_STATUSES)[number];
 
 export const FINANCE_EVENT_KINDS = [

@@ -1,0 +1,457 @@
+{
+  "verifiedAt": "2026-10-01 Asia/Shanghai",
+  "runtime": "http://127.0.0.1:3100",
+  "route": "/ORI/departments",
+  "mode": "static production build",
+  "method": "Two sequential reloads before and after; HTML audit captured navigation-start to sidebar and to both department cards. Browser assets/cache were not cleared. Small sample, variable remote database latency; not a cold-cache or universal speed guarantee. Probe removed afterward.",
+  "before": {
+    "browser": [
+      {
+        "shellAt": 2520.6000000089407,
+        "contentAt": 24918.40000000596,
+        "resources": 76,
+        "scriptCount": 43,
+        "scriptBytes": 0,
+        "paints": [
+          {
+            "name": "first-paint",
+            "start": 148
+          },
+          {
+            "name": "first-contentful-paint",
+            "start": 164
+          }
+        ],
+        "slow": [
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/skills",
+            "start": 4188,
+            "duration": 48172
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 4187,
+            "duration": 20622
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 4189,
+            "duration": 18599
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 4186,
+            "duration": 16559
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 70591,
+            "duration": 16534
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 4187,
+            "duration": 15554
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/routines",
+            "start": 4189,
+            "duration": 13525
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/agents",
+            "start": 4188,
+            "duration": 12172
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 70591,
+            "duration": 11945
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/sidebar-preferences/me",
+            "start": 4188,
+            "duration": 11757
+          },
+          {
+            "path": "/api/plugins/01b0c68c-7ef0-4bb7-8639-f37cd2bd0066/data/company-teams",
+            "start": 13268,
+            "duration": 11647
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/live-runs",
+            "start": 4188,
+            "duration": 10484
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/heartbeat-runs",
+            "start": 4188,
+            "duration": 9768
+          },
+          {
+            "path": "/api/plugins",
+            "start": 4188,
+            "duration": 9078
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 70590,
+            "duration": 8922
+          }
+        ]
+      },
+      {
+        "shellAt": 3975.9000000059605,
+        "contentAt": 30315.60000000894,
+        "resources": 76,
+        "scriptCount": 43,
+        "scriptBytes": 0,
+        "paints": [
+          {
+            "name": "first-paint",
+            "start": 264
+          },
+          {
+            "name": "first-contentful-paint",
+            "start": 296
+          }
+        ],
+        "slow": [
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/skills",
+            "start": 6433,
+            "duration": 27755
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 6432,
+            "duration": 25852
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 6433,
+            "duration": 21361
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 6431,
+            "duration": 19742
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 6430,
+            "duration": 18116
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/routines",
+            "start": 6433,
+            "duration": 15443
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/heartbeat-runs",
+            "start": 6432,
+            "duration": 15044
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/agents",
+            "start": 6432,
+            "duration": 14941
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/sidebar-preferences/me",
+            "start": 6432,
+            "duration": 14578
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 37541,
+            "duration": 14388
+          },
+          {
+            "path": "/api/announcements/current",
+            "start": 6433,
+            "duration": 13501
+          },
+          {
+            "path": "/api/plugins",
+            "start": 6432,
+            "duration": 12891
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/live-runs",
+            "start": 6432,
+            "duration": 12868
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 37541,
+            "duration": 12739
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/join-requests",
+            "start": 6431,
+            "duration": 12015
+          }
+        ]
+      }
+    ],
+    "bundle": {
+      "entryAndPreloads": 43,
+      "rawBytes": 8459442,
+      "gzipBytes": 2344468
+    },
+    "api": [
+      {
+        "path": "/",
+        "status": 200,
+        "seconds": 0.021,
+        "bytes": 5742
+      },
+      {
+        "path": "/api/health",
+        "status": 200,
+        "seconds": 2.085,
+        "bytes": 1283
+      },
+      {
+        "path": "/api/companies",
+        "status": 200,
+        "seconds": 2.087,
+        "bytes": 1135
+      },
+      {
+        "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/agents",
+        "status": 200,
+        "seconds": 2.263,
+        "bytes": 46419
+      },
+      {
+        "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+        "status": 200,
+        "seconds": 4.912,
+        "bytes": 11549
+      },
+      {
+        "path": "/api/plugins",
+        "status": 200,
+        "seconds": 0.799,
+        "bytes": 1377
+      }
+    ]
+  },
+  "after": {
+    "browser": [
+      {
+        "shellAt": 3317.2999999970198,
+        "contentAt": 22774.10000000894,
+        "resources": 110,
+        "scriptCount": 81,
+        "scriptBytes": 0,
+        "paints": [
+          {
+            "name": "first-paint",
+            "start": 336
+          },
+          {
+            "name": "first-contentful-paint",
+            "start": 368
+          }
+        ],
+        "slow": [
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 3314,
+            "duration": 22129
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 3313,
+            "duration": 17150
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 3314,
+            "duration": 14288
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 29405,
+            "duration": 13332
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 29406,
+            "duration": 11556
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/heartbeat-runs",
+            "start": 3314,
+            "duration": 11384
+          },
+          {
+            "path": "/api/instance/settings/general",
+            "start": 3315,
+            "duration": 11283
+          },
+          {
+            "path": "/api/plugins",
+            "start": 3606,
+            "duration": 11079
+          },
+          {
+            "path": "/api/announcements/current",
+            "start": 3315,
+            "duration": 10521
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/live-runs",
+            "start": 3314,
+            "duration": 10465
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 3312,
+            "duration": 9380
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 29405,
+            "duration": 9198
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 3279,
+            "duration": 8246
+          },
+          {
+            "path": "/api/plugins/01b0c68c-7ef0-4bb7-8639-f37cd2bd0066/data/company-teams",
+            "start": 14685,
+            "duration": 8085
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 18920,
+            "duration": 7943
+          }
+        ]
+      },
+      {
+        "shellAt": 2926.9000000059605,
+        "contentAt": 16988.5,
+        "resources": 106,
+        "scriptCount": 81,
+        "scriptBytes": 0,
+        "paints": [
+          {
+            "name": "first-paint",
+            "start": 232
+          },
+          {
+            "name": "first-contentful-paint",
+            "start": 232
+          }
+        ],
+        "slow": [
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/issues",
+            "start": 2925,
+            "duration": 17321
+          },
+          {
+            "path": "/api/issues/ca6d37ea-3a9c-49f8-9f4b-800c42a6b0cb",
+            "start": 2924,
+            "duration": 11239
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/dashboard",
+            "start": 2924,
+            "duration": 10592
+          },
+          {
+            "path": "/api/plugins/01b0c68c-7ef0-4bb7-8639-f37cd2bd0066/data/company-teams",
+            "start": 9729,
+            "duration": 7256
+          },
+          {
+            "path": "/api/plugins",
+            "start": 3217,
+            "duration": 6511
+          },
+          {
+            "path": "/api/instance/settings/general",
+            "start": 2925,
+            "duration": 6205
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 2905,
+            "duration": 6005
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/projects",
+            "start": 2923,
+            "duration": 5790
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/live-runs",
+            "start": 2925,
+            "duration": 4656
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/heartbeat-runs",
+            "start": 2925,
+            "duration": 3652
+          },
+          {
+            "path": "/api/health",
+            "start": 201,
+            "duration": 2703
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/inbox-dismissals",
+            "start": 2924,
+            "duration": 2428
+          },
+          {
+            "path": "/api/announcements/current",
+            "start": 2925,
+            "duration": 2322
+          },
+          {
+            "path": "/api/companies",
+            "start": 1442,
+            "duration": 1460
+          },
+          {
+            "path": "/api/companies/2ae03c21-9745-4209-b202-edf4ffa70a6a/approvals",
+            "start": 2924,
+            "duration": 1383
+          }
+        ]
+      }
+    ],
+    "bundle": {
+      "entryAndPreloads": 79,
+      "rawBytes": 2240729,
+      "gzipBytes": 666175
+    }
+  },
+  "summary": {
+    "beforeMeanContentMs": 27617.00000000745,
+    "afterMeanContentMs": 19881.30000000447
+  },
+  "validation": {
+    "targetedTests": 20,
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "tokenGates": "passed",
+    "lockfile": "unchanged",
+    "browser": [
+      "department cards and five groups preserved",
+      "new task dialog opens and closes without submitting",
+      "group navigation renders all five groups",
+      "dashboard navigation renders summary"
+    ],
+    "unchangedUnderlyingData": "No task/agent/department/project writes, no provider model runs, no database reset or server restart."
+  }
+}

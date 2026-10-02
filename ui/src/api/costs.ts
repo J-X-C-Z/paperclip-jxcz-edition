@@ -5,6 +5,8 @@ import type {
   CostByBiller,
   CostByAgentModel,
   CostByProject,
+  CostByTeam,
+  CostByDepartment,
   CostWindowSpendRow,
   FinanceSummary,
   FinanceByBiller,
@@ -14,27 +16,43 @@ import type {
 } from "@paperclipai/shared";
 import { api } from "./client";
 
-function dateParams(from?: string, to?: string): string {
+function dateParams(from?: string, to?: string, projectId?: string | null): string {
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
+  if (projectId) params.set("projectId", projectId);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
 
+export interface CostExchangeRate {
+  base: "USD";
+  quote: "CNY";
+  rate: number | null;
+  updatedAt: string | null;
+  source: string;
+  stale: boolean;
+}
+
 export const costsApi = {
-  summary: (companyId: string, from?: string, to?: string) =>
-    api.get<CostSummary>(`/companies/${companyId}/costs/summary${dateParams(from, to)}`),
-  byAgent: (companyId: string, from?: string, to?: string) =>
-    api.get<CostByAgent[]>(`/companies/${companyId}/costs/by-agent${dateParams(from, to)}`),
-  byAgentModel: (companyId: string, from?: string, to?: string) =>
-    api.get<CostByAgentModel[]>(`/companies/${companyId}/costs/by-agent-model${dateParams(from, to)}`),
-  byProject: (companyId: string, from?: string, to?: string) =>
-    api.get<CostByProject[]>(`/companies/${companyId}/costs/by-project${dateParams(from, to)}`),
-  byProvider: (companyId: string, from?: string, to?: string) =>
-    api.get<CostByProviderModel[]>(`/companies/${companyId}/costs/by-provider${dateParams(from, to)}`),
-  byBiller: (companyId: string, from?: string, to?: string) =>
-    api.get<CostByBiller[]>(`/companies/${companyId}/costs/by-biller${dateParams(from, to)}`),
+  exchangeRate: (companyId: string) =>
+    api.get<CostExchangeRate>(`/companies/${companyId}/costs/exchange-rate`),
+  summary: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostSummary>(`/companies/${companyId}/costs/summary${dateParams(from, to, projectId)}`),
+  byAgent: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByAgent[]>(`/companies/${companyId}/costs/by-agent${dateParams(from, to, projectId)}`),
+  byAgentModel: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByAgentModel[]>(`/companies/${companyId}/costs/by-agent-model${dateParams(from, to, projectId)}`),
+  byProject: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByProject[]>(`/companies/${companyId}/costs/by-project${dateParams(from, to, projectId)}`),
+  byTeam: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByTeam[]>(`/companies/${companyId}/costs/by-team${dateParams(from, to, projectId)}`),
+  byDepartment: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByDepartment[]>(`/companies/${companyId}/costs/by-department${dateParams(from, to, projectId)}`),
+  byProvider: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByProviderModel[]>(`/companies/${companyId}/costs/by-provider${dateParams(from, to, projectId)}`),
+  byBiller: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByBiller[]>(`/companies/${companyId}/costs/by-biller${dateParams(from, to, projectId)}`),
   financeSummary: (companyId: string, from?: string, to?: string) =>
     api.get<FinanceSummary>(`/companies/${companyId}/costs/finance-summary${dateParams(from, to)}`),
   financeByBiller: (companyId: string, from?: string, to?: string) =>
@@ -43,8 +61,8 @@ export const costsApi = {
     api.get<FinanceByKind[]>(`/companies/${companyId}/costs/finance-by-kind${dateParams(from, to)}`),
   financeEvents: (companyId: string, from?: string, to?: string, limit: number = 100) =>
     api.get<FinanceEvent[]>(`/companies/${companyId}/costs/finance-events${dateParamsWithLimit(from, to, limit)}`),
-  windowSpend: (companyId: string) =>
-    api.get<CostWindowSpendRow[]>(`/companies/${companyId}/costs/window-spend`),
+  windowSpend: (companyId: string, projectId?: string | null) =>
+    api.get<CostWindowSpendRow[]>(`/companies/${companyId}/costs/window-spend${dateParams(undefined, undefined, projectId)}`),
   quotaWindows: (companyId: string) =>
     api.get<ProviderQuotaResult[]>(`/companies/${companyId}/costs/quota-windows`),
 };

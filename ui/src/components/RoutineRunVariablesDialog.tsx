@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   WORKSPACE_BRANCH_ROUTINE_VARIABLE,
@@ -16,6 +17,7 @@ import { AgentIcon } from "./AgentIconPicker";
 import { InlineEntitySelector, type InlineEntityOption } from "./InlineEntitySelector";
 import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
 import { getRecentProjectIds, trackRecentProject } from "../lib/recent-projects";
+import { projectAssigneeChoices, useScopedAgents } from "../hooks/useScopedAgents";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -218,19 +220,27 @@ export function RoutineRunVariablesDialog({
     () => projects.find((project) => project.id === selection.projectId) ?? null,
     [projects, selection.projectId],
   );
+  const projectAgentScope = useScopedAgents(selection.projectId, companyId);
   const recentAssigneeIds = useMemo(() => getRecentAssigneeIds(), [open]);
   const recentProjectIds = useMemo(() => getRecentProjectIds(), [open]);
   const assigneeOptions = useMemo<InlineEntityOption[]>(
     () =>
       sortAgentsByRecency(
-        agents.filter((agent) => agent.status !== "terminated"),
+        projectAssigneeChoices(
+          agents.filter((agent) => agent.status !== "terminated"),
+          projectAgentScope.memberships,
+          projectAgentScope.projectScoped,
+          selection.assigneeAgentId,
+        ),
         recentAssigneeIds,
       ).map((agent) => ({
         id: agent.id,
-        label: agent.name,
+        label: projectAgentScope.projectScoped && !projectAgentScope.isMember(agent.id)
+          ? `Keep ${agent.name} (not a project member)`
+          : agent.name,
         searchText: `${agent.name} ${agent.role} ${agent.title ?? ""}`,
       })),
-    [agents, recentAssigneeIds],
+    [agents, projectAgentScope, recentAssigneeIds, selection.assigneeAgentId],
   );
   const projectOptions = useMemo<InlineEntityOption[]>(
     () => projects.map((project) => ({
@@ -346,24 +356,24 @@ export function RoutineRunVariablesDialog({
           {routineName && (
             <p className="text-muted-foreground text-sm">{routineName}</p>
           )}
-          <DialogTitle>Run routine</DialogTitle>
+          <DialogTitle>{uiText("Run routine")}</DialogTitle>
           <DialogDescription>
-            Choose the agent and optional project for this one run. Routine defaults are prefilled and won&apos;t be changed.
+            {uiText("Choose the agent and optional project for this one run. Routine defaults are prefilled and won't be changed.")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">Agent *</Label>
+              <Label className="text-xs">{uiText("Agent *")}</Label>
               <InlineEntitySelector
                 value={selection.assigneeAgentId}
                 options={assigneeOptions}
                 recentOptionIds={recentAssigneeIds}
-                placeholder="Agent"
-                noneLabel="Select an agent"
-                searchPlaceholder="Search agents..."
-                emptyMessage="No agents found."
+                placeholder={uiText("Agent")}
+                noneLabel={uiText("Select an agent")}
+                searchPlaceholder={uiText("Search agents...")}
+                emptyMessage={uiText("No agents found.")}
                 disablePortal
                 openOnFocus={false}
                 onChange={(assigneeAgentId) => {
@@ -381,7 +391,7 @@ export function RoutineRunVariablesDialog({
                       <span className="truncate">{option.label}</span>
                     )
                   ) : (
-                    <span className="text-muted-foreground">Select an agent</span>
+                    <span className="text-muted-foreground">{uiText("Select an agent")}</span>
                   )
                 }
                 renderOption={(option) => {
@@ -395,17 +405,34 @@ export function RoutineRunVariablesDialog({
                   );
                 }}
               />
+              {projectAgentScope.projectScoped && selection.assigneeAgentId &&
+                !projectAgentScope.isMember(selection.assigneeAgentId) ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={projectAgentScope.saveMembership.isPending}
+                      onClick={() => projectAgentScope.saveMembership.mutate({ agentId: selection.assigneeAgentId })}
+                    >{uiText("Add current assignee to project")}</Button>
+                    {projectAgentScope.saveMembership.isError ? (
+                      <p role="alert" className="mt-2 text-xs text-destructive">
+                        Could not add this agent to the project. The selected agent is unchanged.
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Project</Label>
+              <Label className="text-xs">{uiText("Project")}</Label>
               <InlineEntitySelector
                 value={selection.projectId}
                 options={projectOptions}
                 recentOptionIds={recentProjectIds}
-                placeholder="Project"
-                noneLabel="No project"
-                searchPlaceholder="Search projects..."
-                emptyMessage="No projects found."
+                placeholder={uiText("Project")}
+                noneLabel={uiText("No project")}
+                searchPlaceholder={uiText("Search projects...")}
+                emptyMessage={uiText("No projects found.")}
                 disablePortal
                 openOnFocus={false}
                 onChange={(projectId) => {
@@ -430,7 +457,7 @@ export function RoutineRunVariablesDialog({
                       <span className="truncate">{option.label}</span>
                     </>
                   ) : (
-                    <span className="text-muted-foreground">No project</span>
+                    <span className="text-muted-foreground">{uiText("No project")}</span>
                   )
                 }
                 renderOption={(option) => {
@@ -480,9 +507,9 @@ export function RoutineRunVariablesDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__unset__">No value</SelectItem>
-                    <SelectItem value="true">True</SelectItem>
-                    <SelectItem value="false">False</SelectItem>
+                    <SelectItem value="__unset__">{uiText("No value")}</SelectItem>
+                    <SelectItem value="true">{uiText("True")}</SelectItem>
+                    <SelectItem value="false">{uiText("False")}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : variable.type === "select" ? (
@@ -494,10 +521,10 @@ export function RoutineRunVariablesDialog({
                   }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a value" />
+                    <SelectValue placeholder={uiText("Choose a value")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__unset__">No value</SelectItem>
+                    <SelectItem value="__unset__">{uiText("No value")}</SelectItem>
                     {variable.options.map((option) => (
                       <SelectItem key={option} value={option}>{option}</SelectItem>
                     ))}
@@ -537,7 +564,7 @@ export function RoutineRunVariablesDialog({
           className="shrink-0 border-t border-border/60 bg-background px-6 pb-(--sz-calc-19) pt-4"
         >
           {!selection.assigneeAgentId ? (
-            <p className="mr-auto text-xs text-amber-600">Default agent required for this run.</p>
+            <p className="mr-auto text-xs text-amber-600">{uiText("Default agent required for this run.")}</p>
           ) : missingRequired.length > 0 ? (
             <p className="mr-auto text-xs text-amber-600">
               Missing: {missingRequired.join(", ")}
@@ -549,9 +576,7 @@ export function RoutineRunVariablesDialog({
           ) : (
             <span className="mr-auto" />
           )}
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}> {uiText("Cancel")} </Button>
           <Button
             onClick={() => {
               const nextVariables: Record<string, string | number | boolean> = {};
@@ -585,7 +610,7 @@ export function RoutineRunVariablesDialog({
             }}
             disabled={isPending || !canSubmit}
           >
-            {isPending ? "Running..." : "Run routine"}
+            {isPending ? uiText("Running...") : uiText("Run routine")}
           </Button>
         </DialogFooter>
       </DialogContent>

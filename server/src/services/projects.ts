@@ -349,16 +349,16 @@ export function buildProjectListMetricMaps(taskCountRows: TaskCountRow[], budget
 }
 
 /**
- * Attach lightweight list-only metrics (task count + budget) to a set of
+ * Load lightweight list-only metrics (task count + budget) for a set of
  * projects using two aggregate queries (no N+1). Used by the projects list
  * view (IA Phase 4 — PAP-60).
  */
-async function attachListMetrics(
+async function loadListMetrics(
   db: Db,
   companyId: string,
-  rows: ProjectWithGoals[],
-): Promise<ProjectWithGoals[]> {
-  if (rows.length === 0) return rows;
+  rows: Pick<ProjectRow, "id">[],
+): Promise<ReturnType<typeof buildProjectListMetricMaps>> {
+  if (rows.length === 0) return buildProjectListMetricMaps([], []);
 
   const projectIds = rows.map((r) => r.id);
 
@@ -389,16 +389,10 @@ async function attachListMetrics(
       ),
   ]);
 
-  const { taskCountByProjectId, budgetByProjectId } = buildProjectListMetricMaps(
+  return buildProjectListMetricMaps(
     taskCountRows,
     budgetRows,
   );
-
-  return rows.map((row) => ({
-    ...row,
-    taskCount: taskCountByProjectId.get(row.id) ?? 0,
-    budget: budgetByProjectId.get(row.id) ?? null,
-  }));
 }
 
 /** Sync the project_goals join table for a single project. */
@@ -631,9 +625,18 @@ export function projectService(db: Db) {
         ? eq(projects.companyId, companyId)
         : and(eq(projects.companyId, companyId), isNull(projects.archivedAt));
       const rows = await db.select().from(projects).where(where);
-      const withGoals = await attachGoals(db, rows);
-      const withWorkspaces = await attachWorkspaces(db, withGoals);
-      return attachListMetrics(db, companyId, withWorkspaces);
+      if (rows.length === 0) return [];
+      // Metrics depend only on the company and project IDs, so their two
+      // aggregate reads can overlap the existing metadata-loading chain.
+      const [withWorkspaces, { taskCountByProjectId, budgetByProjectId }] = await Promise.all([
+        attachGoals(db, rows).then((withGoals) => attachWorkspaces(db, withGoals)),
+        loadListMetrics(db, companyId, rows),
+      ]);
+      return withWorkspaces.map((row) => ({
+        ...row,
+        taskCount: taskCountByProjectId.get(row.id) ?? 0,
+        budget: budgetByProjectId.get(row.id) ?? null,
+      }));
     },
 
     listByIds: async (companyId: string, ids: string[]): Promise<ProjectWithGoals[]> => {

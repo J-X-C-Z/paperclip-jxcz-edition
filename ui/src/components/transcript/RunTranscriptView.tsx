@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TranscriptEntry } from "../../adapters";
 import type { ToolRunDecision } from "@paperclipai/shared";
@@ -335,20 +336,20 @@ function isCommandTool(name: string, input: unknown): boolean {
 }
 
 function displayToolName(name: string, input: unknown): string {
-  if (isCommandTool(name, input)) return "Executing command";
+  if (isCommandTool(name, input)) return uiText("Executing command");
   return humanizeLabel(name);
 }
 
 function summarizeToolResult(result: string | undefined, isError: boolean | undefined, density: TranscriptDensity): string {
-  if (!result) return isError ? "Tool failed" : "Waiting for result";
+  if (!result) return isError ? uiText("Tool failed") : uiText("Waiting for result");
   const structured = parseStructuredToolResult(result);
   if (structured) {
     if (structured.body) {
       return truncate(structured.body.split("\n")[0] ?? structured.body, density === "compact" ? 84 : 140);
     }
-    if (structured.status === "completed") return "Completed";
+    if (structured.status === "completed") return uiText("Completed");
     if (structured.status === "failed" || structured.status === "error") {
-      return structured.exitCode ? `Failed with exit code ${structured.exitCode}` : "Failed";
+      return structured.exitCode ? uiText("Failed with exit code {value0}", { value0: structured.exitCode }) : uiText("Failed");
     }
   }
   const lines = result
@@ -404,36 +405,36 @@ function summarizeToolDecision(decision: ToolRunDecision | null): { label: strin
   if (!decision) return null;
   if (decision.pendingAction) {
     return {
-      label: "Needs approval",
+      label: uiText("Needs approval"),
       className: "text-amber-700 dark:text-amber-300",
-      detail: `Action request ${decision.pendingAction.actionRequestId.slice(0, 8)}`,
+      detail: uiText("Action request {value0}", { value0: decision.pendingAction.actionRequestId.slice(0, 8) }),
     };
   }
   if (decision.denialReason || decision.invocation.status === "denied" || decision.outcome === "denied") {
     return {
-      label: "Denied",
+      label: uiText("Denied"),
       className: "text-red-700 dark:text-red-300",
       detail: decision.denialReason ?? decision.reasonCode ?? undefined,
     };
   }
   if (decision.invocation.status === "failed" || decision.invocation.status === "timed_out" || decision.outcome === "failure" || decision.outcome === "timeout") {
     return {
-      label: decision.invocation.status === "timed_out" || decision.outcome === "timeout" ? "Timed out" : "Failed",
+      label: decision.invocation.status === "timed_out" || decision.outcome === "timeout" ? uiText("Timed out") : uiText("Failed"),
       className: "text-red-700 dark:text-red-300",
       detail: decision.denialReason ?? decision.reasonCode ?? undefined,
     };
   }
   if (decision.actionRequest?.status === "approved") {
-    return { label: "Approved", className: "text-emerald-700 dark:text-emerald-300" };
+    return { label: uiText("Approved"), className: "text-emerald-700 dark:text-emerald-300" };
   }
   if (decision.actionRequest?.status === "executed") {
-    return { label: "Executed", className: "text-emerald-700 dark:text-emerald-300" };
+    return { label: uiText("Executed"), className: "text-emerald-700 dark:text-emerald-300" };
   }
   if (decision.decision === "allow" || decision.invocation.status === "authorized" || decision.invocation.status === "executing" || decision.invocation.status === "succeeded") {
-    return { label: "Allowed", className: "text-emerald-700 dark:text-emerald-300" };
+    return { label: uiText("Allowed"), className: "text-emerald-700 dark:text-emerald-300" };
   }
   if (decision.decision === "require_approval" || decision.invocation.approvalState === "pending") {
-    return { label: "Needs approval", className: "text-amber-700 dark:text-amber-300" };
+    return { label: uiText("Needs approval"), className: "text-amber-700 dark:text-amber-300" };
   }
   return {
     label: humanizeLabel(decision.invocation.status),
@@ -605,29 +606,29 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
         ts: entry.ts,
         label: entry.complete ? "workspace diff" : "workspace changes",
         tone: "info",
-        text: `${entry.totals.files} changed ${entry.totals.files === 1 ? "file" : "files"}`,
-        detail: entry.source === "runner_verified" ? "Verified from workspace" : "Reported by harness",
+        text: entry.totals.files === 1 ? uiText("{value0} file changed", { value0: entry.totals.files }) : uiText("{value0} files changed", { value0: entry.totals.files }),
+        detail: entry.source === "runner_verified" ? uiText("Verified from workspace") : uiText("Reported by harness"),
       });
       continue;
     }
 
     if (entry.kind === "workspace_file_reference") {
-      blocks.push({ type: "event", ts: entry.ts, label: "file reference", tone: "info", text: entry.displayName, detail: entry.path });
+      blocks.push({ type: "event", ts: entry.ts, label: uiText("file reference"), tone: "info", text: entry.displayName, detail: entry.path });
       continue;
     }
 
     if (entry.kind === "runtime_request") {
-      blocks.push({ type: "event", ts: entry.ts, label: `runtime ${entry.requestType}`, tone: entry.status === "pending" ? "warn" : "info", text: entry.prompt, detail: entry.status });
+      blocks.push({ type: "event", ts: entry.ts, label: uiText("runtime {value0}", { value0: entry.requestType }), tone: entry.status === "pending" ? "warn" : "info", text: entry.prompt, detail: entry.status });
       continue;
     }
 
     if (entry.kind === "run_result") {
-      blocks.push({ type: "event", ts: entry.ts, label: `result · ${entry.disposition}`, tone: entry.disposition === "blocked" ? "warn" : "info", text: entry.summary });
+      blocks.push({ type: "event", ts: entry.ts, label: uiText("result · {value0}", { value0: entry.disposition }), tone: entry.disposition === "blocked" ? "warn" : "info", text: entry.summary });
       continue;
     }
 
     if (entry.kind === "run_terminal") {
-      blocks.push({ type: "event", ts: entry.ts, label: "terminal", tone: entry.runState === "failed" ? "error" : "info", text: `${entry.runState} · ${entry.disposition}`, detail: entry.stopReason });
+      blocks.push({ type: "event", ts: entry.ts, label: uiText("terminal"), tone: entry.runState === "failed" ? "error" : "info", text: `${entry.runState} · ${entry.disposition}`, detail: entry.stopReason });
       continue;
     }
 
@@ -876,10 +877,10 @@ function TranscriptProviderActivity({ block, density }: { block: Extract<Transcr
     </button>
     {open ? <div className="mt-2 space-y-2 border-l border-border pl-5 text-xs">
       {steps.length > 0 ? <ol className="space-y-1">{steps.map((step, index) => <li key={String(step.stepId ?? index)}><span className="mr-2" aria-hidden="true">{step.status === "completed" ? "✓" : step.status === "blocked" ? "!" : "○"}</span>{String(step.body ?? "")}</li>)}</ol> : null}
-      {children.length > 0 ? <ul className="space-y-1">{children.map((child, index) => <li key={String(child.childId ?? index)}><strong>{String(child.role ?? "Child agent")}</strong> · {String(child.status ?? "unknown")}<div className="text-muted-foreground">{String(child.summary ?? "")}</div></li>)}</ul> : null}
-      {sources.length > 0 ? <ul className="space-y-1">{sources.map((source, index) => { const url = typeof source.url === "string" && /^https?:\/\//.test(source.url) ? source.url : null; return <li key={String(source.sourceId ?? index)}>{url ? <a className="underline" href={url} target="_blank" rel="noreferrer">{String(source.title ?? url)}</a> : String(source.title ?? "Unavailable source")} <span className="text-muted-foreground">Provider-reported</span></li>; })}</ul> : null}
+      {children.length > 0 ? <ul className="space-y-1">{children.map((child, index) => <li key={String(child.childId ?? index)}><strong>{String(child.role ?? uiText("Child agent"))}</strong> · {String(child.status ?? "unknown")}<div className="text-muted-foreground">{String(child.summary ?? "")}</div></li>)}</ul> : null}
+      {sources.length > 0 ? <ul className="space-y-1">{sources.map((source, index) => { const url = typeof source.url === "string" && /^https?:\/\//.test(source.url) ? source.url : null; return <li key={String(source.sourceId ?? index)}>{url ? <a className="underline" href={url} target="_blank" rel="noreferrer">{String(source.title ?? url)}</a> : String(source.title ?? uiText("Unavailable source"))} <span className="text-muted-foreground">{uiText("Provider-reported")}</span></li>; })}</ul> : null}
       {output ? <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-background p-2 font-mono">{output}</pre> : null}
-      {block.family === "model_identity" ? <div><span className="text-muted-foreground">Requested</span> {String(block.payload.requestedModel ?? "—")} · <span className="text-muted-foreground">Effective</span> {String(block.payload.effectiveModel ?? "—")}</div> : null}
+      {block.family === "model_identity" ? <div><span className="text-muted-foreground">{uiText("Requested")}</span> {String(block.payload.requestedModel ?? "—")} · <span className="text-muted-foreground">{uiText("Effective")}</span> {String(block.payload.effectiveModel ?? "—")}</div> : null}
     </div> : null}
   </div>;
 }
@@ -916,7 +917,7 @@ function TranscriptMessageBlock({
       {!isAssistant && (
         <div className="mb-1.5 flex items-center gap-2 text-(length:--text-micro) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">
           <User className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
-          <span>User</span>
+          <span>{uiText("User")}</span>
         </div>
       )}
       <MarkdownBody
@@ -936,7 +937,7 @@ function TranscriptMessageBlock({
             <span className="tc-live-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-70" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
           </span>
-          Streaming
+          {uiText("Streaming")}
         </div>
       )}
     </div>
@@ -1000,7 +1001,7 @@ function ToolDecisionDetails({ decision, compact }: { decision: ToolRunDecision 
       compact ? "text-(length:--text-micro)" : "text-xs",
     )}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Decision</span>
+        <span className="font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Decision")}</span>
         <ToolDecisionBadge decision={decision} />
         {decision.reasonCode && <span className="font-mono text-muted-foreground">{decision.reasonCode}</span>}
       </div>
@@ -1010,10 +1011,10 @@ function ToolDecisionDetails({ decision, compact }: { decision: ToolRunDecision 
         </div>
       )}
       <div className="mt-2 grid gap-1 font-mono text-muted-foreground sm:grid-cols-2">
-        <span>invocation {decision.invocation.id.slice(0, 8)}</span>
-        <span>audit {decision.auditEvents.length}</span>
-        {actionRequest && <span>action {actionRequest.status} {actionRequest.id.slice(0, 8)}</span>}
-        {actionRequest?.interactionId && <span>card {actionRequest.interactionId.slice(0, 8)}</span>}
+        <span>{uiText("invocation")} {decision.invocation.id.slice(0, 8)}</span>
+        <span>{uiText("audit")} {decision.auditEvents.length}</span>
+        {actionRequest && <span>{uiText("action")} {actionRequest.status} {actionRequest.id.slice(0, 8)}</span>}
+        {actionRequest?.interactionId && <span>{uiText("card")} {actionRequest.interactionId.slice(0, 8)}</span>}
       </div>
       {decision.pendingAction?.previewMarkdown && (
         <MarkdownBody className="mt-2 text-(length:--text-micro) leading-5 text-foreground/75 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
@@ -1105,16 +1106,14 @@ function TranscriptToolCard({
           <div className={detailsClass}>
             <div className={cn("grid gap-3", compact ? "grid-cols-1" : "lg:grid-cols-2")}>
               <div>
-                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">
-                  Input
-                </div>
+                <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground"> {uiText("Input")} </div>
                 <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-(length:--text-micro) text-foreground/80">
                   {formatToolPayload(block.input) || "<empty>"}
                 </pre>
               </div>
               <div>
                 <div className="mb-1 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">
-                  Result
+                  {uiText("Result")}
                 </div>
                 <pre className={cn(
                   "overflow-x-auto whitespace-pre-wrap break-words font-mono text-(length:--text-micro)",
@@ -1395,20 +1394,20 @@ function TranscriptToolGroup({
                   : item.status === "error" ? "text-red-700 dark:text-red-300"
                   : "text-emerald-700 dark:text-emerald-300"
                 )}>
-                  {item.status === "running" ? "Running" : item.status === "error" ? "Errored" : "Completed"}
+                  {item.status === "running" ? uiText("Running") : item.status === "error" ? uiText("Errored") : uiText("Completed")}
                 </span>
                 <ToolDecisionBadge decision={findToolDecision(toolDecisionMaps, item)} />
               </div>
               <div className={cn("grid gap-2 pl-7", compact ? "grid-cols-1" : "lg:grid-cols-2")}>
                 <div>
-                  <div className="mb-0.5 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">Input</div>
+                  <div className="mb-0.5 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">{uiText("Input")}</div>
                   <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-(length:--text-micro) text-foreground/80">
                     {formatToolPayload(item.input) || "<empty>"}
                   </pre>
                 </div>
                 {item.result && (
                   <div>
-                    <div className="mb-0.5 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">Result</div>
+                    <div className="mb-0.5 text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">{uiText("Result")}</div>
                     <pre className={cn(
                       "overflow-x-auto whitespace-pre-wrap break-words font-mono text-(length:--text-micro)",
                       item.status === "error" ? "text-red-700 dark:text-red-300" : "text-foreground/80",
@@ -1701,7 +1700,7 @@ function TranscriptStdoutRow({
     <div>
       <div className="flex items-center gap-2">
         <span className="text-(length:--text-nano) font-semibold uppercase tracking-(--tracking-caps) text-muted-foreground">
-          stdout
+          {uiText("stdout")}
         </span>
         <button
           type="button"

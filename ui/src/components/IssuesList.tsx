@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { startTransition, useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -97,6 +98,7 @@ import {
 import { taskDateGroup, taskDateGroupSeparator, type TaskDateGroup } from "../lib/task-date-groups";
 import { deriveOriginatingActor, ISSUE_STATUSES, type Issue, type IssueStatus, type Project } from "@paperclipai/shared";
 import { Badge } from "@/components/ui/badge";
+import { useUiTranslator } from "@/i18n";
 const ISSUE_SEARCH_DEBOUNCE_MS = 250;
 const ISSUE_SEARCH_RESULT_LIMIT = 200;
 const ISSUE_BOARD_COLUMN_RESULT_LIMIT = 200;
@@ -336,11 +338,12 @@ export function issueAgeBucketsCrossed(
 }
 
 function IssueDateSeparator({ label }: { label: string }) {
+  const tr = useUiTranslator();
   return (
     <div
       className="flex items-center gap-3 px-3 py-1.5 sm:pl-0 sm:pr-4"
       role="separator"
-      aria-label={label}
+      aria-label={tr(label)}
       data-issues-date-separator=""
     >
       <span className="h-px min-w-0 flex-1 bg-border/80" aria-hidden="true" data-date-group-rule="" />
@@ -348,7 +351,7 @@ function IssueDateSeparator({ label }: { label: string }) {
         className="shrink-0 text-(length:--text-nano) font-medium uppercase tracking-wider text-muted-foreground/70"
         data-date-group-label=""
       >
-        {label}
+        {tr(label)}
       </span>
       <span className="h-px min-w-0 flex-1 bg-border/80" aria-hidden="true" data-date-group-rule="" />
     </div>
@@ -519,6 +522,7 @@ function IssueSearchInput({
   value: string;
   onDebouncedChange?: (search: string) => void;
 }) {
+  const tr = useUiTranslator();
   const [draftValue, setDraftValue] = useState(value);
   const lastCommittedValueRef = useRef(value);
 
@@ -565,9 +569,9 @@ function IssueSearchInput({
             e.currentTarget.blur();
           }
         }}
-        placeholder="Search tasks..."
+        placeholder={tr("Search tasks...")}
         className="pl-7 text-xs sm:text-sm"
-        aria-label="Search tasks"
+        aria-label={tr("Search tasks")}
         data-page-search-target="true"
       />
     </div>
@@ -583,6 +587,7 @@ function SubIssueProgressSummaryStrip({
   issueLinkState?: unknown;
   parentIssueIdForCostSummary?: string;
 }) {
+  const tr = useUiTranslator();
   const target = summary.target;
   const targetIssue = target?.issue ?? null;
   const targetPathId = targetIssue?.identifier ?? targetIssue?.id ?? "";
@@ -613,13 +618,13 @@ function SubIssueProgressSummaryStrip({
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <span className="font-medium text-foreground">
-              {summary.doneCount}/{summary.totalCount} done
+              {summary.doneCount}/{summary.totalCount} {tr("done")}
             </span>
             <span className="text-muted-foreground">
-              {summary.inProgressCount} in progress
+              {summary.inProgressCount} {tr("in progress")}
             </span>
             <span className="text-muted-foreground">
-              {summary.blockedCount} blocked
+              {summary.blockedCount} {tr("blocked")}
             </span>
             {showCostSummary && (
               <>
@@ -631,17 +636,17 @@ function SubIssueProgressSummaryStrip({
                     costSummary.issueCount === 1 ? "" : "s"
                   }`}
                 >
-                  {formatTokens(totalTokens)} tokens
+                  {formatTokens(totalTokens)} {tr("tokens")}
                 </span>
                 <span className="text-muted-foreground tabular-nums">
-                  {formatDurationMs(costSummary.runtimeMs)} runtime
+                  {formatDurationMs(costSummary.runtimeMs)} {tr("runtime")}
                 </span>
               </>
             )}
           </div>
           <div
             role="progressbar"
-            aria-label="Sub-tasks completion progress"
+            aria-label={tr("Sub-tasks completion progress")}
             aria-valuemin={0}
             aria-valuenow={summary.doneCount}
             aria-valuemax={summary.totalCount}
@@ -652,7 +657,7 @@ function SubIssueProgressSummaryStrip({
                 key={status}
                 className={cn("h-full", progressSegmentClasses[status])}
                 style={{ width: `${(count / summary.totalCount) * 100}%` }}
-                title={`${issueStatusLabels[status]}: ${count}`}
+                title={`${tr(issueStatusLabels[status])}: ${count}`}
                 aria-hidden="true"
               />
             ))}
@@ -663,7 +668,7 @@ function SubIssueProgressSummaryStrip({
           {target && targetIssue ? (
             <>
               <div className="text-xs font-medium text-muted-foreground">
-                {target.kind === "next" ? "Next up" : "Waiting on blockers"}
+                {target.kind === "next" ? tr("Next up") : tr("Waiting on blockers")}
               </div>
               <Link
                 to={createIssueDetailPath(targetPathId)}
@@ -678,11 +683,11 @@ function SubIssueProgressSummaryStrip({
               </Link>
             </>
           ) : summary.totalCount === 0 ? (
-            <div className="text-sm font-medium text-foreground">No active sub-tasks</div>
+            <div className="text-sm font-medium text-foreground">{tr("No active sub-tasks")}</div>
           ) : summary.doneCount === summary.totalCount ? (
-            <div className="text-sm font-medium text-foreground">All sub-tasks done</div>
+            <div className="text-sm font-medium text-foreground">{tr("All sub-tasks done")}</div>
           ) : (
-            <div className="text-sm font-medium text-foreground">No actionable sub-tasks</div>
+            <div className="text-sm font-medium text-foreground">{tr("No actionable sub-tasks")}</div>
           )}
         </div>
       </div>
@@ -729,6 +734,7 @@ function StreamlinedIssuesList({
   toolbarPresentation = "legacy",
   onUpdateIssue,
 }: IssuesListProps) {
+  const tr = useUiTranslator();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -922,10 +928,16 @@ function StreamlinedIssuesList({
     enabled: !!selectedCompanyId && isolatedWorkspacesEnabled,
   });
 
-  const agentName = useCallback((id: string | null) => {
-    if (!id || !agents) return null;
-    return agents.find((a) => a.id === id)?.name ?? null;
+  const agentNamesById = useMemo(() => {
+    const names = new Map<string, string>();
+    // Preserve the first match, including when callers supply duplicate ids.
+    for (const agent of agents ?? []) if (!names.has(agent.id)) names.set(agent.id, agent.name);
+    return names;
   }, [agents]);
+  const agentName = useCallback((id: string | null) => {
+    if (!id) return null;
+    return agentNamesById.get(id) ?? null;
+  }, [agentNamesById]);
 
   const companyUserLabelMap = useMemo(
     () => buildCompanyUserLabelMap(companyMembers?.users),
@@ -1293,7 +1305,7 @@ function StreamlinedIssuesList({
         })
         .map((key) => ({
           key,
-          label: key === "__no_workspace" ? "No Workspace" : (workspaceNameMap.get(key) ?? key.slice(0, 8)),
+          label: key === "__no_workspace" ? tr("No Workspace") : (workspaceNameMap.get(key) ?? key.slice(0, 8)),
           items: groups[key]!,
         }));
     }
@@ -1309,7 +1321,7 @@ function StreamlinedIssuesList({
         })
         .map((key) => ({
           key,
-          label: key === "__no_project" ? "No Project" : (projectById.get(key)?.name ?? key.slice(0, 8)),
+          label: key === "__no_project" ? tr("No Project") : (projectById.get(key)?.name ?? key.slice(0, 8)),
           items: groups[key]!,
         }));
     }
@@ -1324,7 +1336,7 @@ function StreamlinedIssuesList({
         })
         .map((key) => ({
           key,
-          label: key === "__no_parent" ? "No Parent" : (issueTitleMap.get(key) ?? key.slice(0, 8)),
+          label: key === "__no_parent" ? tr("No Parent") : (issueTitleMap.get(key) ?? key.slice(0, 8)),
           items: groups[key]!,
         }));
     }
@@ -1337,9 +1349,9 @@ function StreamlinedIssuesList({
       key,
       label:
         key === "__unassigned"
-          ? "Unassigned"
+          ? tr("Unassigned")
           : key.startsWith("__user:")
-            ? (formatAssigneeUserLabel(key.slice("__user:".length), currentUserId, companyUserLabelMap) ?? "User")
+            ? (formatAssigneeUserLabel(key.slice("__user:".length), currentUserId, companyUserLabelMap) ?? tr("User"))
             : (agentName(key) ?? key.slice(0, 8)),
       items: groups[key]!,
     }));
@@ -1746,12 +1758,12 @@ function StreamlinedIssuesList({
         controls={(
           <>
           {/* View mode toggle */}
-          <div className="flex items-center border border-border rounded-md overflow-hidden mr-1" role="group" aria-label="View mode">
+          <div className="flex items-center border border-border rounded-md overflow-hidden mr-1" role="group" aria-label={uiText("View mode")}>
             <button
               className={`flex h-8 w-8 items-center justify-center transition-colors ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "list" })}
-              title="List view"
-              aria-label="List view"
+              title={uiText("List view")}
+              aria-label={uiText("List view")}
               aria-pressed={viewState.viewMode === "list"}
             >
               <List className="h-3.5 w-3.5" />
@@ -1759,8 +1771,8 @@ function StreamlinedIssuesList({
             <button
               className={`flex h-8 w-8 items-center justify-center transition-colors ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "board" })}
-              title="Board view"
-              aria-label="Board view"
+              title={uiText("Board view")}
+              aria-label={uiText("Board view")}
               aria-pressed={viewState.viewMode === "board"}
             >
               <SquareKanban className="h-3.5 w-3.5" />
@@ -1812,7 +1824,7 @@ function StreamlinedIssuesList({
                       "h-8 shrink-0 gap-1.5 px-2",
                       viewState.boardColumnPageSize !== KANBAN_COLUMN_DEFAULT_PAGE_SIZE && "bg-accent",
                     )}
-                    title="Cards per column"
+                    title={uiText("Cards per column")}
                   >
                     <ListCollapse className="h-3.5 w-3.5" />
                     <span className="min-w-4 text-xs tabular-nums">{viewState.boardColumnPageSize}</span>
@@ -1850,7 +1862,7 @@ function StreamlinedIssuesList({
                   boardColumnPageSize: KANBAN_COLUMN_DEFAULT_PAGE_SIZE,
                 })}
                 disabled={!boardDensityCustomized}
-                title="Reset board density"
+                title={uiText("Reset board density")}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
@@ -1864,7 +1876,7 @@ function StreamlinedIssuesList({
             showDateGroupSeparators={viewState.showDateGroupSeparators}
             onToggleDateGroupSeparators={(enabled) => updateView({ showDateGroupSeparators: enabled })}
             onResetColumns={() => setIssueColumns(DEFAULT_INBOX_ISSUE_COLUMNS)}
-            title="Choose which task columns stay visible"
+            title={uiText("Choose which task columns stay visible")}
             iconOnly
             rowPresentation={rowPresentation}
           />
@@ -1890,7 +1902,7 @@ function StreamlinedIssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Sort">
+                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title={uiText("Sort")}>
                   <ArrowUpDown className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
@@ -1937,7 +1949,7 @@ function StreamlinedIssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Group">
+                <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title={uiText("Group")}>
                   <Layers className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
@@ -1977,8 +1989,7 @@ function StreamlinedIssuesList({
       {(isLoading || externalObjectFilterLoading) && <PageSkeleton variant="issues-list" />}
       {error && <p className="text-sm text-destructive">{error.message}</p>}
       {!searchWithinLoadedIssues && normalizedIssueSearch.length > 0 && searchedIssues.length === ISSUE_SEARCH_RESULT_LIMIT && (
-        <p className="text-xs text-muted-foreground">
-          Showing up to {ISSUE_SEARCH_RESULT_LIMIT} matches. Refine the search to narrow further.
+        <p className="text-xs text-muted-foreground"> {uiText("Showing up to")} {ISSUE_SEARCH_RESULT_LIMIT} matches. Refine the search to narrow further.
         </p>
       )}
       {boardColumnLimitReached && (
@@ -2189,12 +2200,10 @@ function StreamlinedIssuesList({
                               issueBadge === "Paused" ? (
                                 <Badge variant="ghost"
                                   className={cn("ml-1.5 px-1.5 text-(length:--text-nano)", statusBadge.paused)}
-                                  aria-label="Paused"
-                                  title="Paused"
+                                  aria-label={uiText("Paused")}
+                                  title={uiText("Paused")}
                                 >
-                                  <CircleSlash2 className="h-3 w-3" />
-                                  Paused
-                                </Badge>
+                                  <CircleSlash2 className="h-3 w-3" /> {uiText("Paused")} </Badge>
                               ) : (
                                 <Badge variant="outline" className="ml-1.5 border-amber-500/40 bg-amber-500/10 px-1.5 text-(length:--text-nano) text-amber-700 dark:text-amber-300">
                                   {issueBadge}
@@ -2204,11 +2213,11 @@ function StreamlinedIssuesList({
                             {isSuccessfulRunHandoffRequired(issue) ? (
                               <Badge variant="outline"
                                 className="ml-1.5 border-amber-400/45 bg-amber-50/60 px-1.5 text-(length:--text-nano) text-amber-700 dark:border-amber-300/35 dark:bg-amber-400/10 dark:text-amber-300"
-                                aria-label="Needs next step"
-                                title="This task needs a next step"
+                                aria-label={uiText("Needs next step")}
+                                title={uiText("This task needs a next step")}
                               >
                                 <CircleDot className="h-3 w-3" />
-                                Needs next step
+                                {uiText("Needs next step")}
                               </Badge>
                             ) : null}
                           </>
@@ -2345,9 +2354,7 @@ function StreamlinedIssuesList({
                                         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                                           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
                                             <User className="h-3.5 w-3.5" />
-                                          </span>
-                                          Assignee
-                                        </span>
+                                          </span> {uiText("Assignee")} </span>
                                       )}
                                     </button>
                                   </PopoverTrigger>
@@ -2359,7 +2366,7 @@ function StreamlinedIssuesList({
                                   >
                                     <input
                                       className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
-                                      placeholder="Search responsible..."
+                                      placeholder={uiText("Search responsible...")}
                                       value={assigneeSearch}
                                       onChange={(e) => setAssigneeSearch(e.target.value)}
                                       autoFocus
@@ -2375,9 +2382,7 @@ function StreamlinedIssuesList({
                                           e.stopPropagation();
                                           assignIssue(issue.id, null, null);
                                         }}
-                                      >
-                                        No responsible
-                                      </button>
+                                      > {uiText("No responsible")} </button>
                                       {currentUserId && (
                                         <button
                                           className={cn(
@@ -2391,7 +2396,7 @@ function StreamlinedIssuesList({
                                           }}
                                         >
                                           <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                          <span>Me</span>
+                                          <span>{uiText("Me")}</span>
                                         </button>
                                       )}
                                       {(agents ?? [])

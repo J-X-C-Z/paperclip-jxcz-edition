@@ -82,7 +82,7 @@ export function sidebarBadgeRoutes(db: Db) {
       dismissals: dismissedAtByKey,
       joinRequests: visibleJoinRequests,
     });
-    const summary = await dashboard.summary(companyId);
+    const summary = await dashboard.alertSummary(companyId);
     const hasFailedRuns = badges.failedRuns > 0;
     const alertsCount =
       (summary.agents.error > 0 && !hasFailedRuns ? 1 : 0) +

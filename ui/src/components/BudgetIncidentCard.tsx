@@ -1,7 +1,7 @@
+import { useCostCurrency } from "../context/CostCurrencyContext";
 import { useState } from "react";
 import type { BudgetIncident } from "@paperclipai/shared";
 import { AlertOctagon, ArrowUpRight, PauseCircle } from "lucide-react";
-import { formatCents } from "../lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ export function BudgetIncidentCard({
   onKeepPaused: () => void;
   isMutating?: boolean;
 }) {
+  const { formatCost: formatCents } = useCostCurrency();
   const [draftAmount, setDraftAmount] = useState(
     centsInputValue(Math.max(incident.amountObserved + 1000, incident.amountLimit)),
   );

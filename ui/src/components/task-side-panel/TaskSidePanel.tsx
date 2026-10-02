@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   useCallback,
   useEffect,
@@ -482,12 +483,12 @@ export function TaskSidePanel({
 
   const launcherSections = useMemo<SidePanelLauncherSection[]>(() => {
     const primary: SidePanelLauncherItem[] = [
-      { id: "properties", label: "Properties", icon: <SlidersHorizontal />, alreadyOpen: controller.tabs.some((tab) => tab.id === "properties") },
+      { id: "properties", label: uiText("Properties"), icon: <SlidersHorizontal />, alreadyOpen: controller.tabs.some((tab) => tab.id === "properties") },
       ...(subtasksAvailable ? [{ id: "subtasks", label: taskLabel, description: tasksTab?.hasError ? "Could not load all tasks" : `${taskCount} total`, icon: <ListTree />, alreadyOpen: controller.tabs.some((tab) => tab.id === "subtasks") }] : []),
-      { id: "artifacts", label: "Artifacts", icon: <Box />, alreadyOpen: controller.tabs.some((tab) => tab.id === "artifacts") },
+      { id: "artifacts", label: uiText("Artifacts"), icon: <Box />, alreadyOpen: controller.tabs.some((tab) => tab.id === "artifacts") },
     ];
     if (fileTabsEnabled) {
-      primary.push({ id: "files", label: "Files", icon: <FolderOpen />, shortcut: "G F", alreadyOpen: controller.tabs.some((tab) => tab.id === "files") });
+      primary.push({ id: "files", label: uiText("Files"), icon: <FolderOpen />, shortcut: "G F", alreadyOpen: controller.tabs.some((tab) => tab.id === "files") });
     }
     const documentItems: SidePanelLauncherItem[] = [
       ...(planDocument ? [{
@@ -509,7 +510,7 @@ export function TaskSidePanel({
         })),
     ];
     const sections: SidePanelLauncherSection[] = [
-      { id: "open", label: "Open", items: primary },
+      { id: "open", label: uiText("Open"), items: primary },
     ];
     if (documentItems.length > 0) {
       sections.push({ id: "documents", label: "Task documents", items: documentItems });
@@ -585,7 +586,7 @@ export function TaskSidePanel({
               ? "h-(--side-panel-tab-height) w-(--side-panel-tab-height) rounded-md"
               : "h-(--side-panel-tab-height) w-(--side-panel-tab-height) rounded-(--side-panel-control-radius)",
           )}
-          aria-label="Open a new tab"
+          aria-label={uiText("Open a new tab")}
         >
           <Plus aria-hidden />
         </Button>

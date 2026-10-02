@@ -1,3 +1,4 @@
+import { buildScopedOrgTree, useScopedAgents } from "../hooks/useScopedAgents";
 import { useEffect, useState } from "react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -87,22 +88,28 @@ function OrgTreeNode({
 export function Org() {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const scopedAgents = useScopedAgents();
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Org Chart" }]);
+    setBreadcrumbs([{ label: "组织架构" }]);
   }, [setBreadcrumbs]);
 
-  const { data, isLoading, error } = useQuery({
+  const companyOrg = useQuery({
     queryKey: queryKeys.org(selectedCompanyId!),
     queryFn: () => agentsApi.org(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && scopedAgents.scopeReady && !scopedAgents.projectScoped,
   });
+  const data = scopedAgents.projectScoped ? buildScopedOrgTree(scopedAgents.agents) : companyOrg.data;
+  const isLoading = scopedAgents.projectScoped ? scopedAgents.isLoading : companyOrg.isLoading;
+  const error = scopedAgents.projectScoped ? scopedAgents.error : companyOrg.error;
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={GitBranch} message="Select an organization to view org chart." />;
+    return <EmptyState icon={GitBranch} message="请选择一个组织以查看组织架构。" />;
   }
 
-  if (isLoading) {
+  if (scopedAgents.scopeError) return <p role="alert" className="text-sm text-destructive">{scopedAgents.scopeError.message}</p>;
+
+  if (scopedAgents.scopeLoading || isLoading) {
     return <PageSkeleton variant="list" />;
   }
 
@@ -113,7 +120,7 @@ export function Org() {
       {data && data.length === 0 && (
         <EmptyState
           icon={GitBranch}
-          message="No agents in the organization. Create agents to build your org chart."
+          message="该组织中没有智能体。创建智能体以构建组织架构。"
         />
       )}
 

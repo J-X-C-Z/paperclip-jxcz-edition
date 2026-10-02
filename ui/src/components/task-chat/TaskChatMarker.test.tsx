@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { TaskChatMarker } from "./TaskChatMarker";
 import { TaskChatThreadView } from "./TaskChatThreadView";
+import { i18n } from "@/i18n";
 
 vi.mock("@/lib/router", () => ({
   Link: ({ to, children }: { to: string; children: React.ReactNode }) => (
@@ -17,7 +18,8 @@ describe("TaskChatMarker", () => {
   let container: HTMLDivElement;
   let root: Root | null = null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-01T12:05:00.000Z"));
     container = document.createElement("div");

@@ -1,0 +1,14 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.ts:7:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/jxcz/Agent Workspace/Paperclip/ui
+
+(node:25989) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  1 passed (1)
+      Tests  47 passed (47)
+   Start at  17:33:51
+   Duration  7.02s (transform 940ms, setup 12ms, import 1.56s, tests 4.86s, environment 501ms)
+

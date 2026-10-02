@@ -13,6 +13,8 @@ export const BUILTIN_ADAPTER_TYPES = new Set([
   "hermes_gateway",
   "hermes_local",
   "kimi_local",
+  "dsh_local",
+  "mimocode_local",
   "openclaw_gateway",
   "opencode_local",
   "pi_local",

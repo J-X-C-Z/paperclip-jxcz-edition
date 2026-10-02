@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Fingerprint, KeyRound, Link2, ShieldAlert, Variable, ServerCog } from "lucide-react";
@@ -76,10 +77,10 @@ export function FingerprintChip({
       type="button"
       onClick={() => {
         copyTextToClipboard(full)
-          .then(() => pushToast({ title: "Fingerprint copied", tone: "success" }))
-          .catch(() => pushToast({ title: "Couldn’t copy fingerprint", tone: "error" }));
+          .then(() => pushToast({ title: uiText("Fingerprint copied"), tone: "success" }))
+          .catch(() => pushToast({ title: uiText("Couldn’t copy fingerprint"), tone: "error" }));
       }}
-      title={`Copy full digest — ${full}`}
+      title={uiText("Copy full digest — {value0}", { value0: full })}
       className={cn(
         "inline-flex items-center gap-1 font-mono hover:text-foreground",
         className,
@@ -108,7 +109,7 @@ export function ProposalJustification({
 }) {
   return (
     <div className={cn("space-y-0.5", className)}>
-      <p className="text-(length:--text-micro) text-muted-foreground">Reason given by the agent</p>
+      <p className="text-(length:--text-micro) text-muted-foreground">{uiText("Reason given by the agent")}</p>
       <p className="whitespace-pre-wrap break-words text-xs text-foreground/80">
         “{justification}”
       </p>
@@ -164,7 +165,7 @@ export function ProposedBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      <ShieldAlert className="size-3" /> Proposed
+      <ShieldAlert className="size-3" /> {uiText("Proposed")}
     </Badge>
   );
 }
@@ -188,7 +189,7 @@ export function bindingSecretLabel(proposal: SecretProposalView): {
 function readableError(error: unknown): string {
   if (error instanceof ApiError) return error.message || `Request failed: ${error.status}`;
   if (error instanceof Error) return error.message;
-  return "Something went wrong. Try again.";
+  return uiText("Something went wrong. Try again.");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -261,11 +262,11 @@ export function useProposalReview(
     },
     onSuccess: (result) => {
       pushToast({
-        title: result.kind === "secret" ? "Secret approved" : "Binding approved",
+        title: result.kind === "secret" ? uiText("Secret approved") : uiText("Binding approved"),
         body:
           result.kind === "secret"
-            ? (result.proposedName ?? "Secret created")
-            : `${result.target?.name ?? "Agent"} · ${bindingEnvKey(result) || "binding"}`,
+            ? (result.proposedName ?? uiText("Secret created"))
+            : `${result.target?.name ?? uiText("Agent")} · ${bindingEnvKey(result) || uiText("binding")}`,
         tone: "success",
       });
       setApproveDraft(null);
@@ -280,7 +281,7 @@ export function useProposalReview(
       secretsApi.rejectProposal(companyId!, proposal.id, { reason: reason.trim() }),
     onSuccess: (result) => {
       pushToast({
-        title: "Proposal rejected",
+        title: uiText("Proposal rejected"),
         body: result.kind === "secret" ? (result.proposedName ?? undefined) : undefined,
         tone: "info",
       });
@@ -397,19 +398,19 @@ function ApproveDialog({
           <>
             <DialogHeader>
               <DialogTitle>
-                {isSecret ? "Approve & create secret" : "Approve binding"}
+                {isSecret ? uiText("Approve & create secret") : uiText("Approve binding")}
               </DialogTitle>
               <DialogDescription>
                 {isSecret
-                  ? "The value is created as the proposing agent recorded it. Re-folder or rename it before it lands."
-                  : "Grant the target agent access to this secret. This runs with your permissions."}
+                  ? uiText("The value is created as the proposing agent recorded it. Re-folder or rename it before it lands.")
+                  : uiText("Grant the target agent access to this secret. This runs with your permissions.")}
               </DialogDescription>
             </DialogHeader>
 
             {/* Provenance recap — keeps the social-engineering surface visible. */}
             <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2.5 text-xs">
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span>Proposed by</span>
+                <span>{uiText("Proposed by")}</span>
                 <AgentRefChip agent={draft.proposal.proposedBy} className="font-medium text-foreground" />
               </div>
               <ProposalJustification justification={draft.proposal.justification} />
@@ -419,7 +420,7 @@ function ApproveDialog({
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label htmlFor="approve-folder">Folder</Label>
+                    <Label htmlFor="approve-folder">{uiText("Folder")}</Label>
                     <Input
                       id="approve-folder"
                       value={draft.folder}
@@ -429,7 +430,7 @@ function ApproveDialog({
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="approve-name">Name</Label>
+                    <Label htmlFor="approve-name">{uiText("Name")}</Label>
                     <Input
                       id="approve-name"
                       value={draft.leaf}
@@ -442,27 +443,27 @@ function ApproveDialog({
                   </div>
                 </div>
                 <p className="text-(length:--text-micro) text-muted-foreground">
-                  Lands as{" "}
+                  {uiText("Lands as")}{" "}
                   {previewName ? (
                     <SecretPathName name={previewName} className="font-mono" />
                   ) : (
-                    <span className="italic">enter a name</span>
+                    <span className="italic">{uiText("enter a name")}</span>
                   )}
                 </p>
 
                 <div className="space-y-1">
-                  <Label htmlFor="approve-description">Description</Label>
+                  <Label htmlFor="approve-description">{uiText("Description")}</Label>
                   <Input
                     id="approve-description"
                     value={draft.description}
                     onChange={(event) => onChange({ ...draft, description: event.target.value })}
-                    placeholder="Optional"
+                    placeholder={uiText("Optional")}
                   />
                 </div>
 
                 {localConfigs.length > 0 ? (
                   <div className="space-y-1">
-                    <Label htmlFor="approve-provider-config">Provider vault</Label>
+                    <Label htmlFor="approve-provider-config">{uiText("Provider vault")}</Label>
                     <select
                       id="approve-provider-config"
                       value={draft.providerConfigId}
@@ -471,7 +472,7 @@ function ApproveDialog({
                       }
                       className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      <option value="">Deployment default</option>
+                      <option value="">{uiText("Deployment default")}</option>
                       {localConfigs.map((config) => (
                         <option key={config.id} value={config.id}>
                           {config.displayName}
@@ -499,17 +500,15 @@ function ApproveDialog({
             ) : null}
 
             <DialogFooter>
-              <Button variant="ghost" onClick={onCancel} disabled={pending}>
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={onCancel} disabled={pending}> {uiText("Cancel")} </Button>
               <Button onClick={onConfirm} disabled={pending || !canConfirm}>
                 {pending
-                  ? "Approving…"
+                  ? uiText("Approving…")
                   : isSecret
-                    ? "Approve & create"
+                    ? uiText("Approve & create")
                     : draft.cascade
-                      ? "Approve secret & bind"
-                      : "Approve binding"}
+                      ? uiText("Approve secret & bind")
+                      : uiText("Approve binding")}
               </Button>
             </DialogFooter>
           </>
@@ -533,7 +532,7 @@ function BindingApproveBody({
     <div className="space-y-3 text-sm">
       <div className="space-y-2 rounded-md border border-border p-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">Target agent</span>
+          <span className="text-xs text-muted-foreground">{uiText("Target agent")}</span>
           {proposal.target ? (
             <AgentRefChip agent={proposal.target} className="text-sm font-medium" />
           ) : (
@@ -541,14 +540,14 @@ function BindingApproveBody({
           )}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">Delivered as</span>
+          <span className="text-xs text-muted-foreground">{uiText("Delivered as")}</span>
           <span className="flex items-center gap-1.5">
             <DeliveryBadge configPath={proposal.configPath} />
             <code className="font-mono text-xs">{envKey || proposal.configPath}</code>
           </span>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">Secret</span>
+          <span className="text-xs text-muted-foreground">{uiText("Secret")}</span>
           <span className="flex items-center gap-1.5">
             <KeyRound className="size-3.5 text-muted-foreground" />
             <span className="font-medium">{secret.name}</span>
@@ -564,10 +563,10 @@ function BindingApproveBody({
             checked={draft.cascade}
             onCheckedChange={(checked) => onChange({ ...draft, cascade: checked === true })}
             className="mt-0.5"
-            aria-label="Also approve the proposed secret"
+            aria-label={uiText("Also approve the proposed secret")}
           />
           <span className="text-foreground/90">
-            Also approve the proposed secret{" "}
+            {uiText("Also approve the proposed secret")}{" "}
             <span className="font-medium">{secret.name}</span> and create it in the same step. The
             binding can’t land without it.
           </span>
@@ -605,22 +604,21 @@ function RejectDialog({
         {proposal ? (
           <>
             <DialogHeader>
-              <DialogTitle>Reject proposal</DialogTitle>
+            <DialogTitle>{uiText("Reject proposal")}</DialogTitle>
               <DialogDescription>
-                The reason is sent back to{" "}
-                <AgentRefChip agent={proposal.proposedBy} className="text-foreground" />. Dependent
-                bindings are rejected too.
+                {uiText("The reason is sent back to")}{" "}
+                <AgentRefChip agent={proposal.proposedBy} className="text-foreground" />{uiText(". Dependent bindings are rejected too.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-1">
-              <Label htmlFor="reject-reason">Reason</Label>
+              <Label htmlFor="reject-reason">{uiText("Reason")}</Label>
               <Textarea
                 id="reject-reason"
                 value={reason}
                 onChange={(event) => onReasonChange(event.target.value)}
                 rows={3}
                 autoFocus
-                placeholder="Why is this being rejected?"
+                placeholder={uiText("Why is this being rejected?")}
               />
             </div>
             {error ? (
@@ -629,11 +627,9 @@ function RejectDialog({
               </p>
             ) : null}
             <DialogFooter>
-              <Button variant="ghost" onClick={onCancel} disabled={pending}>
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={onCancel} disabled={pending}> {uiText("Cancel")} </Button>
               <Button variant="destructive" onClick={onConfirm} disabled={pending || !canConfirm}>
-                {pending ? "Rejecting…" : "Reject"}
+                {pending ? uiText("Rejecting…") : uiText("Reject")}
               </Button>
             </DialogFooter>
           </>
@@ -668,9 +664,7 @@ export function ProposalActions({
       className={heightClass}
       disabled={disabled || blocked}
       onClick={() => onApprove(proposal)}
-    >
-      Approve
-    </Button>
+    > {uiText("Approve")} </Button>
   );
   return (
     <div className="flex items-center gap-1.5">
@@ -681,7 +675,7 @@ export function ProposalActions({
               <span tabIndex={0}>{approveButton}</span>
             </TooltipTrigger>
             <TooltipContent className="max-w-72">
-              {proposal.approveBlockReason ?? "You don’t have permission to approve this."}
+              {proposal.approveBlockReason ?? uiText("You don’t have permission to approve this.")}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -694,9 +688,7 @@ export function ProposalActions({
         className={heightClass}
         disabled={disabled}
         onClick={() => onReject(proposal)}
-      >
-        Reject
-      </Button>
+      > {uiText("Reject")} </Button>
     </div>
   );
 }

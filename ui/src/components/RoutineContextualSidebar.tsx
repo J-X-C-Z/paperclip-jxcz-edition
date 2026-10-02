@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -106,7 +107,7 @@ export function RoutineContextualSidebar({
       showHeader={false}
       className="border-r border-border bg-background"
     >
-      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-2" aria-label="Routine navigation">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-2" aria-label={uiText("Routine navigation")}>
         <div className="flex flex-col gap-0.5">
           {ROUTINE_CONTEXTUAL_NAV_ITEMS.map((item) => (
             <SidebarNavItem
@@ -119,18 +120,16 @@ export function RoutineContextualSidebar({
           ))}
         </div>
 
-        <p className="px-4 pb-1 pt-5 text-(length:--text-nano) font-mono font-medium uppercase tracking-widest text-muted-foreground/60">
-          Audit
-        </p>
+        <p className="px-4 pb-1 pt-5 text-(length:--text-nano) font-mono font-medium uppercase tracking-widest text-muted-foreground/60"> {uiText("Audit")} </p>
         <div className="flex flex-col gap-0.5">
           <SidebarNavItem
             to={routineRunsAuditHref(routineId)}
-            label="Runs"
+            label={uiText("Runs")}
             icon={Play}
           />
           <SidebarNavItem
             to={routineActivityAuditHref(routineId)}
-            label="Activity"
+            label={uiText("Activity")}
             icon={Activity}
           />
         </div>

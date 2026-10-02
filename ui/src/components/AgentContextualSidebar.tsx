@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -117,9 +118,7 @@ export function AgentContextualSidebar({
           <p
             data-slot="contextual-sidebar-section-label"
             className={contextualSidebarStyles.sectionLabel}
-          >
-            Audit
-          </p>
+          > {uiText("Audit")} </p>
           <div data-slot="contextual-sidebar-group" className={contextualSidebarStyles.group}>
             {resolvedId ? auditItems.map((item) => (
               <SidebarNavItem
@@ -129,7 +128,7 @@ export function AgentContextualSidebar({
                 icon={item.icon}
               />
             )) : (
-              <p className="px-2 py-1.5 text-xs text-muted-foreground">Loading audit links…</p>
+              <p className="px-2 py-1.5 text-xs text-muted-foreground">{uiText("Loading audit links…")}</p>
             )}
           </div>
         </div>

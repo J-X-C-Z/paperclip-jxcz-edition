@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -34,6 +35,7 @@ import { RoutineVariablesEditor, RoutineVariablesHint } from "../RoutineVariable
 import { RoutineTriggerCard } from "../RoutineTriggerCard";
 import { EnvironmentVariablesEditor } from "../environment-variables-editor";
 import { createDefaultNewTrigger, useRoutineDetail } from "./context";
+import { useScopedAgents } from "../../hooks/useScopedAgents";
 import type { EnvBinding, RoutineDetail as RoutineDetailType } from "@paperclipai/shared";
 
 const concurrencyPolicyOptions = [
@@ -110,6 +112,7 @@ export function OverviewSection({
   defaultDescriptionAnnotationsOpen?: boolean;
 } = {}) {
   const ctx = useRoutineDetail();
+  const projectAgentScope = useScopedAgents(ctx.editDraft.projectId, ctx.companyId);
   const {
     routine,
     editDraft,
@@ -151,16 +154,16 @@ export function OverviewSection({
       {/* Assignment row */}
       <div className="overflow-x-auto overscroll-x-contain">
         <div className="inline-flex min-w-full flex-wrap items-center gap-2 text-sm text-muted-foreground sm:min-w-max sm:flex-nowrap">
-          <span>For</span>
+          <span>{uiText("For")}</span>
           <InlineEntitySelector
             ref={assigneeSelectorRef}
             value={editDraft.assigneeAgentId}
             options={assigneeOptions}
             recentOptionIds={recentAssigneeIds}
-            placeholder="Responsible"
+            placeholder={uiText("Responsible")}
             noneLabel="No responsible"
             searchPlaceholder="Search responsible..."
-            emptyMessage="No responsible found."
+            emptyMessage={uiText("No responsible found.")}
             onChange={(assigneeAgentId) =>
               setEditDraft((current) => ({ ...current, assigneeAgentId }))
             }
@@ -182,7 +185,7 @@ export function OverviewSection({
                   <span className="truncate">{option.label}</span>
                 )
               ) : (
-                <span className="text-muted-foreground">Responsible</span>
+                <span className="text-muted-foreground">{uiText("Responsible")}</span>
               )
             }
             renderOption={(option) => {
@@ -198,16 +201,31 @@ export function OverviewSection({
               );
             }}
           />
-          <span>in</span>
+          {projectAgentScope.projectScoped && ctx.editDraft.assigneeAgentId &&
+            !projectAgentScope.isMember(ctx.editDraft.assigneeAgentId) ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={projectAgentScope.saveMembership.isPending}
+                  onClick={() => projectAgentScope.saveMembership.mutate({ agentId: ctx.editDraft.assigneeAgentId })}
+                >{uiText("Add current assignee to project")}</Button>
+                {projectAgentScope.saveMembership.isError ? (
+                  <span role="alert" className="text-xs text-destructive">{uiText("Could not add this agent; the selected assignee is unchanged.")}</span>
+                ) : null}
+              </>
+            ) : null}
+          <span>{uiText("in")}</span>
           <InlineEntitySelector
             ref={projectSelectorRef}
             value={editDraft.projectId}
             options={projectOptions}
             recentOptionIds={recentProjectIds}
-            placeholder="Project"
+            placeholder={uiText("Project")}
             noneLabel="No project"
             searchPlaceholder="Search projects..."
-            emptyMessage="No projects found."
+            emptyMessage={uiText("No projects found.")}
             onChange={(projectId) => setEditDraft((current) => ({ ...current, projectId }))}
             onConfirm={() => descriptionEditorRef.current?.focus()}
             renderTriggerValue={(option) =>
@@ -220,7 +238,7 @@ export function OverviewSection({
                   <span className="truncate">{option.label}</span>
                 </>
               ) : (
-                <span className="text-muted-foreground">Project</span>
+                <span className="text-muted-foreground">{uiText("Project")}</span>
               )
             }
             renderOption={(option) => {
@@ -277,7 +295,7 @@ export function OverviewSection({
               ref={descriptionEditorRef}
               value={editDraft.description}
               onChange={(description) => setEditDraft((current) => ({ ...current, description }))}
-              placeholder="Add instructions..."
+              placeholder={uiText("Add instructions...")}
               bordered={false}
               contentClassName="min-h-(--sz-120px) text-sm leading-7"
               mentions={mentionOptions}
@@ -293,7 +311,7 @@ export function OverviewSection({
             ref={descriptionEditorRef}
             value={editDraft.description}
             onChange={(description) => setEditDraft((current) => ({ ...current, description }))}
-            placeholder="Add instructions..."
+            placeholder={uiText("Add instructions...")}
             bordered={false}
             contentClassName="min-h-(--sz-120px) text-sm leading-7"
             mentions={mentionOptions}
@@ -321,29 +339,29 @@ export function OverviewSection({
       <div className="grid gap-3 sm:grid-cols-2">
         <SummaryCard
           icon={Clock3}
-          label="Triggers"
-          value={activeTriggers === 0 ? "None" : `${activeTriggers} active`}
-          hint={nextFire ? `Next fire ${nextFire}` : "No schedule"}
+          label={uiText("Triggers")}
+          value={activeTriggers === 0 ? uiText("None") : uiText("{count} active", { count: activeTriggers })}
+          hint={nextFire ? uiText("Next fire {date}", { date: nextFire }) : uiText("No schedule")}
           to={() => navigateToSection("triggers")}
-          ariaLabel={`${activeTriggers} triggers. Open triggers.`}
+          ariaLabel={uiText("{count} triggers. Open triggers.", { count: activeTriggers })}
         />
         <SummaryCard
           icon={Play}
-          label="Last run"
-          value={lastRun ? lastRun.status.replaceAll("_", " ") : "No runs"}
-          hint={lastRun ? timeAgo(lastRun.triggeredAt) : "Trigger a run"}
+          label={uiText("Last run")}
+          value={lastRun ? lastRun.status.replaceAll("_", " ") : uiText("No runs")}
+          hint={lastRun ? timeAgo(lastRun.triggeredAt) : uiText("Trigger a run")}
           to={() => navigateToSection("runs")}
-          ariaLabel={lastRun ? `Last run ${lastRun.status}. Open runs.` : "No runs. Open runs."}
+          ariaLabel={lastRun ? uiText("Last run {status}. Open runs.", { status: lastRun.status }) : uiText("No runs. Open runs.")}
         />
       </div>
 
       {/* Recent activity */}
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Recent activity
+          {uiText("Recent activity")}
         </p>
         {recentActivity.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No activity yet.</p>
+          <p className="text-xs text-muted-foreground">{uiText("No activity yet.")}</p>
         ) : (
           <div className="divide-y divide-border/60">
             {recentActivity.map((event) => (
@@ -439,9 +457,7 @@ export function TriggersSection() {
         >
           {addOpen ? (
             <>
-              <X className="mr-1.5 h-3.5 w-3.5" />
-              Cancel
-            </>
+              <X className="mr-1.5 h-3.5 w-3.5" /> {uiText("Cancel")} </>
           ) : (
             <>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -454,10 +470,10 @@ export function TriggersSection() {
       {/* Add trigger form — expand-on-click drawer */}
       {addOpen ? (
       <div className="space-y-3 rounded-lg border border-border p-4">
-        <p className="text-sm font-medium">Add trigger</p>
+        <p className="text-sm font-medium">{uiText("Add trigger")}</p>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">Kind</Label>
+            <Label className="text-xs">{uiText("Kind")}</Label>
             <Select
               value={newTrigger.kind}
               onValueChange={(kind) => setNewTrigger((current) => ({ ...current, kind }))}
@@ -477,7 +493,7 @@ export function TriggersSection() {
           </div>
           {newTrigger.kind === "schedule" && (
             <div className="space-y-1.5 md:col-span-2">
-              <Label className="text-xs">Schedule</Label>
+              <Label className="text-xs">{uiText("Schedule")}</Label>
               <ScheduleEditor
                 value={newTrigger.cronExpression}
                 onChange={(cronExpression) =>
@@ -490,7 +506,7 @@ export function TriggersSection() {
           {newTrigger.kind === "webhook" && (
             <>
               <div className="space-y-1.5">
-                <Label className="text-xs">Signing mode</Label>
+                <Label className="text-xs">{uiText("Signing mode")}</Label>
                 <Select
                   value={newTrigger.signingMode}
                   onValueChange={(signingMode) =>
@@ -514,7 +530,7 @@ export function TriggersSection() {
               </div>
               {!SIGNING_MODES_WITHOUT_REPLAY_WINDOW.has(newTrigger.signingMode) && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Replay window (seconds)</Label>
+                  <Label className="text-xs">{uiText("Replay window (seconds)")}</Label>
                   <Input
                     value={newTrigger.replayWindowSec}
                     onChange={(event) =>
@@ -527,9 +543,7 @@ export function TriggersSection() {
           )}
         </div>
         <div className="flex items-center justify-end gap-2">
-          <Button size="sm" variant="ghost" onClick={() => setAddOpen(false)}>
-            Cancel
-          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setAddOpen(false)}> {uiText("Cancel")} </Button>
           <Button
             size="sm"
             onClick={() =>
@@ -651,13 +665,13 @@ export function SecretsSection() {
                 <div className="flex items-center gap-2">
                   <Input value={entry.webhookUrl} readOnly className="flex-1" />
                   <Button variant="outline" size="sm" onClick={() => copySecretValue("Webhook URL", entry.webhookUrl)}>
-                    URL
+                    {uiText("URL")}
                   </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input value={entry.webhookSecret} readOnly className="flex-1" />
                   <Button variant="outline" size="sm" onClick={() => copySecretValue("Webhook secret", entry.webhookSecret)}>
-                    Secret
+                    {uiText("Secret")}
                   </Button>
                 </div>
               </div>
@@ -691,9 +705,7 @@ export function DeliverySection() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground">
-          Concurrency
-        </p>
+        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground"> {uiText("Concurrency")} </p>
         <RadioCardGroup
           ariaLabel="Concurrency policy"
           value={editDraft.concurrencyPolicy}
@@ -704,9 +716,7 @@ export function DeliverySection() {
         />
       </div>
       <div className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground">
-          Catch-up
-        </p>
+        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground"> {uiText("Catch-up")} </p>
         <RadioCardGroup
           ariaLabel="Catch-up policy"
           value={editDraft.catchUpPolicy}
@@ -736,7 +746,7 @@ export function DeliverySection() {
           </p>
         ) : gateEnabled ? (
           <div className="space-y-2 rounded-lg border border-border p-3">
-            <Label className="text-xs font-medium">Activity scope</Label>
+            <Label className="text-xs font-medium">{uiText("Activity scope")}</Label>
             <RadioCardGroup
               ariaLabel="Activity gate scope"
               value={editDraft.activityGateScope}

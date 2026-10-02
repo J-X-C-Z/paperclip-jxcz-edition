@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 /**
  * @fileoverview Core Skill Studio permission surfaces (PAP-13865, Phase 3).
  *
@@ -72,9 +73,7 @@ export function SkillPolicyDenialNotice({
   className?: string;
 }) {
   const actions = onDismiss ? (
-    <Button variant="ghost" size="sm" onClick={onDismiss}>
-      Dismiss
-    </Button>
+    <Button variant="ghost" size="sm" onClick={onDismiss}> {uiText("Dismiss")} </Button>
   ) : undefined;
 
   return (

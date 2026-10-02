@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { uiText } from "@/i18n";
+import { useEffect, useRef, useState } from "react";
 import type {
   FeedbackDataSharingPreference,
   FeedbackVoteValue,
@@ -34,25 +35,31 @@ export function TaskChatBubbleActions({
   feedback?: TaskChatBubbleFeedback | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (resetTimer.current !== null) clearTimeout(resetTimer.current); }, []);
 
   return (
-    <div className="flex items-center gap-0.5" data-testid="task-chat-bubble-actions">
+    <div className="flex flex-wrap items-center gap-0.5" data-testid="task-chat-bubble-actions">
       <button
         type="button"
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Copy message"
-        aria-label="Copy message"
+        title={uiText(copied ? "Message copied" : "Copy message")}
+        aria-label={uiText(copied ? "Message copied" : "Copy message")}
         onClick={() => {
+          setCopyFailed(false);
           void copyTextToClipboard(copyText)
             .then(() => {
               setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
+              if (resetTimer.current !== null) clearTimeout(resetTimer.current);
+              resetTimer.current = setTimeout(() => setCopied(false), 2000);
             })
-            .catch(() => {});
+            .catch(() => { setCopied(false); setCopyFailed(true); });
         }}
       >
         {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
+      <span className={copyFailed ? "text-xs text-destructive" : "sr-only"} role={copyFailed ? "alert" : "status"}>{copyFailed ? uiText("Copy failed. Select the message text and copy it manually.") : copied ? uiText("Message copied") : ""}</span>
       {feedback ? (
         <IssueChatFeedbackButtons
           activeVote={feedback.activeVote}

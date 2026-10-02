@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { brandChipBadge } from "@/lib/status-colors";
@@ -33,7 +34,7 @@ export function BuiltInLifecycleChip({
           : "Needs adapter/model setup before the feature can run"
       }
     >
-      {isPendingApproval ? (compact ? "Approval" : "Pending approval") : compact ? "Setup" : "Needs setup"}
+      {isPendingApproval ? (compact ? uiText("Approval") : "Pending approval") : compact ? "Setup" : "Needs setup"}
     </Badge>
   );
 }

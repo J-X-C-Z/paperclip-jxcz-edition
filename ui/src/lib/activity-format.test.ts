@@ -1,8 +1,12 @@
 import type { Agent } from "@paperclipai/shared";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { i18n } from "../i18n";
 import { formatActivityVerb, formatIssueActivityAction } from "./activity-format";
 
 describe("activity formatting", () => {
+  const originalLanguage = i18n.language;
+  beforeAll(async () => { await i18n.changeLanguage("en"); });
+  afterAll(async () => { await i18n.changeLanguage(originalLanguage); });
   const agentMap = new Map<string, Agent>([
     ["agent-reviewer", { id: "agent-reviewer", name: "Reviewer Bot" } as Agent],
     ["agent-approver", { id: "agent-approver", name: "Approver Bot" } as Agent],
@@ -23,6 +27,18 @@ describe("activity formatting", () => {
 
     expect(formatActivityVerb("issue.blockers_updated", details)).toBe("added blocker PAP-22 to");
     expect(formatIssueActivityAction("issue.blockers_updated", details)).toBe("added blocker PAP-22");
+  });
+
+  it("counts multiple blockers without translating their numeric count", () => {
+    const details = {
+      addedBlockedByIssues: [
+        { id: "issue-2", identifier: "PAP-22" },
+        { id: "issue-3", identifier: "PAP-23" },
+      ],
+      removedBlockedByIssues: [],
+    };
+    expect(formatActivityVerb("issue.blockers_updated", details)).toBe("added 2 blockers to");
+    expect(formatIssueActivityAction("issue.blockers_updated", details)).toBe("added 2 blockers");
   });
 
   it("formats reviewer activity using agent names", () => {

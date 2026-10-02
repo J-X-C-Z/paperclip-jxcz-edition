@@ -10,6 +10,7 @@ import { Router, type Request, type Response } from "express";
 import type { Db } from "@paperclipai/db";
 import {
   createProjectSchema,
+  upsertProjectAgentMembershipSchema,
   createProjectWorkspaceSchema,
   findWorkspaceCommandDefinition,
   isUuidLike,
@@ -44,6 +45,8 @@ import { appendWithCap } from "../adapters/utils.js";
 import { assertEnvironmentSelectionForCompany } from "./environment-selection.js";
 import { environmentService } from "../services/environments.js";
 import { secretService } from "../services/secrets.js";
+
+import { projectAgentMembershipService } from "../services/project-agent-memberships.js";
 
 const WORKSPACE_CONTROL_OUTPUT_MAX_CHARS = 256 * 1024;
 const SHARED_WORKSPACE_STOP_AND_RESTART_ACTIONS = new Set(["stop", "restart"]);
@@ -375,6 +378,43 @@ export function projectRoutes(db: Db) {
     });
 
     res.json(project);
+  });
+
+  const team = projectAgentMembershipService(db);
+  router.get("/projects/:id/agent-memberships", async (req, res) => {
+    const project = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Project not found");
+    if (!project || !(await assertProjectReadAllowed(req, res, project))) return;
+    res.json(await team.list(project.companyId, project.id));
+  });
+
+  router.put("/projects/:id/agent-memberships", validate(upsertProjectAgentMembershipSchema), async (req, res) => {
+    assertBoard(req);
+    const project = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Project not found");
+    if (!project) return;
+    const membership = await team.upsert(project.companyId, project.id, req.body);
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId: project.companyId, actorType: actor.actorType, actorId: actor.actorId,
+      action: "project.agent_membership_upserted", entityType: "project", entityId: project.id,
+      details: { agentId: membership.agentId, projectRole: membership.projectRole, isLead: membership.isLead, sortOrder: membership.sortOrder },
+    });
+    res.json(membership);
+  });
+
+  router.delete("/projects/:id/agent-memberships/:agentId", async (req, res) => {
+    assertBoard(req);
+    const project = await getAccessibleResource(req, res, svc.getById(req.params.id as string), "Project not found");
+    if (!project) return;
+    const membership = await team.remove(project.companyId, project.id, req.params.agentId as string);
+    if (membership) {
+      const actor = getActorInfo(req);
+      await logActivity(db, {
+        companyId: project.companyId, actorType: actor.actorType, actorId: actor.actorId,
+        action: "project.agent_membership_removed", entityType: "project", entityId: project.id,
+        details: { agentId: membership.agentId },
+      });
+    }
+    res.json({ removed: Boolean(membership) });
   });
 
   router.get("/projects/:id/workspaces", async (req, res) => {

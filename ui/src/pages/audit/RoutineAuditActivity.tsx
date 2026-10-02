@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Activity } from "lucide-react";
 import { routinesApi } from "@/api/routines";
@@ -41,9 +42,7 @@ export function RoutineAuditActivity({
         <p className="text-sm text-muted-foreground">
           {activity.error instanceof Error ? activity.error.message : "Failed to load routine activity."}
         </p>
-        <Button variant="outline" size="sm" onClick={() => activity.refetch()}>
-          Try again
-        </Button>
+        <Button variant="outline" size="sm" onClick={() => activity.refetch()}> {uiText("Try again")} </Button>
       </div>
     );
   }

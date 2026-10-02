@@ -1,9 +1,11 @@
 // @vitest-environment node
 
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "@/i18n";
 import { AgentStatusBadge, IssueStatusBadge, StatusBadge } from "./StatusBadge";
 import { agentStatusVar, taskStatusVar } from "../lib/status-colors";
+beforeEach(async () => { await i18n.changeLanguage("en"); });
 
 /**
  * Issue/task status chips carry the unified glyph and are recolored from the

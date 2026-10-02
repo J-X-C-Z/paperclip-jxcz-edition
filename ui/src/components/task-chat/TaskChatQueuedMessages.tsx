@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
@@ -184,7 +185,7 @@ function SortableQueuedMessage({
           (!queue.queueId && !entry.comment.id.startsWith("optimistic-")) ||
           !entry.canDiscard
         }
-        title="Discard queued message"
+        title={uiText("Discard queued message")}
         aria-label={`Discard queued message: ${entry.comment.body}`}
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
         data-testid={`task-chat-queued-discard-${entry.comment.id}`}
@@ -201,7 +202,7 @@ function SortableQueuedMessage({
           <button
             type="button"
             disabled={queueMutationDisabled}
-            title="Queued message actions"
+            title={uiText("Queued message actions")}
             aria-label={`Queued message actions: ${entry.comment.body}`}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
           >
@@ -363,7 +364,7 @@ export function TaskChatQueuedMessages({
     <div
       className="relative z-0 mx-3 -mb-px overflow-hidden rounded-t-xl rounded-b-none border border-b-0 border-border/75 bg-card shadow-sm"
       data-testid="task-chat-queued-messages"
-      aria-label="Queued messages"
+      aria-label={uiText("Queued messages")}
     >
       {queue.executionWait && (
         <div role="status" aria-live="polite" className="px-3 py-1.5 text-xs text-muted-foreground">

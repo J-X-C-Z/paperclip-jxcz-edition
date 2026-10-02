@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "@paperclipai/skills-catalog",
   "packageVersion": "0.3.1",
-  "generatedAt": "2026-08-11T15:05:34.526Z",
+  "generatedAt": "2026-10-01T03:13:24.591Z",
   "skills": [
     {
       "id": "paperclipai:bundled:docs:doc-maintenance",
@@ -179,6 +179,40 @@
       "contentHash": "sha256:3e49ee2b8d83d1371fb0f59197bb96c46b64f722540405f46d4a5a756fbe1b89"
     },
     {
+      "id": "paperclipai:bundled:paperclip-operations:task-execution",
+      "key": "paperclipai/bundled/paperclip-operations/task-execution",
+      "kind": "bundled",
+      "category": "paperclip-operations",
+      "slug": "task-execution",
+      "name": "task-execution",
+      "description": "Execute an assigned Paperclip task within its scope, verify the deliverable, report blockers and submit artifacts for the designated leader's review.",
+      "path": "catalog/bundled/paperclip-operations/task-execution",
+      "entrypoint": "SKILL.md",
+      "trustLevel": "markdown_only",
+      "compatibility": "compatible",
+      "defaultInstall": false,
+      "recommendedForRoles": [
+        "engineer",
+        "designer",
+        "qa"
+      ],
+      "requires": [],
+      "tags": [
+        "paperclip",
+        "execution",
+        "artifacts"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "kind": "skill",
+          "sizeBytes": 2004,
+          "sha256": "fdd5b2c8fc5e41c4fea7d80bde78481e2680d27f93323a00bff83f797c8d2011"
+        }
+      ],
+      "contentHash": "sha256:7c373d59d73298eafcc956a62c0c295b49f3551b00e98477ede52c7e28770eaa"
+    },
+    {
       "id": "paperclipai:bundled:paperclip-operations:task-planning",
       "key": "paperclipai/bundled/paperclip-operations/task-planning",
       "kind": "bundled",
@@ -212,6 +246,39 @@
         }
       ],
       "contentHash": "sha256:487c3116eead89fef4f71c984329c41836bd69951b7ef9ed8736c69435e02438"
+    },
+    {
+      "id": "paperclipai:bundled:paperclip-operations:task-review",
+      "key": "paperclipai/bundled/paperclip-operations/task-review",
+      "kind": "bundled",
+      "category": "paperclip-operations",
+      "slug": "task-review",
+      "name": "task-review",
+      "description": "Review a member's submitted Paperclip task against its acceptance criteria and verification evidence, then approve or return it through the task review stage.",
+      "path": "catalog/bundled/paperclip-operations/task-review",
+      "entrypoint": "SKILL.md",
+      "trustLevel": "markdown_only",
+      "compatibility": "compatible",
+      "defaultInstall": false,
+      "recommendedForRoles": [
+        "manager",
+        "engineer"
+      ],
+      "requires": [],
+      "tags": [
+        "paperclip",
+        "review",
+        "acceptance"
+      ],
+      "files": [
+        {
+          "path": "SKILL.md",
+          "kind": "skill",
+          "sizeBytes": 1967,
+          "sha256": "7c75e53795cfcd038dc0d2f3156d88d48000bcc2b72c8ddab9dd7d37a0dc5cc3"
+        }
+      ],
+      "contentHash": "sha256:04278f3c5d3ba7b492bc44b040377f2ddb3afc4c2ee7d624f98f34ce86e396c4"
     },
     {
       "id": "paperclipai:bundled:product:paperclip-capsules",

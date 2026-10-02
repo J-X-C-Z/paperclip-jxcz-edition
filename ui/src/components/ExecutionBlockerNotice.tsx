@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ExecutionBlocker } from "@paperclipai/shared";
 import { agentsApi } from "../api/agents";
@@ -33,7 +34,7 @@ export function ExecutionBlockerNotice({ companyId, issueId, blocker, onRetried 
       <span>{blocker.cause === "legacy_execution_requires_reconciliation" ? "Automatic recovery of this task stopped." : blocker.nextAction}</span>
       {failedRun && (
         <Button variant="outline" size="sm" disabled={retry.isPending} onClick={() => retry.mutate()}>
-          {retry.isPending ? "Retrying…" : "Retry"}
+          {retry.isPending ? uiText("Retrying…") : uiText("Retry")}
         </Button>
       )}
       {retry.isError && (

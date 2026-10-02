@@ -1,3 +1,5 @@
+import { Agents as ScopedOrg } from "./Agents";
+import { useProjectWorkspaceEnabled } from "../hooks/useProjectWorkspaceEnabled";
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -173,7 +175,7 @@ const defaultDotColor = "var(--hex-a3a3a3)";
 
 // ── Main component ──────────────────────────────────────────────────────
 
-export function OrgChart() {
+function CompanyOrgChart() {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
@@ -638,4 +640,9 @@ const roleLabels: Record<string, string> = AGENT_ROLE_LABELS;
 
 function roleLabel(role: string): string {
   return roleLabels[role] ?? role;
+}
+
+export function OrgChart() {
+  const { enabled, loaded } = useProjectWorkspaceEnabled();
+  return enabled || !loaded ? <ScopedOrg initialView="org" /> : <CompanyOrgChart />;
 }

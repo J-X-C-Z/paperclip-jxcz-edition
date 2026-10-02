@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /** A muted em-dash for null / empty / missing values. */
 function EmptyValue() {
-  return <span className="text-muted-foreground">—</span>;
+  return <span className="text-muted-foreground">{uiText("—")}</span>;
 }
 
 function isIssueIdentifierField(fieldKey: string | undefined): boolean {
@@ -109,9 +110,7 @@ function CopyableCompactValue({
           aria-live="polite"
           className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 inline-flex -translate-x-1/2 items-center gap-1 rounded-md bg-foreground px-2 py-1 text-xs whitespace-nowrap text-background"
         >
-          <Check className="h-3 w-3 shrink-0" />
-          Copied
-        </span>
+          <Check className="h-3 w-3 shrink-0" /> {uiText("Copied")} </span>
       ) : null}
     </span>
   );
@@ -238,7 +237,7 @@ export function CaseFieldsPanel({ fields }: { fields: Record<string, unknown> })
   return (
     <section className="space-y-2">
       <div className="flex items-baseline gap-2">
-        <h2 className="text-sm font-semibold">Fields</h2>
+        <h2 className="text-sm font-semibold">{uiText("Fields")}</h2>
         <span className="text-xs text-muted-foreground">from the skill&apos;s schema — rendered generically</span>
       </div>
       <Card className="gap-0 py-0">

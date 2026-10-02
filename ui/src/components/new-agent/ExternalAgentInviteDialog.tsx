@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useUiTranslator } from "@/i18n";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { accessApi } from "@/api/access";
 import { queryKeys } from "@/lib/queryKeys";
@@ -14,6 +15,7 @@ export function ExternalAgentInviteDialog({ companyId, onClose, onBack }: {
   onClose: () => void;
   onBack: () => void;
 }) {
+  const tr = useUiTranslator();
   const cache = useQueryClient();
   const mounted = useRef(true);
   useEffect(() => {
@@ -57,26 +59,26 @@ export function ExternalAgentInviteDialog({ companyId, onClose, onBack }: {
   });
   return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
     <DialogContent className="max-h-(--sz-calc-16) overflow-y-auto sm:max-w-2xl">
-      <DialogTitle>{prompt ? "Agent onboarding prompt" : "Invite an external agent"}</DialogTitle>
+      <DialogTitle>{prompt ? tr("Agent onboarding prompt") : tr("Invite an external agent")}</DialogTitle>
       <DialogDescription>
-        {prompt ? "Send this one-time prompt to the agent that should join your organization."
-          : "Generate a one-time onboarding prompt for an external agent. An organization admin must approve its join request before it can claim an API key."}
+        {prompt ? tr("Send this one-time prompt to the agent that should join your organization.")
+          : tr("Generate a one-time onboarding prompt for an external agent. An organization admin must approve its join request before it can claim an API key.")}
       </DialogDescription>
       {prompt ? <>
-        <Textarea aria-label="Agent onboarding prompt" readOnly value={prompt} className="min-h-64 font-mono text-xs" />
-        {copyError && <p role="alert" className="text-sm text-muted-foreground">Clipboard unavailable. Copy the prompt manually from the field above.</p>}
+        <Textarea aria-label={tr("Agent onboarding prompt")} readOnly value={prompt} className="min-h-64 font-mono text-xs" />
+        {copyError && <p role="alert" className="text-sm text-muted-foreground">{tr("Clipboard unavailable. Copy the prompt manually from the field above.")}</p>}
         <div className="flex justify-between gap-4">
-          <Button variant="ghost" onClick={onClose}>Done</Button>
-          <Button variant="outline" onClick={() => void copy(prompt)}>{copied ? "Copied prompt" : "Copy prompt"}</Button>
+          <Button variant="ghost" onClick={onClose}>{tr("Done")}</Button>
+          <Button variant="outline" onClick={() => void copy(prompt)}>{copied ? tr("Copied prompt") : tr("Copy prompt")}</Button>
         </div>
       </> : <>
         <label className="space-y-2 text-sm">
-          <span>Optional message for the agent</span>
+          <span>{tr("Optional message for the agent")}</span>
           <Textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={4000} className="min-h-24" />
         </label>
-        {createInvite.error && <p role="alert" className="text-sm text-destructive">{createInvite.error.message}</p>}
+        {createInvite.error && <p role="alert" className="text-sm text-destructive">{tr(createInvite.error.message)}</p>}
         <div className="flex justify-between gap-4">
-          <Button variant="ghost" onClick={onBack}>Back</Button>
+          <Button variant="ghost" onClick={onBack}>{tr("Back")}</Button>
           <Button disabled={createInvite.isPending} onClick={() => createInvite.mutate()}>
             {createInvite.isPending ? "Generating…" : "Generate onboarding prompt"}
           </Button>

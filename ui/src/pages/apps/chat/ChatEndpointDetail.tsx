@@ -1,5 +1,6 @@
 import { EmailEndpointSettings } from "./EmailEndpointSetup";
 import { useEffect, useMemo, useState } from "react";
+import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -253,17 +254,17 @@ export function ChatEndpointDetail() {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading connection…
+        {uiText("Loading connection…")}
       </div>
     );
   if (endpointQuery.isError || !endpoint)
     return (
       <div className="space-y-3">
         <p className="text-sm text-destructive">
-          This chat connection could not be loaded.
+          {uiText("This chat connection could not be loaded.")}
         </p>
         <Button variant="outline" onClick={() => endpointQuery.refetch()}>
-          Try again
+          {uiText("Try again")}
         </Button>
       </div>
     );
@@ -288,7 +289,7 @@ export function ChatEndpointDetail() {
               <Button variant="ghost" size="sm" aria-label="Copy dedicated number" onClick={async () => {
                 try { await copyTextToClipboard(endpoint.botExternalId!); setCopyStatus("Number copied"); }
                 catch { setCopyStatus("Could not copy the number. Select and copy it manually."); }
-              }}><Copy className="size-4" />Copy number</Button>
+              }}><Copy className="size-4" />{uiText("Copy number")}</Button>
               <span role="status" className="text-muted-foreground">{copyStatus}</span>
             </div>
           )}
@@ -303,7 +304,7 @@ export function ChatEndpointDetail() {
                 )
               }
             >
-              Continue setup
+              {uiText("Continue setup")}
             </Button>
           ) : null}
           <StatusBadge status={endpoint.status} />
@@ -392,26 +393,25 @@ function Settings({
     saveResources.mutate({ id: resource.id, enabled });
   return (
     <section className="max-w-3xl space-y-7">
-      {endpoint.provider === "imessage-photon" && <p className="text-sm text-muted-foreground">{endpoint.photonAllocation === "shared" ? "Shared Photon project · direct messages only. Enroll senders in Photon and link their Messages identities in Access. Groups cannot be enabled." : "Enable each group individually. Agent replies are visible to everyone in that group; only authorized senders can start work."}</p>}
+      {endpoint.provider === "imessage-photon" && <p className="text-sm text-muted-foreground">{uiText(endpoint.photonAllocation === "shared" ? "Shared Photon project · direct messages only. Enroll senders in Photon and link their Messages identities in Access. Groups cannot be enabled." : "Enable each group individually. Agent replies are visible to everyone in that group; only authorized senders can start work.")}</p>}
       {endpoint.provider === "slack" && endpoint.setup?.command && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Slack command</h2>
+          <h2 className="text-lg font-semibold">{uiText("Slack command")}</h2>
           <div className="rounded-lg border border-border p-3 text-sm">
             <code>{endpoint.setup.command}</code>
             <p className="mt-2 text-muted-foreground">
-              Start work with{" "}
+              {uiText("Start work with")} {" "}
               <code>{endpoint.setup.command} investigate this</code>. In a
-              direct message, use <code>{endpoint.setup.command} status</code>,{" "}
+              {uiText(". In a direct message, use")} <code>{endpoint.setup.command} status</code>,{" "}
               <code>{endpoint.setup.command} new</code>, or{" "}
-              <code>{endpoint.setup.command} close</code>. Slack&apos;s bare{" "}
-              <code>/status</code> command is not a Paperclip control.
+              <code>{endpoint.setup.command} close</code>{uiText(", or")} {uiText(". Slack's bare")} <code>/status</code> {uiText("command is not a Paperclip control.")}
             </p>
           </div>
         </div>
       )}
       {endpoint.provider === "telegram" && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Telegram group command</h2>
+        <h2 className="text-lg font-semibold">{uiText("Telegram group command")}</h2>
           <div className="rounded-lg border border-border p-3 text-sm">
             <code>
               /task@
@@ -419,27 +419,24 @@ function Settings({
               &lt;request&gt;
             </code>
             <p className="mt-2 text-muted-foreground">
-              Telegram&apos;s default privacy mode does not deliver ordinary
-              mentions to bots. Use this command to start or continue group
-              work, or reply directly to a message from the bot.
+              {uiText("Telegram's default privacy mode does not deliver ordinary mentions to bots. Use this command to start or continue group work, or reply directly to a message from the bot.")}
             </p>
           </div>
         </div>
       )}
       <div>
-        <h2 className="text-lg font-semibold">Where this agent can work</h2>
+        <h2 className="text-lg font-semibold">{uiText("Where this agent can work")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Provider membership makes a destination available. Paperclip responds
-          only where you enable it.
+          {uiText("Provider membership makes a destination available. Paperclip responds only where you enable it.")}
         </p>
       </div>
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Destinations</h3>
+          <h3 className="text-sm font-semibold">{uiText("Destinations")}</h3>
         {resourcesQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading destinations…</p>
+          <p className="text-sm text-muted-foreground">{uiText("Loading destinations…")}</p>
         ) : destinationResources.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            No provider destinations have been discovered yet.
+            {uiText("No provider destinations have been discovered yet.")}
           </p>
         ) : (
           <div className="divide-y divide-border border-y border-border">
@@ -475,7 +472,7 @@ function Settings({
       </div>
       {endpoint.provider !== "github" && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold">Private conversations</h3>
+          <h3 className="text-sm font-semibold">{uiText("Private conversations")}</h3>
           <SettingToggle
             label="Allow direct messages"
             detail={
@@ -590,22 +587,21 @@ function Access({
   return (
     <section className="max-w-3xl space-y-7">
       <div>
-        <h2 className="text-lg font-semibold">External identity access</h2>
+        <h2 className="text-lg font-semibold">{uiText("External identity access")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Linked identities act as their current Paperclip user. Unlinked
-          people, when allowed, receive a fixed restricted profile.
+          {uiText("Linked identities act as their current Paperclip user. Unlinked people, when allowed, receive a fixed restricted profile.")}
         </p>
       </div>
       <SettingToggle
-        label="Allow unlinked people"
-        detail="They are restricted guests. Their tasks run only with an isolated workspace and sandbox environment; otherwise Paperclip safely refuses the request. They cannot approve, hire, spend, manage access, or reassign agents."
+        label={uiText("Allow unlinked people")}
+        detail={uiText("They are restricted guests. Their tasks run only with an isolated workspace and sandbox environment; otherwise Paperclip safely refuses the request. They cannot approve, hire, spend, manage access, or reassign agents.")}
         checked={allowUnlinked}
         pending={updatePolicy.isPending}
         onChange={(value) => updatePolicy.mutate(value)}
       />
       {confirmationUrl && (
         <div className="space-y-2 border-y border-border py-3">
-          <p className="text-sm font-medium">Private confirmation link</p>
+          <p className="text-sm font-medium">{uiText("Private confirmation link")}</p>
           <p className="break-all text-xs text-muted-foreground">
             {confirmationUrl}
           </p>
@@ -616,28 +612,28 @@ function Access({
               void copyTextToClipboard(confirmationUrl).then(
                 () =>
                   pushToast({
-                    title: "Confirmation link copied",
+                    title: uiText("Confirmation link copied"),
                     tone: "success",
                   }),
                 () =>
                   pushToast({
-                    title: "Couldn't copy the link",
-                    body: "Select and copy it manually.",
+                    title: uiText("Couldn't copy the link"),
+                    body: uiText("Select and copy it manually."),
                     tone: "error",
                   }),
               );
             }}
           >
             <Copy />
-            Copy link
+            {uiText("Copy link")}
           </Button>
         </div>
       )}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Identity links</h3>
+        <h3 className="text-sm font-semibold">{uiText("Identity links")}</h3>
         {links.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            External people appear here after they message the agent.
+            {uiText("External people appear here after they message the agent.")}
           </p>
         ) : (
           <div className="divide-y divide-border border-y border-border">
@@ -650,8 +646,8 @@ function Access({
                   <p className="text-sm font-medium">{link.externalLabel}</p>
                   <p className="text-xs text-muted-foreground">
                     {link.paperclipUserLabel
-                      ? `Linked to ${link.paperclipUserLabel}`
-                      : (link.externalDetail ?? "Not linked")}
+                      ? <>{uiText("Linked to ")} {link.paperclipUserLabel}</>
+                      : (link.externalDetail ?? uiText("Not linked"))}
                   </p>
                 </div>
                 {link.status === "linked" ? (
@@ -662,7 +658,7 @@ function Access({
                     onClick={() => revoke.mutate(link.principalId)}
                   >
                     <Unlink />
-                    Revoke
+                    {uiText("Revoke")}
                   </Button>
                 ) : (
                   <Button
@@ -671,7 +667,7 @@ function Access({
                     disabled={createIntent.isPending}
                     onClick={() => createIntent.mutate(link.principalId)}
                   >
-                    Create private link
+                    {uiText("Create private link")}
                   </Button>
                 )}
               </div>
@@ -699,12 +695,11 @@ function Conversations({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Conversations</h2>
+        <h2 className="text-lg font-semibold">{uiText("Conversations")}</h2>
       </div>
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-          No conversations yet. Address the agent in an enabled destination to
-          start one.
+          {uiText("No conversations yet. Address the agent in an enabled destination to start one.")}
         </p>
       ) : (
         <div className="divide-y divide-border border-y border-border">
@@ -735,7 +730,7 @@ function Conversations({
                 )}
                 {row.issueId && (
                   <Button asChild size="sm" variant="outline">
-                    <Link to={`/issues/${row.issueId}`}>Open task</Link>
+                    <Link to={`/issues/${row.issueId}`}>{uiText("Open task")}</Link>
                   </Button>
                 )}
               </div>
@@ -886,7 +881,7 @@ function Activity({
     : [];
   return (
     <section className="space-y-5">
-      <h2 className="text-lg font-semibold">Connection activity</h2>
+      <h2 className="text-lg font-semibold">{uiText("Connection activity")}</h2>
       {(health.message || health.error) && (
         <div
           className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${status === "attention" || status === "revoked" ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-border bg-muted/30 text-foreground"}`}
@@ -898,7 +893,7 @@ function Activity({
             {health.message && <p>{health.message}</p>}
             {health.previousHealth && (
               <p className="mt-1 text-xs opacity-80">
-                <span className="font-medium">Last reported health:</span>{" "}
+                <span className="font-medium">{uiText("Last reported health:")}</span>{" "}
                 {health.previousHealth}
               </p>
             )}
@@ -915,11 +910,11 @@ function Activity({
         <div
           className={`rounded-lg border p-3 text-sm ${endpoint.setup?.callbacksNeedUpdate ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"}`}
         >
-          <p className="font-medium">Slack callback health</p>
+          <p className="font-medium">{uiText("Slack callback health")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {endpoint.setup?.callbacksNeedUpdate
-              ? "Slack callback URLs need an update. Save the current App Manifest, then exercise Events, Interactivity, and the registered command again."
-              : "Paperclip records each callback surface independently after Slack successfully calls it."}
+              ? uiText("Slack callback URLs need an update. Save the current App Manifest, then exercise Events, Interactivity, and the registered command again.")
+              : uiText("Paperclip records each callback surface independently after Slack successfully calls it.")}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             {callbackSurfaceRows.map(([label, surface]) => (
@@ -927,14 +922,14 @@ function Activity({
                 <p className="text-xs font-medium">{label}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {surface.status === "current"
-                    ? "Current"
+                    ? uiText("Current")
                     : surface.status === "stale"
-                      ? "Stale URL"
-                      : "Not observed"}
+                      ? uiText("Stale URL")
+                      : uiText("Not observed")}
                 </p>
                 {surface.observedAt && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Last observed{" "}
+                    {uiText("Last observed")}{" "}
                     <time
                       dateTime={surface.observedAt}
                       title={surface.observedAt}
@@ -965,7 +960,7 @@ function Activity({
                 ) : (
                   <Pause />
                 )}
-                Pause
+                {uiText("Pause")}
               </Button>
             )}
             {status === "paused" && (
@@ -979,7 +974,7 @@ function Activity({
                 ) : (
                   <Play />
                 )}
-                Resume
+                {uiText("Resume")}
               </Button>
             )}
             {[
@@ -1012,7 +1007,7 @@ function Activity({
               onClick={() => setRemoveOpen(true)}
             >
               <Trash2 />
-              Remove connection
+              {uiText("Remove connection")}
             </Button>
           </div>
           {status !== "draft" && status !== "verifying" && (
@@ -1024,26 +1019,26 @@ function Activity({
       )}
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">
-          Delivery and publication history
+          {uiText("Delivery and publication history")}
         </h3>
         <div className="divide-y divide-border border-y border-border">
           {query.isLoading && (
             <div className="flex items-center gap-2 py-5 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading activity…
+              {uiText("Loading activity…")}
             </div>
           )}
           {query.isError && (
             <div className="flex flex-wrap items-center justify-between gap-3 py-4">
               <p className="text-sm text-destructive" role="alert">
-                Connection activity could not be loaded.
+                {uiText("Connection activity could not be loaded.")}
               </p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => query.refetch()}
               >
-                Try again
+                {uiText("Try again")}
               </Button>
             </div>
           )}
@@ -1097,7 +1092,7 @@ function Activity({
                     ) : (
                       <RefreshCw />
                     )}
-                    Replay
+                    {uiText("Replay")}
                   </Button>
                 )}
                 {isResolutionEligible(item) && (
@@ -1106,14 +1101,14 @@ function Activity({
                     variant="outline"
                     onClick={() => setResolutionItem(item)}
                   >
-                    Resolve
+                    {uiText("Resolve")}
                   </Button>
                 )}
               </div>
             ))}
           {!query.isLoading && !query.isError && rows.length === 0 && (
             <p className="py-5 text-sm text-muted-foreground">
-              No connection activity yet.
+              {uiText("No connection activity yet.")}
             </p>
           )}
         </div>
@@ -1143,7 +1138,7 @@ function Activity({
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:flex-wrap">
             <AlertDialogCancel disabled={resolveActivity.isPending}>
-              Keep unresolved
+              {uiText("Keep unresolved")}
             </AlertDialogCancel>
             {resolutionItem &&
               activityResolutionActions(resolutionItem).includes("cancel") && (
@@ -1203,7 +1198,7 @@ function Activity({
                     }
                   }}
                 >
-                  Mark delivered
+                  {uiText("Mark delivered")}
                 </AlertDialogAction>
               )}
           </AlertDialogFooter>
@@ -1212,7 +1207,7 @@ function Activity({
       <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this connection?</AlertDialogTitle>
+            <AlertDialogTitle>{uiText("Remove this connection?")}</AlertDialogTitle>
             <AlertDialogDescription>
               {endpoint.assignedAgentName} will stop receiving new work from
               {` ${providerNames[endpoint.provider]}`}. Existing Paperclip tasks
@@ -1221,7 +1216,7 @@ function Activity({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{uiText("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={lifecycle.isPending}
@@ -1230,7 +1225,7 @@ function Activity({
               {lifecycle.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              Remove connection
+              {uiText("Remove connection")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -273,31 +273,180 @@ export function validatePluginRuntimeQuery(
   }
 }
 
+type RuntimeSqlToken = { text: string; kind: "word" | "identifier" | "literal" | "symbol"; depth: number };
+
+/** Keep identifiers, but remove literal/comment contents before checking SQL structure. */
+function runtimeSqlTokens(statement: string): RuntimeSqlToken[] {
+  const tokens: RuntimeSqlToken[] = [];
+  let depth = 0;
+  for (let i = 0; i < statement.length;) {
+    const char = statement[i]!;
+    if (/\s/.test(char)) { i += 1; continue; }
+    if (statement.startsWith("--", i)) {
+      const end = statement.indexOf("\n", i + 2);
+      i = end < 0 ? statement.length : end + 1;
+      continue;
+    }
+    if (statement.startsWith("/*", i)) {
+      let comments = 1;
+      i += 2;
+      while (i < statement.length && comments > 0) {
+        if (statement.startsWith("/*", i)) { comments += 1; i += 2; }
+        else if (statement.startsWith("*/", i)) { comments -= 1; i += 2; }
+        else i += 1;
+      }
+      if (comments) throw new Error("Unterminated SQL comment");
+      continue;
+    }
+    const dollarQuote = char === "$" ? statement.slice(i).match(/^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/)?.[0] : undefined;
+    if (dollarQuote) {
+      const end = statement.indexOf(dollarQuote, i + dollarQuote.length);
+      if (end < 0) throw new Error("Unterminated SQL literal");
+      tokens.push({ text: "", kind: "literal", depth });
+      i = end + dollarQuote.length;
+      continue;
+    }
+    if (char === "'" || char === '"') {
+      const quote = char;
+      const escapedString = quote === "'" && i > 0 && /[eE]/.test(statement[i - 1]!)
+        && (i < 2 || !/[A-Za-z0-9_]/.test(statement[i - 2]!));
+      let value = "";
+      let closed = false;
+      i += 1;
+      while (i < statement.length) {
+        if (escapedString && statement[i] === "\\") { i += 2; continue; }
+        if (statement[i] === quote) {
+          if (statement[i + 1] === quote) { value += quote; i += 2; continue; }
+          i += 1; closed = true; break;
+        }
+        value += statement[i]; i += 1;
+      }
+      if (!closed) throw new Error("Unterminated SQL literal or identifier");
+      tokens.push({ text: quote === '"' ? value : "", kind: quote === '"' ? "identifier" : "literal", depth });
+      continue;
+    }
+    const word = statement.slice(i).match(/^[A-Za-z_][A-Za-z0-9_$]*/)?.[0];
+    if (word) { tokens.push({ text: word.toLowerCase(), kind: "word", depth }); i += word.length; continue; }
+    if (char === ")") {
+      depth -= 1;
+      if (depth < 0) throw new Error("Unbalanced SQL parentheses");
+    }
+    tokens.push({ text: char, kind: "symbol", depth });
+    if (char === "(") depth += 1;
+    i += 1;
+  }
+  if (depth !== 0) throw new Error("Unbalanced SQL parentheses");
+  return tokens;
+}
+
 export function validatePluginRuntimeExecute(query: string, namespace: string): void {
-  const statements = splitSqlStatements(query);
-  if (statements.length !== 1) {
+  assertIdentifier(namespace, "namespace");
+  const tokens = runtimeSqlTokens(query);
+  if (tokens.at(-1)?.text === ";") tokens.pop();
+  if (!tokens.length || tokens.some(token => token.text === ";")) {
     throw new Error("Plugin runtime SQL must contain exactly one statement");
   }
-  const statement = statements[0]!;
-  assertNoBannedSql(statement);
-  const normalized = normaliseSql(statement);
-  if (!/^(insert\s+into|update|delete\s+from)\b/.test(normalized)) {
-    throw new Error("ctx.db.execute only allows INSERT, UPDATE, or DELETE");
-  }
-  if (/\b(alter|create|drop|truncate)\b/.test(normalized)) {
+  const keyword = (token: RuntimeSqlToken | undefined, word: string) => token?.kind === "word" && token.text === word;
+  const identifier = (token: RuntimeSqlToken | undefined) => token?.kind === "word" || token?.kind === "identifier";
+  const scan = tokens.map(token => token.kind === "word" || token.kind === "symbol" ? token.text : " ").join(" ");
+  assertNoBannedSql(scan);
+  if (tokens.some(token => token.kind === "word" && ["alter", "create", "drop", "truncate"].includes(token.text))) {
     throw new Error("ctx.db.execute cannot contain DDL keywords");
   }
 
-  const refs = extractQualifiedRefs(statement);
-  const target = refs.find((ref) => ["into", "update", "from"].includes(ref.keyword));
-  if (!target || target.schema !== namespace) {
-    throw new Error(`ctx.db.execute target must be inside plugin namespace "${namespace}"`);
+  const main = keyword(tokens[0], "with")
+    ? tokens.find((token, index) => index > 0 && token.depth === 0 && token.kind === "word" && ["insert", "update", "delete", "select"].includes(token.text))
+    : tokens[0];
+  if (!main || main.kind !== "word" || !["insert", "update", "delete"].includes(main.text)) {
+    throw new Error("ctx.db.execute only allows INSERT, UPDATE, or DELETE (optionally preceded by WITH)");
   }
-  for (const ref of refs) {
-    if (ref.schema !== namespace) {
-      throw new Error("ctx.db.execute cannot reference public or other non-plugin schemas");
+
+  // Unqualified reads can refer to declared CTEs, but writes always need an
+  // explicit namespace, including every data-modifying CTE and the final DML.
+  const ctes: Array<{ name: string; visibleAfter: number; scopeStart: number; scopeEnd: number }> = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (!keyword(tokens[i], "with")) continue;
+    const scopeDepth = tokens[i]!.depth;
+    const scopeEndIndex = tokens.findIndex((token, index) => index > i && token.depth < scopeDepth);
+    const scopeEnd = scopeEndIndex < 0 ? tokens.length : scopeEndIndex;
+    const recursive = keyword(tokens[i + 1], "recursive");
+    let next = i + (recursive ? 2 : 1);
+    while (identifier(tokens[next])) {
+      const name = tokens[next]!.text;
+      next += 1;
+      if (tokens[next]?.text === "(") {
+        const depth = tokens[next]!.depth;
+        next += 1;
+        while (next < scopeEnd && !(tokens[next]?.text === ")" && tokens[next]?.depth === depth)) next += 1;
+        next += 1;
+      }
+      if (!keyword(tokens[next], "as")) break;
+      next += 1;
+      if (keyword(tokens[next], "not")) next += 1;
+      if (keyword(tokens[next], "materialized")) next += 1;
+      if (tokens[next]?.text !== "(") break;
+      const bodyDepth = tokens[next]!.depth;
+      next += 1;
+      while (next < scopeEnd && !(tokens[next]?.text === ")" && tokens[next]?.depth === bodyDepth)) next += 1;
+      ctes.push({ name, visibleAfter: recursive ? i : next, scopeStart: i, scopeEnd });
+      next += 1;
+      if (tokens[next]?.text !== ",") break;
+      next += 1;
     }
   }
+  const isVisibleCte = (name: string, index: number) => ctes.some(cte => cte.name === name
+    && index > cte.visibleAfter && index > cte.scopeStart && index < cte.scopeEnd);
+
+  function checkTable(index: number, write: boolean) {
+    const only = keyword(tokens[index], "only");
+    if (only || keyword(tokens[index], "lateral")) index += 1;
+    if (only && tokens[index]?.text === "(") index += 1;
+    // A parenthesized subquery has its own FROM/JOIN references checked below.
+    if (tokens[index]?.text === "(" && !write) return;
+    const schemaOrName = tokens[index];
+    if (!identifier(schemaOrName)) throw new Error("Plugin SQL table references must be fully qualified");
+    if (tokens[index + 1]?.text === ".") {
+      if (schemaOrName!.text !== namespace || !identifier(tokens[index + 2]) || tokens[index + 3]?.text === ".") {
+        throw new Error(`ctx.db.execute target/reference must be inside plugin namespace "${namespace}"`);
+      }
+    } else if (write || (!isVisibleCte(schemaOrName!.text, index) && tokens[index + 1]?.text !== "(")) {
+      throw new Error(`ctx.db.execute target/reference must be fully qualified inside plugin namespace "${namespace}"`);
+    }
+  }
+
+  const readDepths = new Set<number>();
+  let writeTargets = 0;
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i]!;
+    if (token.kind === "word" && ["where", "group", "order", "having", "limit", "returning", "set", "union"].includes(token.text)) readDepths.delete(token.depth);
+    if (token.text === ")") readDepths.delete(token.depth + 1);
+    if (token.text === "," && readDepths.has(token.depth)) checkTable(i + 1, false);
+    if (keyword(token, "insert")) {
+      if (!keyword(tokens[i + 1], "into")) throw new Error("INSERT must name its plugin namespace target");
+      checkTable(i + 2, true); writeTargets += 1;
+    } else if (keyword(token, "update") && !keyword(tokens[i - 1], "do")
+      && !keyword(tokens[i - 1], "for")
+      && !(keyword(tokens[i - 1], "key") && keyword(tokens[i - 2], "no") && keyword(tokens[i - 3], "for"))) {
+      // SELECT row-lock clauses name no write target; their FROM/JOIN sources
+      // still go through the same namespace checks below.
+      checkTable(i + 1, true); writeTargets += 1;
+    } else if (keyword(token, "delete")) {
+      if (!keyword(tokens[i + 1], "from")) throw new Error("DELETE must name its plugin namespace target");
+      checkTable(i + 2, true); writeTargets += 1;
+    } else if (keyword(token, "into") && !keyword(tokens[i - 1], "insert")) {
+      throw new Error("ctx.db.execute cannot contain SELECT INTO DDL");
+    } else if (keyword(token, "from") || keyword(token, "join") || keyword(token, "using")) {
+      // FROM in EXTRACT/SUBSTRING and IS DISTINCT FROM is an expression,
+      // not a relation. Those tokens cannot select a table on their own.
+      if (keyword(tokens[i - 1], "distinct")) continue;
+      const open = tokens.slice(0, i).findLastIndex(candidate => candidate.text === "(" && candidate.depth === token.depth - 1);
+      if (open >= 1 && ["extract", "substring", "trim", "overlay"].some(name => keyword(tokens[open - 1], name))) continue;
+      if (keyword(token, "using") && tokens[i + 1]?.text === "(") continue;
+      checkTable(i + 1, false);
+      readDepths.add(token.depth);
+    }
+  }
+  if (!writeTargets) throw new Error(`ctx.db.execute target must be inside plugin namespace "${namespace}"`);
 }
 
 function bindSql(statement: string, params: readonly unknown[] = []): SQL {

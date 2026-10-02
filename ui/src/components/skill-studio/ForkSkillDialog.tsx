@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GitFork, Loader2, Users } from "lucide-react";
@@ -202,7 +203,7 @@ export function ForkSkillDialog({
               <label className="mt-3 flex items-start justify-between gap-3">
                 <span className="text-sm">
                   <span className="font-medium text-foreground">
-                    Switch these agents to the copy
+                    {uiText("Switch these agents to the copy")}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
                     {reassign
@@ -214,7 +215,7 @@ export function ForkSkillDialog({
                   checked={reassign}
                   onCheckedChange={setReassign}
                   disabled={busy}
-                  aria-label="Switch these agents to the copy"
+                  aria-label={uiText("Switch these agents to the copy")}
                 />
               </label>
             </>
@@ -232,9 +233,7 @@ export function ForkSkillDialog({
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={busy}
-          >
-            Cancel
-          </Button>
+          > {uiText("Cancel")} </Button>
           <Button
             type="button"
             variant={reusableFork ? "outline" : "default"}

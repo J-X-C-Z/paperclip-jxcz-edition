@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useMemo, useState } from "react";
 import { CornerUpLeft, Folder, KeyRound, Plus } from "lucide-react";
 import type { CompanySecret, SecretStatus } from "@paperclipai/shared";
@@ -324,7 +325,7 @@ export function SecretPicker({
                 <Plus className="size-3.5 shrink-0" />
                 {query.trim() ? (
                   <span>
-                    Create secret <span className="font-mono">&ldquo;{query.trim()}&rdquo;</span>…
+                    {uiText("Create secret")} <span className="font-mono">&ldquo;{query.trim()}&rdquo;</span>…
                   </span>
                 ) : (
                   <span>Create new secret…</span>

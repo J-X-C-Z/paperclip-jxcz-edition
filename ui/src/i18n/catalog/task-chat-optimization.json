@@ -1,0 +1,17 @@
+{
+  "Find in conversation": "查找聊天记录",
+  "Find in loaded messages": "查找已加载的消息",
+  "Loaded messages only": "仅查找已加载消息",
+  "No matching messages": "没有匹配的消息",
+  "Previous matching message": "上一条匹配消息",
+  "Next matching message": "下一条匹配消息",
+  "Close conversation search": "关闭聊天记录查找",
+  "Message copied": "消息已复制",
+  "Copy failed. Select the message text and copy it manually.": "复制失败，请选中消息文字手动复制。",
+  "Some task history could not be loaded.": "部分任务记录暂时无法加载，已加载的消息仍可查看。",
+  "Run failed": "执行失败",
+  "Run completed": "执行完成",
+  "Run interrupted": "执行中断",
+  "Usage limit reached": "已达到使用限额",
+  "Loading execution details. Messages are ready to read.": "正在补充执行记录，消息可先查看。"
+}

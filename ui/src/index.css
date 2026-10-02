@@ -3041,6 +3041,12 @@ span.paperclip-mention-chip[data-mention-kind="external-object"] {
 .announcement-well {
   animation: announcement-enter var(--motion-duration-fast) var(--motion-ease-standard) both;
 }
+
+[data-chat-search-match="true"] {
+  outline: 1px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
 @keyframes announcement-enter {
   from { opacity: 0; }
   to { opacity: 1; }

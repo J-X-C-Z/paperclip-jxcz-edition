@@ -54,6 +54,9 @@ async function mount(
   localEnvironment = false,
   deploymentMode: "local_trusted" | "authenticated" = "local_trusted",
   localAiLoginSupported = true,
+  connectionSucceeds = true,
+  testErrorDetail?: string,
+  testErrorHint?: string,
 ) {
   const key =
     adapterType === "claude_local" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
@@ -111,7 +114,7 @@ async function mount(
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
-  const test = vi.fn().mockResolvedValue(true);
+  const test = vi.fn().mockResolvedValue(connectionSucceeds);
   const connected = vi.fn();
   flushSync(() =>
     root.render(
@@ -124,6 +127,9 @@ async function mount(
           localEnvironment={localEnvironment}
           onBack={() => {}}
           testConnection={test}
+          testError="Codex hello probe failed."
+          testErrorDetail={testErrorDetail}
+          testErrorHint={testErrorHint}
           onConnected={connected}
           managedAccount={managedAccount}
         />
@@ -132,7 +138,7 @@ async function mount(
   );
   await vi.waitFor(() => expect(mocks.personal).toHaveBeenCalled());
   await vi.waitFor(() => expect(client.isFetching()).toBe(0));
-  if (savedApiKeys && !managedAccount) await vi.waitFor(() => expect(host.textContent).toContain("2 saved API keys"));
+  if (savedApiKeys && !managedAccount) await vi.waitFor(() => expect(host.textContent).toContain("2 saved API"));
   return { test, connected, key };
 }
 function click(text: string) {
@@ -148,6 +154,19 @@ function openProvider() {
   );
 }
 describe("AgentProviderConnection reuse", () => {
+  it("shows provider probe detail and hint verbatim when the test fails", async () => {
+    const detail = "You’ve hit your usage limit. Try again at 4:35 PM.";
+    const hint = "Check the provider account’s usage status.";
+    const { connected } = await mount("codex_local", false, true, false, true, false, undefined, false, "local_trusted", true, false, detail, hint);
+    openProvider();
+    const primaryButton = [...host.querySelectorAll("button")].at(-1)!;
+    expect(primaryButton.disabled).toBe(false);
+    flushSync(() => primaryButton.click());
+    await vi.waitFor(() => expect(host.textContent).toContain(detail));
+    expect(host.textContent).toContain("Codex hello probe failed.");
+    expect(host.textContent).toContain(hint);
+    expect(connected).not.toHaveBeenCalled();
+  });
   it.each(["claude_local", "codex_local"] as const)("does not offer a server-host command when health disables local login: %s", async adapterType => {
     const onComplete = vi.fn();
     const intent = { provider: adapterType === "claude_local" ? "anthropic" as const : "openai" as const, method: "subscription" as const, name: "Hosted account", ownership: "personal" as const, agentIds: [], allAgents: false };

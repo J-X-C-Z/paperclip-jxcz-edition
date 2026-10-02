@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Tooltip,
@@ -81,7 +82,7 @@ export function HintIcon({ text }: { text: string }) {
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs">
-        {text}
+        {uiText(text)}
       </TooltipContent>
     </Tooltip>
   );
@@ -91,7 +92,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <label className="text-xs text-muted-foreground">{uiText(label)}</label>
         {hint && <HintIcon text={hint} />}
       </div>
       {children}
@@ -115,7 +116,7 @@ export function ToggleField({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs text-muted-foreground">{uiText(label)}</span>
         {hint && <HintIcon text={hint} />}
       </div>
       {/* Gallery feedback r3: was a hand-rolled h-5 w-9 pill with a bg-green-600
@@ -157,7 +158,7 @@ export function ToggleWithNumber({
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="text-xs text-muted-foreground">{uiText(label)}</span>
           {hint && <HintIcon text={hint} />}
         </div>
         <ToggleSwitch
@@ -388,13 +389,11 @@ export function ChoosePathButton() {
         type="button"
         className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0"
         onClick={() => setOpen(true)}
-      >
-        Choose
-      </button>
+      > {uiText("Choose")} </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Specify path manually</DialogTitle>
+            <DialogTitle>{uiText("Specify path manually")}</DialogTitle>
             <DialogDescription>
               Browser security blocks apps from reading full local paths via a file picker.
               Copy the absolute path and paste it into the input.
@@ -404,10 +403,10 @@ export function ChoosePathButton() {
             <section className="space-y-1.5">
               <p className="font-medium">macOS (Finder)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Find the folder in Finder.</li>
-                <li>Hold <kbd>Option</kbd> and right-click the folder.</li>
-                <li>Click "Copy &lt;folder name&gt; as Pathname".</li>
-                <li>Paste the result into the path input.</li>
+                <li>{uiText("Find the folder in Finder.")}</li>
+                <li>{uiText("Hold")} <kbd>Option</kbd> and right-click the folder.</li>
+                <li>{uiText("Click \"Copy <folder name> as Pathname\".")}</li>
+                <li>{uiText("Paste the result into the path input.")}</li>
               </ol>
               <p className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
                 /Users/yourname/Documents/project
@@ -416,10 +415,10 @@ export function ChoosePathButton() {
             <section className="space-y-1.5">
               <p className="font-medium">Windows (File Explorer)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Find the folder in File Explorer.</li>
-                <li>Hold <kbd>Shift</kbd> and right-click the folder.</li>
-                <li>Click "Copy as path".</li>
-                <li>Paste the result into the path input.</li>
+                <li>{uiText("Find the folder in File Explorer.")}</li>
+                <li>{uiText("Hold")} <kbd>Shift</kbd> and right-click the folder.</li>
+                <li>{uiText("Click \"Copy as path\".")}</li>
+                <li>{uiText("Paste the result into the path input.")}</li>
               </ol>
               <p className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
                 C:\Users\yourname\Documents\project
@@ -428,9 +427,9 @@ export function ChoosePathButton() {
             <section className="space-y-1.5">
               <p className="font-medium">Terminal fallback (macOS/Linux)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Run <code>cd /path/to/folder</code>.</li>
-                <li>Run <code>pwd</code>.</li>
-                <li>Copy the output and paste it into the path input.</li>
+                <li>{uiText("Run")} <code>cd /path/to/folder</code>{uiText(".")}</li>
+                <li>{uiText("Run")} <code>pwd</code>{uiText(".")}</li>
+                <li>{uiText("Copy the output and paste it into the path input.")}</li>
               </ol>
             </section>
           </div>
@@ -452,7 +451,7 @@ export function InlineField({ label, hint, children }: { label: string; hint?: s
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5 shrink-0">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <label className="text-xs text-muted-foreground">{uiText(label)}</label>
         {hint && <HintIcon text={hint} />}
       </div>
       <div className="w-24 ml-auto">{children}</div>

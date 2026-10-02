@@ -739,6 +739,28 @@ describe("AgentConfigForm environment selector", () => {
     vi.clearAllMocks();
   });
 
+  it("offers explicit standard titles while retaining the current custom title", async () => {
+    let save: (() => void) | null = null;
+    const result = await renderForm([], { title: "旧岗位" }, {
+      onSaveActionChange: (next) => { save = next; },
+    });
+    roots.push(result.root);
+    const select = result.container.querySelector<HTMLSelectElement>('select[aria-label="标准头衔"]');
+    expect(select?.value).toBe("__custom__");
+    expect(Array.from(select?.options ?? []).map((option) => option.textContent)).toEqual(["组员", "组长", "部长", "总管", "自定义头衔"]);
+    expect((result.container.querySelector('[aria-label="自定义头衔"]') as HTMLInputElement).value).toBe("旧岗位");
+
+    await act(async () => {
+      select!.value = "组长";
+      select!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flushReact();
+    expect(result.container.querySelector('[aria-label="自定义头衔"]')).toBeNull();
+    expect(save).not.toBeNull();
+    await act(async () => { await save!(); });
+    expect(result.onSave).toHaveBeenCalledWith(expect.objectContaining({ title: "组长" }));
+  });
+
   it("promotes environment drafts through the page Save action and discards them through the page Discard action", async () => {
     const dirty = vi.fn();
     let save: (() => void) | null = null;

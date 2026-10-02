@@ -26,6 +26,8 @@ export interface DashboardRunActivityDay {
 
 export interface DashboardSummary {
   companyId: string;
+  /** Present for a project aggregate; governance budget counters are zero in this mode. */
+  projectId?: string;
   agents: {
     active: number;
     running: number;

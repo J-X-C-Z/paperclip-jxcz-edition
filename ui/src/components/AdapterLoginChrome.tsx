@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Copy, Check, Loader2 } from "lucide-react";
@@ -303,9 +304,7 @@ export function OnboardingLoginCodeRow({
             initial={{ opacity: 0, y: COPIED_REVEAL_TRAVEL }}
             animate={{ opacity: 1, y: 0, transition: COPIED_REVEAL }}
             exit={{ opacity: 0, transition: COPIED_REVEAL }}
-          >
-            Copied!
-          </motion.span>
+          > {uiText("Copied!")} </motion.span>
         )}
       </AnimatePresence>
       <LoginCardCopyButton
@@ -437,8 +436,7 @@ export function ProviderSubscriptionCard({
             target="_blank"
             rel="noreferrer noopener"
             className="underline underline-offset-2 hover:text-foreground"
-          >
-            Sign in to {providerName}
+          > {uiText("Sign in to")} {providerName}
           </a>
           {mode === "submitted_code"
             ? " then come back and enter authorization code"
@@ -461,7 +459,7 @@ export function ProviderApiKeyCard({
     <OnboardingLoginCard
       instruction={`Provide your ${providerName} API key to connect`}
     >
-      <OnboardingCardField {...field} label="API key" masked />
+      <OnboardingCardField {...field} label={uiText("API key")} masked />
     </OnboardingLoginCard>
   );
 }

@@ -39,16 +39,19 @@ import { cn } from "@/lib/utils";
 import { Tabs } from "@/components/ui/tabs";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
+import { ProjectOrganization } from "../components/ProjectOrganization";
+import { ProjectTeam } from "../components/ProjectTeam";
 import {
   isStarred,
   resourceMembershipState,
   useResourceMembershipMutation,
   useResourceMemberships,
 } from "../hooks/useResourceMemberships";
+import { useUiTranslator } from "@/i18n";
 
 /* ── Top-level tab types ── */
 
-type ProjectBaseTab = "list" | "plugin-operations" | "workspaces" | "configuration" | "budget";
+type ProjectBaseTab = "list" | "plugin-operations" | "workspaces" | "configuration" | "budget" | "team";
 type ProjectPluginTab = `plugin:${string}`;
 type ProjectTab = ProjectBaseTab | ProjectPluginTab;
 
@@ -67,6 +70,7 @@ function resolveProjectTab(pathname: string, projectId: string): ProjectTab | nu
   if (tab === "issues") return "list";
   if (tab === "plugin-operations") return "plugin-operations";
   if (tab === "workspaces") return "workspaces";
+  if (tab === "team") return "team";
   return null;
 }
 
@@ -85,6 +89,7 @@ function ProjectTilePicker({
   onSelectIcon: (icon: string) => void;
   onSelectColor: (color: string | null) => void;
 }) {
+  const tr = useUiTranslator();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -109,16 +114,16 @@ function ProjectTilePicker({
         <button
           type="button"
           className="shrink-0 rounded-lg cursor-pointer hover:ring-2 hover:ring-foreground/20 transition-(--tp-box-shadow)"
-          aria-label="Change project icon and color"
+          aria-label={tr("Change project icon and color")}
         >
           <ProjectTile color={color} icon={icon} size="md" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3" align="start">
         {/* Icon search + grid */}
-        <p className="text-xs font-medium text-muted-foreground mb-2">Icon</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2">{tr("Icon")}</p>
         <Input
-          placeholder="Search icons..."
+          placeholder={tr("Search icons...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-2 h-8 text-sm"
@@ -140,13 +145,13 @@ function ProjectTilePicker({
             </button>
           ))}
           {filteredIcons.length === 0 && (
-            <p className="col-span-7 text-xs text-muted-foreground text-center py-2">No icons match</p>
+            <p className="col-span-7 text-xs text-muted-foreground text-center py-2">{tr("No icons match")}</p>
           )}
         </div>
 
         {/* Color swatches */}
         <div className="mt-3 border-t border-border pt-3">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Color</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">{tr("Color")}</p>
           <div className="grid grid-cols-5 gap-1.5">
             {/* Neutral / reset-to-gray option */}
             <button
@@ -157,8 +162,8 @@ function ProjectTilePicker({
                   ? "ring-2 ring-foreground ring-offset-1 ring-offset-background rounded-md"
                   : ""
               }`}
-              aria-label="Reset to neutral gray"
-              title="Neutral (default)"
+              aria-label={tr("Reset to neutral gray")}
+              title={tr("Neutral (default)")}
             >
               <ProjectTile color={null} size="sm" />
             </button>
@@ -173,7 +178,7 @@ function ProjectTilePicker({
                     : "hover:ring-2 hover:ring-foreground/30"
                 }`}
                 style={{ backgroundColor: swatch }}
-                aria-label={`Select color ${swatch}`}
+                aria-label={`${tr("Select color")} ${swatch}`}
               />
             ))}
           </div>
@@ -322,6 +327,7 @@ function ProjectPluginOperationsList({
 /* ── Main project page ── */
 
 export function ProjectDetail() {
+  const tr = useUiTranslator();
   const { companyPrefix, projectId, filter } = useParams<{
     companyPrefix?: string;
     projectId: string;
@@ -454,17 +460,17 @@ export function ProjectDetail() {
       ),
     onSuccess: (updatedProject, archived) => {
       invalidateProject();
-      const name = updatedProject?.name ?? project?.name ?? "Project";
+      const name = updatedProject?.name ?? project?.name ?? tr("Project");
       if (archived) {
-        pushToast({ title: `"${name}" has been archived`, tone: "success" });
+        pushToast({ title: `"${name}" ${tr("has been archived")}`, tone: "success" });
         navigate("/dashboard");
       } else {
-        pushToast({ title: `"${name}" has been unarchived`, tone: "success" });
+        pushToast({ title: `"${name}" ${tr("has been unarchived")}`, tone: "success" });
       }
     },
     onError: (_, archived) => {
       pushToast({
-        title: archived ? "Failed to archive project" : "Failed to unarchive project",
+        title: archived ? tr("Failed to archive project") : tr("Failed to unarchive project"),
         tone: "error",
       });
     },
@@ -487,10 +493,10 @@ export function ProjectDetail() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Projects", href: "/projects" },
-      { label: project?.name ?? routeProjectRef ?? "Project" },
+      { label: tr("Projects"), href: "/projects" },
+      { label: project?.name ?? routeProjectRef ?? tr("Project") },
     ]);
-  }, [setBreadcrumbs, project, routeProjectRef]);
+  }, [setBreadcrumbs, project, routeProjectRef, tr]);
 
   useEffect(() => {
     if (!project) return;
@@ -594,7 +600,7 @@ export function ProjectDetail() {
       companyId: resolvedCompanyId ?? "",
       scopeType: "project",
       scopeId: project?.id ?? routeProjectRef,
-      scopeName: project?.name ?? "Project",
+      scopeName: project?.name ?? tr("Project"),
       metric: "billed_cents",
       windowKind: "lifetime",
       amount: 0,
@@ -611,7 +617,7 @@ export function ProjectDetail() {
       windowStart: new Date(),
       windowEnd: new Date(),
     } satisfies BudgetPolicySummary;
-  }, [budgetOverview?.policies, project, resolvedCompanyId, routeProjectRef]);
+  }, [budgetOverview?.policies, project, resolvedCompanyId, routeProjectRef, tr]);
 
   const budgetMutation = useMutation({
     mutationFn: (amount: number) =>
@@ -639,6 +645,9 @@ export function ProjectDetail() {
   }
 
   if (activeTab === "workspaces" && workspaceTabDecisionLoaded && !showWorkspacesTab) {
+    return <Navigate to={`/projects/${canonicalProjectRef}/issues`} replace />;
+  }
+  if (activeTab === "team" && experimentalSettingsQuery.isFetched && experimentalSettingsQuery.data?.enableProjectWorkspace !== true) {
     return <Navigate to={`/projects/${canonicalProjectRef}/issues`} replace />;
   }
 
@@ -702,6 +711,8 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}/plugin-operations`);
     } else if (tab === "configuration") {
       navigate(`/projects/${canonicalProjectRef}/configuration`);
+    } else if (tab === "team") {
+      navigate(`/projects/${canonicalProjectRef}/team`);
     } else {
       navigate(`/projects/${canonicalProjectRef}/issues`);
     }
@@ -712,7 +723,7 @@ export function ProjectDetail() {
       {showLeftProjectNotice ? (
         <div className="flex items-center gap-3 border border-yellow-300/35 bg-yellow-300/10 px-3 py-2 text-sm text-yellow-900 dark:text-yellow-100">
           <p className="min-w-0 flex-1">
-            You left this project. It no longer appears in your sidebar.
+            {tr("You left this project. It no longer appears in your sidebar.")}
           </p>
           <MembershipAction
             compact
@@ -736,7 +747,7 @@ export function ProjectDetail() {
           <button
             type="button"
             className="h-6 w-6 shrink-0 text-yellow-900/70 hover:text-yellow-900 dark:text-yellow-100/70 dark:hover:text-yellow-100"
-            aria-label="Dismiss project membership notice"
+            aria-label={tr("Dismiss project membership notice")}
             onClick={() => setDismissedLeftProjectIds((current) => new Set(current).add(project.id))}
           >
             ×
@@ -762,13 +773,13 @@ export function ProjectDetail() {
           {project.pauseReason === "budget" ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-(length:--text-micro) font-medium uppercase tracking-(--tracking-caps) text-red-800 dark:text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />
-              Paused by budget hard stop
+              {tr("Paused by budget hard stop")}
             </div>
           ) : null}
           {project.managedByPlugin ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-(length:--text-micro) font-medium text-muted-foreground">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: project.color ?? "var(--project-seed)" }} />
-              Managed by {project.managedByPlugin.pluginDisplayName}
+              {tr("Managed by")} {project.managedByPlugin.pluginDisplayName}
             </div>
           ) : null}
         </div>
@@ -792,8 +803,8 @@ export function ProjectDetail() {
         companyId={resolvedCompanyId}
         scopeKind="project"
         scopeId={project.id}
-        title="Project summary"
-        description="Summarizer keeps the latest project status, next step, and operator-needed items here."
+        title={tr("Project summary")}
+        description={tr("Summarizer keeps the latest project status, next step, and operator-needed items here.")}
       />
 
       <PluginSlotOutlet
@@ -830,12 +841,13 @@ export function ProjectDetail() {
       <Tabs value={activeTab ?? "list"} onValueChange={(value) => handleTabChange(value as ProjectTab)}>
         <PageTabBar
           items={[
-            { value: "list", label: "Tasks" },
+            { value: "list", label: tr("Tasks") },
 
-            ...(project.managedByPlugin ? [{ value: "plugin-operations", label: "Plugin operations" }] : []),
-            ...(showWorkspacesTab ? [{ value: "workspaces", label: "Workspaces" }] : []),
-            { value: "configuration", label: "Configuration" },
-            { value: "budget", label: "Budget" },
+            ...(project.managedByPlugin ? [{ value: "plugin-operations", label: tr("Plugin operations") }] : []),
+            ...(showWorkspacesTab ? [{ value: "workspaces", label: tr("Workspaces") }] : []),
+            { value: "configuration", label: tr("Configuration") },
+            ...(experimentalSettingsQuery.data?.enableProjectWorkspace === true ? [{ value: "team", label: tr("Team") }] : []),
+            { value: "budget", label: tr("Budget") },
             ...pluginTabItems.map((item) => ({
               value: item.value,
               label: item.label,
@@ -874,12 +886,12 @@ export function ProjectDetail() {
             />
           )
         ) : (
-          <p className="text-sm text-muted-foreground">Loading workspaces...</p>
+          <p className="text-sm text-muted-foreground">{tr("Loading workspaces...")}</p>
         )
       ) : null}
 
       {activeTab === "configuration" && (
-        <div className="max-w-4xl">
+        <div className="max-w-4xl space-y-6">
           <ProjectProperties
             project={project}
             onUpdate={(data) => updateProject.mutate(data)}
@@ -888,8 +900,13 @@ export function ProjectDetail() {
             onArchive={(archived) => archiveProject.mutate(archived)}
             archivePending={archiveProject.isPending}
           />
+          {resolvedCompanyId ? <ProjectOrganization key={`${resolvedCompanyId}:${project.id}`} companyId={resolvedCompanyId} projectId={project.id} /> : null}
         </div>
       )}
+
+      {activeTab === "team" && resolvedCompanyId ? (
+        <ProjectTeam companyId={resolvedCompanyId} projectId={project.id} />
+      ) : null}
 
       {activeTab === "budget" && resolvedCompanyId ? (
         <div className="max-w-3xl">

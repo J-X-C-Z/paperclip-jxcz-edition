@@ -1,3 +1,5 @@
+import { uiText } from "@/i18n";
+import { useWorkScope } from "../hooks/useWorkScope";
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GOAL_STATUSES, GOAL_LEVELS } from "@paperclipai/shared";
@@ -37,6 +39,8 @@ export function NewGoalDialog() {
   const { newGoalOpen, newGoalDefaults, closeNewGoal } = useDialog();
   const { selectedCompanyId, selectedCompany } = useCompany();
   const queryClient = useQueryClient();
+  const workScope = useWorkScope();
+  const projectId = workScope.projectId;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("planned");
@@ -53,15 +57,16 @@ export function NewGoalDialog() {
   const appliedParentId = parentId || newGoalDefaults.parentId || "";
 
   const { data: goals } = useQuery({
-    queryKey: queryKeys.goals.list(selectedCompanyId!),
-    queryFn: () => goalsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId && newGoalOpen,
+    queryKey: queryKeys.goals.list(selectedCompanyId!, projectId),
+    queryFn: () => goalsApi.list(selectedCompanyId!, projectId),
+    enabled: !!selectedCompanyId && newGoalOpen && workScope.ready,
   });
 
   const createGoal = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       goalsApi.create(selectedCompanyId!, data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all(selectedCompanyId!) });
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.list(selectedCompanyId!) });
       reset();
       closeNewGoal();
@@ -85,8 +90,9 @@ export function NewGoalDialog() {
   }
 
   function handleSubmit() {
-    if (!selectedCompanyId || !title.trim()) return;
+    if (!selectedCompanyId || !title.trim() || !workScope.ready) return;
     createGoal.mutate({
+      ...(projectId ? { projectId } : {}),
       title: title.trim(),
       description: description.trim() || undefined,
       status,
@@ -102,7 +108,10 @@ export function NewGoalDialog() {
     }
   }
 
-  const currentParent = (goals ?? []).find((g) => g.id === appliedParentId);
+  const project = workScope.projects.find((project) => project.id === projectId);
+  // Parent choices use the scoped API so newly linked goals are available immediately.
+  const visibleGoals = goals ?? [];
+  const currentParent = visibleGoals.find((g) => g.id === appliedParentId);
 
   return (
     <Dialog
@@ -154,7 +163,7 @@ export function NewGoalDialog() {
         <div className="px-4 pt-4 pb-2 shrink-0">
           <input
             className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
-            placeholder="Goal title"
+            placeholder={uiText("Goal title")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -173,7 +182,7 @@ export function NewGoalDialog() {
             ref={descriptionEditorRef}
             value={description}
             onChange={setDescription}
-            placeholder="Add description..."
+            placeholder={uiText("Add description...")}
             bordered={false}
             contentClassName={cn("text-sm text-muted-foreground", expanded ? "min-h-(--sz-220px)" : "min-h-(--sz-120px)")}
             imageUploadHandler={async (file) => {
@@ -248,9 +257,9 @@ export function NewGoalDialog() {
                 )}
                 onClick={() => { setParentId(""); setParentOpen(false); }}
               >
-                No parent
+                {uiText("No parent")}
               </button>
-              {(goals ?? []).map((g) => (
+              {visibleGoals.map((g) => (
                 <button
                   key={g.id}
                   className={cn(
@@ -266,11 +275,15 @@ export function NewGoalDialog() {
           </Popover>
         </div>
 
+        {projectId && <p className="px-4 py-2 text-sm text-muted-foreground">关联项目：{project?.name}</p>}
+        {workScope.loading && <p className="px-4 py-2 text-sm text-muted-foreground">正在加载项目范围…</p>}
+        {(workScope.error || createGoal.error) && <p role="alert" className="px-4 py-2 text-sm text-destructive">{(workScope.error ?? createGoal.error)?.message}</p>}
+
         {/* Footer */}
         <div className="flex items-center justify-end px-4 py-2.5 border-t border-border">
           <Button
             size="sm"
-            disabled={!title.trim() || createGoal.isPending}
+            disabled={!title.trim() || createGoal.isPending || !workScope.ready}
             onClick={handleSubmit}
           >
             {createGoal.isPending ? "Creating…" : newGoalDefaults.parentId ? "Create sub-goal" : "Create goal"}

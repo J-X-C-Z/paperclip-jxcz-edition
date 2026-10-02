@@ -8,18 +8,18 @@ import { queryKeys } from "@/lib/queryKeys";
 import { BootstrapPendingPage } from "@/components/BootstrapPendingPage";
 import { PaperclipLoading } from "@/components/AnimatedPaperclipIcon";
 import { Card } from "@/components/ui/card";
+import { uiText } from "@/i18n";
 
 function NoBoardAccessPage() {
   return (
     <div className="mx-auto max-w-xl py-10">
       <Card className="block p-6">
-        <h1 className="text-xl font-semibold">No organization access</h1>
+        <h1 className="text-xl font-semibold">{uiText("No organization access")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This account is signed in, but it does not have an active organization membership or instance-admin access on
-          this Paperclip instance.
+          {uiText("This account is signed in, but it does not have an active organization membership or instance-admin access on this Paperclip instance.")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Use an organization invite or sign in with an account that already belongs to this org.
+          {uiText("Use an organization invite or sign in with an account that already belongs to this org.")}
         </p>
       </Card>
     </div>
@@ -85,7 +85,7 @@ export function CloudAccessGate() {
           ? healthQuery.error.message
           : boardAccessQuery.error instanceof Error
             ? boardAccessQuery.error.message
-            : "Failed to load app state"}
+            : uiText("Failed to load app state")}
       </div>
     );
   }

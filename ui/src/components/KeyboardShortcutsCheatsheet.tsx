@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ShortcutEntry {
@@ -74,9 +75,9 @@ export function KeyboardShortcutsCheatsheetContent() {
     <>
       <div className="divide-y divide-border border-t border-border">
         {sections.map((section) => (
-          <div key={section.title} className="px-5 py-3">
+          <div key={uiText(section.title)} className="px-5 py-3">
             <h3 className="mb-2 text-(length:--text-micro) font-semibold uppercase tracking-wider text-muted-foreground">
-              {section.title}
+              {uiText(section.title)}
             </h3>
             <div className="space-y-1.5">
               {section.shortcuts.map((shortcut) => (
@@ -84,13 +85,13 @@ export function KeyboardShortcutsCheatsheetContent() {
                   key={shortcut.label + shortcut.keys.join()}
                   className="flex items-center justify-between gap-4"
                 >
-                  <span className="text-sm text-foreground/90">{shortcut.label}</span>
+                  <span className="text-sm text-foreground/90">{uiText(shortcut.label)}</span>
                   <div className="flex items-center gap-1">
                     {shortcut.keys.map((key, i) => (
                       <span key={key} className="flex items-center gap-1">
                         {i > 0 && (
                           <span className="text-xs text-muted-foreground">
-                            {shortcut.combo ? "+" : "then"}
+                            {shortcut.combo ? "+" : uiText("then")}
                           </span>
                         )}
                         <KeyCap>{key}</KeyCap>
@@ -105,7 +106,7 @@ export function KeyboardShortcutsCheatsheetContent() {
       </div>
       <div className="border-t border-border px-5 py-3">
         <p className="text-xs text-muted-foreground">
-          Press <KeyCap>Esc</KeyCap> to close &middot; Shortcuts are disabled in text fields
+          {uiText("Press")} <KeyCap>Esc</KeyCap> {uiText("to close · Shortcuts are disabled in text fields")}
         </p>
       </div>
     </>
@@ -123,7 +124,7 @@ export function KeyboardShortcutsCheatsheet({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden" showCloseButton={false}>
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-base">Keyboard shortcuts</DialogTitle>
+          <DialogTitle className="text-base">{uiText('Keyboard shortcuts')}</DialogTitle>
         </DialogHeader>
         <KeyboardShortcutsCheatsheetContent />
       </DialogContent>

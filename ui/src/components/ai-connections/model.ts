@@ -23,6 +23,7 @@ export const AI_PROVIDERS: Record<
     subscriptionName: "Grok subscription",
     logo: "/brands/adapters/grok.svg",
   },
+  xiaomi_mimo: { name: "Xiaomi MiMo" },
 };
 
 export type AiConnectionSummary = Omit<AiManagedConnectionSummary, "isDefault"> & { isDefault?: boolean };

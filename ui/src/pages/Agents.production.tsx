@@ -1,3 +1,7 @@
+import { Agents as ScopedAgents } from "./Agents";
+import { useProjectWorkspaceEnabled } from "../hooks/useProjectWorkspaceEnabled";
+import { useAgentOrganizationFilter } from "../hooks/useAgentOrganizationFilter";
+import { uiText } from "@/i18n";
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { Link, useNavigate, useLocation } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -91,10 +95,11 @@ function matchesFilter(status: string, tab: FilterTab): boolean {
   return true;
 }
 
-function filterAgents(agents: Agent[], tab: FilterTab, builtInAgentIds: Set<string>): Agent[] {
+function filterAgents(agents: Agent[], tab: FilterTab, builtInAgentIds: Set<string>, visibleAgentIds: Set<string> | null = null): Agent[] {
   return agents
     .filter((a) => {
       if (HIDDEN_AGENT_STATUSES.has(a.status)) return false;
+      if (visibleAgentIds && !visibleAgentIds.has(a.id)) return false;
       // The `builtin` filter keys on the built-in marker, not agent status.
       if (tab === "builtin") return builtInAgentIds.has(a.id);
       return matchesFilter(a.status, tab);
@@ -146,7 +151,7 @@ function describeEnvironment(
 
 function describeMissingEnvironment(environmentId: string): EnvironmentDescriptor {
   return {
-    label: "Unknown environment",
+    label: uiText("Unknown environment"),
     detail: environmentId.slice(0, 8),
     title: `Unknown environment - ${environmentId}`,
   };
@@ -166,10 +171,10 @@ function resolveAgentEnvironment(
     : describeMissingEnvironment(environmentId);
 }
 
-function filterOrgTree(nodes: OrgNode[], tab: FilterTab, builtInAgentIds: Set<string>): OrgNode[] {
+function filterOrgTree(nodes: OrgNode[], tab: FilterTab, builtInAgentIds: Set<string>, visibleAgentIds: Set<string> | null = null): OrgNode[] {
   return nodes
     .reduce<OrgNode[]>((acc, node) => {
-      const filteredReports = filterOrgTree(node.reports, tab, builtInAgentIds);
+      const filteredReports = filterOrgTree(node.reports, tab, builtInAgentIds, visibleAgentIds);
       // Hidden agents (terminated / pending_approval) never render as a row, but
       // any visible reports are promoted so the tree doesn't lose live agents.
       if (HIDDEN_AGENT_STATUSES.has(node.status)) {
@@ -179,7 +184,7 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab, builtInAgentIds: Set<st
       const nodeMatches = tab === "builtin"
         ? builtInAgentIds.has(node.id)
         : matchesFilter(node.status, tab);
-      if (nodeMatches || filteredReports.length > 0) {
+      if ((nodeMatches && (!visibleAgentIds || visibleAgentIds.has(node.id))) || filteredReports.length > 0) {
         acc.push({ ...node, reports: filteredReports });
       }
       return acc;
@@ -187,8 +192,9 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab, builtInAgentIds: Set<st
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function Agents() {
+function CompanyAgents() {
   const { selectedCompanyId } = useCompany();
+  const organizationFilter = useAgentOrganizationFilter(selectedCompanyId);
   const { openNewAgent } = useDialogActions();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
@@ -317,7 +323,7 @@ export function Agents() {
   }, [agents, environmentsById, environmentCapabilities, instanceSettings?.defaultEnvironmentId]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Agents" }]);
+    setBreadcrumbs([{ label: uiText("Agents") }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -334,8 +340,8 @@ export function Agents() {
     return <PageSkeleton variant="list" />;
   }
 
-  const filtered = filterAgents(agents ?? [], tab, builtInAgentIds);
-  const filteredOrg = filterOrgTree(orgTree ?? [], tab, builtInAgentIds);
+  const filtered = filterAgents(agents ?? [], tab, builtInAgentIds, organizationFilter.visibleAgentIds);
+  const filteredOrg = filterOrgTree(orgTree ?? [], tab, builtInAgentIds, organizationFilter.visibleAgentIds);
   const environmentDataLoading = environmentsEnabled && environments === undefined;
   const showEnvironmentColumn = environmentsEnabled && (environments === undefined || environments.length > 1);
   const resolveRenderedEnvironment = (agentId: string) => (
@@ -373,9 +379,7 @@ export function Agents() {
               size="xs"
               variant="outline"
               onClick={() => setConfigureState(builtInState)}
-            >
-              Set up
-            </Button>
+            > {uiText("Set up")} </Button>
           </span>
         )}
       </>
@@ -400,7 +404,7 @@ export function Agents() {
           resourceMembershipState(membershipsQuery.data, "agent", agent.id) === "left" ? "sm:text-foreground/55" : "",
         )}
         leading={hasInvalidOrgChain ? (
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-label="Invalid reporting chain" />
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-label={uiText("Invalid reporting chain")} />
         ) : (
           <AgentStatusCapsule status={agent.status} />
         )}
@@ -488,7 +492,15 @@ export function Agents() {
             onValueChange={(v) => navigate(`/agents/${v}`)}
           />
         </Tabs>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {organizationFilter.ready && organizationFilter.departments.length > 0 ? <select aria-label={uiText("Filter by department")} className="h-8 rounded-md border border-border bg-background px-2 text-sm" value={organizationFilter.departmentId} onChange={(event) => organizationFilter.setDepartmentId(event.target.value)}>
+            <option value="">{uiText("All departments")}</option>
+            {organizationFilter.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+          </select> : null}
+          {organizationFilter.ready && organizationFilter.teams.length > 0 ? <select aria-label={uiText("Filter by group")} className="h-8 rounded-md border border-border bg-background px-2 text-sm" value={organizationFilter.teamId} onChange={(event) => organizationFilter.setTeamId(event.target.value)}>
+            <option value="">{uiText("All groups")}</option>
+            {organizationFilter.teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+          </select> : null}
           {/* View toggle */}
           {!forceListView && (
             <div className="flex items-center border border-border" role="group" aria-label="View mode">
@@ -498,8 +510,8 @@ export function Agents() {
                   effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
                 )}
                 onClick={() => setView("list")}
-                title="List view"
-                aria-label="List view"
+                title={uiText("List view")}
+                aria-label={uiText("List view")}
                 aria-pressed={effectiveView === "list"}
               >
                 <List className="h-3.5 w-3.5" />
@@ -510,8 +522,8 @@ export function Agents() {
                   effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
                 )}
                 onClick={() => setView("org")}
-                title="Org chart view"
-                aria-label="Org chart view"
+                title={uiText("Org chart view")}
+                aria-label={uiText("Org chart view")}
                 aria-pressed={effectiveView === "org"}
               >
                 <GitBranch className="h-3.5 w-3.5" />
@@ -519,14 +531,12 @@ export function Agents() {
             </div>
           )}
           <Button size="sm" variant="outline" onClick={openNewAgent}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
-            New Agent
-          </Button>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> {uiText("New Agent")} </Button>
         </div>
       </div>
 
       {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground">{filtered.length} agent{filtered.length !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-muted-foreground">{filtered.length} {uiText("agent")}{filtered.length !== 1 ? "s" : ""}</p>
       )}
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
@@ -548,9 +558,7 @@ export function Agents() {
       )}
 
       {effectiveView === "list" && agents && agents.length > 0 && filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          No agents match the selected status.
-        </p>
+        <p className="text-sm text-muted-foreground text-center py-8"> {uiText("No agents match the selected status.")} </p>
       )}
 
       {/* Org chart view */}
@@ -577,15 +585,11 @@ export function Agents() {
       )}
 
       {effectiveView === "org" && orgTree && orgTree.length > 0 && filteredOrg.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          No agents match the selected status.
-        </p>
+        <p className="text-sm text-muted-foreground text-center py-8"> {uiText("No agents match the selected status.")} </p>
       )}
 
       {effectiveView === "org" && orgTree && orgTree.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          No organizational hierarchy defined.
-        </p>
+        <p className="text-sm text-muted-foreground text-center py-8"> {uiText("No organizational hierarchy defined.")} </p>
       )}
       {configureState && selectedCompanyId && (
         <Suspense fallback={null}>
@@ -653,7 +657,7 @@ function OrgTreeNode({
         )}
       >
         {hasInvalidOrgChain ? (
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Invalid reporting chain" />
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label={uiText("Invalid reporting chain")} />
         ) : (
           <AgentStatusCapsule status={node.status} />
         )}
@@ -678,9 +682,7 @@ function OrgTreeNode({
                     e.stopPropagation();
                   }}
                 >
-                  <Button size="xs" variant="outline" onClick={() => onConfigureBuiltIn(builtInState)}>
-                    Set up
-                  </Button>
+                  <Button size="xs" variant="outline" onClick={() => onConfigureBuiltIn(builtInState)}> {uiText("Set up")} </Button>
                 </span>
               )}
             </div>
@@ -849,9 +851,13 @@ function LiveRunIndicator({
         <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
       </span>
-      <span className="text-(length:--text-micro) font-medium text-blue-600 dark:text-blue-400">
-        Live{liveCount > 1 ? ` (${liveCount})` : ""}
+      <span className="text-(length:--text-micro) font-medium text-blue-600 dark:text-blue-400"> {uiText("Live")}{liveCount > 1 ? ` (${liveCount})` : ""}
       </span>
     </Link>
   );
+}
+
+export function Agents() {
+  const { enabled, loaded } = useProjectWorkspaceEnabled();
+  return enabled || !loaded ? <ScopedAgents /> : <CompanyAgents />;
 }

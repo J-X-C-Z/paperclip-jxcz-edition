@@ -1,0 +1,23 @@
+{
+  "companyId": "2ae03c21-9745-4209-b202-edf4ffa70a6a",
+  "saved": {
+    "connectionId": "8731fec3-803b-4795-a4db-a1a564190a61",
+    "grantId": "e9d512da-e683-449a-8df0-0fb5f4b29acc"
+  },
+  "defaultVerified": {
+    "id": "8731fec3-803b-4795-a4db-a1a564190a61",
+    "name": "OpenAI 新订阅",
+    "isDefault": true,
+    "status": "connected"
+  },
+  "verification": {
+    "status": "pass",
+    "testedAt": "2026-10-01T07:13:30.149Z",
+    "hello": {
+      "code": "codex_hello_probe_passed",
+      "level": "info",
+      "message": "Codex hello probe succeeded.",
+      "detail": "hello"
+    }
+  }
+}

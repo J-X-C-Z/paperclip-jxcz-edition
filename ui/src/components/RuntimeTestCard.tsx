@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   CircleCheck,
   CircleAlert,
@@ -62,7 +63,7 @@ export function RuntimeTestCard({
           : Play;
   return (
     <section
-      aria-label="Runtime test"
+      aria-label={uiText("Runtime test")}
       className="rounded-lg border border-border bg-card"
     >
       <div className="flex items-start gap-3 p-4 sm:items-center">

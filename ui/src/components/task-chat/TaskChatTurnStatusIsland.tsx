@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -258,7 +259,7 @@ export function TaskChatTurnStatusIsland({ model }: { model: TaskChatTurnStatusM
         onEscapeKeyDown={() => setPinned(false)}
         onInteractOutside={() => setPinned(false)}
       >
-        <ol className="flex flex-col gap-1" aria-label="Within-turn checklist">
+        <ol className="flex flex-col gap-1" aria-label={uiText("Within-turn checklist")}>
           {plan.steps.map((step, index) => (
             <li
               key={step.id}

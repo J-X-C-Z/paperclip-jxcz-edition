@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export function SecretPopoverForm({
       </div>
 
       <label className="block space-y-1">
-        <span className="text-(length:--text-micro) font-medium text-muted-foreground">Name</span>
+        <span className="text-(length:--text-micro) font-medium text-muted-foreground">{uiText("Name")}</span>
         <input
           className={cn(fieldClass, nameError && "border-destructive focus-visible:ring-destructive/40")}
           value={name}
@@ -105,7 +106,7 @@ export function SecretPopoverForm({
       </label>
 
       <label className="block space-y-1">
-        <span className="text-(length:--text-micro) font-medium text-muted-foreground">Value</span>
+        <span className="text-(length:--text-micro) font-medium text-muted-foreground">{uiText("Value")}</span>
         <div className="relative">
           <input
             className={cn(fieldClass, "pr-8", valueError && "border-destructive focus-visible:ring-destructive/40")}
@@ -133,9 +134,7 @@ export function SecretPopoverForm({
       {error ? <p className="text-(length:--text-micro) text-destructive">{error}</p> : null}
 
       <div className="flex items-center justify-end gap-2 pt-0.5">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
-          Cancel
-        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}> {uiText("Cancel")} </Button>
         <Button type="button" size="sm" onClick={() => void handleSubmit()} disabled={!canSubmit}>
           {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           {ctaLabel}

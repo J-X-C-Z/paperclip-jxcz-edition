@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Inbox } from "lucide-react";
 import { SidebarNavItem, SidebarNavExpandedProvider } from "./SidebarNavItem";
+import { SidebarNavItem as LegacySidebarNavItem } from "./SidebarNavItem.production";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const sidebarState = vi.hoisted(() => ({
@@ -14,6 +15,8 @@ const sidebarState = vi.hoisted(() => ({
   collapsed: false,
   peeking: false,
 }));
+const preload = vi.hoisted(() => vi.fn());
+vi.mock("../lib/route-preload", () => ({ preloadBoardRoute: preload }));
 
 vi.mock("@/lib/router", () => ({
   NavLink: ({ children, to, className, ...props }: {
@@ -43,6 +46,7 @@ describe("SidebarNavItem", () => {
   let root: Root;
 
   beforeEach(() => {
+    sidebarState.isMobile = false;
     sidebarState.collapsed = false;
     sidebarState.peeking = false;
     container = document.createElement("div");
@@ -71,6 +75,30 @@ describe("SidebarNavItem", () => {
   function classTokens(element: Element | null | undefined) {
     return element?.className.toString().split(/\s+/).filter(Boolean) ?? [];
   }
+
+  it("preloads desktop navigation on hover and keyboard focus", () => {
+    render(<SidebarNavItem to="/departments" label="Departments" />);
+    act(() => {
+      link().dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      link().dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(preload.mock.calls).toEqual([["/departments"], ["/departments"]]);
+  });
+
+  it("skips mobile hover but still preloads keyboard focus", () => {
+    sidebarState.isMobile = true;
+    render(<SidebarNavItem to="/projects" label="Projects" />);
+    act(() => link().dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(preload).not.toHaveBeenCalled();
+    act(() => link().dispatchEvent(new FocusEvent("focusin", { bubbles: true })));
+    expect(preload).toHaveBeenCalledWith("/projects");
+  });
+
+  it("preloads the selected legacy layout variant", () => {
+    render(<LegacySidebarNavItem to="/agents" label="Agents" />);
+    act(() => link().dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+    expect(preload).toHaveBeenCalledWith("/agents", true);
+  });
 
   it("shows the full label and numeric badge when expanded", () => {
     render(<SidebarNavItem to="/inbox" label="Inbox" icon={Inbox} badge={28} badgeLabel="unread" />);

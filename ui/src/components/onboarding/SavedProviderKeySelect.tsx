@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { aiConnectionsApi } from "@/api/ai-connections";
 import type { AiProvider } from "@paperclipai/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +18,7 @@ export function useSavedProviderKeys(
   envKey: string,
   enabled = true,
 ) {
-  const provider = ({ ANTHROPIC_API_KEY: "anthropic", OPENAI_API_KEY: "openai", OPENROUTER_API_KEY: "openrouter", XAI_API_KEY: "xai" } as Record<string, AiProvider>)[envKey];
+  const provider = ({ ANTHROPIC_API_KEY: "anthropic", OPENAI_API_KEY: "openai", OPENROUTER_API_KEY: "openrouter", XAI_API_KEY: "xai", MIMO_API_KEY: "xiaomi_mimo" } as Record<string, AiProvider>)[envKey];
   const managed = useQuery({
     queryKey: ["ai-connections", companyId],
     queryFn: () => aiConnectionsApi.list(companyId!),
@@ -91,7 +92,7 @@ export function SavedProviderKeySelect({
     <div className="space-y-2">
       {options.length > 0 && (
         <label className="block space-y-2 text-sm">
-          <span>{kind === "api" ? "API key" : "Subscription"}</span>
+          <span>{kind === "api" ? uiText("API key") : uiText("Subscription")}</span>
           <select
             aria-label={kind === "api" ? "Saved API key" : "Saved subscription"}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

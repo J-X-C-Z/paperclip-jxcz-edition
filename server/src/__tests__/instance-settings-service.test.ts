@@ -7,6 +7,12 @@ import {
 } from "../services/instance-settings.js";
 
 describe("instance settings service", () => {
+  it("preserves opt-in Project Workspace across storage, patching and rollback", () => {
+    expect(normalizeExperimentalSettings(undefined).enableProjectWorkspace).toBe(false);
+    const enabled = applyExperimentalSettingsPatch({}, { enableProjectWorkspace: true });
+    expect(normalizeExperimentalSettings(JSON.parse(JSON.stringify(enabled))).enableProjectWorkspace).toBe(true);
+    expect(applyExperimentalSettingsPatch(enabled, { enableProjectWorkspace: false }).enableProjectWorkspace).toBe(false);
+  });
   it("keeps chat connectors opt-in across legacy storage and patches without disabling Apps", () => {
     for (const stored of [undefined, {}, { enableApps: true }, { enableConferenceRoomChat: true }]) {
       expect(normalizeExperimentalSettings(stored).enableChatConnectors).toBe(false);
@@ -41,6 +47,7 @@ describe("instance settings service", () => {
       enableStreamlinedLeftNavigation: true,
       enableStreamlinedUi: true,
       enableApps: true,
+      enableProjectWorkspace: false,
       enableAgentChat: false,
       enableChatConnectors: false,
       enableConferenceRoomChat: false,

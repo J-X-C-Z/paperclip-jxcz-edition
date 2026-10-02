@@ -1,0 +1,23 @@
+{
+  "Connect iMessage Photon": "连接 iMessage Photon",
+  "Connect {agent} to Photon Cloud. Pro supports direct messages through a shared line. Dedicated numbers also support individually enabled groups.": "将 {agent} 连接到 Photon Cloud。Pro 支持通过共享号码收发私信。专用号码也支持按需启用群组。",
+  "Photon dashboard": "Photon 控制台",
+  "Photon line setup": "Photon 号码设置",
+  "Reconnect keeps this project and {allocation}. Leave the secret blank to reuse the saved connection.": "重新连接会保留此项目和 {allocation}。如要复用已保存的连接，请将密钥留空。",
+  "shared DM allocation": "共享私信分配",
+  "dedicated number": "专用号码",
+  "Project ID": "项目 ID",
+  "Project secret": "项目密钥",
+  "Inspecting Photon…": "正在检查 Photon…",
+  "Inspect Photon project": "检查 Photon 项目",
+  "{allocation} in {project}": "{project} 中的{allocation}",
+  "Shared DMs": "共享私信",
+  "Dedicated numbers": "专用号码",
+  "This shared project already belongs to another channel. Use a separate Photon project for each agent.": "此共享项目已分配给其他渠道。请为每个智能体单独使用一个 Photon 项目。",
+  "No eligible dedicated number is available. Check the line allocation in Photon and existing Paperclip channels.": "没有可用的专用号码。请检查 Photon 中的号码分配，以及现有的 Paperclip 渠道。",
+  "Direct messages only. Enroll each test sender in your Photon project's Users page, then use the number Photon assigns to that sender. Paperclip identity linking is still required. Groups cannot be enabled on this channel.": "此渠道仅支持私信。请在 Photon 项目的 Users 页面中登记每位测试发送者，然后使用 Photon 分配给该发送者的号码。仍需关联 Paperclip 身份。此渠道无法启用群组。",
+  "Connecting…": "正在连接…",
+  "Reconnect Photon": "重新连接 Photon",
+  "Connect shared DMs": "连接共享私信",
+  "Connect selected number": "连接所选号码"
+}

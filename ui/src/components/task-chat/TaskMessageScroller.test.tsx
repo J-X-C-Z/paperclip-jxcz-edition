@@ -66,6 +66,14 @@ function flushEvents() {
 describe("TaskMessageScroller", () => {
   let container: HTMLDivElement;
   let root: Root;
+  let nextFrameId: number;
+  let animationFrames: Map<number, FrameRequestCallback>;
+
+  function flushAnimationFrames() {
+    const pending = [...animationFrames.entries()];
+    animationFrames.clear();
+    for (const [id, callback] of pending) callback(id);
+  }
 
   function render(contentKey: unknown = 0) {
     flushSync(() => {
@@ -103,15 +111,27 @@ describe("TaskMessageScroller", () => {
   async function scrollTo(el: HTMLElement, top: number) {
     el.scrollTop = top;
     el.dispatchEvent(new Event("scroll", { bubbles: true }));
+    flushAnimationFrames();
     await flushEvents();
   }
 
   async function dispatch(el: HTMLElement, event: Event) {
     el.dispatchEvent(event);
+    flushAnimationFrames();
     await flushEvents();
   }
 
   beforeEach(() => {
+    nextFrameId = 0;
+    animationFrames = new Map();
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      const id = ++nextFrameId;
+      animationFrames.set(id, callback);
+      return id;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+      animationFrames.delete(id);
+    });
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -259,6 +279,7 @@ describe("TaskMessageScroller", () => {
 
     geometry.setClientHeight(200);
     triggerResize();
+    flushAnimationFrames();
 
     expect(el.scrollTop).toBe(el.scrollHeight);
     expect(pill()).toBeNull();
@@ -286,9 +307,109 @@ describe("TaskMessageScroller", () => {
 
     geometry.setClientHeight(200);
     triggerResize();
+    flushAnimationFrames();
 
     expect(el.scrollTop).toBe(100);
     expect(pill()).not.toBeNull();
+  });
+
+  it("coalesces scroll anchor reads and repeated observer reconciliation into one frame", async () => {
+    let triggerResize = () => {};
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          triggerResize = () => callback([], this as unknown as ResizeObserver);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    render();
+    const el = scroller();
+    fakeGeometry(el);
+    const rectSpy = vi.spyOn(el, "getBoundingClientRect");
+
+    el.scrollTop = 100;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+    el.scrollTop = 120;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+    triggerResize();
+    triggerResize();
+    expect(animationFrames.size).toBe(1);
+
+    flushAnimationFrames();
+    await flushEvents();
+    expect(rectSpy).toHaveBeenCalledTimes(1);
+    expect(pill()).not.toBeNull();
+    expect(el.scrollTop).toBe(120);
+  });
+
+  it("preserves the logical reading anchor across a pre-frame prepend", () => {
+    const viewportRef: { current: HTMLDivElement | null } = { current: null };
+    const renderAnchored = (contentKey: number) => {
+      const rows = contentKey === 0
+        ? [
+            { id: "reading-row-0", top: 1050 },
+            { id: "reading-row-1", top: 800 },
+          ]
+        : [
+            { id: "prepended-row", top: 250 },
+            { id: "reading-row-0", top: 1250 },
+            { id: "reading-row-1", top: 1000 },
+          ];
+      flushSync(() => root.render(
+        <TaskMessageScroller contentKey={contentKey}>
+          <div>
+            {rows.map(({ id, top: rowTop }) => (
+              <div
+                key={id}
+                data-thread-anchor={id}
+                ref={(row) => {
+                  if (!row) return;
+                  if (!viewportRef.current) {
+                    viewportRef.current = row.parentElement?.parentElement as HTMLDivElement;
+                    fakeGeometry(viewportRef.current);
+                    viewportRef.current.getBoundingClientRect = () =>
+                      ({ top: 0, bottom: 400, height: 400 } as DOMRect);
+                  }
+                  row.getBoundingClientRect = () => {
+                    const top = rowTop - viewportRef.current!.scrollTop;
+                    return ({ top, bottom: top + 100, height: 100 } as DOMRect);
+                  };
+                }}
+              >
+                {id}
+              </div>
+            ))}
+          </div>
+        </TaskMessageScroller>,
+      ));
+    };
+
+    renderAnchored(0);
+    expect(viewportRef.current?.scrollTop).toBe(1000);
+
+    viewportRef.current!.scrollTop = 500;
+    viewportRef.current!.dispatchEvent(new Event("scroll", { bubbles: true }));
+    expect(animationFrames.size).toBe(1);
+
+    // The new commit prepends content before that frame. The old logical anchor
+    // has moved down 200px, so preserving its adjusted offset compensates the
+    // insertion while keeping the currently read row stationary.
+    renderAnchored(1);
+    expect(viewportRef.current?.scrollTop).toBe(700);
+    expect(animationFrames.size).toBe(0);
+  });
+
+  it("cancels scheduled frame work when the scroller unmounts", () => {
+    render();
+    const el = scroller();
+    fakeGeometry(el);
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+    expect(animationFrames.size).toBe(1);
+    flushSync(() => root.unmount());
+    expect(animationFrames.size).toBe(0);
   });
 
   it("small drifts within the pin threshold do not show the pill", async () => {

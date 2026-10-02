@@ -28,6 +28,8 @@ const mockAccessService = vi.hoisted(() => ({
 const mockCompanySkillService = vi.hoisted(() => ({
   listRuntimeSkillEntries: vi.fn(),
   resolveRequestedSkillKeys: vi.fn(),
+  resolveRequestedSkillEntries: vi.fn(),
+  installFromCatalog: vi.fn(),
 }));
 
 const mockSecretService = vi.hoisted(() => ({
@@ -172,7 +174,7 @@ const externalAdapter: ServerAdapterModule = {
 
 const missingAdapterType = "missing_adapter_validation_test";
 
-async function createApp() {
+async function createApp(actorOverride?: Record<string, unknown>) {
   const [{ agentRoutes }, { errorHandler }] = await Promise.all([
     vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js"),
     vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),
@@ -186,6 +188,7 @@ async function createApp() {
       companyIds: ["company-1"],
       source: "local_implicit",
       isInstanceAdmin: false,
+      ...actorOverride,
     };
     next();
   });
@@ -250,6 +253,8 @@ describe("agent routes adapter validation", () => {
     mockAdapterPluginStore.getDisabledAdapterTypes.mockReturnValue([]);
     mockCompanySkillService.listRuntimeSkillEntries.mockResolvedValue([]);
     mockCompanySkillService.resolveRequestedSkillKeys.mockResolvedValue([]);
+    mockCompanySkillService.resolveRequestedSkillEntries.mockImplementation(async (_companyId: string, entries: unknown[]) => ({ resolved: entries, unresolved: [] }));
+    mockCompanySkillService.installFromCatalog.mockResolvedValue({ warnings: [], action: "installed" });
     mockAccessService.canUser.mockResolvedValue(true);
     mockAccessService.decide.mockResolvedValue({
       allowed: true,
@@ -392,6 +397,110 @@ describe("agent routes adapter validation", () => {
     const env = (adapterConfig.env as Record<string, unknown> | undefined) ?? {};
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.CODEX_HOME).toBeUndefined();
+    expect(adapterConfig.engine).toBe("cli");
+  });
+
+  it("lists company-scoped templates and rejects unknown template IDs", async () => {
+    const app = await createApp();
+    const listed = await requestApp(app, baseUrl => request(baseUrl).get("/api/companies/company-1/agent-templates"));
+    expect(listed.status).toBe(200);
+    expect(listed.body.map((entry: { id: string }) => entry.id)).toEqual(["department-head", "team-leader", "team-member", "custom"]);
+    const rejected = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Unknown", templateId: "invalid", adapterType: "codex_local" }));
+    expect(rejected.status).toBe(422);
+    expect(mockAgentService.create).not.toHaveBeenCalled();
+  });
+
+  it("applies template model and permissions before create schema defaults", async () => {
+    const app = await createApp();
+    const res = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Leader", templateId: "team-leader", adapterType: "codex_local" }));
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    const input = mockAgentService.create.mock.calls.at(-1)?.[1] as any;
+    expect(input.templateId).toBeUndefined();
+    expect(input.role).toBe("general");
+    expect(input.adapterConfig.model).toBe("gpt-6.1-sol");
+    expect(input.permissions).toMatchObject({ canCreateAgents: true, canReviewTasks: true });
+    expect(input.metadata.agentTemplate).toEqual({ id: "team-leader", version: 1, role: "leader" });
+    expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalled();
+    expect(mockCompanySkillService.installFromCatalog).toHaveBeenCalledTimes(4);
+  });
+
+  it("creates a department head with management defaults and a neutral custom position with overrides", async () => {
+    const app = await createApp();
+    const head = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Department", templateId: "department-head", adapterType: "codex_local" }));
+    expect(head.status, JSON.stringify(head.body)).toBe(201);
+    expect(mockAgentService.create.mock.calls.at(-1)?.[1]).toMatchObject({ role: "general", metadata: { agentTemplate: { role: "department_head" } }, permissions: { canManageAgents: true, canAssignTasks: true } });
+    const custom = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Designer", title: "产品设计师", templateId: "custom", adapterType: "codex_local", adapterConfig: { model: "chosen-model" }, instructionsBundle: { files: { "AGENTS.md": "Design work" } } }));
+    expect(custom.status, JSON.stringify(custom.body)).toBe(201);
+    expect(mockAgentService.create.mock.calls.at(-1)?.[1]).toMatchObject({ title: "产品设计师", metadata: { agentTemplate: { role: "custom" } }, adapterConfig: { model: "chosen-model" }, permissions: { canCreateAgents: false, canManageAgents: false, canAssignTasks: false, canCreateTasks: false, canReviewTasks: false } });
+  });
+  it("rejects foreign department managers and custom reporting managers before writes", async () => {
+    mockAgentService.getById.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", companyId: "company-2", role: "ceo", reportsTo: null, status: "idle" });
+    const app = await createApp();
+    for (const templateId of ["department-head", "custom"]) {
+      const response = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Foreign", templateId, reportsTo: "11111111-1111-4111-8111-111111111111", adapterType: "codex_local" }));
+      expect(response.status).toBe(422);
+    }
+    expect(mockAgentService.create).not.toHaveBeenCalled();
+    expect(mockCompanySkillService.installFromCatalog).not.toHaveBeenCalled();
+  });
+
+  it("installs an extra catalog skill selected for an agent before validating its company assignment", async () => {
+    const app = await createApp();
+    const key = "paperclipai/bundled/paperclip-operations/task-execution";
+    mockCompanySkillService.resolveRequestedSkillEntries.mockImplementation(async (_companyId: string, entries: { key: string }[]) => {
+      if (entries.some(entry => entry.key === key) && !mockCompanySkillService.installFromCatalog.mock.calls.some(call => call[1]?.catalogSkillId === key)) {
+        throw new Error("Catalog selection was not installed before assignment");
+      }
+      return { resolved: entries, unresolved: [] };
+    });
+    const res = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({
+      name: "Custom Leader", templateId: "team-leader", adapterType: "codex_local", desiredSkills: [key],
+    }));
+    expect(res.status).toBe(201);
+    expect(mockCompanySkillService.installFromCatalog).toHaveBeenCalledWith("company-1", { catalogSkillId: key });
+  });
+
+  it("rejects a cross-company template leader before skill installation", async () => {
+    mockAgentService.getById.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", companyId: "company-2", status: "idle", metadata: { agentTemplate: { id: "team-leader", version: 1, role: "leader" } } });
+    const app = await createApp();
+    const res = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Member", templateId: "team-member", reportsTo: "11111111-1111-4111-8111-111111111111", adapterType: "codex_local" }));
+    expect(res.status).toBe(422);
+    expect(mockAgentService.create).not.toHaveBeenCalled();
+    expect(mockCompanySkillService.installFromCatalog).not.toHaveBeenCalled();
+  });
+
+  it("keeps explicit template model and permission overrides and does not install deselected skills", async () => {
+    const app = await createApp();
+    const res = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Custom Leader", templateId: "team-leader", adapterType: "codex_local", adapterConfig: { model: "custom-model" }, permissions: { canReviewTasks: false }, desiredSkills: [], instructionsBundle: { files: { "AGENTS.md": "Custom instruction" } } }));
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    const input = mockAgentService.create.mock.calls.at(-1)?.[1] as any;
+    expect(input.adapterConfig.model).toBe("custom-model");
+    expect(input.permissions.canReviewTasks).toBe(false);
+    expect(mockCompanySkillService.installFromCatalog).not.toHaveBeenCalled();
+  });
+
+  it("blocks template members from creating agents and changing their own permissions despite grants", async () => {
+    mockAgentService.getById.mockResolvedValue({ id: "member", companyId: "company-1", role: "ceo", reportsTo: "leader", permissions: { canCreateAgents: false }, metadata: { agentTemplate: { id: "team-member", version: 1, role: "member" } } });
+    const app = await createApp({ type: "agent", agentId: "member", companyId: "company-1" });
+    const created = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Child", adapterType: "codex_local" }));
+    expect(created.status).toBe(403);
+    const permission = await requestApp(app, baseUrl => request(baseUrl).patch("/api/agents/member/permissions").send({ canCreateAgents: true, canAssignTasks: true }));
+    expect(permission.status).toBe(403);
+    expect(mockAgentService.create).not.toHaveBeenCalled();
+  });
+
+  it("preserves an explicit ACP engine when creating a codex_local agent", async () => {
+    const app = await createApp();
+    const res = await requestApp(app, (baseUrl) =>
+      request(baseUrl).post("/api/companies/company-1/agents").send({
+        name: "Explicit ACP Agent",
+        adapterType: "codex_local",
+        adapterConfig: { engine: "acp" },
+      }),
+    );
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    const createInput = mockAgentService.create.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    expect((createInput.adapterConfig as Record<string, unknown>).engine).toBe("acp");
   });
 
   it("does not re-inject CODEX_HOME or OPENAI_API_KEY when updating a keyless codex_local agent", async () => {

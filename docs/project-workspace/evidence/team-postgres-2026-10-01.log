@@ -1,0 +1,2 @@
+PASS: migration, atomic/concurrent membership snapshots, rollback, stale snapshot isolation, lead assignment, archive-ID selection, live-cycle transition, atomic archival, duplicate protection, next-cycle start (real PostgreSQL with 8 connections and production write guard)
+Isolated multi-connection PostgreSQL database removed.

@@ -1,3 +1,4 @@
+import { assertTemplateManager, assertTemplateProvenanceUnchanged, readAgentTemplateMetadata } from "./agent-templates.js";
 import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
@@ -696,6 +697,9 @@ export function agentService(db: Db) {
   ) {
     const existing = await getById(id);
     if (!existing) return null;
+    assertTemplateProvenanceUnchanged(existing.metadata, data.metadata);
+    const nextTemplateAgent = { ...existing, ...data };
+    if (readAgentTemplateMetadata(nextTemplateAgent.metadata) && (data.reportsTo !== undefined || data.metadata !== undefined)) assertTemplateManager(nextTemplateAgent, nextTemplateAgent.reportsTo ? await getById(nextTemplateAgent.reportsTo) : null);
 
     if (existing.status === "terminated" && data.status && data.status !== "terminated") {
       throw conflict("Terminated agents cannot be resumed");
@@ -854,14 +858,12 @@ export function agentService(db: Db) {
 
   return {
     list: async (companyId: string, options?: { includeTerminated?: boolean }) => {
-      const conditions = [eq(agents.companyId, companyId)];
-      if (!options?.includeTerminated) {
-        conditions.push(ne(agents.status, "terminated"));
-      }
-      const [rows, allCompanyRows] = await Promise.all([
-        db.select().from(agents).where(and(...conditions)),
-        listCompanyAgentRows(companyId),
-      ]);
+      // Retain terminated managers for org-chain checks while reading the
+      // company agent roster only once.
+      const allCompanyRows = await listCompanyAgentRows(companyId);
+      const rows = options?.includeTerminated
+        ? allCompanyRows
+        : allCompanyRows.filter((row) => row.status !== "terminated");
       const hydrated = await hydrateAgentSpend(rows);
       return normalizeAgentRows(hydrated, allCompanyRows);
     },
@@ -870,6 +872,7 @@ export function agentService(db: Db) {
 
     create: async (companyId: string, data: Omit<typeof agents.$inferInsert, "companyId">, options?: CreateAgentOptions) => {
       assertBuiltInAgentMetadataMutationAllowed(null, data.metadata, options);
+      if (readAgentTemplateMetadata(data.metadata)) assertTemplateManager({ ...data, companyId }, data.reportsTo ? await getById(data.reportsTo) : null);
       if (data.reportsTo) {
         await ensureManager(companyId, data.reportsTo);
       }
@@ -887,6 +890,10 @@ export function agentService(db: Db) {
       const rawAdapterConfig = isPlainRecord(data.adapterConfig)
         ? await secretsSvc.normalizeAdapterConfigForPersistence(companyId, data.adapterConfig, { adapterType })
         : {};
+      if (adapterType === "codex_local" &&
+          !(typeof rawAdapterConfig.engine === "string" && rawAdapterConfig.engine.trim())) {
+        rawAdapterConfig.engine = "cli";
+      }
       const adapterConfig = normalizePaperclipRunnerAdapterConfig(adapterType, rawAdapterConfig);
       // Run the server-enforced binding invariant after generic normalization
       // and before any database write. A create has no prior config.
@@ -1057,10 +1064,12 @@ export function agentService(db: Db) {
         await issueThreadInteractionService(tx as unknown as Db)
           .cancelPendingForDeletedAddressee(existing.companyId, id);
         await tx.update(agents).set({ reportsTo: null }).where(eq(agents.reportsTo, id));
-        await tx
-          .update(issues)
-          .set({ assigneeAgentId: null, createdByAgentId: null })
-          .where(or(eq(issues.assigneeAgentId, id), eq(issues.createdByAgentId, id)));
+        // Deleting a task's creator must preserve its current executor.
+        // Only clear each reference on rows that actually point at this agent.
+        await tx.update(issues).set({ assigneeAgentId: null })
+          .where(eq(issues.assigneeAgentId, id));
+        await tx.update(issues).set({ createdByAgentId: null })
+          .where(eq(issues.createdByAgentId, id));
         await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.agentId, id));
         await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.agentId, id));
         await tx.delete(activityLog).where(
@@ -1091,6 +1100,9 @@ export function agentService(db: Db) {
         if (!existing || existing.status !== "pending_approval") return null;
         const approvedPatch = approvedPayload ? configPatchFromApprovalPayload(approvedPayload) : {};
         let patch = { ...approvedPatch } as Partial<typeof agents.$inferInsert>;
+        assertTemplateProvenanceUnchanged(existing.metadata, patch.metadata);
+        const approvedAgent = { ...existing, ...patch };
+        if (readAgentTemplateMetadata(approvedAgent.metadata)) assertTemplateManager(approvedAgent, approvedAgent.reportsTo ? await agentService(txDb).getById(approvedAgent.reportsTo) : null);
         let approvalBindingDecision: ClaudeOAuthBindingInvariantDecision | null = null;
         if (
           Object.prototype.hasOwnProperty.call(patch, "adapterConfig") &&

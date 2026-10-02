@@ -75,6 +75,23 @@ describeEmbeddedPostgres("agent service secret binding sync", () => {
     return companyId;
   }
 
+  it("defaults new Codex agents to CLI and preserves explicit ACP", async () => {
+    const companyId = await seedCompany();
+    for (const config of [{}, { engine: "" }, { engine: "acp" }]) {
+      const created = await agentService(db).create(companyId, {
+        name: "Codex Engine Defaults",
+        role: "engineer",
+        status: "idle",
+        adapterType: "codex_local",
+        adapterConfig: config,
+        runtimeConfig: {},
+        spentMonthlyCents: 0,
+        lastHeartbeatAt: null,
+      });
+      expect(created.adapterConfig.engine).toBe(config.engine === "acp" ? "acp" : "cli");
+    }
+  });
+
   it("creates agent secret bindings when a new agent persists secret_ref env", async () => {
     const companyId = await seedCompany();
     const secrets = secretService(db);

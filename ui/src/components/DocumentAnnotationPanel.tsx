@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type {
   DocumentAnnotationComment,
@@ -188,7 +189,7 @@ export function AnnotationPanelBody(props: AnnotationPanelProps) {
             props.onFocusThread(null);
             props.onOpenChange(false);
           }}
-          aria-label="Close annotation panel"
+          aria-label={uiText("Close annotation panel")}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -278,7 +279,7 @@ export function AnnotationPanelBody(props: AnnotationPanelProps) {
                 }
               }
             }}
-            placeholder="Write a comment…"
+            placeholder={uiText("Write a comment…")}
             disabled={props.newCommentDisabled}
             className="resize-y rounded-none text-sm"
           />
@@ -291,9 +292,7 @@ export function AnnotationPanelBody(props: AnnotationPanelProps) {
                 props.onClearPendingAnchor();
                 setComposerValue("");
               }}
-            >
-              Cancel
-            </Button>
+            > {uiText("Cancel")} </Button>
             <Button
               type="button"
               size="sm"
@@ -382,7 +381,7 @@ export function ThreadCard(props: {
                   }
                 }
               }}
-              placeholder="Reply…"
+              placeholder={uiText("Reply…")}
               className="resize-y rounded-none text-sm"
               disabled={props.pendingReply}
             />
@@ -401,7 +400,7 @@ export function ThreadCard(props: {
                   </>
                 ) : (
                   <>
-                    <Check className="h-3 w-3" /> Resolve
+                    <Check className="h-3 w-3" /> {uiText("Resolve")}
                   </>
                 )}
               </Button>
@@ -420,8 +419,8 @@ export function ThreadCard(props: {
                     variant="ghost"
                     size="icon-xs"
                     className="text-muted-foreground"
-                    title="More actions"
-                    aria-label="More thread actions"
+                    title={uiText("More actions")}
+                    aria-label={uiText("More thread actions")}
                   >
                     <MoreHorizontal className="h-3.5 w-3.5" />
                   </Button>
@@ -434,7 +433,7 @@ export function ThreadCard(props: {
                     }}
                   >
                     <Copy className="h-3.5 w-3.5" />
-                    Copy link
+                    {uiText("Copy link")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

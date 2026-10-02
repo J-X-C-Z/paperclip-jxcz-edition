@@ -1,3 +1,4 @@
+import { useUiTranslator } from "@/i18n";
 import { Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export function EmptyState({
   onAction,
   hideActionIcon = false,
 }: EmptyStateProps) {
+  const tr = useUiTranslator();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="bg-muted/50 p-4 mb-4">
@@ -31,19 +33,19 @@ export function EmptyState({
       </div>
       {title ? (
         <>
-          <p className="text-base font-semibold text-foreground mb-1.5">{title}</p>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md">{message}</p>
+          <p className="text-base font-semibold text-foreground mb-1.5">{tr(title)}</p>
+          <p className="text-sm text-muted-foreground mb-4 max-w-md">{tr(message)}</p>
         </>
       ) : (
         <>
-          <p className="text-sm font-medium text-foreground mb-1">{message}</p>
-          {description && <p className="max-w-md text-sm text-muted-foreground mb-4">{description}</p>}
+          <p className="text-sm font-medium text-foreground mb-1">{tr(message)}</p>
+          {description && <p className="max-w-md text-sm text-muted-foreground mb-4">{tr(description)}</p>}
         </>
       )}
       {action && onAction && (
         <Button onClick={onAction}>
           {!hideActionIcon && <Plus className="h-4 w-4 mr-1.5" />}
-          {action}
+          {tr(action)}
         </Button>
       )}
     </div>

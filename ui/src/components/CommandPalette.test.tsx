@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "./CommandPalette";
 import { queryKeys } from "../lib/queryKeys";
+import { i18n } from "@/i18n";
 
 function act(callback: () => void | Promise<void>) {
   let result: void | Promise<void> | undefined;
@@ -192,7 +193,8 @@ function renderWithQueryClient(
 describe("CommandPalette", () => {
   let container: HTMLDivElement;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     container = document.createElement("div");
     document.body.appendChild(container);
     dialogState.openNewIssue.mockReset();

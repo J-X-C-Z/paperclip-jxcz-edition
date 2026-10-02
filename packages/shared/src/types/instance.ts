@@ -73,6 +73,8 @@ export interface InstanceExperimentalSettings {
   enableChatConnectors: boolean;
   enablePipelines: boolean;
   enableCases: boolean;
+  /** Native project work context; company remains the governance boundary. */
+  enableProjectWorkspace: boolean;
   enableAgentChat: boolean;
   enableConferenceRoomChat: boolean;
   enableClassicTaskInterface: boolean;

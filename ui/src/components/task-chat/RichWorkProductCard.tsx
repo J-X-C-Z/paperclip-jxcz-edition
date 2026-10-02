@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useContext, useState, type CSSProperties } from "react";
 import { IssueGalleryContext } from "@/context/IssueGalleryContext";
 import { ImageGalleryModal } from "@/components/ImageGalleryModal";
@@ -36,16 +37,16 @@ export function stateChipFor(
     return { label: "Changes requested", tone: "failure" };
   }
   if (reviewState === "needs_board_review" || status === "ready_for_review") {
-    return { label: "Review", tone: "review" };
+    return { label: uiText("Review"), tone: "review" };
   }
   if (["failed", "unhealthy", "down"].includes(status ?? "")) {
-    return { label: "Failed", tone: "failure" };
+    return { label: uiText("Failed"), tone: "failure" };
   }
   if (["pending", "opening"].includes(status ?? "")) {
     return { label: status === "opening" ? "Opening" : "Pending", tone: "progress", dashed: true };
   }
   if (kind === "pull_request" && (status === "active" || status === "open")) {
-    return { label: "Open", tone: "progress" };
+    return { label: uiText("Open"), tone: "progress" };
   }
   if (kind === "pull_request" && status === "draft") {
     return { label: "Draft", tone: "review" };

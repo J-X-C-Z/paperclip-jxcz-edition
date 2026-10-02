@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -233,7 +234,7 @@ function CardShell({
 function PlanSteps({ steps }: { steps: TaskChatProtocolStep[] }) {
   if (steps.length === 0) return null;
   return (
-    <ol className="flex flex-col gap-1.5" aria-label="Plan steps">
+    <ol className="flex flex-col gap-1.5" aria-label={uiText("Plan steps")}>
       {steps.map((step) => (
         <li key={step.id} className="flex items-start gap-2 text-sm">
           <StatusIcon status={step.status} className="mt-0.5 shrink-0" />
@@ -273,7 +274,7 @@ function ProviderActivityCard({
     >
       {item.steps.length > 0 ? <PlanSteps steps={item.steps} /> : null}
       {item.children.length > 0 ? (
-        <ul className="flex flex-col gap-2" aria-label="Delegated agents">
+        <ul className="flex flex-col gap-2" aria-label={uiText("Delegated agents")}>
           {item.children.map((child) => (
             <li
               key={child.id}
@@ -306,7 +307,7 @@ function ProviderActivityCard({
         </ul>
       ) : null}
       {item.links.length > 0 ? (
-        <ul className="flex flex-col gap-2" aria-label="Research sources">
+        <ul className="flex flex-col gap-2" aria-label={uiText("Research sources")}>
           {item.links.map((link) => (
             <li key={link.href}>
               <a
@@ -337,8 +338,7 @@ function ProviderActivityCard({
           )}
         >
           <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-muted-foreground">
-            <ChevronDown aria-hidden className="h-3.5 w-3.5" /> Details
-          </summary>
+            <ChevronDown aria-hidden className="h-3.5 w-3.5" /> {uiText("Details")} </summary>
           {item.details.length > 0 ? (
             <dl className="mt-2 flex min-w-0 flex-col gap-1.5 text-xs">
               {item.details.map((detail) => (
@@ -366,7 +366,7 @@ function ProviderActivityCard({
           ) : null}
           {item.outputTruncated ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Output truncated to 8 KiB.
+              {uiText("Output truncated to 8 KiB.")}
             </p>
           ) : null}
         </details>
@@ -472,7 +472,7 @@ function WorkspaceChangeCard({ item }: { item: TaskChatWorkspaceChangeItem }) {
           {item.files.length > 1 ? (
             <div
               className="flex max-w-full gap-1 overflow-x-auto pb-1"
-              aria-label="Changed files"
+              aria-label={uiText("Changed files")}
             >
               {item.files.map((file) => (
                 <Button
@@ -546,7 +546,7 @@ function WorkspaceFileCard({ item }: { item: TaskChatWorkspaceFileItem }) {
             variant="outline"
             onClick={() => setOpen(true)}
           >
-            Preview
+            {uiText("Preview")}
           </Button>
         </div>
       </CardShell>
@@ -580,7 +580,7 @@ function WorkspaceFileCard({ item }: { item: TaskChatWorkspaceFileItem }) {
           )}
           {item.previewTruncated ? (
             <p className="text-xs text-muted-foreground">
-              Preview truncated by the runner.
+              {uiText("Preview truncated by the runner.")}
             </p>
           ) : null}
         </DialogContent>
@@ -848,9 +848,7 @@ function RuntimeRequestCard({
                 variant="outline"
                 disabled={!onDecision || submitting}
                 onClick={() => void submit({ action: "decline" })}
-              >
-                Deny
-              </Button>
+              > {uiText("Deny")} </Button>
             ) : null}
             {presentation === "timeline" ? (
               <Button
@@ -859,9 +857,7 @@ function RuntimeRequestCard({
                 variant="outline"
                 disabled={!onDecision || submitting}
                 onClick={() => void submit({ action: "cancel" })}
-              >
-                Cancel
-              </Button>
+              > {uiText("Cancel")} </Button>
             ) : null}
           </div>
         </form>
@@ -924,7 +920,7 @@ function ResultCard({
   return (
     <CardShell
       icon={PackageCheck}
-      title="Run result"
+      title={uiText("Run result")}
       status={item.disposition}
       summary={item.summary}
       testId="task-chat-run-result"
@@ -942,7 +938,7 @@ function ResultCard({
           {item.verification.length > 0 ? (
             <ul
               className="flex flex-col gap-1"
-              aria-label="Verification results"
+              aria-label={uiText("Verification results")}
             >
               {item.verification.map((check, index) => (
                 <li
@@ -1003,7 +999,7 @@ function TerminalCard({
   return (
     <CardShell
       icon={TerminalSquare}
-      title="Run ended"
+      title={uiText("Run ended")}
       status={item.runState}
       summary={[item.disposition.replaceAll("_", " "), item.stopReason]
         .filter(Boolean)

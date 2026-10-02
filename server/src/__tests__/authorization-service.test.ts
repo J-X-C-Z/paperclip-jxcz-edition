@@ -38,7 +38,7 @@ async function createCompany(db: ReturnType<typeof createDb>, label: string) {
 async function createAgent(
   db: ReturnType<typeof createDb>,
   companyId: string,
-  input: { role?: string; reportsTo?: string | null; permissions?: Record<string, unknown> } = {},
+  input: { role?: string; reportsTo?: string | null; permissions?: Record<string, unknown>; metadata?: Record<string, unknown> } = {},
 ) {
   return db
     .insert(agents)
@@ -48,6 +48,7 @@ async function createAgent(
       role: input.role ?? "engineer",
       reportsTo: input.reportsTo ?? null,
       permissions: input.permissions ?? {},
+      metadata: input.metadata ?? null,
       adapterType: "process",
       adapterConfig: {},
       runtimeConfig: {},
@@ -187,6 +188,86 @@ describeEmbeddedPostgres("authorization service", () => {
 
   afterAll(async () => {
     await tempDb?.cleanup();
+  });
+
+  it("loads template provenance and denies member authority despite CEO role and explicit grants", async () => {
+    const company = await createCompany(db, "TemplateMemberDenials");
+    const member = await createAgent(db, company.id, {
+      role: "ceo",
+      metadata: { agentTemplate: { id: "team-member", version: 1, role: "member" } },
+      permissions: { canCreateAgents: false, canCreateTasks: false, canAssignTasks: false, canReviewTasks: false, canManageAgents: false },
+    });
+    const other = await createAgent(db, company.id);
+    await grantAgentPermission(db, company.id, member.id, "tasks:assign");
+    await db.insert(principalPermissionGrants).values({ companyId: company.id, principalType: "agent", principalId: member.id, permissionKey: "agents:create", scope: null });
+    const access = authorizationService(db);
+    const actor = { type: "agent" as const, agentId: member.id, companyId: company.id, source: "agent_key" as const };
+    for (const request of [
+      { action: "tasks:assign" as const, resource: { type: "issue" as const, companyId: company.id, assigneeAgentId: other.id } },
+      { action: "agents:create" as const, resource: { type: "company" as const, companyId: company.id } },
+      { action: "issue:mutate" as const, resource: { type: "issue" as const, companyId: company.id, assigneeAgentId: member.id } },
+      { action: "agent:wake" as const, resource: { type: "agent" as const, companyId: company.id, agentId: other.id } },
+    ]) {
+      expect(await access.decide({ actor, ...request })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
+    }
+    const task = await createIssue(db, company.id, { assigneeAgentId: member.id });
+    expect(await access.decide({ actor, action: "issue:mutate", resource: { type: "issue", companyId: company.id, issueId: task.id, assigneeAgentId: member.id } })).toMatchObject({ allowed: true });
+  });
+
+  it("bounds template leader assignment and management to direct team members", async () => {
+    const company = await createCompany(db, "TemplateLeaderScope");
+    const leader = await createAgent(db, company.id, {
+      role: "ceo", metadata: { agentTemplate: { id: "team-leader", version: 1, role: "leader" } },
+      permissions: { canAssignTasks: true, canManageAgents: true, canCreateAgents: true },
+    });
+    const member = await createAgent(db, company.id, { reportsTo: leader.id });
+    const peer = await createAgent(db, company.id);
+    await grantAgentPermission(db, company.id, leader.id, "tasks:assign");
+    const actor = { type: "agent" as const, agentId: leader.id, companyId: company.id, source: "agent_key" as const };
+    const access = authorizationService(db);
+    expect(await access.decide({ actor, action: "tasks:assign", resource: { type: "issue", companyId: company.id, assigneeAgentId: member.id } })).toMatchObject({ allowed: true });
+    for (const action of ["tasks:assign", "agent:wake", "agent_config:update"] as const) {
+      const resource = action === "tasks:assign"
+        ? { type: "issue" as const, companyId: company.id, assigneeAgentId: peer.id }
+        : { type: "agent" as const, companyId: company.id, agentId: peer.id };
+      expect(await access.decide({ actor, action, resource })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
+    }
+  });
+
+  it("bounds department head assignment and management to same-company direct team leaders", async () => {
+    const company = await createCompany(db, "DepartmentHeadScope");
+    const head = await createAgent(db, company.id, {
+      metadata: { agentTemplate: { id: "department-head", version: 1, role: "department_head" } },
+      permissions: { canAssignTasks: true, canManageAgents: true, canCreateAgents: true },
+    });
+    const directLeader = await createAgent(db, company.id, { reportsTo: head.id, metadata: { agentTemplate: { id: "team-leader", version: 1, role: "leader" } } });
+    const legacyAwLeader = await createAgent(db, company.id, { reportsTo: head.id, metadata: { awRoleId: "desktop-lead" } });
+    const peerLeader = await createAgent(db, company.id, { metadata: { agentTemplate: { id: "team-leader", version: 1, role: "leader" } } });
+    const member = await createAgent(db, company.id, { reportsTo: directLeader.id });
+    await grantAgentPermission(db, company.id, head.id, "tasks:assign");
+    const actor = { type: "agent" as const, agentId: head.id, companyId: company.id, source: "agent_key" as const };
+    const access = authorizationService(db);
+    expect(await access.decide({ actor, action: "tasks:assign", resource: { type: "issue", companyId: company.id, assigneeAgentId: directLeader.id } })).toMatchObject({ allowed: true });
+    expect(await access.decide({ actor, action: "tasks:assign", resource: { type: "issue", companyId: company.id, assigneeAgentId: legacyAwLeader.id } })).toMatchObject({ allowed: true });
+    for (const target of [peerLeader, member]) {
+      for (const action of ["tasks:assign", "agent:wake", "agent_config:update"] as const) {
+        const resource = action === "tasks:assign"
+          ? { type: "issue" as const, companyId: company.id, assigneeAgentId: target.id }
+          : { type: "agent" as const, companyId: company.id, agentId: target.id };
+        expect(await access.decide({ actor, action, resource })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
+      }
+    }
+  });
+  it("keeps custom agents without management authority despite broad legacy grants", async () => {
+    const company = await createCompany(db, "CustomTemplatePermissions");
+    const custom = await createAgent(db, company.id, { role: "ceo", metadata: { agentTemplate: { id: "custom", version: 1, role: "custom" } }, permissions: { canCreateAgents: false, canCreateTasks: false, canAssignTasks: false, canReviewTasks: false, canManageAgents: false } });
+    const peer = await createAgent(db, company.id);
+    await grantAgentPermission(db, company.id, custom.id, "tasks:assign");
+    const actor = { type: "agent" as const, agentId: custom.id, companyId: company.id, source: "agent_key" as const };
+    const access = authorizationService(db);
+    expect(await access.decide({ actor, action: "tasks:assign", resource: { type: "issue", companyId: company.id, assigneeAgentId: peer.id } })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
+    expect(await access.decide({ actor, action: "agents:create", resource: { type: "company", companyId: company.id } })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
+    expect(await access.decide({ actor, action: "agent:wake", resource: { type: "agent", companyId: company.id, agentId: peer.id } })).toMatchObject({ allowed: false, reason: "deny_policy_restricted" });
   });
 
   it("allows active user role grants and explains the grant source", async () => {

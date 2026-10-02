@@ -1678,3 +1678,26 @@ instance-level registry retains validated publication IDs, allowing offline
 dismissal retries after withdrawal while rejecting caller-invented IDs. It
 stores no announcement content, account data or interaction events.
 See [Announcements](ANNOUNCEMENTS.md) for API and publishing details.
+
+### Agent Template V1
+
+Agent creation starts with one of two built-in, versioned presets: `team-leader`
+(default `gpt-6.1-sol`) and `team-member` (default `gpt-6-luna`). Templates supply
+model, managed instructions, real catalog skills, capabilities and authority
+flags. Explicit authorized instance configuration wins over defaults. Template
+provenance is immutable server-managed metadata; the existing organizational
+role and first-company onboarding remain independent. No Team table, Roadmap,
+marketplace or custom template editor is introduced.
+
+Members require a live template leader in the same company through `reportsTo`.
+Template task and management restrictions precede grants and legacy defaults;
+existing agents without template metadata retain their behavior. Leaders manage
+only their own team and cannot change their own authority or reporting lines.
+Member execution installs a server-owned leader review stage. Submitting hands
+review to the leader; rejecting returns work to the original member; accepting
+finishes only through the execution-policy kernel. Members cannot remove the
+stage or finish their own work. Native completion uses the same submission
+path. Missing, paused, terminated or deleted leaders leave work in review with
+a human recovery interaction; confirming recovery cannot finish the task.
+
+See [Agent Template V1 implementation](plans/2026-10-01-agent-templates.md).

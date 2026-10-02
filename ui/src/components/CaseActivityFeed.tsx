@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useState } from "react";
 import { Link } from "@/lib/router";
 import { Bot, User, Cog, ChevronDown, ListFilter } from "lucide-react";
@@ -16,24 +17,24 @@ import {
 import { cn, relativeTime } from "@/lib/utils";
 
 const EVENT_LABEL: Record<CaseEventKind, string> = {
-  created: "created",
-  updated: "updated",
-  fields_changed: "fields changed",
-  status_changed: "status changed",
-  issue_linked: "issue linked",
-  issue_unlinked: "issue unlinked",
-  document_revised: "document revised",
-  child_linked: "child linked",
-  attachment_added: "attachment added",
-  label_added: "label added",
-  label_removed: "label removed",
+  created: "Created",
+  updated: "Updated",
+  fields_changed: "Fields changed",
+  status_changed: "Status changed",
+  issue_linked: "Task linked",
+  issue_unlinked: "Task unlinked",
+  document_revised: "Document revised",
+  child_linked: "Child linked",
+  attachment_added: "Attachment added",
+  label_added: "Label added",
+  label_removed: "Label removed",
 };
 
 /** Human label for the actor, preferring the resolved agent name. */
 function actorLabel(event: CaseEvent): string {
-  if (event.actorType === "agent") return event.actorAgentName ?? "Agent";
-  if (event.actorType === "user") return "User";
-  return "System";
+  if (event.actorType === "agent") return event.actorAgentName ?? uiText("Agent");
+  if (event.actorType === "user") return uiText("User");
+  return uiText("System");
 }
 
 function ActorIcon({ event }: { event: CaseEvent }) {
@@ -42,7 +43,7 @@ function ActorIcon({ event }: { event: CaseEvent }) {
 }
 
 function issueRelationLabel(event: CaseEvent): string {
-  return event.kind === "issue_linked" || event.kind === "issue_unlinked" ? "issue" : "via";
+  return event.kind === "issue_linked" || event.kind === "issue_unlinked" ? uiText("task") : uiText("via");
 }
 
 /** One event with actor + run→issue attribution (P4 §1). */
@@ -56,7 +57,7 @@ export function CaseEventRow({ event, compact = false }: { event: CaseEvent; com
       <span className="mt-1"><ActorIcon event={event} /></span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-1.5">
-          <span className="font-medium">{EVENT_LABEL[event.kind] ?? event.kind}</span>
+          <span className="font-medium">{uiText(EVENT_LABEL[event.kind] ?? event.kind)}</span>
           {detail && <span className="text-muted-foreground">· {detail}</span>}
         </div>
         <div className="flex flex-wrap items-center gap-x-1.5 text-muted-foreground">
@@ -112,18 +113,18 @@ export function CaseActivityFeed({ events }: { events: CaseEvent[] }) {
   const filterLabel = active.size === 0
     ? "All activity"
     : active.size === 1
-      ? EVENT_LABEL[[...active][0]!] ?? [...active][0]!
-      : `${active.size} filters`;
+      ? uiText(EVENT_LABEL[[...active][0]!] ?? [...active][0]!)
+      : uiText("{count} filters", { count: active.size });
 
   if (events.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">No activity yet.</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">{uiText('No activity yet.')}</p>;
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {filtered.length} of {events.length} events
+          {uiText("{shown} of {total} events", { shown: filtered.length, total: events.length })}
         </p>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -134,10 +135,8 @@ export function CaseActivityFeed({ events }: { events: CaseEvent[] }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Activity filter</DropdownMenuLabel>
-            <DropdownMenuItem onSelect={() => setActive(new Set())}>
-              All activity
-            </DropdownMenuItem>
+            <DropdownMenuLabel>{uiText('Activity filter')}</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => setActive(new Set())}> {uiText("All activity")} </DropdownMenuItem>
             <DropdownMenuSeparator />
             {presentKinds.map((kind) => (
               <DropdownMenuCheckboxItem
@@ -145,14 +144,14 @@ export function CaseActivityFeed({ events }: { events: CaseEvent[] }) {
                 checked={active.has(kind)}
                 onCheckedChange={() => toggle(kind)}
               >
-                {EVENT_LABEL[kind] ?? kind}
+                {uiText(EVENT_LABEL[kind] ?? kind)}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       {filtered.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">No events match this filter.</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">{uiText('No events match this filter.')}</p>
       ) : (
         <div className="divide-y divide-border">
           {filtered.map((event) => (

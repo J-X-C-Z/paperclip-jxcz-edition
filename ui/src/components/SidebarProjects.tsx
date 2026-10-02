@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -147,7 +148,7 @@ function ProjectItem({
       <ProjectTile color={project.color ?? null} icon={project.icon ?? null} size="xs" />
       <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "flex-1 truncate"}>{project.name}</span>
       {!rail ? <ExternalObjectStatusSummary summary={externalObjectsSummary} compact /> : null}
-      {!rail && project.pauseReason === "budget" ? <BudgetSidebarMarker title="Project paused by budget" /> : null}
+      {!rail && project.pauseReason === "budget" ? <BudgetSidebarMarker title={uiText("Project paused by budget")} /> : null}
     </NavLink>
   );
 
@@ -409,7 +410,7 @@ export function SidebarProjects() {
 
   return (
     <SidebarSection
-      label="Projects"
+      label={uiText("Projects")}
       collapsible={{ open, onOpenChange: setOpen }}
       headerAction={{
         ariaLabel: "New project",

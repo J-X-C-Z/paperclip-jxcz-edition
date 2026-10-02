@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useCaseHref } from "@/lib/router";
@@ -26,7 +27,7 @@ export function CaseChildrenTree({
   const caseHref = useCaseHref();
   const [expanded, setExpanded] = useState(false);
   if (children.length === 0) {
-    return <p className="text-xs text-muted-foreground">No child cases.</p>;
+    return <p className="text-xs text-muted-foreground">{uiText("No child cases.")}</p>;
   }
 
   const shouldCap = maxVisible != null && children.length > maxVisible;
@@ -65,8 +66,7 @@ export function CaseChildrenTree({
           onClick={() => setExpanded(true)}
         >
           <ChevronDown className="h-3.5 w-3.5" />
-          Show {hiddenCount} more
-        </Button>
+          Show {hiddenCount} {uiText("more")} </Button>
       ) : null}
     </div>
   );

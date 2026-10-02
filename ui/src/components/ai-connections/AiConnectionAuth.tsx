@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUiTranslator } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import {
   OnboardingCardField,
@@ -49,6 +50,7 @@ function AuthAttempt({
   onCancel,
   onDone,
 }: AiConnectionAuthProps) {
+  const tr = useUiTranslator();
   const [value, setValue] = useState("");
   const info = AI_PROVIDERS[provider];
   const busy = state.phase === "starting" || state.phase === "submitting";
@@ -63,11 +65,11 @@ function AuthAttempt({
   };
   return (
     <section
-      aria-label={`Connect ${info.name}`}
+      aria-label={`${tr("Connect")} ${info.name}`}
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-semibold">Connect {info.name}</h3>
+        <h3 className="text-sm font-semibold">{tr("Connect")} {info.name}</h3>
         <p className="text-xs text-muted-foreground">
           {aiMethodLabel(provider, method)}
         </p>
@@ -75,9 +77,9 @@ function AuthAttempt({
       {state.phase === "connected" ? (
         <>
           <p role="status" className="text-sm">
-            Connected. This account is saved in Connections and can be reused.
+            {tr("Connected. This account is saved in Connections and can be reused.")}
           </p>
-          <Button onClick={onDone}>Use connection</Button>
+          <Button onClick={onDone}>{tr("Use connection")}</Button>
         </>
       ) : (
         <>
@@ -85,7 +87,7 @@ function AuthAttempt({
             <p role="status" className="text-sm text-muted-foreground">
               {state.phase === "unsupported"
                 ? state.message
-                : "This provider does not offer a subscription connection."}
+                : tr("This provider does not offer a subscription connection.")}
             </p>
           ) : (
             <>
@@ -96,7 +98,7 @@ function AuthAttempt({
               )}
               {state.phase === "cancelled" && (
                 <p role="status" className="text-sm text-muted-foreground">
-                  Sign-in cancelled. No connection was created.
+                  {tr("Sign-in cancelled. No connection was created.")}
                 </p>
               )}
               {method === "api_key" ? (
@@ -105,7 +107,7 @@ function AuthAttempt({
                   value={value}
                   onChange={setValue}
                   onSubmit={submit}
-                  placeholder="Enter API key here"
+                  placeholder={tr("Enter API key here")}
                   disabled={busy}
                   autoFocus
                 />
@@ -143,7 +145,7 @@ function AuthAttempt({
                 </ProviderSubscriptionCard>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Sign in with your {info.subscriptionName}.
+                  {tr("Sign in with your")} {info.subscriptionName}.
                 </p>
               )}
             </>
@@ -156,30 +158,30 @@ function AuthAttempt({
                 onCancel();
               }}
             >
-              Cancel
+              {tr("Cancel")}
             </Button>
             {!unsupported &&
               (method === "api_key" ? (
                 <Button disabled={busy || !value.trim()} onClick={submit}>
-                  {busy ? "Connecting…" : "Connect"}
+                  {busy ? tr("Connecting…") : tr("Connect")}
                 </Button>
               ) : state.phase === "waiting" ? (
                 provider === "anthropic" ? (
                   <Button disabled={!value.trim()} onClick={submit}>
-                    Submit code
+                    {tr("Submit code")}
                   </Button>
                 ) : (
                   <span role="status" className="text-sm text-muted-foreground">
-                    Waiting for sign-in…
+                    {tr("Waiting for sign-in…")}
                   </span>
                 )
               ) : (
                 <Button disabled={busy} onClick={onStart}>
                   {busy
-                    ? "Preparing sign-in…"
+                    ? tr("Preparing sign-in…")
                     : state.phase === "idle"
-                      ? "Sign in"
-                      : "Try again"}
+                      ? tr("Sign in")
+                      : tr("Try again")}
                 </Button>
               ))}
           </div>

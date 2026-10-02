@@ -10,6 +10,7 @@ import {
 } from "@paperclipai/shared";
 import { parseRunnerGoalCommand, TaskChatComposer } from "./TaskChatComposer";
 import { QuestionForm } from "./QuestionForm";
+import { i18n } from "@/i18n";
 import { DRAFT_DEBOUNCE_MS } from "../../lib/composer-draft";
 import {
   loadDraftSubmission,
@@ -174,7 +175,8 @@ let container: HTMLDivElement;
 let root: Root | null = null;
 let originalRangeRect: typeof Range.prototype.getBoundingClientRect;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await i18n.changeLanguage("en");
   localStorage.clear();
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -234,17 +236,26 @@ function typeText(value: string) {
 
 function pressKey(
   key: string,
-  modifiers: { metaKey?: boolean; ctrlKey?: boolean; shiftKey?: boolean } = {},
+  modifiers: {
+    metaKey?: boolean;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+    isComposing?: boolean;
+    keyCode?: number;
+  } = {},
+  target: HTMLElement = editable(),
 ) {
   flushSync(() => {
-    editable().dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key,
-        ...modifiers,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    const event = new KeyboardEvent("keydown", {
+      key,
+      ...modifiers,
+      bubbles: true,
+      cancelable: true,
+    });
+    if (modifiers.keyCode !== undefined) {
+      Object.defineProperty(event, "keyCode", { value: modifiers.keyCode });
+    }
+    target.dispatchEvent(event);
   });
 }
 
@@ -814,7 +825,20 @@ describe("TaskChatComposer", () => {
     expect(editable().dataset.contentClassName).toContain("max-h-(--sz-28dvh)");
   });
 
-  it("submits the trimmed body on Cmd+Enter and clears the draft", async () => {
+  it("shows the Chinese keyboard hint when ready, including on mobile", () => {
+    render(<TaskChatComposer onAdd={vi.fn()} workMode="standard" />);
+    const hint = container.querySelector<HTMLElement>(
+      '[data-testid="task-chat-composer-keyboard-hint"]',
+    );
+    expect(hint?.textContent).toContain("Enter 发送 · Shift+Enter 换行");
+
+    render(<TaskChatComposer onAdd={vi.fn()} workMode="standard" mobile />);
+    expect(
+      container.querySelector('[data-testid="task-chat-composer-keyboard-hint"]'),
+    ).not.toBeNull();
+  });
+
+  it("submits the trimmed body on Enter and clears the draft", async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     render(<TaskChatComposer onAdd={onAdd} workMode="standard" />);
 
@@ -822,7 +846,7 @@ describe("TaskChatComposer", () => {
     typeText("  hello there  ");
     expect(sendButton().disabled).toBe(false);
 
-    pressKey("Enter", { metaKey: true });
+    pressKey("Enter");
     await flushAsync();
     await flushAsync();
 
@@ -841,12 +865,26 @@ describe("TaskChatComposer", () => {
     expect(onAdd).toHaveBeenCalledWith("hello", undefined, undefined, undefined, expect.any(String));
   });
 
-  it("does not submit on plain Enter or Shift+Enter (newline stays with the editor)", async () => {
+  it.each([
+    ["isComposing", { isComposing: true }],
+    ["legacy IME keyCode", { keyCode: 229 }],
+  ] as const)("does not submit while an IME is composing (%s)", async (_label, composing) => {
+    const onAdd = vi.fn().mockResolvedValue(undefined);
+    render(<TaskChatComposer onAdd={onAdd} workMode="standard" />);
+
+    typeText("中文候选");
+    pressKey("Enter", { metaKey: true, ...composing });
+    await flushAsync();
+
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(editable().textContent).toBe("中文候选");
+  });
+
+  it("does not submit on Shift+Enter (newline stays with the editor)", async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     render(<TaskChatComposer onAdd={onAdd} workMode="standard" />);
 
     typeText("line one");
-    pressKey("Enter");
     pressKey("Enter", { shiftKey: true });
     await flushAsync();
 
@@ -854,7 +892,31 @@ describe("TaskChatComposer", () => {
     expect(editable().textContent).toBe("line one");
   });
 
-  it("cycles the pending mode with Shift+Tab and applies it on submit", async () => {
+  it("does not capture Shift+Tab from the editor", () => {
+    render(
+      <TaskChatComposer
+        onAdd={vi.fn()}
+        workMode="standard"
+        onWorkModeChange={vi.fn()}
+      />,
+    );
+
+    const chip = container.querySelector<HTMLButtonElement>(
+      '[data-testid="task-chat-composer-mode"]',
+    )!;
+    const event = new KeyboardEvent("keydown", {
+      key: "Tab",
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    editable().dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(chip.getAttribute("data-pending-work-mode")).toBe("standard");
+  });
+
+  it("cycles the pending mode with Shift+Tab from its control and applies it on submit", async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     const onWorkModeChange = vi.fn().mockResolvedValue(undefined);
     render(
@@ -871,7 +933,7 @@ describe("TaskChatComposer", () => {
     expect(chip.getAttribute("data-pending-work-mode")).toBe("standard");
     expect(chip.textContent).toContain("Auto");
 
-    pressKey("Tab", { shiftKey: true });
+    pressKey("Tab", { shiftKey: true }, chip);
     expect(chip.getAttribute("data-pending-work-mode")).toBe("planning");
     expect(chip.textContent).toContain("Plan");
 
@@ -1223,6 +1285,9 @@ describe("TaskChatComposer", () => {
         ?.getAttribute("data-state"),
     ).toBe("error");
     expect(chips?.textContent).toContain("Too large");
+    expect(
+      container.querySelector('[data-testid="task-chat-composer-keyboard-hint"]'),
+    ).toBeNull();
   });
 
   it("leaves pasted images to the editor's image plugin (no chip, paste not swallowed)", async () => {
@@ -1474,6 +1539,15 @@ describe("TaskChatComposer", () => {
       expect(container.querySelector('[role="alert"]')?.textContent).toContain(
         "Unsupported by OpenCode",
       );
+      expect(
+        container.querySelector('[data-testid="task-chat-composer-keyboard-hint"]'),
+      ).toBeNull();
+
+      typeText("Please answer this instead.");
+      expect(container.querySelector('[data-testid="task-chat-goal-error"]')).toBeNull();
+      expect(
+        container.querySelector('[data-testid="task-chat-composer-keyboard-hint"]'),
+      ).not.toBeNull();
     });
   });
 

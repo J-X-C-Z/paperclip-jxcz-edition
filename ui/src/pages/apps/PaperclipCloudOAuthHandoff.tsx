@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,19 +35,19 @@ export function ManagedOAuthHandoffState({
         </span>
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight">
-            {failed ? "Sign-in couldn’t continue" : "Preparing secure sign-in"}
+            {failed ? uiText("Sign-in couldn’t continue") : uiText("Preparing secure sign-in")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {failed
-              ? error ?? "Paperclip couldn’t prepare the provider sign-in. Try again."
+              ? error ?? uiText("Paperclip couldn’t prepare the provider sign-in. Try again.")
               : phase === "reauthenticating"
-                ? "Your Paperclip sign-in is being refreshed."
-                : "Paperclip is opening the provider securely."}
+                ? uiText("Your Paperclip sign-in is being refreshed.")
+                : uiText("Paperclip is opening the provider securely.")}
           </p>
           {failed ? (
             <div className="mt-6 flex items-center gap-2">
-              <Button type="button" onClick={onRetry}>Try again</Button>
-              <Button type="button" variant="ghost" onClick={onCancel}>Return to Paperclip</Button>
+              <Button type="button" onClick={onRetry}>{uiText("Try again")}</Button>
+              <Button type="button" variant="ghost" onClick={onCancel}>{uiText("Return to Paperclip")}</Button>
             </div>
           ) : null}
         </div>
@@ -64,7 +65,7 @@ export function PaperclipCloudOAuthHandoffPage() {
     const handoff = readPendingCloudHandoff();
     if (!handoff) {
       setPhase("error");
-      setError("This sign-in expired. Return to Paperclip and start the connection again.");
+      setError(uiText("This sign-in expired. Return to Paperclip and start the connection again."));
       return;
     }
     setPhase("loading");
@@ -73,14 +74,14 @@ export function PaperclipCloudOAuthHandoffPage() {
       const target = await prepareOAuthNavigation({ authorizationUrl: "", handoff });
       if (target.kind === "reauthentication") {
         setPhase("error");
-        setError("Paperclip couldn’t refresh this sign-in. Try again to continue.");
+        setError(uiText("Paperclip couldn’t refresh this sign-in. Try again to continue."));
         return;
       }
       clearPendingCloudHandoff();
       navigateTopLevel(target.url);
     } catch (caught) {
       setPhase("error");
-      setError(caught instanceof Error ? caught.message : "Paperclip couldn’t prepare secure sign-in.");
+      setError(caught instanceof Error ? caught.message : uiText("Paperclip couldn’t prepare secure sign-in."));
     }
   }, []);
 

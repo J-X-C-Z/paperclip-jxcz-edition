@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo } from "react";
 import {
   humanizeConnectionDisplayName,
@@ -76,7 +77,7 @@ function RecentActivity({
   return (
     <section className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Recent activity</h2>
+        <h2 className="text-lg font-semibold text-foreground">{uiText("Recent activity")}</h2>
       </div>
       {loading ? (
         <div className="space-y-2 py-4">
@@ -84,7 +85,7 @@ function RecentActivity({
           <Skeleton className="h-4 w-2/3" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="py-5 text-sm text-muted-foreground">No activity yet.</p>
+        <p className="py-5 text-sm text-muted-foreground">{uiText("No activity yet.")}</p>
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((row) => (
@@ -151,9 +152,9 @@ export function resolveActorLabel(
   if (actorId) {
     const label = userLabelById?.get(actorId);
     if (label) return label;
-    if (actorId === "local-board") return "Board";
+    if (actorId === "local-board") return uiText("Board");
   }
-  return "Someone";
+  return uiText("Someone");
 }
 
 export function humanizeEvent(
@@ -167,7 +168,7 @@ export function humanizeEvent(
   // distinguishable from real heartbeat agent activity in the audit trail (PAP-11415).
   const who = testRunnerLabel
     ? `${testRunnerLabel} tested as ${agentName ?? "an agent"}`
-    : agentName ?? "An agent";
+    : agentName ?? uiText("An agent");
   // The raw gateway tool name is prefixed (e.g. `mcp.app-gallery-link-…:kv-set`);
   // humanize it to "Kv Set" to match the cross-app Activity view (PAP-11105).
   const action = event.toolName ? humanizeConnectionDisplayName(event.toolName) : "an action";
@@ -199,7 +200,7 @@ function humanizeApprovalResolved(
   action: string,
   actionRequest?: ActivityPanelProps["actionRequests"][string],
 ): string {
-  const resolver = actionRequest?.resolverDisplayName ?? "Someone";
+  const resolver = actionRequest?.resolverDisplayName ?? uiText("Someone");
   if (actionRequest?.status === "approved") return `${resolver} approved ${action}`;
   if (actionRequest?.status === "rejected") return `${resolver} said no to ${action}`;
   return `${resolver} reviewed ${action}`;
@@ -211,7 +212,7 @@ function humanizeLifecycleEvent(
   appName: string,
   agentName: string | null,
 ): string {
-  const who = event.actorDisplayName ?? agentName ?? "Someone";
+  const who = event.actorDisplayName ?? agentName ?? uiText("Someone");
   switch (event.type) {
     case "app_connected":
       return `${who} connected ${appName}`;
@@ -250,7 +251,7 @@ function humanizeAllowlistChange(who: string, details: Record<string, unknown> |
 }
 
 function lifecycleLinkLabel(event: ToolConnectionLifecycleEvent): string {
-  return event.type === "actions_quarantined" ? "Review permissions" : "View permissions";
+  return event.type === "actions_quarantined" ? uiText("Review permissions") : uiText("View permissions");
 }
 
 function numberFrom(value: unknown): number {
@@ -259,7 +260,7 @@ function numberFrom(value: unknown): number {
 }
 
 function lower(who: string): string {
-  return who === "An agent" ? "an agent" : who;
+  return who === uiText("An agent") ? "an agent" : who;
 }
 
 function dotColor(event: ToolCallEvent): string {

@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { NavLink } from "@/lib/router";
+import { preloadBoardRoute } from "../lib/route-preload";
 import { SIDEBAR_SCROLL_RESET_STATE } from "../lib/navigation-scroll";
 import { cn, SIDEBAR_RAIL_HIDDEN_LABEL } from "../lib/utils";
 import { useSidebar } from "../context/SidebarContext";
@@ -120,6 +121,8 @@ export function SidebarNavItem({
       state={SIDEBAR_SCROLL_RESET_STATE}
       end={end}
       aria-label={railAriaLabel}
+      onMouseEnter={() => { if (!isMobile) void preloadBoardRoute(to, true); }}
+      onFocus={() => { void preloadBoardRoute(to, true); }}
       onClick={() => { if (isMobile) setSidebarOpen(false); }}
       className={({ isActive }) =>
         cn(

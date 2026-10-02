@@ -22,7 +22,9 @@ import {
 } from "../services/index.js";
 import { assertBoard, assertCompanyAccess, getAccessibleResource, getActorInfo } from "./authz.js";
 import { fetchAllQuotaWindows } from "../services/quota-windows.js";
+import { resolveProjectScope } from "../services/project-scope.js";
 import { badRequest } from "../errors.js";
+import { exchangeRateService } from "../services/exchange-rate.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
 
 export function parseCostDateRange(query: Record<string, unknown>) {
@@ -170,12 +172,19 @@ export function costRoutes(
     res.status(201).json(event);
   });
 
+  router.get("/companies/:companyId/costs/exchange-rate", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
+    res.json(await exchangeRateService.get());
+  });
+
   router.get("/companies/:companyId/costs/summary", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const summary = await costs.summary(companyId, range);
+    const summary = await costs.summary(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(summary);
   });
 
@@ -194,16 +203,26 @@ export function costRoutes(
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const rows = await costs.byAgent(companyId, range);
+    const rows = await costs.byAgent(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
+
+  for (const [path, aggregate] of [["by-team", costs.byTeam], ["by-department", costs.byDepartment]] as const) {
+    router.get(`/companies/:companyId/costs/${path}`, async (req, res) => {
+      const companyId = req.params.companyId as string;
+      assertCompanyAccess(req, companyId);
+      if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
+      const range = parseCostDateRange(req.query);
+      res.json(await aggregate(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId)));
+    });
+  }
 
   router.get("/companies/:companyId/costs/by-agent-model", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const rows = await costs.byAgentModel(companyId, range);
+    const rows = await costs.byAgentModel(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
 
@@ -212,7 +231,7 @@ export function costRoutes(
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const rows = await costs.byProvider(companyId, range);
+    const rows = await costs.byProvider(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
 
@@ -221,7 +240,7 @@ export function costRoutes(
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const rows = await costs.byBiller(companyId, range);
+    const rows = await costs.byBiller(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
 
@@ -266,7 +285,7 @@ export function costRoutes(
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
-    const rows = await costs.windowSpend(companyId);
+    const rows = await costs.windowSpend(companyId, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
 
@@ -323,7 +342,7 @@ export function costRoutes(
     assertCompanyAccess(req, companyId);
     if (!(await assertCompanyCostReadAllowed(req, res, companyId))) return;
     const range = parseCostDateRange(req.query);
-    const rows = await costs.byProject(companyId, range);
+    const rows = await costs.byProject(companyId, range, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(rows);
   });
 

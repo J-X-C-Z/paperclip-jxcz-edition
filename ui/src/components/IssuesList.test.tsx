@@ -6,6 +6,7 @@ import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue, Project } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/i18n";
 import {
   IssuesList,
   issueAgeBucket,
@@ -338,7 +339,8 @@ function renderWithQueryClient(node: ReactNode, container: HTMLDivElement) {
 describe("IssuesList", () => {
   let container: HTMLDivElement;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     container = document.createElement("div");
     document.body.appendChild(container);
     dialogState.openNewIssue.mockReset();
@@ -373,6 +375,30 @@ describe("IssuesList", () => {
   afterEach(() => {
     vi.useRealTimers();
     container.remove();
+  });
+
+  it("resolves names across a large agent roster and keeps first-match and missing-name behavior", async () => {
+    localStorage.setItem("paperclip:test-issues:company-1:issue-columns", JSON.stringify(["id", "assignee", "kickedOffBy"]));
+    const agents = Array.from({ length: 2000 }, (_, index) => ({ id: `agent-${index}`, name: `Agent ${index}` }));
+    agents.push({ id: "agent-1999", name: "Duplicate name" });
+    const issues = [
+      createIssue({ id: "assigned", assigneeAgentId: "agent-1999", createdByAgentId: "agent-0" }),
+      createIssue({ id: "unknown", assigneeAgentId: "missing", createdByAgentId: "missing" }),
+    ];
+    const { root } = renderWithQueryClient(
+      <IssuesList issues={issues} agents={agents} projects={[]} viewStateKey="paperclip:test-issues" onUpdateIssue={() => undefined} />,
+      container,
+    );
+    await waitForAssertion(() => {
+      const rows = Array.from(container.querySelectorAll('[data-testid="issue-row"]'));
+      expect(rows).toHaveLength(2);
+      expect(rows.some((row) => row.textContent?.includes("Agent 1999")
+        && row.textContent?.includes("Agent 0"))).toBe(true);
+      expect(container.textContent).not.toContain("Duplicate name");
+      expect(rows.some((row) => row.textContent?.includes("missing")
+        && !row.textContent?.includes("Agent "))).toBe(true);
+    });
+    act(() => root.unmount());
   });
 
   it("uses the master list and legacy persistence when Streamlined UI is off", async () => {

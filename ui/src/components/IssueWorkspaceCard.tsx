@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/lib/router";
 import type { Issue, ExecutionWorkspace } from "@paperclipai/shared";
@@ -27,9 +28,9 @@ import { Badge } from "@/components/ui/badge";
 /* -------------------------------------------------------------------------- */
 
 const EXECUTION_WORKSPACE_OPTIONS = [
-  { value: "shared_workspace", label: "Project default" },
-  { value: "isolated_workspace", label: "New isolated workspace" },
-  { value: "reuse_existing", label: "Reuse existing workspace" },
+  { value: "shared_workspace", label: uiText("Project default") },
+  { value: "isolated_workspace", label: uiText("New isolated workspace") },
+  { value: "reuse_existing", label: uiText("Reuse existing workspace") },
 ] as const;
 
 /* -------------------------------------------------------------------------- */
@@ -71,8 +72,8 @@ function CopyableInline({ value, label, mono }: { value: string; label?: string;
         type="button"
         className="shrink-0 p-0.5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/copy:opacity-100 focus:opacity-100"
         onClick={handleCopy}
-        title={copied ? "Copied!" : "Copy"}
-        aria-label={copied ? "Copied to clipboard" : `Copy ${label ?? "value"}`}
+        title={copied ? uiText("Copied!") : uiText("Copy")}
+        aria-label={copied ? uiText("Copied to clipboard") : uiText("Copy {value0}", { value0: label ?? uiText("value") })}
       >
         {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
       </button>
@@ -82,11 +83,11 @@ function CopyableInline({ value, label, mono }: { value: string; label?: string;
 
 function workspaceModeLabel(mode: string | null | undefined) {
   switch (mode) {
-    case "isolated_workspace": return "Isolated workspace";
-    case "operator_branch": return "Operator branch";
-    case "cloud_sandbox": return "Cloud environment";
-    case "adapter_managed": return "Adapter managed";
-    default: return "Workspace";
+    case "isolated_workspace": return uiText("Isolated workspace");
+    case "operator_branch": return uiText("Operator branch");
+    case "cloud_sandbox": return uiText("Cloud environment");
+    case "adapter_managed": return uiText("Adapter managed");
+    default: return uiText("Workspace");
   }
 }
 
@@ -96,13 +97,13 @@ function configuredWorkspaceLabel(
 ) {
   switch (selection) {
     case "isolated_workspace":
-      return "New isolated workspace";
+      return uiText("New isolated workspace");
     case "reuse_existing":
       return reusableWorkspace?.mode === "isolated_workspace"
-        ? "Existing isolated workspace"
-        : "Reuse existing workspace";
+        ? uiText("Existing isolated workspace")
+        : uiText("Reuse existing workspace");
     default:
-      return "Project default";
+      return uiText("Project default");
   }
 }
 
@@ -355,16 +356,13 @@ export function IssueWorkspaceCard({
                 className="h-6 px-2 text-xs text-muted-foreground"
                 onClick={handleCancel}
               >
-                <X className="h-3 w-3 mr-1" />Cancel
-              </Button>
+                <X className="h-3 w-3 mr-1" />{uiText("Cancel")} </Button>
               <Button
                 size="sm"
                 className="h-6 px-2 text-xs"
                 onClick={handleSave}
                 disabled={!canSaveWorkspaceConfig}
-              >
-                Save
-              </Button>
+              > {uiText("Save")} </Button>
             </>
           ) : (
             <Button
@@ -373,8 +371,7 @@ export function IssueWorkspaceCard({
               className="h-6 px-2 text-xs text-muted-foreground"
               onClick={() => setEditing(true)}
             >
-              <Pencil className="h-3 w-3 mr-1" />Edit
-            </Button>
+              <Pencil className="h-3 w-3 mr-1" />{uiText("Edit")} </Button>
           )}
         </div>
       </div>
@@ -396,32 +393,32 @@ export function IssueWorkspaceCard({
           )}
           {workspace?.repoUrl && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="text-(length:--text-micro)">Repo:</span>
+              <span className="text-(length:--text-micro)">{uiText("Repo:")}</span>
               <CopyableInline value={workspace.repoUrl} mono />
             </div>
           )}
           {environmentsEnabled && currentEnvironmentId && (
             <div className="text-muted-foreground" style={{ overflowWrap: "anywhere" }}>
-              Environment: <span className="text-foreground">{currentEnvironment?.name ?? currentEnvironmentId}</span>
+              {uiText("Environment:")} <span className="text-foreground">{currentEnvironment?.name ?? currentEnvironmentId}</span>
               {currentSelection === "reuse_existing" && currentReusableEnvironmentId === currentEnvironmentId
-                ? " · reused workspace"
+                ? ` · ${uiText("reused workspace")}`
                 : !issue.executionWorkspaceSettings?.environmentId && projectEnvironmentId === currentEnvironmentId
-                ? " · project default"
+                ? ` · ${uiText("project default")}`
                 : null}
             </div>
           )}
           {!workspace && (
             <div className="text-muted-foreground">
               {currentSelection === "isolated_workspace"
-                ? "A fresh isolated workspace will be created when this task runs."
+                ? uiText("A fresh isolated workspace will be created when this task runs.")
                 : currentSelection === "reuse_existing"
-                  ? "This task will reuse an existing workspace when it runs."
-                  : "This task will use the project default workspace configuration when it runs."}
+                  ? uiText("This task will reuse an existing workspace when it runs.")
+                  : uiText("This task will use the project default workspace configuration when it runs.")}
             </div>
           )}
           {currentSelection === "reuse_existing" && selectedReusableExecutionWorkspace && (
             <div className="text-muted-foreground" style={{ overflowWrap: "anywhere" }}>
-              Reusing:{" "}
+              {uiText("Reusing:")}{" "}
               {selectedReusableWorkspaceLink ? (
                 <Link
                   to={selectedReusableWorkspaceLink}
@@ -440,7 +437,7 @@ export function IssueWorkspaceCard({
                 to={currentWorkspaceLink}
                 className="text-(length:--text-micro) text-muted-foreground hover:text-foreground hover:underline"
               >
-                View workspace details →
+                {uiText("View workspace details →")}
               </Link>
             </div>
           )}
@@ -466,7 +463,7 @@ export function IssueWorkspaceCard({
             {EXECUTION_WORKSPACE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.value === "reuse_existing" && configuredReusableWorkspace?.mode === "isolated_workspace"
-                  ? "Existing isolated workspace"
+                  ? uiText("Existing isolated workspace")
                   : option.label}
               </option>
             ))}
@@ -486,7 +483,7 @@ export function IssueWorkspaceCard({
           {workspace && (
             <div className="text-(length:--text-micro) text-muted-foreground space-y-0.5 pt-1 border-t border-border/50">
               <div style={{ overflowWrap: "anywhere" }}>
-                Current:{" "}
+                {uiText("Current:")}{" "}
                 {currentWorkspaceLink ? (
                   <Link
                     to={currentWorkspaceLink}
@@ -514,7 +511,7 @@ export function IssueWorkspaceCard({
             className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
           >
             <FolderSearch className="h-3.5 w-3.5 shrink-0" />
-            Browse files…
+            {uiText("Browse files…")}
           </button>
           <button
             type="button"
@@ -522,7 +519,7 @@ export function IssueWorkspaceCard({
             className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
           >
             <FileSearch className="h-3.5 w-3.5 shrink-0" />
-            Open file by path…
+            {uiText("Open file by path…")}
           </button>
         </div>
       )}

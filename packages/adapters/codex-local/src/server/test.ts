@@ -20,7 +20,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { parseCodexJsonl } from "./parse.js";
+import { isCodexProviderQuotaError, parseCodexJsonl } from "./parse.js";
 import { SANDBOX_INSTALL_COMMAND } from "../index.js";
 import { codexHomeDir, readCodexAuthInfo } from "./quota.js";
 import { buildCodexExecArgs } from "./codex-args.js";
@@ -490,6 +490,14 @@ export async function testEnvironment(
               : {
                   hint: "Try the probe manually (`codex exec --json -` then prompt: Respond with hello) to inspect full output.",
                 }),
+          });
+        } else if (isCodexProviderQuotaError({ errorMessage: authEvidence })) {
+          checks.push({
+            code: "codex_hello_probe_usage_limited",
+            level: "error",
+            message: "This Codex subscription has reached its usage limit or model capacity.",
+            ...(detail ? { detail } : {}),
+            hint: "Wait until the provider's limit resets, or select another subscription or model with available capacity, then retry.",
           });
         } else if (CODEX_AUTH_REQUIRED_RE.test(authEvidence)) {
           checks.push({

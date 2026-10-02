@@ -1247,6 +1247,8 @@ export type {
   CostByAgentModel,
   CostWindowSpendRow,
   CostByProject,
+  CostByTeam,
+  CostByDepartment,
   FinanceEvent,
   FinanceSummary,
   FinanceByBiller,
@@ -2764,3 +2766,9 @@ export * from "./ai-connections.js";
 export * from "./types/email.js";
 export * from "./validators/email.js";
 export * from "./announcements.js";
+
+export { AGENT_TEMPLATES, DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, CUSTOM_AGENT_TEMPLATE, getAgentTemplate, updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema, agentTemplateSchema, agentTemplatePermissionsSchema } from "./agent-templates.js";
+export type { AgentTemplate, AgentTemplatePermissions, AgentTemplateRole, AgentTemplateMetadata } from "./agent-templates.js";
+export type { ProjectAgentMembership } from "./types/project.js";
+export { upsertProjectAgentMembershipSchema, type UpsertProjectAgentMembership } from "./validators/project.js";
+export { AGENT_TITLES, isStandardAgentTitle, type AgentTitle } from "./agent-titles.js";

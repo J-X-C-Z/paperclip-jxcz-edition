@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -203,9 +204,11 @@ export interface OrgChartProps {
   agents?: Agent[];
   /** Hides page-level actions and breadcrumb ownership. */
   embedded?: boolean;
+  /** Project group overlays supplied by a trusted host integration. */
+  orgGroups?: Array<{ id: string; name: string; agentIds: string[] }>;
 }
 
-export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, embedded = false }: OrgChartProps = {}) {
+export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, embedded = false, orgGroups = [] }: OrgChartProps = {}) {
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
@@ -245,6 +248,21 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   const layout = useMemo(() => layoutForest(orgTree ?? []), [orgTree]);
   const allNodes = useMemo(() => flattenLayout(layout), [layout]);
   const edges = useMemo(() => collectEdges(layout), [layout]);
+  const groupLayouts = useMemo(() => {
+    const nodesById = new Map(allNodes.map((node) => [node.id, node]));
+    return orgGroups.flatMap((group) => {
+      const members = group.agentIds.flatMap((id) => {
+        const node = nodesById.get(id);
+        return node ? [node] : [];
+      });
+      if (members.length === 0) return [];
+      const left = Math.min(...members.map((node) => node.x));
+      const top = Math.min(...members.map((node) => node.y));
+      const right = Math.max(...members.map((node) => node.x + CARD_W));
+      const bottom = Math.max(...members.map((node) => node.y + CARD_H));
+      return [{ ...group, left, top, width: right - left, height: bottom - top }];
+    });
+  }, [allNodes, orgGroups]);
 
   // Compute SVG bounds
   const bounds = useMemo(() => {
@@ -487,17 +505,13 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
         {showImport ? (
           <Link to="/company/import">
             <Button variant="outline" size="sm">
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-              Import organization
-            </Button>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />{uiText("Import organization")}</Button>
           </Link>
         ) : null}
         {showExport ? (
           <Link to="/company/export">
             <Button variant="outline" size="sm">
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              Export organization
-            </Button>
+              <Download className="mr-1.5 h-3.5 w-3.5" />{uiText("Export organization")}</Button>
           </Link>
         ) : null}
         </div>
@@ -534,8 +548,8 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                 });
               }
             }}
-            title="Zoom in"
-            aria-label="Zoom in"
+            title={uiText("Zoom in")}
+            aria-label={uiText("Zoom in")}
           >
             <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
@@ -550,16 +564,16 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                 });
               }
             }}
-            title="Zoom out"
-            aria-label="Zoom out"
+            title={uiText("Zoom out")}
+            aria-label={uiText("Zoom out")}
           >
             <Minus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
           <button
             className="flex size-9 items-center justify-center rounded border border-border bg-background text-(length:--text-nano) transition-colors hover:bg-accent sm:size-7"
             onClick={fitToScreen}
-            title="Fit to screen"
-            aria-label="Fit chart to screen"
+            title={uiText("Fit to screen")}
+            aria-label={uiText("Fit chart to screen")}
           >
             <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
@@ -603,6 +617,24 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
             transformOrigin: "0 0",
           }}
         >
+          {groupLayouts.map((group) => (
+            <div
+              key={group.id}
+              data-testid={`org-group-overlay-${group.id}`}
+              aria-label={`${group.name} group`}
+              className="pointer-events-none absolute rounded-md border border-dashed border-primary/60 bg-primary/5"
+              style={{
+                left: `calc(${group.left}px - var(--sz-8px))`,
+                top: `calc(${group.top}px - var(--sz-8px))`,
+                width: `calc(${group.width}px + var(--sz-8px) * 2)`,
+                height: `calc(${group.height}px + var(--sz-8px) * 2)`,
+              }}
+            >
+              <span className="absolute top-0 left-2 max-w-(--sz-240px) truncate rounded bg-background px-1.5 text-(length:--text-nano) font-medium text-primary">
+                {group.name}
+              </span>
+            </div>
+          ))}
           {allNodes.map((node) => {
             const agent = agentMap.get(node.id);
             const dotColor = statusDotColor[node.status] ?? defaultDotColor;

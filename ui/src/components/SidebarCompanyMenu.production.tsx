@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -407,9 +408,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
         className="ml-2 w-(--organization-popover-width) max-w-(--sz-calc-24) overflow-hidden rounded-xl border-border bg-popover p-0 shadow-(--shadow-profile-popover)"
       >
         <div className="flex h-(--organization-popover-header-height) items-center justify-between gap-2 px-3.5">
-          <DropdownMenuLabel className="p-0 text-(length:--text-compact) font-semibold text-foreground">
-            Organizations
-          </DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0 text-(length:--text-compact) font-semibold text-foreground"> {uiText("Organizations")} </DropdownMenuLabel>
           {/* Stack order is owned by cloud's own portfolio in v1, so the
               drag-to-reorder affordance stays self-hosted-only. */}
           {isCloud ? null : (
@@ -422,7 +421,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
               }}
               className="rounded px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              {isEditingOrder ? "Done" : "Edit"}
+              {isEditingOrder ? uiText("Done") : uiText("Edit")}
             </button>
           )}
         </div>
@@ -443,7 +442,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
                     ? "Loading organizations..."
                     : stacksQuery.isError
                       ? "Could not load organizations"
-                      : "No organizations"}
+                      : uiText("No organizations")}
                 </DropdownMenuItem>
               ) : null}
             </>
@@ -484,12 +483,10 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
                         void retryCompanies();
                       }}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Try again
-                    </DropdownMenuItem>
+                      <RefreshCw className="h-4 w-4 mr-2" /> {uiText("Try again")} </DropdownMenuItem>
                   </>
                 ) : (
-                  <DropdownMenuItem disabled>No companies</DropdownMenuItem>
+                  <DropdownMenuItem disabled>{uiText("No companies")}</DropdownMenuItem>
                 )
               ) : null}
             </>
@@ -507,7 +504,7 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
               <span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground">
                 <Plus className="size-4" />
               </span>
-              <span className="min-w-0 flex-1 truncate">Create organization</span>
+              <span className="min-w-0 flex-1 truncate">{uiText("Create organization")}</span>
             </DropdownMenuItem>
           )}
           {showInvitePeople ? (

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useMemo, useState } from "react";
 import {
   analyzeFrontmatterBlock,
@@ -199,15 +200,15 @@ function collectValidation(form: FormModel, isSkillFile: boolean): ValidationIss
   const issues: ValidationIssue[] = [];
   const name = form.name.trim();
   const description = form.description.trim();
-  if (isSkillFile && !name) issues.push({ field: "name", message: "SKILL.md needs a name." });
+  if (isSkillFile && !name) issues.push({ field: "name", message: uiText("SKILL.md needs a name.") });
   if (name && !SLUG_RE.test(name)) {
-    issues.push({ field: "name", message: "Use lowercase letters, numbers and hyphens." });
+    issues.push({ field: "name", message: uiText("Use lowercase letters, numbers and hyphens.") });
   }
   if (isSkillFile && !description) {
-    issues.push({ field: "description", message: "SKILL.md needs a description." });
+    issues.push({ field: "description", message: uiText("SKILL.md needs a description.") });
   }
   if (form.allowedToolsPresent && form.allowedTools === null) {
-    issues.push({ field: "allowed-tools", message: "Expected a list — edit in YAML." });
+    issues.push({ field: "allowed-tools", message: uiText("Expected a list — edit in YAML.") });
   }
   return issues;
 }
@@ -339,12 +340,12 @@ export function FrontmatterPanel({
             aria-controls="frontmatter-panel-body"
           >
             {chevron}
-            <span className="text-sm font-medium">Frontmatter</span>
+            <span className="text-sm font-medium">{uiText("Frontmatter")}</span>
             {!open && present ? (
               <span className="truncate text-xs text-muted-foreground">{summary}</span>
             ) : null}
             {!open && !present ? (
-              <span className="text-xs text-muted-foreground">None</span>
+              <span className="text-xs text-muted-foreground">{uiText("None")}</span>
             ) : null}
           </button>
 
@@ -356,7 +357,7 @@ export function FrontmatterPanel({
               <TabsList variant="line" className="h-7">
                 {canUseFields ? (
                   <TabsTrigger value="fields" className="px-2 py-0.5 text-xs">
-                    Fields
+                    {uiText("Fields")}
                   </TabsTrigger>
                 ) : (
                   <Tooltip>
@@ -368,7 +369,7 @@ export function FrontmatterPanel({
                           aria-disabled="true"
                           className="px-2 py-0.5 text-xs opacity-50"
                         >
-                          Fields
+                          {uiText("Fields")}
                         </TabsTrigger>
                       </span>
                     </TooltipTrigger>
@@ -511,13 +512,13 @@ function FieldsForm({
           <Label className="text-xs text-muted-foreground">allowed-tools</Label>
           {form.allowedTools === null ? (
             <p className="mt-1 text-xs text-amber-500">
-              {toolsWarning ?? "Expected a list — edit in YAML."}
+              {toolsWarning ?? uiText("Expected a list — edit in YAML.")}
             </p>
           ) : (
             <ChipInput
               values={form.allowedTools}
               readOnly={readOnly}
-              placeholder="Add a tool…"
+          placeholder={uiText("Add a tool…")}
               onChange={(next) => onCommit({ ...form, allowedTools: next })}
             />
           )}
@@ -528,7 +529,7 @@ function FieldsForm({
         <div>
           <Label className="text-xs text-muted-foreground">metadata</Label>
           {form.metadataComplex !== null ? (
-            <p className="mt-1 text-xs text-muted-foreground">Complex value — edit in YAML.</p>
+            <p className="mt-1 text-xs text-muted-foreground">{uiText("Complex value — edit in YAML.")}</p>
           ) : (
             <MetadataRows
               rows={form.metaRows}
@@ -560,7 +561,7 @@ function FieldsForm({
         ) : (
           <div key={row.id}>
             <Label className="text-xs text-muted-foreground">{row.key}</Label>
-            <p className="mt-1 text-xs text-muted-foreground">Complex value — edit in YAML.</p>
+            <p className="mt-1 text-xs text-muted-foreground">{uiText("Complex value — edit in YAML.")}</p>
           </div>
         ),
       )}
@@ -608,7 +609,7 @@ function MetadataRows({
             aria-label={`Value for ${row.key || `field ${index + 1}`}`}
             value={row.text}
             readOnly={readOnly}
-            placeholder="value"
+            placeholder={uiText("value")}
             onChange={(event) => update(index, { text: event.target.value })}
             className="h-8 flex-1 text-xs"
           />
@@ -686,7 +687,7 @@ function ChipInput({
             }
           }}
           onBlur={commit}
-          aria-label="Add tool"
+          aria-label={uiText("Add tool")}
           className="min-w-24 flex-1 bg-transparent text-xs outline-none"
         />
       ) : null}
@@ -712,7 +713,7 @@ function YamlEditor({
       {!canReturnToFields && !parseError ? (
         <div className="mb-1.5 flex items-start gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>Editing raw YAML to preserve formatting the form can't reconstruct.</span>
+          <span>{uiText("Editing raw YAML to preserve formatting the form can't reconstruct.")}</span>
         </div>
       ) : null}
       <Textarea
@@ -722,7 +723,7 @@ function YamlEditor({
         rows={Math.min(12, Math.max(3, value.split("\n").length))}
         onChange={(event) => onChange(event.target.value)}
         className="font-mono text-xs"
-        aria-label="Frontmatter YAML"
+          aria-label={uiText("Frontmatter YAML")}
       />
       <p className="mt-1 text-xs text-muted-foreground">
         Raw YAML is the source of truth in this mode.

@@ -20,6 +20,7 @@ The `codex_local` adapter runs OpenAI's Codex CLI locally. It supports session p
 |-------|------|----------|-------------|
 | `cwd` | string | Yes | Working directory for the agent process (absolute path; created automatically if missing when permissions allow) |
 | `model` | string | No | Model to use |
+| `engine` | string | No | Newly created company agents default to `cli`. Set `acp` explicitly to opt into ACP. Existing agents with an unset engine retain the adapter-level ACP default. |
 | `promptTemplate` | string | No | Prompt used for all runs |
 | `env` | object | No | Environment variables (supports secret refs) |
 | `timeoutSec` | number | No | Process timeout (0 = no timeout) |
@@ -160,3 +161,14 @@ The environment test checks:
 - Working directory is absolute and available (auto-created if missing and permitted)
 - Authentication signal (`OPENAI_API_KEY` presence)
 - A live hello probe (`codex exec --json -` with prompt `Respond with hello.`) to verify the CLI can actually run
+
+### Local subscription connection verification
+
+The separate local sign-in flow verifies its isolated `CODEX_HOME` through
+Codex app-server's `account/rateLimits/read`, using the CLI's authenticated
+transport. Browser-only WHAM usage requests are not required for connecting;
+network filtering or browser challenges on that endpoint must not invalidate
+an otherwise working Codex login. RPC error replies fail verification, and
+credentials are reread after the CLI probe so any rotated tokens are saved.
+The probe uses `read-only` sandbox and `never` approval settings, sends no turn
+or tool requests, and never falls back to the operator's ambient login.

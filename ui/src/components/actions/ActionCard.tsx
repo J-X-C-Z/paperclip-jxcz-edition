@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ReactNode } from "react";
 import { Clock, Pencil, ShieldCheck } from "lucide-react";
 import type { ToolRiskLevel } from "@paperclipai/shared";
@@ -133,10 +134,10 @@ function initials(name: string): string {
 function bindingRows(binding: ActionCardBinding, isStale: boolean): BindingRow[] {
   const catalogValue = isStale && binding.previousCatalogSha256 ? (
     <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className="text-muted-foreground line-through decoration-amber-500" title="Previous catalog hash">
+      <span className="text-muted-foreground line-through decoration-amber-500" title={uiText("Previous catalog hash")}>
         {shortSha(binding.previousCatalogSha256)}
       </span>
-      <span className="text-amber-600 dark:text-amber-400" title="Current catalog hash">
+      <span className="text-amber-600 dark:text-amber-400" title={uiText("Current catalog hash")}>
         {shortSha(binding.catalogSha256)}
       </span>
     </span>
@@ -146,7 +147,7 @@ function bindingRows(binding: ActionCardBinding, isStale: boolean): BindingRow[]
 
   return [
     {
-      label: "Application",
+      label: uiText("Application"),
       value: (
         <span>
           {binding.application}
@@ -154,15 +155,15 @@ function bindingRows(binding: ActionCardBinding, isStale: boolean): BindingRow[]
         </span>
       ),
     },
-    { label: "Connection", value: binding.connection, mono: true },
-    { label: "Catalog", value: catalogValue, mono: !isStale },
+    { label: uiText("Connection"), value: binding.connection, mono: true },
+    { label: uiText("Catalog"), value: catalogValue, mono: !isStale },
     {
-      label: "Payload",
+      label: uiText("Payload"),
       value: (
         <span className="inline-flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>{shortSha(binding.payloadSha256)}</span>
-          <span className="font-sans text-(length:--text-micro) uppercase tracking-normal text-muted-foreground">signed</span>
+          <span className="font-sans text-(length:--text-micro) uppercase tracking-normal text-muted-foreground">{uiText("signed")}</span>
         </span>
       ),
       mono: true,
@@ -202,14 +203,10 @@ export function ActionCard({
       disabled={isStale}
       className={mobile ? "w-full" : undefined}
       title={isStale ? "Re-issue the request before approving — the catalog hash changed." : undefined}
-    >
-      Approve
-    </Button>
+    > {uiText("Approve")} </Button>
   );
   const denyButton = (
-    <Button size="sm" variant="outline" onClick={onDeny} className={mobile ? "w-full" : undefined}>
-      Deny
-    </Button>
+    <Button size="sm" variant="outline" onClick={onDeny} className={mobile ? "w-full" : undefined}> {uiText("Deny")} </Button>
   );
   const editButton = (
     <Button size="sm" variant="outline" onClick={onEditResign} className={mobile ? "w-full" : undefined}>
@@ -236,7 +233,7 @@ export function ActionCard({
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-foreground">
-              <span className="font-medium">{agentName}</span> requested approval to call
+              <span className="font-medium">{agentName}</span> {uiText("requested approval to call")}
             </p>
             <p className="mt-0.5 font-mono text-xs text-muted-foreground break-all">{toolName}</p>
           </div>
@@ -256,8 +253,8 @@ export function ActionCard({
         {isStale ? (
           <EnforcementBanner
             tone="warning"
-            title="Catalog changed since this request was signed."
-            body="The application's tool catalog hash no longer matches the one this approval was issued against. Approval is disabled — the agent must edit & re-sign to request again."
+            title={uiText("Catalog changed since this request was signed.")}
+            body={uiText("The application's tool catalog hash no longer matches the one this approval was issued against. Approval is disabled — the agent must edit & re-sign to request again.")}
           />
         ) : null}
 
@@ -266,7 +263,7 @@ export function ActionCard({
 
         {/* JSON input */}
         <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">Input</p>
+          <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">{uiText("Input")}</p>
           <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 p-3 font-mono text-xs leading-relaxed text-foreground">
             {json}
           </pre>
@@ -274,13 +271,13 @@ export function ActionCard({
 
         {/* Why I'm asking */}
         <div className="space-y-1">
-          <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">Why I&apos;m asking</p>
+          <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">{uiText("Why I'm asking")}</p>
           <p className="text-sm text-muted-foreground">
             {reason}
             {policyNumber != null ? (
               <>
                 {" "}
-                <span className="font-medium text-foreground">Policy #{policyNumber}</span> requires approval here.
+                {uiText("Policy #{number} requires approval here.", { number: policyNumber })}
               </>
             ) : null}
           </p>

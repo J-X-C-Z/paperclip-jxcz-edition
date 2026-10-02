@@ -1,0 +1,21 @@
+部门插件单元测试与类型检查记录（2026-10-01）
+
+本记录根据本轮实际执行的工具结果整理；原始终端输出未单独保存为文件。
+生成本记录时没有重复运行测试，也没有操作服务。
+
+工作目录：/Users/jxcz/dev/paperclip-plugins/paperclip-improvement-teams
+实际执行命令：
+node node_modules/vitest/vitest.mjs run --config vitest.config.ts
+node node_modules/typescript/bin/tsc --noEmit
+
+终端实际测试结果：
+RUN v3.2.7 /Users/jxcz/dev/paperclip-plugins/paperclip-improvement-teams
+✓ tests/project-members.spec.ts (4 tests) 7ms
+✓ tests/plugin.spec.ts (29 tests) 11ms
+
+Test Files 2 passed (2)
+Tests 33 passed (33)
+Start at 14:35:46
+Duration 474ms (transform 67ms, setup 0ms, collect 281ms, tests 18ms, environment 0ms, prepare 87ms)
+
+类型检查没有诊断输出；包含单测和类型检查的该次进程 exit_code=0。

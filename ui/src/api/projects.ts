@@ -1,5 +1,6 @@
 import type {
   Project,
+  ProjectAgentMembership,
   ProjectRepositoryOptions,
   ProjectWorkspace,
   WorkspaceOperation,
@@ -19,6 +20,17 @@ function projectPath(id: string, companyId?: string, suffix = "") {
 }
 
 export const projectsApi = {
+  listAgentMemberships: (projectId: string, companyId?: string) =>
+    api.get<ProjectAgentMembership[]>(projectPath(projectId, companyId, "/agent-memberships")),
+  upsertAgentMembership: (
+    projectId: string,
+    data: { agentId: string; projectRole?: string | null; isLead?: boolean; sortOrder?: number | null },
+    companyId?: string,
+  ) => api.put<ProjectAgentMembership>(projectPath(projectId, companyId, "/agent-memberships"), data),
+  removeAgentMembership: (projectId: string, agentId: string, companyId?: string) =>
+    api.delete<{ removed: boolean }>(
+      projectPath(projectId, companyId, `/agent-memberships/${encodeURIComponent(agentId)}`),
+    ),
   repositoryOptions: (companyId: string) => api.get<ProjectRepositoryOptions>(`/companies/${companyId}/project-repositories`),
   setRepositories: (id: string, repositoryIds: string[]) => api.put<Project>(projectPath(id, undefined, "/repositories"), { repositoryIds }),
   list: (companyId: string, opts: { includeArchived?: boolean } = {}) => {

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Paperclip, Radio } from "lucide-react";
@@ -49,63 +50,63 @@ type PublicationFeedback = {
 
 const publicationFeedback: Record<ChatPublicationState, PublicationFeedback> = {
   awaiting_consent: {
-    title: "Waiting for file consent",
-    body: "The recipient must accept the file card in Microsoft Teams. The file is not delivered yet; this send identity is kept while Paperclip waits.",
+    title: uiText("Waiting for file consent"),
+    body: uiText("The recipient must accept the file card in Microsoft Teams. The file is not delivered yet; this send identity is kept while Paperclip waits."),
     tone: "info",
   },
   published: {
-    title: "Sent to channel",
-    body: "The board update was published to the connected conversation.",
+    title: uiText("Sent to channel"),
+    body: uiText("The board update was published to the connected conversation."),
     tone: "success",
   },
   pending: {
-    title: "Queued for channel",
-    body: "Delivery is still pending. Your draft is kept until Paperclip confirms publication.",
+    title: uiText("Queued for channel"),
+    body: uiText("Delivery is still pending. Your draft is kept until Paperclip confirms publication."),
     tone: "info",
   },
   streaming: {
-    title: "Publishing to channel",
-    body: "Delivery is still in progress. Your draft is kept until Paperclip confirms publication.",
+    title: uiText("Publishing to channel"),
+    body: uiText("Delivery is still in progress. Your draft is kept until Paperclip confirms publication."),
     tone: "info",
   },
   retry: {
-    title: "Delivery retry scheduled",
-    body: "Paperclip will retry this publication. Your draft and retry identity are kept.",
+    title: uiText("Delivery retry scheduled"),
+    body: uiText("Paperclip will retry this publication. Your draft and retry identity are kept."),
     tone: "warn",
   },
   delivery_unknown: {
-    title: "Delivery not confirmed",
-    body: "The provider may have accepted this update. Resolve it in Activity before trying again to avoid a duplicate.",
+    title: uiText("Delivery not confirmed"),
+    body: uiText("The provider may have accepted this update. Resolve it in Activity before trying again to avoid a duplicate."),
     tone: "warn",
   },
   failed: {
-    title: "Channel delivery failed",
-    body: "Your draft is kept. Open Activity to retry this same publication safely.",
+    title: uiText("Channel delivery failed"),
+    body: uiText("Your draft is kept. Open Activity to retry this same publication safely."),
     tone: "error",
   },
   cancelled: {
-    title: "Channel delivery cancelled",
-    body: "Your draft is kept. Some parts may already have been published; check Activity before starting a new send.",
+    title: uiText("Channel delivery cancelled"),
+    body: uiText("Your draft is kept. Some parts may already have been published; check Activity before starting a new send."),
     tone: "info",
   },
 };
 
 const filePhaseLabels: Record<ChatFileTransferPhase, string> = {
-  consent_pending: "Consent card queued",
-  consent_sending: "Sending consent card",
-  consent_unknown: "Consent card delivery not confirmed",
-  awaiting_consent: "Awaiting consent",
-  upload_pending: "Upload queued",
-  uploading: "Uploading file",
-  upload_unknown: "File upload not confirmed",
-  file_info_pending: "File notification queued",
-  file_info_sending: "Sending file notification",
-  file_info_unknown: "File notification not confirmed",
-  delivered: "Delivered",
-  declined: "Declined",
-  expired: "Consent expired",
-  cancelled: "Cancelled; remote bytes may remain",
-  conflict: "File delivery needs review",
+  consent_pending: uiText("Consent card queued"),
+  consent_sending: uiText("Sending consent card"),
+  consent_unknown: uiText("Consent card delivery not confirmed"),
+  awaiting_consent: uiText("Awaiting consent"),
+  upload_pending: uiText("Upload queued"),
+  uploading: uiText("Uploading file"),
+  upload_unknown: uiText("File upload not confirmed"),
+  file_info_pending: uiText("File notification queued"),
+  file_info_sending: uiText("Sending file notification"),
+  file_info_unknown: uiText("File notification not confirmed"),
+  delivered: uiText("Delivered"),
+  declined: uiText("Declined"),
+  expired: uiText("Consent expired"),
+  cancelled: uiText("Cancelled; remote bytes may remain"),
+  conflict: uiText("File delivery needs review"),
 };
 
 export function useIssueChatBinding(companyId: string, issueId: string) {
@@ -214,7 +215,7 @@ function ConnectedTaskComposer({
       setStorageError(null);
     } catch {
       setStorageError(
-        "Saved delivery identity could not be read. Check Activity and restore browser storage before starting another send.",
+        uiText("Saved delivery identity could not be read. Check Activity and restore browser storage before starting another send."),
       );
       setComposing(true);
     }
@@ -335,7 +336,7 @@ function ConnectedTaskComposer({
       pushToast({
         ...feedback,
         action: {
-          label: "View activity",
+          label: uiText("View activity"),
           href: `/apps/chat/${binding!.endpointId}/activity`,
         },
       });
@@ -349,7 +350,7 @@ function ConnectedTaskComposer({
           writeBoardSendDraft(storageKey, saved);
         } catch {
           setStorageError(
-            "The rejected send could not be saved. Restore browser storage, then retry this same request to recover its receipt.",
+            uiText("The rejected send could not be saved. Restore browser storage, then retry this same request to recover its receipt."),
           );
           return;
         }
@@ -358,18 +359,18 @@ function ConnectedTaskComposer({
         setUnconfirmedRequest(false);
         invalidateTask();
         pushToast({
-          title: "Update was not sent",
-          body: "A selected file already belongs to another comment. Edit the rejected send to correct the selection.",
+          title: uiText("Update was not sent"),
+          body: uiText("A selected file already belongs to another comment. Edit the rejected send to correct the selection."),
           tone: "error",
         });
         return;
       }
       pushToast({
-        title: "Couldn't confirm channel delivery",
+        title: uiText("Couldn't confirm channel delivery"),
         body:
           error instanceof Error
             ? `${error.message} Your draft is kept; retrying here reuses the same request identity.`
-            : "Your draft is kept; retrying here reuses the same request identity.",
+            : uiText("Your draft is kept; retrying here reuses the same request identity."),
         tone: "error",
       });
     },
@@ -403,7 +404,7 @@ function ConnectedTaskComposer({
     } catch (error) {
       if (mounted.current) {
         setUploadError(
-          `${error instanceof Error ? error.message : "Upload could not be confirmed."} No channel message was sent. Check task files before retrying the upload.`,
+          `${error instanceof Error ? error.message : uiText("Upload could not be confirmed.")} No channel message was sent. Check task files before retrying the upload.`,
         );
       }
     } finally {
@@ -449,7 +450,7 @@ function ConnectedTaskComposer({
             ?.name ??
           taskAttachments.find((attachment) => attachment.id === id)
             ?.originalFilename ??
-          "Selected task file (details unavailable)",
+          uiText("Selected task file (details unavailable)"),
       }))
     : taskAttachments.filter(
         (attachment) =>
@@ -466,15 +467,15 @@ function ConnectedTaskComposer({
     canDismissBoardSendBatch(batch) && batch!.published < batch!.total;
   const currentFeedback = mixedTerminal
     ? {
-        title: "Delivery settled with mixed outcomes",
-        body: "Not every part was confirmed delivered. Review the outcomes below; dismissing this receipt does not resend anything.",
+        title: uiText("Delivery settled with mixed outcomes"),
+        body: uiText("Not every part was confirmed delivered. Review the outcomes below; dismissing this receipt does not resend anything."),
         tone: "info" as const,
       }
     : currentPublication?.state === "cancelled" &&
         (batch?.awaitingConsent ?? 0) > 0
       ? {
-          title: "Waiting for remaining file consent",
-          body: "Some parts have settled. The remaining file cards still need the recipient's response; this send stays locked until the whole batch is resolved.",
+          title: uiText("Waiting for remaining file consent"),
+          body: uiText("Some parts have settled. The remaining file cards still need the recipient's response; this send stays locked until the whole batch is resolved."),
           tone: "info" as const,
         }
       : currentPublication
@@ -483,7 +484,7 @@ function ConnectedTaskComposer({
   const activityPath = `/apps/chat/${binding.endpointId}/activity`;
   return (
     <section
-      aria-label="External conversation"
+      aria-label={uiText("External conversation")}
       className="space-y-3 rounded-lg border border-border bg-muted/40 p-3 text-sm"
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -491,7 +492,7 @@ function ConnectedTaskComposer({
           <Radio className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <p className="font-medium">
-              Connected to {providerNames[binding.provider]}
+              {uiText("Connected to {provider}", { provider: providerNames[binding.provider] })}
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {binding.externalLabel} · Agent assignment is fixed for this
@@ -512,11 +513,11 @@ function ConnectedTaskComposer({
             variant="outline"
             onClick={() => setComposing((value) => !value)}
           >
-            Send to channel
+            {uiText("Send to channel")}
           </Button>
           <Button asChild size="sm" variant="ghost">
             <Link to={`/apps/chat/${binding.endpointId}/conversations`}>
-              Connection
+              {uiText("Connection")}
             </Link>
           </Button>
         </div>
@@ -545,7 +546,7 @@ function ConnectedTaskComposer({
               idempotencyKey.current = null;
               publish.reset();
             }}
-            placeholder="Write only what should be visible in the provider conversation."
+            placeholder={uiText("Write only what should be visible in the provider conversation.")}
           />
           {selectedAttachmentIds.length > 0 && !body.trim() && (
             <p className="text-xs text-muted-foreground">
@@ -557,7 +558,7 @@ function ConnectedTaskComposer({
               ref={fileInput}
               type="file"
               className="hidden"
-              aria-label="Attach file to channel update"
+              aria-label={uiText("Attach file to channel update")}
               disabled={uploadDisabled}
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -573,7 +574,7 @@ function ConnectedTaskComposer({
               onClick={() => fileInput.current?.click()}
             >
               <Paperclip />
-              {uploading ? "Uploading…" : "Attach file"}
+              {uploading ? "Uploading…" : uiText("Attach file")}
             </Button>
             <p className="text-xs text-muted-foreground">
               Files stay on this task until you send them to the channel.
@@ -605,23 +606,23 @@ function ConnectedTaskComposer({
             >
               <legend className="px-1 text-xs font-medium">
                 {showingRetainedFiles
-                  ? "Files in this send"
-                  : "Include task files"}
+                  ? uiText("Files in this send")
+                  : uiText("Include task files")}
               </legend>
               <p className="text-xs text-muted-foreground">
                 {binding.provider === "github"
-                  ? "GitHub Apps cannot upload file bytes in comments. Checked files stay on the Paperclip task; GitHub receives an authenticated task link when this Board has a public URL, or a private-task notice otherwise."
+                  ? uiText("GitHub Apps cannot upload file bytes in comments. Checked files stay on the Paperclip task; GitHub receives an authenticated task link when this Board has a public URL, or a private-task notice otherwise.")
                   : binding.provider === "microsoft-teams" &&
                       !showingRetainedFiles
-                    ? "In personal Teams chats, recipients accept each file before upload. Channels and group chats receive supported images directly; other files stay on the task, with a task link or private-task notice."
+                    ? uiText("In personal Teams chats, recipients accept each file before upload. Channels and group chats receive supported images directly; other files stay on the task, with a task link or private-task notice.")
                     : showingRetainedFiles
-                      ? "These are the files selected for this send. Selection is locked until delivery is resolved."
-                      : "Only checked files will be published to the external conversation."}
+                      ? uiText("These are the files selected for this send. Selection is locked until delivery is resolved.")
+                      : uiText("Only checked files will be published to the external conversation.")}
               </p>
               <div className="space-y-2">
                 {visibleAttachments.map((attachment) => {
                   const label =
-                    attachment.originalFilename ?? "Unnamed attachment";
+                    attachment.originalFilename ?? uiText("Unnamed attachment");
                   return (
                     <label
                       className="flex items-center gap-2 text-xs"
@@ -658,7 +659,7 @@ function ConnectedTaskComposer({
               role="alert"
               className="space-y-1 rounded-md border border-border bg-background p-3 text-xs"
             >
-              <p className="font-medium">Update was not sent</p>
+              <p className="font-medium">{uiText("Update was not sent")}</p>
               <p className="text-muted-foreground">
                 A selected file already belongs to another comment. This request
                 was rejected before any channel message was queued. Your exact
@@ -674,7 +675,7 @@ function ConnectedTaskComposer({
                     clearBoardSendDraft(storageKey);
                   } catch {
                     setStorageError(
-                      "Saved rejection could not be cleared. Restore browser storage before editing this send.",
+                      uiText("Saved rejection could not be cleared. Restore browser storage before editing this send."),
                     );
                     return;
                   }
@@ -697,7 +698,7 @@ function ConnectedTaskComposer({
                   publish.reset();
                 }}
               >
-                Edit rejected send
+                {uiText("Edit rejected send")}
               </Button>
             </div>
           )}
@@ -709,7 +710,7 @@ function ConnectedTaskComposer({
                 role="alert"
                 className="space-y-1 rounded-md border border-border bg-background p-3 text-xs"
               >
-                <p className="font-medium">Delivery result not confirmed</p>
+                <p className="font-medium">{uiText("Delivery result not confirmed")}</p>
                 <p className="text-muted-foreground">
                   Your exact draft and request identity are kept. Retry safely
                   to learn the authoritative publication state without creating
@@ -760,7 +761,7 @@ function ConnectedTaskComposer({
               {batch?.parts?.some((part) => part.fileTransfer) && (
                 <ul
                   className="space-y-1 text-muted-foreground"
-                  aria-label="File delivery outcomes"
+                  aria-label={uiText("File delivery outcomes")}
                 >
                   {batch.parts
                     .filter((part) => part.fileTransfer)
@@ -780,7 +781,7 @@ function ConnectedTaskComposer({
               )}
               {currentPublication.redactedError && (
                 <p className="text-muted-foreground">
-                  Provider detail: {currentPublication.redactedError}
+                  {uiText("Provider detail: {error}", { error: currentPublication.redactedError })}
                 </p>
               )}
               <Link
@@ -852,18 +853,18 @@ function ConnectedTaskComposer({
                     id,
                     name:
                       taskAttachments.find((attachment) => attachment.id === id)
-                        ?.originalFilename ?? "Unnamed attachment",
+                        ?.originalFilename ?? uiText("Unnamed attachment"),
                   })),
                   body: body.trim(),
                   idempotencyKey: idempotencyKey.current,
                   publication: null,
                 };
                 try {
-                  if (!storageKey) throw new Error("Missing delivery scope");
+                  if (!storageKey) throw new Error(uiText("Missing delivery scope"));
                   writeBoardSendDraft(storageKey, input);
                 } catch {
                   setStorageError(
-                    "Browser storage could not preserve this delivery identity. No update was sent. Restore browser storage, then reload to try again.",
+                    uiText("Browser storage could not preserve this delivery identity. No update was sent. Restore browser storage, then reload to try again."),
                   );
                   return;
                 }
@@ -877,10 +878,10 @@ function ConnectedTaskComposer({
               }}
             >
               {publish.isPending
-                ? "Sending…"
+                ? uiText("Sending…")
                 : !rejection && (publish.isError || unconfirmedRequest)
-                  ? "Retry safely"
-                  : "Send to channel"}
+                  ? uiText("Retry safely")
+                  : uiText("Send to channel")}
             </Button>
           </div>
         </div>

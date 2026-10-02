@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { groupWarningsByStage, LOW_TRUST_REVIEW_PRESET } from "@paperclipai/shared";
@@ -207,25 +208,25 @@ export function buildBatchPayload(rows: DraftRow[], fields: PipelineIntakeField[
 export function plainBatchError(result: Extract<PipelineBatchIngestResult, { ok: false }>) {
   const details = result.error?.details ?? {};
   if (details.code === "required_field" && typeof details.label === "string") {
-    return `${details.label} is required.`;
+    return uiText("{value0} is required.", { value0: details.label });
   }
   if (details.code === "invalid_select_value" && typeof details.label === "string") {
-    return `${details.label} needs one of the available choices.`;
+    return uiText("{value0} needs one of the available choices.", { value0: details.label });
   }
   if (details.code === "duplicate_batch_key") {
-    return "This item duplicates another row.";
+    return uiText("This item duplicates another row.");
   }
   if (details.code === "blocker_cycle") {
-    return "This item waits on another row that also waits on it.";
+    return uiText("This item waits on another row that also waits on it.");
   }
   if (typeof result.error?.message === "string" && result.error.message.trim()) {
     return result.error.message.replace(/^Pipeline\s+/i, "");
   }
-  return "This item needs attention before it can be submitted.";
+  return uiText("This item needs attention before it can be submitted.");
 }
 
 function itemCountLabel(count: number) {
-  return `${count} ${count === 1 ? "item" : "items"}`;
+  return uiText("{value0} {value1}", { value0: count, value1: uiText(count === 1 ? "item" : "items") });
 }
 
 function currentStageAutomation(stage: PipelineStage) {
@@ -289,29 +290,29 @@ function retryCleanupItems(plan: PipelineAutomationRetryPlan): Array<{
   return [
     {
       id: "retireDirectChildren",
-      label: "Retire direct child items",
-      description: "Hide child outputs from normal pipeline boards and parent rollups.",
+      label: uiText("Retire direct child items"),
+      description: uiText("Hide child outputs from normal pipeline boards and parent rollups."),
       count: plan.effectCounts.directChildren,
       disabled: plan.effectCounts.directChildren === 0,
     },
     {
       id: "retireDescendants",
-      label: "Retire descendants",
-      description: "Hide downstream output items under those children.",
+      label: uiText("Retire descendants"),
+      description: uiText("Hide downstream output items under those children."),
       count: plan.effectCounts.descendants,
       disabled: plan.effectCounts.descendants === 0,
     },
     {
       id: "cancelLinkedAutomationIssues",
-      label: "Cancel linked automation tasks",
-      description: "Cancel unfinished automation tasks superseded by the fresh retry.",
+      label: uiText("Cancel linked automation tasks"),
+      description: uiText("Cancel unfinished automation tasks superseded by the fresh retry."),
       count: plan.effectCounts.linkedAutomationIssues,
       disabled: plan.effectCounts.linkedAutomationIssues === 0,
     },
     {
       id: "keepAuditHistory",
-      label: "Keep audit trail visible in item history",
-      description: "Record retry and retired outputs as history instead of deleting records.",
+      label: uiText("Keep audit trail visible in item history"),
+      description: uiText("Record retry and retired outputs as history instead of deleting records."),
       required: true,
       disabled: true,
     },
@@ -337,9 +338,9 @@ function retryCleanupFromIds(ids: Set<string>): PipelineAutomationRetryCleanupOp
 function retryPrimaryActionLabel(plan: PipelineAutomationRetryPlan) {
   const retiredOutputCount = plan.effectCounts.directChildren + plan.effectCounts.descendants;
   if (retiredOutputCount > 0 && (plan.defaultCleanup.retireDirectChildren || plan.defaultCleanup.retireDescendants)) {
-    return `Retry and retire ${formatNumber(retiredOutputCount)} ${retiredOutputCount === 1 ? "item" : "items"}`;
+    return uiText("Retry and retire {value0} {value1}", { value0: formatNumber(retiredOutputCount), value1: uiText(retiredOutputCount === 1 ? "item" : "items") });
   }
-  return plan.scope === "previous_stage" ? "Retry previous step" : "Re-run this step";
+  return uiText(plan.scope === "previous_stage" ? "Retry previous step" : "Re-run this step");
 }
 
 export function Pipelines() {
@@ -419,7 +420,7 @@ function descendantActiveWorkCount(value: { descendantActiveWorkCount?: number |
 }
 
 function formatLiveDownstream(count: number) {
-  return `${formatNumber(count)} live downstream`;
+  return uiText("{value0} live downstream", { value0: formatNumber(count) });
 }
 
 function pipelineActivityTime(pipeline: PipelineListItem) {
@@ -430,11 +431,11 @@ type PipelineSortField = "name" | "activity" | "review" | "inMotion" | "openItem
 type PipelineSortDir = "asc" | "desc";
 
 const PIPELINE_SORT_OPTIONS: ReadonlyArray<readonly [PipelineSortField, string]> = [
-  ["name", "Name"],
-  ["activity", "Last activity"],
-  ["review", "Most to review"],
-  ["inMotion", "Most in motion"],
-  ["openItems", "Most open items"],
+  ["name", uiText("Name")],
+  ["activity", uiText("Last activity")],
+  ["review", uiText("Most to review")],
+  ["inMotion", uiText("Most in motion")],
+  ["openItems", uiText("Most open items")],
 ];
 
 function comparePipelinesBySort(field: PipelineSortField, dir: PipelineSortDir) {
@@ -563,19 +564,19 @@ export function buildPipelineTableRows(
 }
 
 function formatOpenItems(count: number) {
-  return `${formatNumber(count)} open`;
+  return uiText("{value0} open", { value0: formatNumber(count) });
 }
 
 function formatPipelineActivity(value: string | Date | null) {
-  if (!value) return "No activity";
+  if (!value) return uiText("No activity");
   const then = new Date(value).getTime();
-  if (!Number.isFinite(then)) return "No activity";
+  if (!Number.isFinite(then)) return uiText("No activity");
   const diffSeconds = Math.max(0, Math.round((Date.now() - then) / 1000));
-  if (diffSeconds < 60) return "just now";
+  if (diffSeconds < 60) return uiText("just now");
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+  if (diffMinutes < 60) return uiText("{value0} min ago", { value0: diffMinutes });
   const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return diffHours === 1 ? "1 hr ago" : `${diffHours} hr ago`;
+  if (diffHours < 24) return diffHours === 1 ? uiText("1 hr ago") : uiText("{value0} hr ago", { value0: diffHours });
   const diffDays = Math.round(diffHours / 24);
   if (diffDays === 1) return "yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
@@ -595,7 +596,7 @@ function PipelineStatusChip({ archivedAt }: { archivedAt: Date | string | null }
           : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300",
       )}
     >
-      {paused ? "Paused" : "Active"}
+      {paused ? uiText("Paused") : uiText("Active")}
     </Badge>
   );
 }
@@ -661,12 +662,12 @@ export function PipelinesIndexTable({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 border-y border-border py-4 lg:flex-row lg:items-center lg:justify-between">
         <label className="relative block w-full max-w-md">
-          <span className="sr-only">Search pipelines</span>
+          <span className="sr-only">{uiText("Search pipelines")}</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search pipelines"
+            placeholder={uiText("Search pipelines")}
             className="h-10 pl-9"
           />
         </label>
@@ -682,7 +683,7 @@ export function PipelinesIndexTable({
               )}
               disabled={!connectionsAvailable}
               onClick={() => onViewModeChange("nested")}
-              title="Nested view"
+              title={uiText("Nested view")}
             >
               <ListTree className="h-3.5 w-3.5" />
             </button>
@@ -695,7 +696,7 @@ export function PipelinesIndexTable({
                   : "text-muted-foreground hover:text-foreground",
               )}
               onClick={() => onViewModeChange("flat")}
-              title="Flat list"
+              title={uiText("Flat list")}
             >
               <List className="h-3.5 w-3.5" />
             </button>
@@ -703,7 +704,7 @@ export function PipelinesIndexTable({
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Sort">
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title={uiText("Sort")}>
                 <ArrowUpDown className="h-3.5 w-3.5" />
               </Button>
             </PopoverTrigger>
@@ -732,17 +733,17 @@ export function PipelinesIndexTable({
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState icon={Hexagon} message="No pipelines match your search." />
+        <EmptyState icon={Hexagon} message={uiText("No pipelines match your search.")} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-(--sz-780px) border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-(length:--text-micro) font-semibold uppercase tracking-widest text-muted-foreground">
-                <th className="py-2 pl-3 pr-4">Name</th>
-                <th className="px-4 py-2">Attention</th>
-                <th className="px-4 py-2">Open items</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Last activity</th>
+                <th className="py-2 pl-3 pr-4">{uiText("Name")}</th>
+                <th className="px-4 py-2">{uiText("Attention")}</th>
+                <th className="px-4 py-2">{uiText("Open items")}</th>
+                <th className="px-4 py-2">{uiText("Status")}</th>
+                <th className="px-4 py-2">{uiText("Last activity")}</th>
               </tr>
             </thead>
             <tbody>
@@ -774,7 +775,7 @@ export function PipelinesIndexTable({
                             {row.pipeline.name}
                           </Link>
                           {row.parentPipelineName ? (
-                            <span className="ml-2 text-muted-foreground">under {row.parentPipelineName}</span>
+                            <span className="ml-2 text-muted-foreground">{uiText("under {value0}", { value0: row.parentPipelineName })}</span>
                           ) : row.pipeline.description ? (
                             <span className="ml-2 text-muted-foreground">- {row.pipeline.description}</span>
                           ) : null}
@@ -810,8 +811,7 @@ export function PipelinesIndexTable({
               })}
             </tbody>
           </table>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Showing {formatNumber(rows.length)} of {formatNumber(filteredPipelines.length)}.
+          <p className="mt-4 text-sm text-muted-foreground"> {uiText("Showing")} {formatNumber(rows.length)} {uiText("of")} {formatNumber(filteredPipelines.length)}.
           </p>
         </div>
       )}
@@ -854,16 +854,16 @@ function NewPipelineDialog({
       <DialogContent>
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>New pipeline</DialogTitle>
-            <DialogDescription>Name the pipeline and add a short description.</DialogDescription>
+            <DialogTitle>{uiText("New pipeline")}</DialogTitle>
+            <DialogDescription>{uiText("Name the pipeline and add a short description.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <label className="block space-y-1.5 text-sm font-medium">
-              <span>Name</span>
+              <span>{uiText("Name")}</span>
               <Input value={name} onChange={(event) => setName(event.target.value)} autoFocus />
             </label>
             <label className="block space-y-1.5 text-sm font-medium">
-              <span>Description</span>
+              <span>{uiText("Description")}</span>
               <Textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -873,11 +873,9 @@ function NewPipelineDialog({
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-              Cancel
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}> {uiText("Cancel")} </Button>
             <Button type="submit" disabled={pending || !name.trim()}>
-              {pending ? "Creating..." : "Create pipeline"}
+              {pending ? uiText("Creating...") : "Create pipeline"}
             </Button>
           </DialogFooter>
         </form>
@@ -905,7 +903,7 @@ function PipelinesIndex() {
   const [viewMode, setViewMode] = useState<PipelineViewMode>("nested");
   const [newPipelineOpen, setNewPipelineOpen] = useState(false);
 
-  useEffect(() => setBreadcrumbs([{ label: "Pipelines" }]), [setBreadcrumbs]);
+  useEffect(() => setBreadcrumbs([{ label: uiText("Pipelines") }]), [setBreadcrumbs]);
 
   const pipelinesQuery = useQuery({
     queryKey: selectedCompanyId ? queryKeys.pipelines.list(selectedCompanyId) : ["pipelines", "missing-company"],
@@ -941,7 +939,7 @@ function PipelinesIndex() {
   });
 
   if (!selectedCompanyId) {
-    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">Select an organization to view pipelines.</div>;
+    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">{uiText("Select an organization to view pipelines.")}</div>;
   }
   if (pipelinesQuery.isLoading) return <PageSkeleton />;
 
@@ -952,27 +950,27 @@ function PipelinesIndex() {
     <div className="w-full max-w-6xl px-6 py-8">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Work</p>
-          <h1 className="text-2xl font-semibold text-foreground">Pipelines</h1>
+          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Work")}</p>
+          <h1 className="text-2xl font-semibold text-foreground">{uiText("Pipelines")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatNumber(pipelines.length)} pipeline{pipelines.length === 1 ? "" : "s"}. Connected ones are grouped from upstream work into downstream work.
+            {uiText("{value0} {value1}. Connected ones are grouped from upstream work into downstream work.", { value0: formatNumber(pipelines.length), value1: uiText(pipelines.length === 1 ? "pipeline" : "pipelines") })}
           </p>
         </div>
         <Button onClick={() => setNewPipelineOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          New pipeline
+          {uiText("New pipeline")}
         </Button>
       </div>
 
       {pipelinesQuery.error ? (
-        <p className="mb-4 text-sm text-destructive">Could not load pipelines.</p>
+        <p className="mb-4 text-sm text-destructive">{uiText("Could not load pipelines.")}</p>
       ) : null}
 
       {pipelines.length === 0 && !pipelinesQuery.error ? (
         <EmptyState
           icon={Hexagon}
-          message="No pipelines yet."
-          action="New pipeline"
+          message={uiText("No pipelines yet.")}
+          action={uiText("New pipeline")}
           onAction={() => setNewPipelineOpen(true)}
         />
       ) : (
@@ -994,7 +992,7 @@ function PipelinesIndex() {
         }}
         onSubmit={(data) => createPipeline.mutate(data)}
         pending={createPipeline.isPending}
-        error={createPipeline.error ? "Could not create the pipeline. Try a different name." : null}
+        error={createPipeline.error ? uiText("Could not create the pipeline. Try a different name.") : null}
       />
     </div>
   );
@@ -1005,7 +1003,7 @@ function PipelinesIndex() {
 // ---------------------------------------------------------------------------
 
 const UNASSIGNED_STAGE_ID = "__pipeline_unassigned_stage";
-const UNASSIGNED_STAGE_NAME = "Unassigned";
+const UNASSIGNED_STAGE_NAME = uiText("Unassigned");
 
 type BoardCase = PipelineCase & {
   activeWork?: PipelineCaseActiveWork | null;
@@ -1065,7 +1063,7 @@ export function getCaseTitle(caseItem: BoardCase) {
     const value = asText(fields[key]);
     if (value) return value;
   }
-  return "Untitled item";
+  return uiText("Untitled item");
 }
 
 export function isWorkingCase(caseItem: BoardCase) {
@@ -1196,9 +1194,9 @@ export function groupCasesByBuiltFor(cases: BoardCase[]) {
     const key = parent?.case.id ?? PIPELINE_BOARD_UNGROUPED_KEY;
     const group = groups.get(key) ?? {
       key,
-      label: parent ? `${parent.pipeline.name}: ${parent.case.title}` : "No built-for item",
+      label: parent ? `${parent.pipeline.name}: ${parent.case.title}` : uiText("No built-for item"),
       href: parent ? `/pipelines/${parent.case.pipelineId}/items/${parent.case.id}` : null,
-      cases: [],
+      cases: [] as BoardCase[],
     };
     group.cases.push(caseItem);
     groups.set(key, group);
@@ -1257,17 +1255,15 @@ function PipelineCaseCard({
           {isWorking ? (
             <Badge variant="outline" className="relative border-emerald-400/40 bg-emerald-50 text-(length:--text-nano) text-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-900/30 dark:text-emerald-300">
               <span className="absolute -left-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
-              Working
+              {uiText("Working")}
             </Badge>
           ) : null}
           {hasNeedsAttention ? (
-            <Badge variant="outline" className="border-amber-400/40 bg-amber-50 text-(length:--text-nano) text-amber-700 dark:border-amber-300/30 dark:bg-amber-900/25 dark:text-amber-300">
-              Needs attention
-            </Badge>
+            <Badge variant="outline" className="border-amber-400/40 bg-amber-50 text-(length:--text-nano) text-amber-700 dark:border-amber-300/30 dark:bg-amber-900/25 dark:text-amber-300"> {uiText("Needs attention")} </Badge>
           ) : null}
           {hasChangedNotice ? (
             <Badge variant="outline" className="border-indigo-400/40 bg-indigo-50 text-(length:--text-nano) text-indigo-700 dark:border-indigo-300/30 dark:bg-indigo-900/25 dark:text-indigo-300">
-              This changed
+              {uiText("This changed")}
             </Badge>
           ) : null}
           {liveDownstreamCount > 0 ? (
@@ -1371,10 +1367,10 @@ function PipelineBoardColumn({
             <Link
               to={`/pipelines/${breakdownTarget.pipelineId}`}
               className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              title={`Breaks into ${breakdownTarget.name}`}
+              title={uiText("Breaks into {value0}", { value0: breakdownTarget.name })}
             >
               <span className="shrink-0">→</span>
-              <span className="truncate">Breaks into {breakdownTarget.name}</span>
+              <span className="truncate">{uiText("Breaks into {value0}", { value0: breakdownTarget.name })}</span>
             </Link>
           ) : null}
         </div>
@@ -1404,7 +1400,7 @@ function PipelineBoardColumn({
                     ) : (
                       <span className="min-w-0 truncate">{group.label}</span>
                     )}
-                    <span className="shrink-0">{group.cases.length} item{group.cases.length === 1 ? "" : "s"}</span>
+                    <span className="shrink-0">{itemCountLabel(group.cases.length)}</span>
                   </div>
                 ) : null}
                 {group.cases.map((item) => <PipelineCaseCard key={item.id} caseItem={item} />)}
@@ -1412,7 +1408,7 @@ function PipelineBoardColumn({
             ))
           ) : (
             <div className="rounded-md border border-dashed border-border px-3 py-8 text-center text-xs text-muted-foreground">
-              {onColumnEmpty ? onColumnEmpty(stage) : "Empty"}
+              {onColumnEmpty ? onColumnEmpty(stage) : uiText("Empty")}
             </div>
           )}
         </SortableContext>
@@ -1568,7 +1564,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
       if (breakdown?.targetPipelineId) {
         map.set(stage.id, {
           pipelineId: breakdown.targetPipelineId,
-          name: pipelineNameById.get(breakdown.targetPipelineId) ?? "another pipeline",
+          name: pipelineNameById.get(breakdown.targetPipelineId) ?? uiText("another pipeline"),
         });
       }
     }
@@ -1630,11 +1626,11 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
     },
     onError: (error) => {
       pushToast({
-        title: "Move blocked",
+        title: uiText("Move blocked"),
         body:
           error instanceof ApiError && error.status === 409
-            ? "This item changed while you were looking. The board has been refreshed."
-            : "The item could not be moved.",
+            ? uiText("This item changed while you were looking. The board has been refreshed.")
+            : uiText("The item could not be moved."),
         tone: "error",
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.pipelines.detail(pipelineId) });
@@ -1691,8 +1687,8 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Pipelines", href: "/pipelines" },
-      { label: pipeline?.name ?? "Pipeline" },
+      { label: uiText("Pipelines"), href: "/pipelines" },
+      { label: pipeline?.name ?? uiText("Pipeline") },
     ]);
   }, [pipeline?.name, setBreadcrumbs]);
 
@@ -1702,21 +1698,21 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
 
   if (pipelineQuery.isLoading || casesQuery.isLoading) return <PageSkeleton />;
   if (!pipeline) {
-    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">Pipeline not found.</div>;
+    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">{uiText("Pipeline not found.")}</div>;
   }
 
   if (orderedStages.length === 0) {
     return (
       <div className="mx-auto max-w-6xl space-y-4 px-6 py-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Pipeline</p>
+          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Pipeline")}</p>
           <h1 className="text-2xl font-semibold text-foreground">{pipeline.name}</h1>
-          <p className="text-sm text-muted-foreground">No stages are set up for this pipeline yet.</p>
+          <p className="text-sm text-muted-foreground">{uiText("No stages are set up for this pipeline yet.")}</p>
         </div>
         <EmptyState
           icon={Hexagon}
-          message="Add stages in pipeline settings to enable the board."
-          action="Open settings"
+          message={uiText("Add stages in pipeline settings to enable the board.")}
+          action={uiText("Open settings")}
           onAction={() => navigate(`/pipelines/${pipelineId}/settings`)}
         />
       </div>
@@ -1729,7 +1725,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
     <div className="w-full space-y-4 px-6 py-8">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Pipeline</p>
+          <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Pipeline")}</p>
           <h1 className="text-2xl font-semibold text-foreground">{pipeline.name}</h1>
           {pipeline.description ? <p className="mt-1 text-sm text-muted-foreground">{pipeline.description}</p> : null}
           <p className="mt-1 text-xs text-muted-foreground">{cases.length} total item{cases.length === 1 ? "" : "s"}</p>
@@ -1740,10 +1736,10 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
                   key={source.id}
                   to={`/pipelines/${source.id}`}
                   className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  title={`Fed by ${source.name}`}
+                  title={uiText("Fed by {value0}", { value0: source.name })}
                 >
                   <span className="shrink-0">←</span>
-                  <span className="truncate">Fed by {source.name}</span>
+                  <span className="truncate">{uiText("Fed by {value0}", { value0: source.name })}</span>
                 </Link>
               ))}
             </div>
@@ -1751,13 +1747,13 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
           <Select value={groupBy} onValueChange={handleGroupByChange}>
-            <SelectTrigger className="h-9 w-(--sz-148px)" aria-label="Group by" title="Group by">
+            <SelectTrigger className="h-9 w-(--sz-148px)" aria-label={uiText("Group by")} title={uiText("Group by")}>
               <Layers className="h-4 w-4 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="builtFor">Built for</SelectItem>
+              <SelectItem value="none">{uiText("None")}</SelectItem>
+              <SelectItem value="builtFor">{uiText("Built for")}</SelectItem>
             </SelectContent>
           </Select>
           <Button asChild>
@@ -1767,7 +1763,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
             </Link>
           </Button>
           <Button variant="outline" size="icon" asChild>
-            <Link to={`/pipelines/${pipelineId}/settings`} aria-label="Pipeline settings" title="Pipeline settings">
+            <Link to={`/pipelines/${pipelineId}/settings`} aria-label={uiText("Pipeline settings")} title={uiText("Pipeline settings")}>
               <Settings className="h-4 w-4" />
             </Link>
           </Button>
@@ -1824,7 +1820,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
                   isDragTargeted={isDragTargeted}
                   isDragBlocked={isDragBlocked}
                   onColumnEmpty={(columnStage) =>
-                    columnStage.id === UNASSIGNED_STAGE_ID ? "Unassigned items" : "Drop items here"
+                    columnStage.id === UNASSIGNED_STAGE_ID ? uiText("Unassigned items") : uiText("Drop items here")
                   }
                 />
               );
@@ -1849,24 +1845,24 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {pendingMove?.allowed ? `Move ${pendingMove.itemTitle}?` : "This skips the normal flow"}
+              {pendingMove?.allowed ? uiText("Move {value0}?", { value0: pendingMove.itemTitle }) : uiText("This skips the normal flow")}
             </DialogTitle>
             <DialogDescription>
               {pendingMove?.allowed
-                ? `Move ${pendingMove.itemTitle} to ${pendingMove.targetName} yourself? Usually the agent suggests this when it is ready.`
+                ? uiText("Move {value0} to {value1} yourself? Usually the agent suggests this when it is ready.", { value0: pendingMove.itemTitle, value1: pendingMove.targetName })
                 : pendingMove
-                  ? `${pendingMove.itemTitle} would jump from ${pendingMove.sourceName} to ${pendingMove.targetName}. Add a reason before overriding.`
-                  : "Review this move before continuing."}
+                  ? uiText("{value0} would jump from {value1} to {value2}. Add a reason before overriding.", { value0: pendingMove.itemTitle, value1: pendingMove.sourceName, value2: pendingMove.targetName })
+                  : uiText("Review this move before continuing.")}
             </DialogDescription>
           </DialogHeader>
           {pendingMove && !pendingMove.allowed ? (
             <label className="block space-y-1.5 text-sm font-medium">
-              <span>Reason</span>
+              <span>{uiText("Reason")}</span>
               <Textarea
                 value={overrideReason}
                 onChange={(event) => setOverrideReason(event.target.value)}
                 rows={3}
-                placeholder="Explain why this item should skip the normal flow."
+                placeholder={uiText("Explain why this item should skip the normal flow.")}
                 autoFocus
               />
             </label>
@@ -1880,9 +1876,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
                 setPendingMove(null);
                 setOverrideReason("");
               }}
-            >
-              Cancel
-            </Button>
+            > {uiText("Cancel")} </Button>
             {pendingMove?.allowed ? (
               <Button
                 type="button"
@@ -1895,7 +1889,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
                   })
                 }
               >
-                Move it
+                {uiText("Move it")}
               </Button>
             ) : pendingMove ? (
               <Button
@@ -1912,7 +1906,7 @@ function PipelineBoard({ pipelineId }: { pipelineId: string }) {
                   })
                 }
               >
-                Override and move
+                {uiText("Override and move")}
               </Button>
             ) : null}
           </DialogFooter>
@@ -1933,7 +1927,7 @@ function NavigateToItem({ pipelineId, caseId }: { pipelineId: string; caseId: st
 }
 
 function NavigateMissingItem() {
-  return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">Item not found.</div>;
+  return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">{uiText("Item not found.")}</div>;
 }
 
 function LinkRedirect({ to }: { to: string }) {
@@ -2284,9 +2278,9 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Pipelines", href: "/pipelines" },
-      { label: pipeline.data?.name ?? detail?.pipeline.name ?? "Pipeline", href: `/pipelines/${pipelineId}` },
-      { label: detail?.case.title ?? "Item" },
+      { label: uiText("Pipelines"), href: "/pipelines" },
+      { label: pipeline.data?.name ?? detail?.pipeline.name ?? uiText("Pipeline"), href: `/pipelines/${pipelineId}` },
+      { label: detail?.case.title ?? uiText("Item") },
     ]);
   }, [detail?.case.title, detail?.pipeline.name, pipeline.data?.name, pipelineId, setBreadcrumbs]);
 
@@ -2306,9 +2300,9 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     },
     onSuccess: async () => {
       await invalidateItem();
-      pushToast({ title: "Conversation started", tone: "success" });
+      pushToast({ title: uiText("Conversation started"), tone: "success" });
     },
-    onError: () => pushToast({ title: "Could not start the conversation", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not start the conversation"), tone: "error" }),
   });
 
   // Body-document selection → "Start conversation & comment": returns the created issue so the
@@ -2319,7 +2313,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       await invalidateItem();
       return ("issue" in result ? result.issue : null) ?? null;
     } catch {
-      pushToast({ title: "Could not start the conversation", tone: "error" });
+      pushToast({ title: uiText("Could not start the conversation"), tone: "error" });
       return null;
     }
   }, [caseId, invalidateItem, pushToast]);
@@ -2390,7 +2384,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
 
   const handleConversationImageUpload = useCallback(async (file: File) => {
     if (!conversationIssueId || !conversationCompanyId) {
-      throw new Error("No active conversation issue is available for image uploads.");
+      throw new Error(uiText("No active conversation issue is available for image uploads."));
     }
     const attachment = await issuesApi.uploadAttachment(conversationCompanyId, conversationIssueId, file);
     return attachment.contentPath;
@@ -2398,7 +2392,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
 
   const handleConversationAttachImage = useCallback(async (file: File) => {
     if (!conversationIssueId || !conversationCompanyId) {
-      throw new Error("No active conversation issue is available for image attachments.");
+      throw new Error(uiText("No active conversation issue is available for image attachments."));
     }
     return issuesApi.uploadAttachment(conversationCompanyId, conversationIssueId, file);
   }, [conversationCompanyId, conversationIssueId]);
@@ -2413,9 +2407,9 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     if (!conversationIssueId) return;
     try {
       await issuesApi.interruptLatestQueuedComments(conversationIssueId, runId);
-      pushToast({ title: "Interrupt requested", body: "Queued messages will be sent when the previous run has stopped.", tone: "success" });
+      pushToast({ title: uiText("Interrupt requested"), body: uiText("Queued messages will be sent when the previous run has stopped."), tone: "success" });
     } catch (error) {
-      pushToast({ title: "Interrupt failed", body: error instanceof Error ? error.message : "Unable to send queued messages", tone: "error" });
+      pushToast({ title: uiText("Interrupt failed"), body: error instanceof Error ? error.message : uiText("Unable to send queued messages"), tone: "error" });
     } finally {
       await invalidateConversation();
     }
@@ -2482,16 +2476,16 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
         tone: "success",
       });
     },
-    onError: () => pushToast({ title: "Could not resolve the suggestion", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not resolve the suggestion"), tone: "error" }),
   });
 
   const acknowledgeChange = useMutation({
     mutationFn: () => pipelinesApi.acknowledgeDrift(caseId, { expectedVersion: detail?.case.version }),
     onSuccess: async () => {
       await invalidateItem();
-      pushToast({ title: "Change acknowledged", tone: "success" });
+      pushToast({ title: uiText("Change acknowledged"), tone: "success" });
     },
-    onError: () => pushToast({ title: "Could not acknowledge the change", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not acknowledge the change"), tone: "error" }),
   });
 
   const previousRetryAvailability = useQuery({
@@ -2540,12 +2534,12 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     onSuccess: async () => {
       setRetryDialogScope(null);
       await invalidateItem();
-      pushToast({ title: "Step automation re-run started", tone: "success" });
+      pushToast({ title: uiText("Step automation re-run started"), tone: "success" });
     },
     onError: (error: unknown) => {
-      const message = error instanceof ApiError && error.message ? error.message : "Could not re-run this step.";
+      const message = error instanceof ApiError && error.message ? error.message : uiText("Could not re-run this step.");
       setRetryDialogError(message);
-      pushToast({ title: "Could not re-run this step", tone: "error" });
+      pushToast({ title: uiText("Could not re-run this step"), tone: "error" });
     },
   });
 
@@ -2565,12 +2559,12 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
         queryClient.invalidateQueries({ queryKey: ["pipelines", "item", caseId, "automation-retry-plan"] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.pipelines.caseChildren(caseId) }),
       ]);
-      pushToast({ title: "Retry started", tone: "success" });
+      pushToast({ title: uiText("Retry started"), tone: "success" });
     },
     onError: (error: unknown) => {
-      const message = error instanceof ApiError && error.message ? error.message : "Could not retry this automation.";
+      const message = error instanceof ApiError && error.message ? error.message : uiText("Could not retry this automation.");
       setRetryDialogError(message);
-      pushToast({ title: "Could not retry this automation", tone: "error" });
+      pushToast({ title: uiText("Could not retry this automation"), tone: "error" });
     },
   });
 
@@ -2607,14 +2601,14 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     onMutate: () => setLivenessRetryError(null),
     onSuccess: async () => {
       await invalidateItem();
-      pushToast({ title: "Retry started", tone: "success" });
+      pushToast({ title: uiText("Retry started"), tone: "success" });
     },
     onError: (error: unknown) => {
       const message = error instanceof ApiError && error.message
         ? error.message
-        : "Could not retry. Please try again.";
+        : uiText("Could not retry. Please try again.");
       setLivenessRetryError(message);
-      pushToast({ title: "Could not retry the automation", tone: "error" });
+      pushToast({ title: uiText("Could not retry the automation"), tone: "error" });
     },
   });
 
@@ -2634,7 +2628,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
   );
   const moveItemToStage = useMutation({
     mutationFn: () => {
-      if (!selectedMoveStage || !detail?.case.version) throw new Error("Missing target stage");
+      if (!selectedMoveStage || !detail?.case.version) throw new Error(uiText("Missing target stage"));
       return pipelinesApi.transitionCase(caseId, {
         toStageKey: selectedMoveStage.key,
         expectedVersion: detail.case.version,
@@ -2646,13 +2640,13 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       setMoveDialogOpen(false);
       setMoveStageKey("");
       await invalidateItem();
-      pushToast({ title: "Item moved", tone: "success" });
+      pushToast({ title: uiText("Item moved"), tone: "success" });
     },
-    onError: () => pushToast({ title: "Could not move the item", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not move the item"), tone: "error" }),
   });
   const removeItem = useMutation({
     mutationFn: () => {
-      if (!removeStage || !detail?.case.version) throw new Error("Missing removal stage");
+      if (!removeStage || !detail?.case.version) throw new Error(uiText("Missing removal stage"));
       return pipelinesApi.transitionCase(caseId, {
         toStageKey: removeStage.key,
         expectedVersion: detail.case.version,
@@ -2662,10 +2656,10 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     onSuccess: async () => {
       setRemoveDialogOpen(false);
       await invalidateItem();
-      pushToast({ title: "Item removed", tone: "success" });
+      pushToast({ title: uiText("Item removed"), tone: "success" });
       navigate(`/pipelines/${pipelineId}`);
     },
-    onError: () => pushToast({ title: "Could not remove the item", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not remove the item"), tone: "error" }),
   });
 
   const reviewConfig = useMemo(
@@ -2688,7 +2682,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
   }, [caseId, reviewQueueItems.data]);
   const decideReview = useMutation({
     mutationFn: ({ decision }: { decision: PipelineReviewDecision }) => {
-      if (!detail?.case.version) throw new Error("Missing item version");
+      if (!detail?.case.version) throw new Error(uiText("Missing item version"));
       return pipelinesApi.reviewCase(caseId, {
         decision,
         reason: reviewDecisionNote.trim() || null,
@@ -2723,12 +2717,12 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       });
       if (nextHref) navigate(nextHref);
     },
-    onError: () => pushToast({ title: "Could not update the review", tone: "error" }),
+    onError: () => pushToast({ title: uiText("Could not update the review"), tone: "error" }),
   });
 
   if (pipeline.isLoading || item.isLoading) return <PageSkeleton />;
   if (!detail || !pipeline.data) {
-    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">Item not found.</div>;
+    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">{uiText("Item not found.")}</div>;
   }
 
   const workReferences = extractWorkReferences(detail.case);
@@ -2776,7 +2770,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
     : (
         <Button onClick={() => startConversation.mutate()} disabled={startConversation.isPending}>
           <MessageSquare className="mr-2 h-4 w-4" />
-          {startConversation.isPending ? "Starting..." : "Start a conversation"}
+          {startConversation.isPending ? uiText("Starting...") : uiText("Start a conversation")}
         </Button>
       );
   const reviewPanel = detail.stage.kind === "review" && reviewConfig ? (
@@ -2797,7 +2791,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       <div className="mb-6 grid gap-5 lg:grid-cols-(--gtc-45) lg:items-start lg:gap-8">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Link to="/pipelines" className="hover:text-foreground">Pipelines</Link>
+            <Link to="/pipelines" className="hover:text-foreground">{uiText("Pipelines")}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link to={`/pipelines/${pipelineId}`} className="hover:text-foreground">{pipeline.data.name}</Link>
           </div>
@@ -2845,14 +2839,14 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
             {primaryAction}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="Item actions">
+                <Button variant="outline" size="icon" aria-label={uiText("Item actions")}>
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   disabled={!stageAutomation || rerunCurrentStageAutomation.isPending || rerunBlockedByPermission}
-                  title={rerunBlockedByPermission ? "Permission still missing — request access first" : undefined}
+                  title={rerunBlockedByPermission ? uiText("Permission still missing — request access first") : undefined}
                   onSelect={(event) => {
                     event.preventDefault();
                     setRetryTargetStageId(null);
@@ -2914,7 +2908,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move to stage</DialogTitle>
+            <DialogTitle>{uiText("Move to stage")}</DialogTitle>
             <DialogDescription>
               Manual moves can bypass the normal agent handoff for this item. Let automation move work when possible;
               use this override only when the board needs to correct the item state.
@@ -2931,10 +2925,10 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
               </div>
             </div>
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Stage</span>
+              <span className="text-sm font-medium text-foreground">{uiText("Stage")}</span>
               <Select value={moveStageKey} onValueChange={setMoveStageKey}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a stage" />
+                  <SelectValue placeholder={uiText("Choose a stage")} />
                 </SelectTrigger>
                 <SelectContent>
                   {moveStageOptions.map((stage) => (
@@ -2952,15 +2946,13 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
               variant="outline"
               onClick={() => setMoveDialogOpen(false)}
               disabled={moveItemToStage.isPending}
-            >
-              Cancel
-            </Button>
+            > {uiText("Cancel")} </Button>
             <Button
               type="button"
               onClick={() => moveItemToStage.mutate()}
               disabled={!selectedMoveStage || moveItemToStage.isPending}
             >
-              {moveItemToStage.isPending ? "Moving..." : `Move to ${selectedMoveStage?.name ?? "stage"}`}
+              {moveItemToStage.isPending ? uiText("Moving...") : uiText("Move to {value0}", { value0: selectedMoveStage?.name ?? uiText("stage") })}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2974,38 +2966,38 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{retryDialogScope === "previous_stage" ? "Retry previous step" : "Re-run this step"}</DialogTitle>
+            <DialogTitle>{uiText(retryDialogScope === "previous_stage" ? "Retry previous step" : "Re-run this step")}</DialogTitle>
             <DialogDescription>
-              Review the automation preflight before Paperclip dispatches a fresh run.
+              {uiText("Review the automation preflight before Paperclip dispatches a fresh run.")}
             </DialogDescription>
           </DialogHeader>
           {retryPlan.isLoading ? (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Checking retry safety...
+              {uiText("Checking retry safety...")}
             </div>
           ) : retryPlan.error ? (
             <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
               {retryPlan.error instanceof ApiError && retryPlan.error.message
                 ? retryPlan.error.message
-                : "Could not check whether this automation can be retried."}
+                : uiText("Could not check whether this automation can be retried.")}
             </div>
           ) : retryPlan.data ? (
             <div className="space-y-4 py-2">
               <div className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <div className="text-xs font-medium uppercase text-muted-foreground">From</div>
+                  <div className="text-xs font-medium uppercase text-muted-foreground">{uiText("From")}</div>
                   <div className="mt-1 font-medium text-foreground">{retryPlan.data.currentStage.name}</div>
                 </div>
                 <div>
-                  <div id="retry-runs-at-label" className="text-xs font-medium uppercase text-muted-foreground">Runs at</div>
+                  <div id="retry-runs-at-label" className="text-xs font-medium uppercase text-muted-foreground">{uiText("Runs at")}</div>
                   {retryShowTargetDropdown ? (
                     <Select
                       value={retrySelectedTargetId}
                       onValueChange={(value) => setRetryTargetStageId(value)}
                     >
                       <SelectTrigger className="mt-1 w-full" aria-labelledby="retry-runs-at-label">
-                        <SelectValue placeholder="Choose a step" />
+                        <SelectValue placeholder={uiText("Choose a step")} />
                       </SelectTrigger>
                       <SelectContent>
                         {retryAvailableTargets.map((stage) => (
@@ -3016,11 +3008,11 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="mt-1 font-medium text-foreground">{retryPlan.data.targetStage?.name ?? "No retryable step"}</div>
+                    <div className="mt-1 font-medium text-foreground">{retryPlan.data.targetStage?.name ?? uiText("No retryable step")}</div>
                   )}
                 </div>
                 <div className="sm:col-span-2">
-                  <div className="text-xs font-medium uppercase text-muted-foreground">Automation</div>
+                  <div className="text-xs font-medium uppercase text-muted-foreground">{uiText("Automation")}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-1 gap-y-1 text-foreground">
                     {retryPlan.data.routine ? (
                       <>
@@ -3030,7 +3022,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                         >
                           {retryPlan.data.routine.title}
                         </Link>
-                        <span className="text-muted-foreground">assigned to</span>
+                        <span className="text-muted-foreground">{uiText("assigned to")}</span>
                         {retryPlan.data.routine.assigneeAgent ? (
                           <Link
                             to={`/agents/${retryPlan.data.routine.assigneeAgent.id}`}
@@ -3039,11 +3031,11 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                             {retryPlan.data.routine.assigneeAgent.name}
                           </Link>
                         ) : (
-                          <span className="font-medium text-muted-foreground">No responsible</span>
+                          <span className="font-medium text-muted-foreground">{uiText("No responsible")}</span>
                         )}
                       </>
                     ) : (
-                      "No routine configured"
+                      uiText("No routine configured")
                     )}
                   </div>
                 </div>
@@ -3058,10 +3050,10 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                 ) : null}
                 <div className={cn("space-y-4", retryPreflightRefreshing && "opacity-50")}>
                   <div className="grid gap-2 text-sm sm:grid-cols-4">
-                    <RetryMetric label="children" value={retryPlan.data.effectCounts.directChildren} />
-                    <RetryMetric label="descendants" value={retryPlan.data.effectCounts.descendants} />
-                    <RetryMetric label="linked tasks" value={retryPlan.data.effectCounts.linkedAutomationIssues} />
-                    <RetryMetric label="active work" value={retryPlan.data.effectCounts.activeDescendants} tone={retryPlan.data.effectCounts.activeDescendants > 0 ? "warning" : "default"} />
+                    <RetryMetric label={uiText("children")} value={retryPlan.data.effectCounts.directChildren} />
+                    <RetryMetric label={uiText("descendants")} value={retryPlan.data.effectCounts.descendants} />
+                    <RetryMetric label={uiText("linked tasks")} value={retryPlan.data.effectCounts.linkedAutomationIssues} />
+                    <RetryMetric label={uiText("active work")} value={retryPlan.data.effectCounts.activeDescendants} tone={retryPlan.data.effectCounts.activeDescendants > 0 ? "warning" : "default"} />
                   </div>
 
                   {retryPlan.data.blockers.length > 0 ? (
@@ -3136,9 +3128,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
               variant="outline"
               onClick={() => setRetryDialogScope(null)}
               disabled={rerunCurrentStageAutomation.isPending || retryStageAutomation.isPending}
-            >
-              Cancel
-            </Button>
+            > {uiText("Cancel")} </Button>
             <Button
               type="button"
               disabled={
@@ -3154,8 +3144,8 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
               }}
             >
               {(rerunCurrentStageAutomation.isPending || retryStageAutomation.isPending)
-                ? "Starting..."
-                : retryPlan.data ? retryPrimaryActionLabel(retryPlan.data) : "Retry"}
+                ? uiText("Starting...")
+                : retryPlan.data ? retryPrimaryActionLabel(retryPlan.data) : uiText("Retry")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3175,7 +3165,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       {banner.visible ? (
         <section className="mb-5 flex flex-col gap-3 border-y border-border bg-muted/20 py-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Ready to move to {banner.stageName}?</h2>
+            <h2 className="text-sm font-semibold text-foreground">{uiText("Ready to move to {value0}?", { value0: banner.stageName })}</h2>
             {banner.rationale ? <p className="mt-1 text-sm text-muted-foreground">{banner.rationale}</p> : null}
           </div>
           {banner.suggestionId ? (
@@ -3185,9 +3175,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                 onClick={() => resolveSuggestion.mutate({ resolution: "accept", suggestionId: banner.suggestionId! })}
                 disabled={resolveSuggestion.isPending}
               >
-                <Check className="mr-2 h-4 w-4" />
-                Approve
-              </Button>
+                <Check className="mr-2 h-4 w-4" /> {uiText("Approve")} </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -3223,7 +3211,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       ) : null}
 
       {(childrenGate || (breakdown?.waitForPieces ?? false)) && waitingChildren.length > 0 ? (
-        <section aria-label="Waiting child items" className="mb-5 border-y border-border px-4 py-4">
+        <section aria-label={uiText("Waiting child items")} className="mb-5 border-y border-border px-4 py-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ListTree className="h-4 w-4 text-muted-foreground" />
@@ -3288,7 +3276,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
             onRetry={() => outputs.refetch()}
           />
 
-          <DetailSection title="Conversation">
+          <DetailSection title={uiText("Conversation")}>
             {activeConversationIssue ? (
               <div className="py-3">
                 <IssueChatThread
@@ -3343,10 +3331,10 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
               </div>
             ) : (
               <div className="flex flex-col items-start gap-3 py-3 text-sm text-muted-foreground">
-                <p>No active conversation yet.</p>
+                <p>{uiText("No active conversation yet.")}</p>
                 <Button size="sm" variant="outline" onClick={() => startConversation.mutate()} disabled={startConversation.isPending}>
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  {startConversation.isPending ? "Starting..." : "Start a conversation"}
+                  {startConversation.isPending ? uiText("Starting...") : uiText("Start a conversation")}
                 </Button>
               </div>
             )}
@@ -3356,7 +3344,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
         <aside className="min-w-0 space-y-8">
           {reviewPanel}
 
-          <DetailSection title="Linked work">
+          <DetailSection title={uiText("Linked work")}>
             <PipelineWorkReferences references={workReferences} />
           </DetailSection>
 
@@ -3371,7 +3359,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
           >
             {breakdown && pieceCountTotal > 0 ? (
               <p className="py-2 text-sm text-muted-foreground">
-                {pieceCountDone} of {pieceCountTotal} {pieceLabel(pieceCountTotal)} finished
+                {pieceCountDone} {uiText("of")} {pieceCountTotal} {pieceLabel(pieceCountTotal)} finished
               </p>
             ) : null}
             {breakdown && pieceCountTotal === 0 ? (
@@ -3391,7 +3379,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
             ) : null}
           </DetailSection>
 
-          <DetailSection title="Details">
+          <DetailSection title={uiText("Details")}>
             {itemFields.length > 0 ? (
               <dl className="divide-y divide-border">
                 {itemFields.map((field) => (
@@ -3402,11 +3390,11 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                 ))}
               </dl>
             ) : (
-              <p className="py-3 text-sm text-muted-foreground">No added details.</p>
+              <p className="py-3 text-sm text-muted-foreground">{uiText("No added details.")}</p>
             )}
           </DetailSection>
 
-          <DetailSection title="Activity">
+          <DetailSection title={uiText("Activity")}>
             {eventRows.length > 0 ? (
               <ol className="divide-y divide-border">
                 {eventRows.map((event) => (
@@ -3419,7 +3407,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
                 ))}
               </ol>
             ) : (
-              <p className="py-3 text-sm text-muted-foreground">No activity yet.</p>
+              <p className="py-3 text-sm text-muted-foreground">{uiText("No activity yet.")}</p>
             )}
           </DetailSection>
         </aside>
@@ -3428,15 +3416,15 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove item</DialogTitle>
+            <DialogTitle>{uiText("Remove item")}</DialogTitle>
             <DialogDescription>
               This moves the item out of active work. It stays visible in the pipeline history.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoveDialogOpen(false)}>Keep item</Button>
+            <Button variant="outline" onClick={() => setRemoveDialogOpen(false)}>{uiText("Keep item")}</Button>
             <Button variant="destructive" onClick={() => removeItem.mutate()} disabled={removeItem.isPending || !removeStage}>
-              {removeItem.isPending ? "Removing..." : "Remove item"}
+              {removeItem.isPending ? uiText("Removing...") : "Remove item"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3447,10 +3435,10 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
 
 function ActivePipelineWorkBanner({ activeWork }: { activeWork: PipelineCaseActiveWork }) {
   const isAutomation = activeWork.issueRole === "automation";
-  const title = isAutomation ? "Automation is running" : "Linked work is running";
+  const title = uiText(isAutomation ? "Automation is running" : "Linked work is running");
   const issueLabel = activeWork.issueIdentifier ?? activeWork.issueTitle;
   const issuePath = createIssueDetailPath(activeWork.issueIdentifier ?? activeWork.issueId);
-  const startedLabel = activeWork.startedAt ? `Started ${relativeTime(activeWork.startedAt)}` : null;
+  const startedLabel = activeWork.startedAt ? uiText("Started {value0}", { value0: relativeTime(activeWork.startedAt) }) : null;
 
   return (
     <section
@@ -3468,7 +3456,7 @@ function ActivePipelineWorkBanner({ activeWork }: { activeWork: PipelineCaseActi
             <Link to={issuePath} className="font-medium underline-offset-2 hover:underline">
               {issueLabel}
             </Link>{" "}
-            is active with {activeWork.agentName}
+            {uiText("is active with {value0}", { value0: activeWork.agentName })}
             {startedLabel ? ` · ${startedLabel}` : ""}.
           </p>
         </div>
@@ -3481,7 +3469,7 @@ function ActivePipelineWorkBanner({ activeWork }: { activeWork: PipelineCaseActi
       >
         <Link to={issuePath}>
           <ExternalLink className="mr-2 h-4 w-4" />
-          Open task
+          {uiText("Open task")}
         </Link>
       </Button>
     </section>
@@ -3528,7 +3516,7 @@ function WaitingChildRow({
               {row.activeWork ? (
                 <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
-                  Live with {row.activeWork.agentName}
+                  {uiText("Live with {value0}", { value0: row.activeWork.agentName })}
                 </span>
               ) : null}
               {liveDownstreamCount > 0 ? (
@@ -3591,7 +3579,7 @@ function reviewDecisionActions(
   if (config.approveToStageKey) {
     actions.push({
       decision: "approve",
-      label: "Approve",
+      label: uiText("Approve"),
       targetStageKey: config.approveToStageKey,
       targetStageName: stageLookup.get(config.approveToStageKey) ?? humanizePipelineItemStatus(config.approveToStageKey),
       requireReason: false,
@@ -3601,7 +3589,7 @@ function reviewDecisionActions(
   if (config.requestChangesToStageKey) {
     actions.push({
       decision: "request_changes",
-      label: "Request changes",
+      label: uiText("Request changes"),
       targetStageKey: config.requestChangesToStageKey,
       targetStageName: stageLookup.get(config.requestChangesToStageKey) ?? humanizePipelineItemStatus(config.requestChangesToStageKey),
       requireReason: config.requireRequestChangesReason,
@@ -3611,7 +3599,7 @@ function reviewDecisionActions(
   if (config.rejectToStageKey) {
     actions.push({
       decision: "reject",
-      label: "Reject",
+      label: uiText("Reject"),
       targetStageKey: config.rejectToStageKey,
       targetStageName: stageLookup.get(config.rejectToStageKey) ?? humanizePipelineItemStatus(config.rejectToStageKey),
       requireReason: config.requireRejectReason,
@@ -3623,11 +3611,11 @@ function reviewDecisionActions(
 
 function reviewDecisionToastTitle(decision: PipelineReviewDecision, movedToNextItem: boolean) {
   const prefix = decision === "approve"
-    ? "Item approved"
+    ? uiText("Item approved")
     : decision === "request_changes"
-      ? "Changes requested"
-      : "Item rejected";
-  return movedToNextItem ? `${prefix}; moved to the next review` : prefix;
+      ? uiText("Changes requested")
+      : uiText("Item rejected");
+  return movedToNextItem ? uiText("{value0}; moved to the next review", { value0: prefix }) : prefix;
 }
 
 function ReviewDecisionPanel({
@@ -3653,26 +3641,26 @@ function ReviewDecisionPanel({
 
   return (
     <section>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Review</h2>
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Review")}</h2>
       <div className="border-y border-amber-300 bg-amber-50/70 p-5 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100 sm:p-6">
         <div className="space-y-5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-1 h-5 w-5 shrink-0" />
             <div>
-              <p className="text-2xl font-semibold leading-tight">In review</p>
+              <p className="text-2xl font-semibold leading-tight">{uiText("In review")}</p>
               <p className="mt-1 text-sm opacity-80">
-                Decide where this item goes next.
+                {uiText("Decide where this item goes next.")}
               </p>
             </div>
           </div>
 
           <label className="block space-y-1.5 text-sm font-medium">
-            <span>Reason</span>
+            <span>{uiText("Reason")}</span>
             <Textarea
               value={note}
               onChange={(event) => onNoteChange(event.target.value)}
               rows={4}
-              placeholder={requireReason ? "Required for changes or rejection." : "Optional note."}
+              placeholder={uiText(requireReason ? "Required for changes or rejection." : "Optional note.")}
               className="bg-background/90 text-foreground"
             />
           </label>
@@ -3714,7 +3702,7 @@ function ReviewDecisionPanel({
               Next in this review queue: <span className="font-medium">{nextItemTitle}</span>
             </p>
           ) : (
-            <p className="text-xs opacity-75">No other item is waiting in this pipeline review queue.</p>
+            <p className="text-xs opacity-75">{uiText("No other item is waiting in this pipeline review queue.")}</p>
           )}
         </div>
       </div>
@@ -3793,19 +3781,19 @@ function DetailSection({
 }
 
 const DELIVERABLE_OUTPUT_PATTERNS: Array<[RegExp, string]> = [
-  [/brief/i, "Brief"],
-  [/spec/i, "Spec"],
-  [/report/i, "Report"],
-  [/design/i, "Design"],
-  [/summary/i, "Summary"],
-  [/plan/i, "Plan"],
+  [/brief/i, uiText("Brief")],
+  [/spec/i, uiText("Spec")],
+  [/report/i, uiText("Report")],
+  [/design/i, uiText("Design")],
+  [/summary/i, uiText("Summary")],
+  [/plan/i, uiText("Plan")],
 ];
 
 const OUTPUT_SOURCE_ROLE_LABELS: Record<string, string> = {
-  origin: "Origin",
-  conversation: "Conversation",
-  work: "Work",
-  automation: "Automation",
+  origin: uiText("Origin"),
+  conversation: uiText("Conversation"),
+  work: uiText("Work"),
+  automation: uiText("Automation"),
 };
 
 function deliverableDocumentLabel(item: PipelineCaseDocumentOutputItem): string | null {
@@ -3818,7 +3806,7 @@ function deliverableDocumentLabel(item: PipelineCaseDocumentOutputItem): string 
 
 function humanizeOutputStatus(status: string) {
   const normalized = status.trim().toLowerCase();
-  if (!normalized) return "Unknown";
+  if (!normalized) return uiText("Unknown");
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).replace(/_/g, " ");
 }
 
@@ -3897,7 +3885,7 @@ function ItemOutputMeta({ item, children }: { item: PipelineCaseOutputItem; chil
         className="font-mono text-(length:--text-micro) text-muted-foreground hover:text-foreground hover:underline"
         title={item.sourceIssueTitle}
       >
-        {item.sourceIssueIdentifier ?? "Source task"}
+        {item.sourceIssueIdentifier ?? uiText("Source task")}
       </Link>
       <OutputMetaDot />
       <span>{roleLabel}</span>
@@ -3937,7 +3925,7 @@ function ItemOutputDocumentRow({ item }: { item: PipelineCaseDocumentOutputItem 
         to={href}
         className="inline-flex h-(--sz-30px) w-(--sz-30px) shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
         aria-label={`Open ${item.title}`}
-        title="Open document"
+        title={uiText("Open document")}
       >
         <ArrowUpRight className="h-4 w-4" />
       </Link>
@@ -3965,7 +3953,7 @@ function ItemOutputWorkProductRow({ item }: { item: PipelineCaseWorkProductOutpu
         to={href}
         className="inline-flex h-(--sz-30px) w-(--sz-30px) shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
         ariaLabel={`Open ${item.title}`}
-        title="Open work product"
+        title={uiText("Open work product")}
       >
         <ArrowUpRight className="h-4 w-4" />
       </OutputLink>
@@ -3974,7 +3962,7 @@ function ItemOutputWorkProductRow({ item }: { item: PipelineCaseWorkProductOutpu
 }
 
 function ItemOutputAttachmentRow({ item }: { item: PipelineCaseAttachmentOutputItem }) {
-  const filename = item.filename ?? item.title ?? "Attachment";
+  const filename = item.filename ?? item.title ?? uiText("Attachment");
   const isImage = item.contentType?.startsWith("image/");
   return (
     <div
@@ -4018,7 +4006,7 @@ function ItemOutputAttachmentRow({ item }: { item: PipelineCaseAttachmentOutputI
           rel="noreferrer"
           className="inline-flex h-(--sz-30px) w-(--sz-30px) items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           aria-label={`Open ${filename}`}
-          title="Open"
+          title={uiText("Open")}
         >
           <ArrowUpRight className="h-4 w-4" />
         </a>
@@ -4026,7 +4014,7 @@ function ItemOutputAttachmentRow({ item }: { item: PipelineCaseAttachmentOutputI
           href={item.downloadPath}
           className="inline-flex h-(--sz-30px) w-(--sz-30px) items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
           aria-label={`Download ${filename}`}
-          title="Download"
+          title={uiText("Download")}
         >
           <Download className="h-4 w-4" />
         </a>
@@ -4056,7 +4044,7 @@ function ItemOutputsSection({
   if (documents.length > 0) {
     groups.push({
       key: "document",
-      label: "Documents",
+      label: uiText("Documents"),
       icon: <FileText className="h-4 w-4 text-muted-foreground" />,
       rows: documents.map((item) => <ItemOutputDocumentRow key={item.id} item={item} />),
     });
@@ -4064,7 +4052,7 @@ function ItemOutputsSection({
   if (workProducts.length > 0) {
     groups.push({
       key: "work_product",
-      label: "Work products",
+      label: uiText("Work products"),
       icon: <Package className="h-4 w-4 text-muted-foreground" />,
       rows: workProducts.map((item) => <ItemOutputWorkProductRow key={item.id} item={item} />),
     });
@@ -4072,7 +4060,7 @@ function ItemOutputsSection({
   if (attachments.length > 0) {
     groups.push({
       key: "attachment",
-      label: "Attachments",
+      label: uiText("Attachments"),
       icon: <Paperclip className="h-4 w-4 text-muted-foreground" />,
       rows: attachments.map((item) => <ItemOutputAttachmentRow key={item.id} item={item} />),
     });
@@ -4080,7 +4068,7 @@ function ItemOutputsSection({
 
   return (
     <DetailSection
-      title="Item outputs"
+      title={uiText("Item outputs")}
       trailing={
         loading ? null : (
           <Badge variant="ghost" className="bg-muted text-(length:--text-micro) normal-case tracking-normal text-muted-foreground">
@@ -4101,14 +4089,12 @@ function ItemOutputsSection({
       ) : error ? (
         <div className="flex items-center gap-2 py-2.5 text-xs text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>Couldn't load item outputs.</span>
+          <span>{uiText("Couldn't load item outputs.")}</span>
           <button
             type="button"
             onClick={onRetry}
             className="ml-auto rounded-sm border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            Retry
-          </button>
+          > {uiText("Retry")} </button>
         </div>
       ) : (
         <div>
@@ -4134,7 +4120,7 @@ function BuiltFromTree({
   rows: Array<{ case: PipelineCase; stage: PipelineStage }>;
 }) {
   if (rows.length === 0) {
-    return <p className="py-3 text-sm text-muted-foreground">No built-from items.</p>;
+    return <p className="py-3 text-sm text-muted-foreground">{uiText("No built-from items.")}</p>;
   }
   return (
     <ul className="divide-y divide-border">
@@ -4190,9 +4176,9 @@ function PipelineAddItems({ pipelineId }: { pipelineId: string }) {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Pipelines", href: "/pipelines" },
-      { label: pipeline.data?.name ?? "Pipeline", href: `/pipelines/${pipelineId}` },
-      { label: "Add items" },
+      { label: uiText("Pipelines"), href: "/pipelines" },
+      { label: pipeline.data?.name ?? uiText("Pipeline"), href: `/pipelines/${pipelineId}` },
+      { label: uiText("Add items") },
     ]);
   }, [pipeline.data?.name, pipelineId, setBreadcrumbs]);
 
@@ -4221,14 +4207,14 @@ function PipelineAddItems({ pipelineId }: { pipelineId: string }) {
         queryClient.invalidateQueries({ queryKey: queryKeys.pipelines.detail(pipelineId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.pipelines.cases(pipelineId) }),
       ]);
-      pushToast({ title: `${itemCountLabel(rows.length)} submitted`, tone: "success" });
+      pushToast({ title: uiText("{value0} submitted", { value0: itemCountLabel(rows.length) }), tone: "success" });
       navigate(`/pipelines/${pipelineId}`);
     },
   });
 
   if (pipeline.isLoading || intake.isLoading) return <PageSkeleton />;
   if (!pipeline.data || !intake.data) {
-    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">Pipeline not found.</div>;
+    return <div className="mx-auto max-w-3xl py-10 text-sm text-muted-foreground">{uiText("Pipeline not found.")}</div>;
   }
 
   const firstStageName = intake.data.stageName ?? pipeline.data.stages[0]?.name ?? "first stage";
@@ -4239,7 +4225,7 @@ function PipelineAddItems({ pipelineId }: { pipelineId: string }) {
         <p className="text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
           Add to {pipeline.data.name}
         </p>
-        <h1 className="text-2xl font-semibold text-foreground">Build your list, then submit it all at once</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{uiText("Build your list, then submit it all at once")}</h1>
         <p className="text-sm text-muted-foreground">
           Items will be added to the first stage ({firstStageName}).
         </p>
@@ -4248,7 +4234,7 @@ function PipelineAddItems({ pipelineId }: { pipelineId: string }) {
       <div className="mb-5 flex items-center gap-2 border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
         <Info className="h-4 w-4 shrink-0" />
         <span>
-          These fields come from <span className="font-medium text-foreground">Pipeline settings -&gt; {firstStageName} stage</span>.
+          {uiText("These fields come from")} <span className="font-medium text-foreground">{uiText("Pipeline settings")} -&gt; {firstStageName} {uiText("stage")}.</span>
         </span>
       </div>
 
@@ -4288,15 +4274,13 @@ function PipelineAddItems({ pipelineId }: { pipelineId: string }) {
       </div>
 
       <div className="mt-10 flex items-center justify-between border-t border-border pt-5">
-        <Button variant="outline" onClick={() => navigate(`/pipelines/${pipelineId}`)}>
-          Cancel
-        </Button>
+        <Button variant="outline" onClick={() => navigate(`/pipelines/${pipelineId}`)}> {uiText("Cancel")} </Button>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">
-            {rows.length === 0 ? "Add at least one item." : "Count updates live."}
+            {rows.length === 0 ? uiText("Add at least one item.") : uiText("Count updates live.")}
           </span>
           <Button disabled={invalid || submit.isPending} onClick={() => submit.mutate()}>
-            {submit.isPending ? "Submitting..." : `Submit ${itemCountLabel(rows.length)}`}
+            {submit.isPending ? uiText("Submitting...") : uiText("Submit {value0}", { value0: itemCountLabel(rows.length) })}
           </Button>
         </div>
       </div>
@@ -4335,16 +4319,16 @@ function DraftItemRow({
     <section className={cn("border border-border bg-background", row.expanded && "border-primary")}>
       <div className="grid grid-cols-(--gtc-17) items-center gap-3 px-4 py-3">
         <button type="button" className="min-w-0 text-left" onClick={onToggle}>
-          <span className="block text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Item {index + 1}</span>
+          <span className="block text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Item {value0}", { value0: index + 1 })}</span>
           <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
           {!row.expanded && preview ? <span className="block truncate text-xs text-muted-foreground">{preview}</span> : null}
           {!row.expanded && row.serverError ? <span className="block text-xs text-destructive">{row.serverError}</span> : null}
         </button>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={onToggle} aria-label={row.expanded ? "Collapse item" : "Expand item"}>
+          <Button variant="outline" size="icon" onClick={onToggle} aria-label={uiText(row.expanded ? "Collapse item" : "Expand item")}>
             {row.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
-          <Button variant="outline" size="icon" onClick={onRemove} aria-label="Remove item">
+          <Button variant="outline" size="icon" onClick={onRemove} aria-label={uiText("Remove item")}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -4365,9 +4349,9 @@ function DraftItemRow({
             {row.serverError ? <p className="md:col-span-2 text-sm text-destructive">{row.serverError}</p> : null}
           </div>
           <aside className="border border-border p-4 text-sm">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">Preview</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-(--tracking-eyebrow) text-muted-foreground">{uiText("Preview")}</p>
             <p className="font-semibold text-foreground">{title}</p>
-            <p className="mt-3 text-xs text-muted-foreground">First stage on submit:</p>
+            <p className="mt-3 text-xs text-muted-foreground">{uiText("First stage on submit:")}</p>
             <p className="font-semibold text-foreground">{intake.stageName ?? "First stage"}</p>
           </aside>
         </div>
@@ -4392,12 +4376,12 @@ export function GeneratedField({
     <label className={cn("block space-y-1", field.type === "multiline" && "md:col-span-2")}>
       <span className="text-sm font-medium text-foreground">
         {field.label}
-        {field.required ? <span className="ml-1 font-normal text-destructive">required</span> : null}
+        {field.required ? <span className="ml-1 font-normal text-destructive">{uiText("required")}</span> : null}
       </span>
       {field.type === "select" ? (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger id={inputId} aria-invalid={Boolean(error)} className="w-full">
-            <SelectValue placeholder="Choose..." />
+            <SelectValue placeholder={uiText("Choose...")} />
           </SelectTrigger>
           <SelectContent>
             {(field.options ?? []).map((option) => (
@@ -4438,9 +4422,9 @@ export interface ReviewQueueRow {
 }
 
 const REVIEW_QUEUE_SECTION_LABELS: Record<ReviewQueueKind, string> = {
-  suggestion: "Suggestions to review",
-  review: "Final calls",
-  headsUp: "Heads-up",
+  suggestion: uiText("Suggestions to review"),
+  review: uiText("Final calls"),
+  headsUp: uiText("Heads-up"),
 };
 
 const REVIEW_QUEUE_SECTION_ORDER: ReviewQueueKind[] = ["suggestion", "review", "headsUp"];
@@ -4572,9 +4556,7 @@ function ReviewQueueStatusChip({ failed }: { failed: boolean }) {
   if (!failed) return null;
   return (
     <Badge variant="outline" className="border-amber-200 bg-amber-50 font-semibold text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300">
-      <AlertTriangle className="h-3 w-3" />
-      Needs attention
-    </Badge>
+      <AlertTriangle className="h-3 w-3" /> {uiText("Needs attention")} </Badge>
   );
 }
 
@@ -4615,20 +4597,20 @@ function ReviewQueueDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{row?.title ?? "Review item"}</DialogTitle>
+          <DialogTitle>{row?.title ?? uiText("Review item")}</DialogTitle>
           <DialogDescription>
-            {row ? `${row.pipelineName} is waiting for your decision.` : "Review the item and decide what happens next."}
+            {row ? uiText("{value0} is waiting for your decision.", { value0: row.pipelineName }) : uiText("Review the item and decide what happens next.")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">What is being decided</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{uiText("What is being decided")}</p>
             <p className="text-sm text-foreground">{row?.prompt}</p>
           </section>
 
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Item preview</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{uiText("Item preview")}</p>
             {fields.length > 0 ? (
               <div className="divide-y divide-border rounded-md border border-border">
                 {fields.map(([key, value]) => (
@@ -4640,7 +4622,7 @@ function ReviewQueueDetailDialog({
               </div>
             ) : (
               <p className="rounded-md border border-border px-3 py-3 text-sm text-muted-foreground">
-                No preview details yet.
+                {uiText("No preview details yet.")}
               </p>
             )}
           </section>
@@ -4651,27 +4633,25 @@ function ReviewQueueDetailDialog({
               className="inline-block text-sm font-medium text-primary hover:underline"
               onClick={() => onOpenChange(false)}
             >
-              Open the full item
+              {uiText("Open the full item")}
             </Link>
           ) : null}
 
           {canDecide ? (
             <label className="block space-y-1.5 text-sm font-medium">
-              <span>Note</span>
+              <span>{uiText("Note")}</span>
               <Textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 rows={3}
-                placeholder={requestChangesRequiresNote ? "Required when requesting changes." : "Optional note."}
+                placeholder={uiText(requestChangesRequiresNote ? "Required when requesting changes." : "Optional note.")}
               />
             </label>
           ) : null}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-            Cancel
-          </Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}> {uiText("Cancel")} </Button>
           {canDecide ? (
             <>
               <Button
@@ -4680,12 +4660,10 @@ function ReviewQueueDetailDialog({
                 onClick={() => onRequestChanges(trimmedNote)}
                 disabled={pending || (requestChangesRequiresNote && !trimmedNote)}
               >
-                {row?.kind === "suggestion" ? "Not yet" : "Request changes"}
+                {uiText(row?.kind === "suggestion" ? "Not yet" : "Request changes")}
               </Button>
               <Button type="button" onClick={() => onApprove(trimmedNote)} disabled={pending}>
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Approve
-              </Button>
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {uiText("Approve")} </Button>
             </>
           ) : null}
         </DialogFooter>
@@ -4794,9 +4772,7 @@ function ReviewQueueSection({
                     <Button type="button" size="sm" disabled={pending} onClick={(event) => {
                       event.stopPropagation();
                       onApprove(row);
-                    }}>
-                      Approve
-                    </Button>
+                    }}> {uiText("Approve")} </Button>
                     <Button type="button" size="sm" variant="outline" disabled={pending} onClick={(event) => {
                       event.stopPropagation();
                       onDecline(row);
@@ -4809,9 +4785,7 @@ function ReviewQueueSection({
                     <Button type="button" size="sm" disabled={pending} onClick={(event) => {
                       event.stopPropagation();
                       onApprove(row);
-                    }}>
-                      Approve
-                    </Button>
+                    }}> {uiText("Approve")} </Button>
                     <Button type="button" size="sm" variant="outline" disabled={pending} onClick={(event) => {
                       event.stopPropagation();
                       onRequestChanges(row);
@@ -4842,7 +4816,7 @@ export function ReviewQueue() {
   const [detailRow, setDetailRow] = useState<ReviewQueueRow | null>(null);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Review queue" }]);
+    setBreadcrumbs([{ label: uiText("Review queue") }]);
   }, [setBreadcrumbs]);
 
   const attentionQuery = useQuery({
@@ -4899,7 +4873,7 @@ export function ReviewQueue() {
   const decideRow = useMutation({
     mutationFn: async ({ row, decision, note }: { row: ReviewQueueRow; decision: "approve" | "decline" | "request_changes"; note?: string }) => {
       if (row.kind === "suggestion") {
-        if (!row.suggestionId) throw new Error("This item is not ready for a decision.");
+        if (!row.suggestionId) throw new Error(uiText("This item is not ready for a decision."));
         await pipelinesApi.resolveSuggestion(row.caseId, {
           suggestionId: row.suggestionId,
           resolution: decision === "approve" ? "accept" : "dismiss",
@@ -4908,7 +4882,7 @@ export function ReviewQueue() {
         });
         return;
       }
-      if (row.expectedVersion === null) throw new Error("This item is not ready for a decision.");
+      if (row.expectedVersion === null) throw new Error(uiText("This item is not ready for a decision."));
       await pipelinesApi.reviewCase(row.caseId, {
         decision: decision === "request_changes" ? "request_changes" : "approve",
         reason: note || null,
@@ -4949,20 +4923,20 @@ export function ReviewQueue() {
 
   const bulkApprove = useMutation({
     mutationFn: async (targetRows: ReviewQueueRow[]) => {
-      if (!selectedCompanyId) throw new Error("Select an organization first.");
+      if (!selectedCompanyId) throw new Error(uiText("Select an organization first."));
       const reviewRows = targetRows.filter((row) => row.kind === "review");
       const suggestionRows = targetRows.filter((row) => row.kind === "suggestion" && row.suggestionId);
       const tasks: Promise<unknown>[] = [];
       if (reviewRows.length > 0) {
         const items = reviewRows.map((row) => {
-          if (row.expectedVersion === null) throw new Error("This item is not ready for a decision.");
+          if (row.expectedVersion === null) throw new Error(uiText("This item is not ready for a decision."));
           return { caseId: row.caseId, decision: "approve" as const, expectedVersion: row.expectedVersion };
         });
         tasks.push(
           pipelinesApi.bulkReviewCases(selectedCompanyId, { items }).then((response) => {
             const failures = (response.results ?? []).filter((result) => !result.ok);
             if (failures.length > 0) {
-              throw new Error("Some items could not be approved.");
+              throw new Error(uiText("Some items could not be approved."));
             }
           }),
         );
@@ -5054,7 +5028,7 @@ export function ReviewQueue() {
   }, [activeRowId, decideRow, openItem, visibleRows]);
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={Hexagon} message="Select an organization to view the review queue." />;
+    return <EmptyState icon={Hexagon} message={uiText("Select an organization to view the review queue.")} />;
   }
 
   if (attentionQuery.isLoading || reviewCasesQuery.isLoading) {
@@ -5067,7 +5041,7 @@ export function ReviewQueue() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal text-foreground">Review queue</h1>
+          <h1 className="text-2xl font-semibold tracking-normal text-foreground">{uiText("Review queue")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Needs your attention ({formatNumber(visibleRows.length)})
           </p>
@@ -5077,17 +5051,16 @@ export function ReviewQueue() {
           disabled={selectedCount === 0 || bulkApprove.isPending}
           onClick={() => bulkApprove.mutate(selectedRows)}
         >
-          {bulkApprove.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          Approve {formatNumber(selectedCount)} item{selectedCount === 1 ? "" : "s"}
+          {bulkApprove.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {uiText("Approve")} {formatNumber(selectedCount)} item{selectedCount === 1 ? "" : "s"}
         </Button>
       </div>
 
       {attentionQuery.error || reviewCasesQuery.error ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">Some items need attention. Try again in a moment.</p>
+        <p className="text-sm text-amber-700 dark:text-amber-300">{uiText("Some items need attention. Try again in a moment.")}</p>
       ) : null}
 
       {visibleRows.length === 0 ? (
-        <EmptyState icon={Check} message="Nothing needs you right now." />
+        <EmptyState icon={Check} message={uiText("Nothing needs you right now.")} />
       ) : (
         <div className="space-y-6">
           {groupedRows.map((group) => (
@@ -5119,7 +5092,7 @@ export function ReviewQueue() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        Shortcuts: <span className="font-semibold">j</span>/<span className="font-semibold">k</span> or arrow keys move, <span className="font-semibold">Enter</span> opens item, <span className="font-semibold">a</span> approves.
+        {uiText("Shortcuts: {value0}/{value1} or arrow keys move, {value2} opens item, {value3} approves.", { value0: "j", value1: "k", value2: "Enter", value3: "a" })}
       </p>
 
       <ReviewQueueDetailDialog
@@ -5161,7 +5134,7 @@ export function Learnings() {
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Learnings" }]);
+    setBreadcrumbs([{ label: uiText("Learnings") }]);
   }, [setBreadcrumbs]);
 
   const learningsQuery = useQuery({
@@ -5178,7 +5151,7 @@ export function Learnings() {
   });
 
   if (!selectedCompanyId) {
-    return <EmptyState icon={BookOpenText} message="Select an organization to view learnings." />;
+    return <EmptyState icon={BookOpenText} message={uiText("Select an organization to view learnings.")} />;
   }
 
   if (learningsQuery.isLoading && !learningsQuery.data) {
@@ -5196,7 +5169,7 @@ export function Learnings() {
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-5">
-        <h1 className="text-2xl font-semibold tracking-normal text-foreground">Learnings</h1>
+        <h1 className="text-2xl font-semibold tracking-normal text-foreground">{uiText("Learnings")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Patterns from review decisions and hand moves, in plain words.
         </p>
@@ -5205,17 +5178,17 @@ export function Learnings() {
       <div className="flex items-center justify-end">
         <p className="text-sm text-muted-foreground">
           {learningsQuery.isFetching
-            ? "Refreshing..."
+            ? uiText("Refreshing...")
             : events.length > 0
               ? `${formatNumber(firstVisible)}-${formatNumber(lastVisible)}`
-              : "No rows"}
+              : uiText("No rows")}
         </p>
       </div>
 
       {learningsQuery.error ? (
-        <p className="text-sm text-destructive">Could not load learnings.</p>
+        <p className="text-sm text-destructive">{uiText("Could not load learnings.")}</p>
       ) : groups.length === 0 ? (
-        <EmptyState icon={BookOpenText} message="No learnings yet." />
+        <EmptyState icon={BookOpenText} message={uiText("No learnings yet.")} />
       ) : (
         <div className="space-y-6">
           {groups.map((group) => (
@@ -5263,19 +5236,17 @@ export function Learnings() {
           disabled={!canGoPrevious}
           onClick={() => setOffset((current) => Math.max(0, current - LEARNINGS_PAGE_SIZE))}
         >
-          Previous
+          {uiText("Previous")}
         </Button>
         <span className="text-sm text-muted-foreground">
-          {events.length > 0 ? `${formatNumber(firstVisible)}-${formatNumber(lastVisible)}` : "No rows"}
+          {events.length > 0 ? `${formatNumber(firstVisible)}-${formatNumber(lastVisible)}` : uiText("No rows")}
         </span>
         <Button
           type="button"
           variant="outline"
           disabled={!canGoNext}
           onClick={() => setOffset((current) => pagination?.nextOffset ?? current + LEARNINGS_PAGE_SIZE)}
-        >
-          Next
-        </Button>
+        > {uiText("Next")} </Button>
       </div>
     </div>
   );

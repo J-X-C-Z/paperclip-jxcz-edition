@@ -50,6 +50,19 @@ An auto-paused agent can be resumed by increasing its budget or waiting for the 
 
 ## Viewing Costs
 
+Open **Audit → Costs** to compare costs by project, team, and department for the
+selected date range and project scope. Each view separates reported charges,
+token-based estimates, and usage that is still unpriced. An unassigned row keeps
+costs visible when the current organization cannot determine a unique owner.
+Organization changes can change these views because attribution follows current
+memberships.
+
+Automatic cost calculation uses reported amounts first. If the runtime only
+returns tokens, supported models use the official price table maintained in the
+server. Unknown models remain unpriced rather than appearing free. For
+subscription-included CLI runs, the estimate represents the equivalent API cost;
+the recorded billable amount and budget spend remain zero.
+
 ### Dashboard
 
 The dashboard shows current month spend vs budget for the company and each agent.

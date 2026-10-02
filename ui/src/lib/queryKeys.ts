@@ -115,6 +115,7 @@ export const queryKeys = {
     agentActions: (
       companyId: string,
       filters: {
+        projectId?: string | null;
         actorScope?: "agents" | "all" | null;
         agentId?: string | null;
         responsibleUserId?: string | null;
@@ -141,6 +142,7 @@ export const queryKeys = {
         filters.actorType ?? "__all",
         filters.from ?? "",
         filters.to ?? "",
+        ...(filters.projectId ? ["project", filters.projectId] : []),
       ] as const,
   },
   smokeLab: {
@@ -517,6 +519,8 @@ export const queryKeys = {
         { includeArchived: opts.includeArchived === true },
       ] as const,
     detail: (id: string) => ["projects", "detail", id] as const,
+    agentMemberships: (companyId: string, projectId: string) =>
+      ["projects", companyId, projectId, "agent-memberships"] as const,
   },
   cases: {
     list: (companyId: string) => ["cases", companyId] as const,
@@ -544,7 +548,8 @@ export const queryKeys = {
       ["external-objects", "project-summary", projectId] as const,
   },
   goals: {
-    list: (companyId: string) => ["goals", companyId] as const,
+    list: (companyId: string, projectId?: string | null) =>
+      projectId ? ["goals", companyId, "project", projectId] as const : ["goals", companyId] as const,
     detail: (id: string) => ["goals", "detail", id] as const,
   },
   artifacts: {
@@ -554,6 +559,7 @@ export const queryKeys = {
       q?: string,
       groupBy?: string,
       groupIssueId?: string,
+      projectId?: string,
     ) =>
       [
         "artifacts",
@@ -562,6 +568,7 @@ export const queryKeys = {
         q ?? "",
         groupBy ?? "none",
         groupIssueId ?? "",
+        projectId ?? "",
       ] as const,
   },
   budgets: {
@@ -645,7 +652,8 @@ export const queryKeys = {
       offset: number,
     ) => ["company-search", companyId, q, scope, limit, offset] as const,
   },
-  dashboard: (companyId: string) => ["dashboard", companyId] as const,
+  dashboard: (companyId: string, projectId?: string | null) =>
+    projectId ? ["dashboard", companyId, "project", projectId] as const : ["dashboard", companyId] as const,
   attention: (companyId: string) => ["attention", companyId] as const,
   decisions: {
     list: (companyId: string, status?: string) =>
@@ -670,13 +678,14 @@ export const queryKeys = {
   sidebarBadges: (companyId: string) => ["sidebar-badges", companyId] as const,
   inboxDismissals: (companyId: string) =>
     ["inbox-dismissals", companyId] as const,
-  activity: (companyId: string) => ["activity", companyId] as const,
-  costs: (companyId: string, from?: string, to?: string) =>
-    ["costs", companyId, from, to] as const,
-  usageByProvider: (companyId: string, from?: string, to?: string) =>
-    ["usage-by-provider", companyId, from, to] as const,
-  usageByBiller: (companyId: string, from?: string, to?: string) =>
-    ["usage-by-biller", companyId, from, to] as const,
+  activity: (companyId: string, projectId?: string | null) =>
+    projectId ? ["activity", companyId, "project", projectId] as const : ["activity", companyId] as const,
+  costs: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    projectId ? ["costs", companyId, from, to, "project", projectId] as const : ["costs", companyId, from, to] as const,
+  usageByProvider: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    projectId ? ["usage-by-provider", companyId, from, to, "project", projectId] as const : ["usage-by-provider", companyId, from, to] as const,
+  usageByBiller: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    projectId ? ["usage-by-biller", companyId, from, to, "project", projectId] as const : ["usage-by-biller", companyId, from, to] as const,
   financeSummary: (companyId: string, from?: string, to?: string) =>
     ["finance-summary", companyId, from, to] as const,
   financeByBiller: (companyId: string, from?: string, to?: string) =>
@@ -689,8 +698,8 @@ export const queryKeys = {
     to?: string,
     limit: number = 100,
   ) => ["finance-events", companyId, from, to, limit] as const,
-  usageWindowSpend: (companyId: string) =>
-    ["usage-window-spend", companyId] as const,
+  usageWindowSpend: (companyId: string, projectId?: string | null) =>
+    projectId ? ["usage-window-spend", companyId, "project", projectId] as const : ["usage-window-spend", companyId] as const,
   usageQuotaWindows: (companyId: string) =>
     ["usage-quota-windows", companyId] as const,
   heartbeats: (companyId: string, agentId?: string) =>

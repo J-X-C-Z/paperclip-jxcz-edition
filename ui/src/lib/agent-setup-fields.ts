@@ -8,6 +8,7 @@ export const SETUP_CREDENTIAL_KEYS: Record<string, string> = {
   cursor_cloud: "CURSOR_API_KEY",
   gemini_local: "GEMINI_API_KEY",
   kimi_local: "KIMI_MODEL_API_KEY",
+  dsh_local: "DEEPSEEK_API_KEY",
   hermes_gateway: "API_SERVER_KEY",
 };
 
@@ -48,6 +49,8 @@ export const SETUP_LOGIN_HINTS: Record<string, string> = {
     "Use a Gemini API key, or an existing supported Gemini CLI login on the selected environment's host.",
   kimi_local:
     "Use a Kimi API key and model settings below, or run kimi login on the selected environment's host.",
+  dsh_local:
+    "Use DEEPSEEK_API_KEY in the agent environment, or configure DSH credentials on the selected execution host.",
   grok_local:
     "Grok Build uses its CLI sign-in. Run grok login on the selected environment's host, then test the connection here.",
   hermes_local:

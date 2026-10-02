@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   Component,
   createContext,
@@ -595,9 +596,7 @@ function LauncherModalShell({
             size="sm"
             className="ml-auto"
             onClick={() => void closeLauncher(instance.key, { reason: "programmatic" })}
-          >
-            Close
-          </Button>
+          > {uiText("Close")} </Button>
         </div>
         <div
           className={cn(

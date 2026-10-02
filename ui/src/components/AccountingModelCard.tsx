@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Database, Gauge, ReceiptText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 

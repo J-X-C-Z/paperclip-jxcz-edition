@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { isValidElement, memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, ExternalLink, WrapText } from "lucide-react";
@@ -632,7 +633,7 @@ function CodeBlock({
         <button
           type="button"
           onClick={handleCopy}
-          aria-label="Copy code"
+          aria-label={uiText("Copy code")}
           title={copyLabel}
           className="paperclip-markdown-codeblock-action paperclip-markdown-codeblock-copy"
           style={codeBlockActionStyle}

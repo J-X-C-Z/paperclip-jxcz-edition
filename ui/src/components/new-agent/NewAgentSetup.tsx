@@ -1,6 +1,14 @@
+import { uiText } from "@/i18n";
 import { AiConnectionField, aiProviderForAdapter } from "../ai-connections/AiConnectionField";
+import { useUiTranslator } from "@/i18n";
+import { AGENT_TITLES, type AgentTemplate } from "@paperclipai/shared";
+import { AgentTemplateSelection, availableTemplateManagers, templatePermissionDefaults } from "./AgentTemplateSelection";
+import { TemplateSkillsField } from "./TemplateSkillsField";
+import { Textarea } from "../ui/textarea";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
 import type { AiConnectionBinding } from "@paperclipai/shared";
 import { DEFAULT_CODEX_LOCAL_MODEL } from "@paperclipai/adapter-codex-local";
+import { DEFAULT_MIMOCODE_MODEL } from "@paperclipai/adapter-mimocode-local";
 import {
   SETUP_CREDENTIAL_KEYS,
   SETUP_LOGIN_HINTS,
@@ -71,17 +79,35 @@ const blocking = (result: AdapterEnvironmentTestResult) =>
   result.checks.some((check) => check.code === ADAPTER_AUTH_MISSING_CHECK_CODE);
 
 export function NewAgentSetup() {
+  const tr = useUiTranslator();
   const { selectedCompanyId } = useCompany();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const templates = useQuery({
+    queryKey: ["agent-templates", selectedCompanyId],
+    queryFn: () => agentsApi.templates(selectedCompanyId!),
+    enabled: Boolean(selectedCompanyId),
+    retry: false,
+  });
+  const initialTemplate = templates.data?.find((template) => template.id === params.get("templateId"));
   if (!selectedCompanyId)
     return (
       <p className="text-sm text-muted-foreground">
-        Select an organization to create an agent.
+        {tr("Select an organization to create an agent.")}
       </p>
     );
+  if (!params.get("createdAgentId") && !initialTemplate) return (
+    <AgentTemplateSelection companyId={selectedCompanyId} onClose={() => navigate("/agents/all")} onSelect={(template) => {
+      const next = new URLSearchParams(params);
+      next.set("templateId", template.id);
+      navigate(`/agents/new?${next}`, { replace: true });
+    }} />
+  );
   return (
     <Setup
       key={`${selectedCompanyId}:${params.get("name")}:${params.get("adapterType")}:${params.get("runnerProvider")}`}
+      initialTemplate={initialTemplate}
+      templates={templates.data ?? []}
       companyId={selectedCompanyId}
       name={params.get("name") ?? ""}
       adapterType={params.get("adapterType") ?? ""}
@@ -97,13 +123,18 @@ function Setup({
   adapterType,
   runnerProvider,
   createdAgentId,
+  initialTemplate,
+  templates,
 }: {
+  initialTemplate?: AgentTemplate;
+  templates: AgentTemplate[];
   companyId: string;
   name: string;
   adapterType: string;
   runnerProvider: string;
   createdAgentId: string | null;
 }) {
+  const tr = useUiTranslator();
   const navigate = useNavigate();
   const cache = useQueryClient();
   const { openNewIssue } = useDialogActions();
@@ -116,7 +147,7 @@ function Setup({
         : "codex_local"
     : adapterType;
   const connectionAdapter =
-    brandType === "claude_local" || brandType === "codex_local" || brandType === "grok_local"
+    brandType === "claude_local" || brandType === "codex_local" || brandType === "grok_local" || brandType === "mimocode_local"
       ? brandType
       : null;
   const multiProvider =
@@ -133,7 +164,16 @@ function Setup({
   const [screen, setScreen] = useState<"connect" | "runtime" | "saved">(
     createdAgentId ? "saved" : connectionAdapter ? "connect" : "runtime",
   );
-  const [model, setModel] = useState("");
+  const [template, setTemplate] = useState(initialTemplate);
+  const [pendingTemplate, setPendingTemplate] = useState<AgentTemplate | null>(null);
+  const [systemPrompt, setSystemPrompt] = useState(initialTemplate?.systemPrompt ?? "");
+  const [skills, setSkills] = useState(initialTemplate?.skills ?? []);
+  const [permissions, setPermissions] = useState(() => initialTemplate ? templatePermissionDefaults(initialTemplate) : null);
+  const [reportsTo, setReportsTo] = useState("");
+  const [positionTitle, setPositionTitle] = useState(initialTemplate?.role === "custom" ? "" : initialTemplate?.name ?? "");
+  const [customTitleMode, setCustomTitleMode] = useState(() => initialTemplate?.role === "custom" || !AGENT_TITLES.includes((initialTemplate?.name ?? "") as (typeof AGENT_TITLES)[number]));
+  const [capabilities, setCapabilities] = useState(initialTemplate?.description ?? "");
+  const [model, setModel] = useState(initialTemplate?.model.modelId ?? "");
   const efforts = isRunner ? [] : setupEfforts(adapterType, model);
   const [effort, setEffort] = useState("");
   const [modelOpen, setModelOpen] = useState(false);
@@ -190,6 +230,9 @@ function Setup({
     queryKey: queryKeys.agents.list(companyId),
     queryFn: () => agentsApi.list(companyId),
   });
+  const leaders = availableTemplateManagers(agents.data ?? [], companyId, template?.role ?? "custom");
+  const selectedLeader = leaders.find((agent) => agent.id === reportsTo);
+  const memberNeedsLeader = template?.role === "member" && !selectedLeader;
   const envs = useQuery({
     queryKey: queryKeys.environments.list(companyId),
     queryFn: () => environmentsApi.list(companyId),
@@ -254,7 +297,7 @@ function Setup({
     environmentError =
       cause instanceof Error
         ? cause.message
-        : "Could not resolve the environment.";
+        : tr("Could not resolve the environment.");
   }
   const environment = envs.data?.find((env) => env.id === environmentId);
   const sandboxProvider =
@@ -331,7 +374,7 @@ function Setup({
       ...defaultCreateValues,
       adapterType,
       model:
-        model || (brandType === "codex_local" ? DEFAULT_CODEX_LOCAL_MODEL : ""),
+        model || (brandType === "codex_local" ? DEFAULT_CODEX_LOCAL_MODEL : brandType === "mimocode_local" ? DEFAULT_MIMOCODE_MODEL : ""),
       thinkingEffort: effort,
       dangerouslyBypassSandbox: adapterType === "codex_local",
       envBindings: nextConnection?.env ?? {},
@@ -380,12 +423,12 @@ function Setup({
   }
   function preparedConfig(nextConnection = connection) {
     if (multiProvider && (!model.trim() || !model.includes("/")))
-      throw new Error("Choose or enter a model in provider/model format.");
+      throw new Error(tr("Choose or enter a model in provider/model format."));
     if (
       adapterType === "cursor_cloud" &&
       !/^https:\/\/github\.com\/[^/]+\/[^/]+/.test(repository.trim())
     )
-      throw new Error("Enter a GitHub repository URL.");
+      throw new Error(tr("Enter a GitHub repository URL."));
     if (
       ["cursor_cloud", "hermes_gateway"].includes(adapterType) &&
       !apiKey.trim() &&
@@ -393,19 +436,19 @@ function Setup({
     )
       throw new Error(
         adapterType === "cursor_cloud"
-          ? "Enter a Cursor API key."
-          : `Enter ${envKey} or select an organization secret.`,
+          ? tr("Enter a Cursor API key.")
+          : `${tr("Enter the API key or select an organization secret.")} (${envKey})`,
       );
     if (adapterType === "hermes_gateway") {
       try {
         const url = new URL(gatewayUrl.trim());
         if (!["https:", "http:"].includes(url.protocol)) throw new Error();
       } catch {
-        throw new Error("Enter the Hermes API base URL.");
+        throw new Error(tr("Enter the Hermes API base URL."));
       }
     }
     if (usingKimiApi && !kimiModel.trim())
-      throw new Error("Enter the Kimi API model name.");
+      throw new Error(tr("Enter the Kimi API model name."));
     return buildConfig(nextConnection);
   }
   function pendingCredentials(nextConnection = connection) {
@@ -448,7 +491,7 @@ function Setup({
     } catch (cause) {
       if (run === generation.current) {
         setError(
-          cause instanceof Error ? cause.message : "Could not test the agent.",
+          cause instanceof Error ? cause.message : tr("Could not test the agent."),
         );
         setTestState("fail");
       }
@@ -462,6 +505,8 @@ function Setup({
       created ||
       !ready ||
       !name.trim() ||
+      !template ||
+      memberNeedsLeader ||
       testState === "running" ||
       testState === "fail" ||
       (connectionAdapter && !connection)
@@ -491,14 +536,17 @@ function Setup({
             [key]: secret.binding,
           };
       }
-      const existing = agents.data ?? [];
-      const leader = existing.find(
-        (agent) => agent.role === "ceo" && agent.status !== "terminated",
-      );
+
       const response = await agentsApi.hire(companyId, {
         name: name.trim(),
-        role: existing.length ? "general" : "ceo",
-        ...(leader ? { reportsTo: leader.id } : {}),
+        role: "general",
+        templateId: template.id,
+        reportsTo: reportsTo || null,
+        title: positionTitle.trim() || null,
+        capabilities: capabilities.trim(),
+        instructionsBundle: { entryFile: "AGENTS.md", files: { "AGENTS.md": systemPrompt } },
+        desiredSkills: skills,
+        permissions,
         adapterType,
         adapterConfig: config,
         defaultEnvironmentId:
@@ -534,7 +582,7 @@ function Setup({
       ]);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not create the agent.",
+        cause instanceof Error ? cause.message : tr("Could not create the agent."),
       );
     } finally {
       if (!hired) {
@@ -543,7 +591,7 @@ function Setup({
         } catch {
           setError(
             (original) =>
-              `${original ? `${original} ` : ""}Could not remove an unused setup credential. Remove it from Secrets before retrying.`,
+              `${original ? `${original} ` : ""}${tr("Could not remove an unused setup credential. Remove it from Secrets before retrying.")}`,
           );
         }
       }
@@ -564,8 +612,8 @@ function Setup({
         className="text-sm text-muted-foreground"
       >
         {savedAgent.error
-          ? "Could not load the created agent. Return to Agents to view it."
-          : "Loading your agent…"}
+          ? tr("Could not load the created agent. Return to Agents to view it.")
+          : tr("Loading your agent…")}
       </p>
     );
   if (!name || !adapterType)
@@ -575,7 +623,7 @@ function Setup({
         initialAdapter={adapterType}
         onClose={() => navigate("/agents/all")}
         onContinue={(basics) =>
-          navigate(`/agents/new?${new URLSearchParams(basics)}`, {
+          navigate(`/agents/new?${new URLSearchParams({ ...basics, ...(template ? { templateId: template.id } : {}) })}`, {
             replace: true,
           })
         }
@@ -587,9 +635,9 @@ function Setup({
     "saved" as const,
   ];
   const labels = {
-    connect: "Connect",
-    runtime: "Configure",
-    saved: "Confirmation",
+    connect: tr("Connect"),
+    runtime: tr("Configure"),
+    saved: tr("Confirmation"),
   };
   const confirmationEnvironment = created?.defaultEnvironmentId
     ? envs.data?.find((env) => env.id === created.defaultEnvironmentId)
@@ -611,7 +659,7 @@ function Setup({
         ? "Hermes Gateway"
         : confirmationEnvironment
           ? environmentDisplayLabel(confirmationEnvironment)
-          : "Local machine";
+          : tr("Local machine");
   const setupError =
     adapters.error ??
     envs.error ??
@@ -620,8 +668,34 @@ function Setup({
     general.error ??
     agents.error ??
     caps.error;
+  const connectionTestCheck =
+    result?.checks.find((check) => check.level === "error") ??
+    result?.checks.find(
+      (check) =>
+        check.code.includes("hello_probe") && check.level === "warn",
+    );
   return (
     <MotionConfig reducedMotion="user">
+      <AlertDialog open={Boolean(pendingTemplate)} onOpenChange={(open) => { if (!open) setPendingTemplate(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>切换智能体模板？</AlertDialogTitle><AlertDialogDescription>职位、模型、职责指令、Skills、权限和上级选择将重置为新模板的默认值。名称和模型连接保持当前设置。</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>取消</AlertDialogCancel><AlertDialogAction onClick={() => {
+            if (!pendingTemplate) return;
+                            setTemplate(pendingTemplate);
+                            setPositionTitle(pendingTemplate.role === "custom" ? "" : pendingTemplate.name);
+                            setCustomTitleMode(pendingTemplate.role === "custom" || !AGENT_TITLES.includes(pendingTemplate.name as (typeof AGENT_TITLES)[number]));
+            setCapabilities(pendingTemplate.description);
+            setModel(pendingTemplate.model.modelId);
+            setSystemPrompt(pendingTemplate.systemPrompt);
+            setSkills([...pendingTemplate.skills]);
+            setPermissions(templatePermissionDefaults(pendingTemplate));
+            setReportsTo("");
+            setEffort("");
+            setPendingTemplate(null);
+            resetTest();
+          }}>重置并切换</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="mx-auto flex max-w-5xl flex-col gap-8 py-6">
         <header className="flex items-center gap-4">
           <PillGuy
@@ -637,8 +711,8 @@ function Setup({
                 <span>
                   ·{" "}
                   {runnerProvider === "codex"
-                    ? "Native app server runner"
-                    : "Paperclip Runner"}
+                    ? tr("Native app server runner")
+                    : tr("Paperclip Runner")}
                 </span>
               )}
             </div>
@@ -646,29 +720,28 @@ function Setup({
         </header>
         {environmentError && !envs.isPending && (
           <p role="alert" className="text-sm text-destructive">
-            {environmentError}
+            {tr(environmentError)}
           </p>
         )}
         {setupError && (
           <p role="alert" className="text-sm text-destructive">
-            {setupError.message}
+            {tr(setupError.message)}
           </p>
         )}
         {adapters.data && !available && (
           <p role="alert" className="text-sm text-destructive">
-            This adapter is unavailable. Choose an enabled adapter.
+            {tr("This adapter is unavailable. Choose an enabled adapter.")}
           </p>
         )}
         {(managedOnly || forced.forced) &&
           !envs.isPending &&
           !environmentId && (
             <p role="alert" className="text-sm text-destructive">
-              No managed environment is available. Configure an environment
-              before continuing.
+              {tr("No managed environment is available. Configure an environment before continuing.")}
             </p>
           )}
         <div className="flex flex-col gap-8 md:flex-row">
-          <nav aria-label="Agent setup steps" className="shrink-0 md:w-44">
+          <nav aria-label={tr("Agent setup steps")} className="shrink-0 md:w-44">
             <ol className="flex flex-wrap gap-2 md:flex-col">
               {steps.map((step, index) => (
                 <li key={step}>
@@ -709,8 +782,8 @@ function Setup({
                   <OnboardingCard className="mx-auto">
                     <div className="mb-8">
                       <OnboardingHeading
-                        title="Connect a model"
-                        lede={`Connect ${name} to ${connectionAdapter === "claude_local" ? "Claude" : connectionAdapter === "grok_local" ? "Grok" : "OpenAI"}.`}
+                        title={tr("Connect a model")}
+                        lede={`${tr("Connect")} ${name} ${tr("to")} ${connectionAdapter === "claude_local" ? "Claude" : connectionAdapter === "grok_local" ? "Grok" : connectionAdapter === "mimocode_local" ? "Xiaomi MiMo" : "OpenAI"}.`}
                         center
                       />
                     </div>
@@ -725,17 +798,10 @@ function Setup({
                       testConnection={runTest}
                       testError={
                         error ??
-                        (
-                          result?.checks.find(
-                            (check) => check.level === "error",
-                          ) ??
-                          result?.checks.find(
-                            (check) =>
-                              check.code.includes("hello_probe") &&
-                              check.level === "warn",
-                          )
-                        )?.message
+                        connectionTestCheck?.message
                       }
+                      testErrorDetail={error ? null : connectionTestCheck?.detail}
+                      testErrorHint={error ? null : connectionTestCheck?.hint}
                       onConnected={(next) => {
                         setConnection(next);
                         resetTest();
@@ -749,27 +815,27 @@ function Setup({
                       <h2 className="flex items-center gap-3 text-lg font-semibold">
                         <Check className="size-5" />
                         {created.status === "pending_approval"
-                          ? "Agent submitted for approval"
-                          : "Your agent is ready"}
+                          ? tr("Agent submitted for approval")
+                          : tr("Your agent is ready")}
                       </h2>
                       <dl className="grid grid-cols-2 gap-4 text-sm">
-                        <dt className="text-muted-foreground">Adapter</dt>
+                        <dt className="text-muted-foreground">{tr("Adapter")}</dt>
                         <dd>{getAdapterDisplay(adapterType).label}</dd>
                         {showModel && (
                           <>
-                            <dt className="text-muted-foreground">Model</dt>
+                            <dt className="text-muted-foreground">{tr("Model")}</dt>
                             <dd className="break-all">
                               {String(confirmationModel)}
                             </dd>
                           </>
                         )}
-                        <dt className="text-muted-foreground">Environment</dt>
+                        <dt className="text-muted-foreground">{tr("Environment")}</dt>
                         <dd>{environmentLabel}</dd>
                       </dl>
                       <p className="text-sm text-muted-foreground">
                         {created.status === "pending_approval"
-                          ? "An organization administrator must approve this agent before it can work."
-                          : "Assign a task when you’re ready for this agent to work."}
+                          ? tr("An organization administrator must approve this agent before it can work.")
+                          : tr("Assign a task when you’re ready for this agent to work.")}
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-between gap-3">
@@ -778,7 +844,7 @@ function Setup({
                         onClick={() => navigate(`${agentUrl(created)}/runtime`)}
                       >
                         <Settings2 className="size-4" />
-                        Edit configuration
+                        {tr("Edit configuration")}
                       </Button>
                       <Button
                         disabled={created.status === "pending_approval"}
@@ -789,7 +855,7 @@ function Setup({
                           })
                         }
                       >
-                        Assign {created.name} a Task
+                        {tr("Assign")} {created.name} {tr("a Task")}
                         <ArrowRight className="size-4" />
                       </Button>
                     </div>
@@ -803,19 +869,69 @@ function Setup({
                     }}
                   >
                     <h2 className="text-xl font-semibold">
-                      Configure your agent
+                      {tr("Configure your agent")}
                     </h2>
                     <fieldset disabled={busy} className="space-y-8">
                       <section className="space-y-5">
-                        <h3 className="text-sm font-semibold">Runtime</h3>
+                        <h3 className="text-sm font-semibold">智能体模板</h3>
+                        <Field label="模板">
+                          <select aria-label="模板" className={controlClass} value={template?.id ?? ""} onChange={(event) => {
+                            const next = templates.find((item) => item.id === event.target.value);
+                            if (next && next.id !== template?.id) setPendingTemplate(next);
+                          }}>
+                            {templates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                          </select>
+                        </Field>
+                        <Field label="职位名称" hint={template?.role === "custom" ? "按岗位填写，例如设计师、测试工程师或项目协调员。" : "职位可按实际职责修改。"}>
+                          <div className="space-y-2">
+                            <select aria-label="标准头衔" className={controlClass} value={customTitleMode ? "__custom__" : positionTitle} onChange={(event) => {
+                              if (event.target.value === "__custom__") {
+                                setCustomTitleMode(true);
+                                if (AGENT_TITLES.includes(positionTitle as (typeof AGENT_TITLES)[number])) setPositionTitle("");
+                              } else {
+                                setCustomTitleMode(false);
+                                setPositionTitle(event.target.value);
+                              }
+                            }}>
+                              {AGENT_TITLES.map((title) => <option key={title} value={title}>{title}</option>)}
+                              <option value="__custom__">自定义头衔</option>
+                            </select>
+                            {customTitleMode && <Input aria-label="自定义头衔" value={positionTitle} onChange={(event) => setPositionTitle(event.target.value)} placeholder="输入自定义头衔" />}
+                          </div>
+                        </Field>
+                        <Field label="职责说明"><Textarea aria-label="职责说明" rows={3} value={capabilities} onChange={(event) => setCapabilities(event.target.value)} /></Field>
+                        {template?.role === "member" ? <Field label="组长" hint="组员成果必须经组长复核后才能完成。">
+                          <select aria-label="组长" className={controlClass} value={reportsTo} required onChange={(event) => setReportsTo(event.target.value)}>
+                            <option value="">选择当前组织的组长</option>
+                            {leaders.map((leader) => <option key={leader.id} value={leader.id}>{leader.name}</option>)}
+                          </select>
+                          {!agents.isPending && leaders.length === 0 ? <p role="alert" className="text-sm text-destructive">没有可用组长，请先使用组长模板创建智能体，或恢复已有组长。</p> : null}
+                        </Field> : <Field label={template?.role === "leader" ? "部长或上级负责人" : template?.role === "department_head" ? "公司负责人" : "汇报上级"} hint="仅选择当前组织的可用智能体，也可暂不设置。">
+                          <select aria-label="汇报上级" className={controlClass} value={reportsTo} onChange={(event) => setReportsTo(event.target.value)}>
+                            <option value="">暂不设置上级</option>
+                            {leaders.map((manager) => <option key={manager.id} value={manager.id}>{manager.name}{manager.title ? ` · ${manager.title}` : ""}</option>)}
+                          </select>
+                        </Field>}
+                        <Field label="职责指令（AGENTS.md）"><Textarea aria-label="职责指令（AGENTS.md）" rows={12} value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></Field>
+                        <Field label={uiText("Skills")}><TemplateSkillsField companyId={companyId} value={skills} onChange={setSkills} /></Field>
+                        <fieldset className="space-y-3">
+                          <legend className="text-sm font-medium">权限</legend>
+                          {permissions ? (Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => <label key={key} className="flex items-center gap-3 text-sm">
+                            <input type="checkbox" checked={permissions[key]} onChange={(event) => setPermissions({ ...permissions, [key]: event.target.checked })} />
+                            {{ canCreateTasks: "创建与拆分 Task", canAssignTasks: "分配 Task", canReviewTasks: "验收成果", canManageAgents: "管理直属智能体", canCreateAgents: "创建智能体", canCreateSkills: "创建与导入 Skills" }[key]}
+                          </label>) : null}
+                        </fieldset>
+                      </section>
+                      <section className="space-y-5">
+                        <h3 className="text-sm font-semibold">{tr("Runtime")}</h3>
                         {aiProviderForAdapter(brandType) && (
                           connection && !aiBinding ? (
                             <div className="space-y-3">
                               <p className="text-sm text-muted-foreground">
-                                Using the connection selected in the Connect step.
+                                {tr("Using the connection selected in the Connect step.")}
                               </p>
                               <Button type="button" variant="outline" onClick={() => setScreen("connect")}>
-                                Change connection
+                                {tr("Change connection")}
                               </Button>
                             </div>
                           ) : (
@@ -823,7 +939,7 @@ function Setup({
                               onChange={binding => { setRuntimeAiBinding(binding); resetTest(); }} />
                           )
                         )}
-                        {models.error && <p role="alert" className="text-sm text-destructive">Could not load models. Retry or enter a model ID manually.</p>}
+                        {models.error && <p role="alert" className="text-sm text-destructive">{tr("Could not load models. Retry or enter a model ID manually.")}</p>}
                         {((showModel && !usingKimiApi) ||
                           efforts.length > 0) && (
                           <div className="grid items-start gap-5 sm:grid-cols-2">
@@ -861,9 +977,9 @@ function Setup({
                               />
                             )}
                             {efforts.length > 0 && (
-                              <Field label="Thinking effort">
+                              <Field label={tr("Thinking effort")}>
                                 <select
-                                  aria-label="Thinking effort"
+                                  aria-label={tr("Thinking effort")}
                                   className={controlClass}
                                   value={effort}
                                   onChange={(event) => {
@@ -871,7 +987,7 @@ function Setup({
                                     resetTest();
                                   }}
                                 >
-                                  <option value="">Auto</option>
+                                  <option value="">{tr("Auto")}</option>
                                   {efforts.map((value) => (
                                     <option key={value} value={value}>
                                       {value}
@@ -889,16 +1005,15 @@ function Setup({
                         )}
                         {showModel && models.error && (
                           <p className="text-xs text-muted-foreground">
-                            Couldn’t load models. You can enter a model ID
-                            manually.
+                            {tr("Couldn’t load models. You can enter a model ID manually.")}
                           </p>
                         )}
                         {hasCredentialField && !aiBinding && (
                           <div className="grid gap-5 sm:grid-cols-2">
                             {chooseProvider && (
-                              <Field label="API key provider">
+                              <Field label={tr("API key provider")}>
                                 <select
-                                  aria-label="API key provider"
+                                  aria-label={tr("API key provider")}
                                   className={controlClass}
                                   value={provider}
                                   onChange={(event) => {
@@ -965,7 +1080,7 @@ function Setup({
                                       rel="noopener noreferrer"
                                       className="shrink-0 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
                                     >
-                                      get api key
+                                      {tr("get api key")}
                                     </a>
                                   )}
                                 </div>
@@ -977,7 +1092,7 @@ function Setup({
                                   chooseProvider ? "sm:col-span-2" : undefined
                                 }
                               >
-                                <Field label="Or use an organization secret">
+                                <Field label={tr("Or use an organization secret")}>
                                   <SecretPicker
                                     secretId={
                                       selectedBinding &&
@@ -1002,16 +1117,15 @@ function Setup({
                               </div>
                             )}
                             <p className="text-xs text-muted-foreground sm:col-span-2">
-                              New keys are saved as organization secrets when
-                              you finish setup.
-                              {multiProvider && ` Use a ${provider}/model ID.`}
+                              {tr("New keys are saved as organization secrets when you finish setup.")}
+                              {multiProvider && ` ${tr("Use a provider/model ID.")}`}
                             </p>
                           </div>
                         )}
                         {adapterType === "hermes_gateway" && (
-                          <Field label="Hermes API base URL">
+                          <Field label={tr("Hermes API base URL")}>
                             <Input
-                              aria-label="Hermes API base URL"
+                              aria-label={tr("Hermes API base URL")}
                               value={gatewayUrl}
                               onChange={(event) => {
                                 setGatewayUrl(event.target.value);
@@ -1023,9 +1137,9 @@ function Setup({
                         )}
                         {usingKimiApi && (
                           <div className="grid gap-5 sm:grid-cols-2">
-                            <Field label="Kimi API model name">
+                            <Field label={tr("Kimi API model name")}>
                               <Input
-                                aria-label="Kimi API model name"
+                                aria-label={tr("Kimi API model name")}
                                 value={kimiModel}
                                 onChange={(event) => {
                                   setKimiModel(event.target.value);
@@ -1034,9 +1148,9 @@ function Setup({
                                 placeholder="kimi-for-coding"
                               />
                             </Field>
-                            <Field label="Kimi API protocol">
+                            <Field label={tr("Kimi API protocol")}>
                               <select
-                                aria-label="Kimi API protocol"
+                                aria-label={uiText("Kimi API protocol")}
                                 className={controlClass}
                                 value={kimiProtocol}
                                 onChange={(event) => {
@@ -1052,26 +1166,26 @@ function Setup({
                               </select>
                             </Field>
                             <Field
-                              label="Kimi API base URL"
-                              hint="Optional override for your provider endpoint."
+                              label={tr("Kimi API base URL")}
+                              hint={tr("Optional override for your provider endpoint.")}
                             >
                               <Input
-                                aria-label="Kimi API base URL"
+                                aria-label={tr("Kimi API base URL")}
                                 value={kimiBaseUrl}
                                 onChange={(event) => {
                                   setKimiBaseUrl(event.target.value);
                                   resetTest();
                                 }}
-                                placeholder="Provider default"
+                                placeholder={tr("Provider default")}
                               />
                             </Field>
                           </div>
                         )}
                         {adapterType === "cursor_cloud" && (
                           <div className="grid gap-5 sm:grid-cols-2">
-                            <Field label="GitHub repository">
+                            <Field label={tr("GitHub repository")}>
                               <Input
-                                aria-label="GitHub repository"
+                                aria-label={tr("GitHub repository")}
                                 value={repository}
                                 onChange={(event) => {
                                   setRepository(event.target.value);
@@ -1080,10 +1194,10 @@ function Setup({
                                 placeholder="https://github.com/your-org/repo"
                               />
                             </Field>
-                            <Field label="Branch">
+                            <Field label={tr("Branch")}>
                               <Input
-                                aria-label="Branch"
-                                placeholder="Repository default"
+                                aria-label={uiText("Branch")}
+                                placeholder={tr("Repository default")}
                                 value={branch}
                                 onChange={(event) => {
                                   setBranch(event.target.value);
@@ -1098,9 +1212,9 @@ function Setup({
                         adapterType,
                       ) && (
                         <section className="space-y-5">
-                          <h3 className="text-sm font-semibold">Environment</h3>
+                          <h3 className="text-sm font-semibold">{tr("Environment")}</h3>
                           <select
-                            aria-label="Environment"
+                            aria-label={tr("Environment")}
                             className={controlClass}
                             value={environmentOverride}
                             disabled={forced.forced || managedOnly}
@@ -1112,7 +1226,7 @@ function Setup({
                             }}
                           >
                             <option value="">
-                              Default: {environmentLabel}
+                              {tr("Default")}: {environmentLabel}
                             </option>
                             {(envs.data ?? [])
                               .filter((env) => env.status === "active")
@@ -1128,13 +1242,13 @@ function Setup({
                     <RuntimeTestCard
                       state={testState}
                       result={result}
-                      error={error}
+                      error={error ? tr(error) : null}
                       disabled={!ready || busy}
                       onTest={() => void runTest()}
                     />
                     {error && testState !== "fail" && (
                       <p role="alert" className="text-sm text-destructive">
-                        {error}
+                        {tr(error)}
                       </p>
                     )}
                     <div className="flex justify-between border-t border-border py-5">
@@ -1146,7 +1260,7 @@ function Setup({
                           onClick={() => setScreen("connect")}
                         >
                           <ArrowLeft className="size-4" />
-                          Connection
+                          {tr("Connection")}
                         </Button>
                       ) : (
                         <span />
@@ -1155,12 +1269,14 @@ function Setup({
                         type="submit"
                         disabled={
                           !ready ||
+                          !template ||
+                          memberNeedsLeader ||
                           busy ||
                           testState === "fail" ||
                           Boolean(connectionAdapter && !connection)
                         }
                       >
-                        {saving ? "Creating…" : "Finish setup"}
+                        {saving ? "Creating…" : uiText("Finish setup")}
                         <Check className="size-4" />
                       </Button>
                     </div>

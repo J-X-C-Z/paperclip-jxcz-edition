@@ -7,6 +7,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { SidebarAccountMenu } from "./SidebarAccountMenu";
 import { SidebarAccountMenu as ProductionSidebarAccountMenu } from "./SidebarAccountMenu.production";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { i18n } from "@/i18n";
 
 const mockAuthApi = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -78,7 +79,8 @@ async function flushReact() {
 describe("SidebarAccountMenu", () => {
   let container: HTMLDivElement;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     container = document.createElement("div");
     document.body.appendChild(container);
     mockAuthApi.getSession.mockResolvedValue({
@@ -345,6 +347,42 @@ describe("SidebarAccountMenu", () => {
     await flushReact();
 
     expect(document.body.textContent).not.toContain("Sign out");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("lets the production account menu switch between English and Simplified Chinese", async () => {
+    const root = createRoot(container);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <ProductionSidebarAccountMenu deploymentMode="local_trusted" open />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flushReact();
+
+    const languageButton = () => Array.from(document.body.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Simplified Chinese") || button.textContent?.includes("切换到 English"),
+    );
+    expect(languageButton()?.textContent).toContain("Switch to Simplified Chinese");
+
+    await act(async () => {
+      languageButton()?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(i18n.language).toBe("zh-CN");
+    expect(document.documentElement.lang).toBe("zh-CN");
+    expect(languageButton()?.textContent).toContain("切换到 English");
 
     await act(async () => {
       root.unmount();

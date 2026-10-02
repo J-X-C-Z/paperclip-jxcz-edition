@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 export type MatchSourceChipKind = "title" | "identifier" | "comment" | "document";

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState } from "react";
 import { ArrowUp, ArrowDown, Minus, AlertTriangle } from "lucide-react";
 import { cn } from "../lib/utils";

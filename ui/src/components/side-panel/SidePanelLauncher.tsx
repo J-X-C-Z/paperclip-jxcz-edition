@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState, type ReactNode } from "react";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import {
@@ -46,9 +47,7 @@ function LauncherContent({
             <CommandGroup heading={section.label}>
               {section.loading ? (
                 <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground" role="status">
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                  Loading…
-                </div>
+                  <Loader2 className="size-4 animate-spin" aria-hidden /> {uiText("Loading…")} </div>
               ) : null}
               {section.error ? (
                 <div className="flex items-start gap-2 px-2 py-3 text-sm text-muted-foreground" role="status">

@@ -1,3 +1,5 @@
+import type { AgentTemplate } from "@paperclipai/shared";
+import { AgentTemplateSelection } from "./new-agent/AgentTemplateSelection";
 import { useState } from "react";
 import { useCompany } from "../context/CompanyContext";
 import { ExternalAgentInviteDialog } from "./new-agent/ExternalAgentInviteDialog";
@@ -15,7 +17,9 @@ export function NewAgentDialog() {
 function NewAgentDialogContent({ companyId, onClose }: { companyId: string | null; onClose: () => void }) {
   const navigate = useNavigate();
   const [invite, setInvite] = useState(false);
+  const [template, setTemplate] = useState<AgentTemplate | null>(null);
   if (invite && companyId) return <ExternalAgentInviteDialog companyId={companyId} onClose={onClose} onBack={() => setInvite(false)} />;
+  if (!template && companyId) return <AgentTemplateSelection companyId={companyId} onClose={onClose} onSelect={setTemplate} />;
   return (
     <AgentBasicsDialog
       open
@@ -23,7 +27,7 @@ function NewAgentDialogContent({ companyId, onClose }: { companyId: string | nul
       onInvite={companyId ? () => setInvite(true) : undefined}
       onContinue={(basics) => {
         onClose();
-        navigate(`/agents/new?${new URLSearchParams(basics)}`);
+        navigate(`/agents/new?${new URLSearchParams({ ...basics, ...(template ? { templateId: template.id } : {}) })}`);
       }}
     />
   );

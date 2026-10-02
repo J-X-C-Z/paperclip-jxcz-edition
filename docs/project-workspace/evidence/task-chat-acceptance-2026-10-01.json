@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-01",
+  "checkout": "/Users/jxcz/Agent Workspace/Paperclip",
+  "url": "http://127.0.0.1:3100/ORI/issues/JXC-46",
+  "goal": "整体优化任务聊天，优先速度与易用性",
+  "changes": [
+    "消息加载完成即展示，运行日志、计划、附件等记录继续补齐；背景刷新不隐藏已有消息",
+    "滚动与尺寸变化的几何测量按帧合并；同步保留阅读锚点，前插内容也不拉回旧位置",
+    "查找已加载消息，支持中文及大小写不敏感搜索、上下一条、Enter/Shift+Enter/Escape",
+    "中文输入法组合期间保护发送和补全快捷键；模式按钮外 Shift+Tab 保留普通焦点导航",
+    "输入区换行与发送提示；复制成功提示及失败手动复制指引；执行结果中文状态",
+    "窗口宽度变化时重新绑定搜索高亮，不重复滚动或清空查询"
+  ],
+  "validation": {
+    "test_files": 11,
+    "passed_tests": 441,
+    "thread_tests": 175,
+    "input_integration_tests": 266,
+    "scroller_tests": 18,
+    "ui_typecheck": "passed",
+    "token_gates": "passed",
+    "production_build": "passed",
+    "changed_file_diff_check": "passed",
+    "search_final_tests": 4,
+    "counting": "174 thread-suite cases + 266 input/integration cases + 1 added responsive search regression; the other 3 search cases passed again",
+    "final_checks": "UI typecheck, isolated production build and token gates all passed after concurrent app localization integration fixes"
+  },
+  "browser": {
+    "query": "Xcode",
+    "matches": 6,
+    "next_match": "2 / 6",
+    "highlighted_rows": 1,
+    "draft_edit_and_clear": "passed; no message sent",
+    "empty_send_disabled": true,
+    "mobile_width": 390,
+    "mobile_document_scroll_width": 390,
+    "viewport_restored": true,
+    "screenshots": [
+      "task-chat-desktop-2026-10-01.png",
+      "task-chat-mobile-2026-10-01.png"
+    ],
+    "responsive_highlight_preserved": {
+      "mobile": 1,
+      "desktop_after_reset": 1
+    }
+  },
+  "deployment": {
+    "live_service": "127.0.0.1:3100",
+    "observed_mode": "Vite development server (changed by another ongoing task)",
+    "static_distribution_overlay": "server/ui-dist",
+    "old_hashed_assets_retained": true,
+    "core_restarted_by_this_task": false,
+    "database_changed_by_this_task": false,
+    "build_output": "/tmp/paperclip-task-chat-441-dist-final"
+  },
+  "limits": [
+    "未发送真实任务消息、触发智能体、执行订阅探测或修改业务数据",
+    "不宣称首次应用启动秒开；服务引导和远端数据库响应仍影响冷加载",
+    "查找范围为已加载消息，不包含折叠工具日志及尚未加载的历史",
+    "依赖锁文件存在其他同时进行任务的变更；本任务没有使用 pnpm 或修改依赖",
+    "构建保留既有 CSS/大包/动态导入警告；不是全仓测试验收"
+  ],
+  "integration_fixes": [
+    "uiText import in ActivityPanel and AppNotConnected; removed duplicate import introduced concurrently",
+    "Localized connection label is a string, not a type-level function call"
+  ]
+}

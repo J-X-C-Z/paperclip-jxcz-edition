@@ -129,6 +129,43 @@ describe("plugin database SQL validation", () => {
     ).toThrow(/namespace/i);
   });
 
+  it.each([
+    "WITH saved AS (UPDATE plugin_test.teams SET name = $1 RETURNING id), removed AS (DELETE FROM plugin_test.members USING saved WHERE team_id = saved.id RETURNING team_id) INSERT INTO plugin_test.members (team_id, agent_id) SELECT saved.id, member.agent_id FROM saved CROSS JOIN jsonb_array_elements_text($2::jsonb) AS member(agent_id)",
+    "WITH locked AS MATERIALIZED (SELECT id FROM plugin_test.teams ORDER BY id FOR UPDATE) UPDATE plugin_test.teams t SET name = $1 FROM locked l WHERE t.id = l.id",
+    "WITH locked AS (SELECT id FROM plugin_test.teams FOR NO KEY UPDATE) INSERT INTO plugin_test.members (team_id) SELECT id FROM locked",
+    "WITH archived AS (INSERT INTO plugin_test.archives SELECT id FROM plugin_test.cycles ON CONFLICT (id) DO UPDATE SET id = excluded.id RETURNING id) UPDATE plugin_test.cycles c SET state = $1 FROM archived a WHERE c.id = a.id",
+    'WITH "saved" (id) AS MATERIALIZED (SELECT id FROM "plugin_test"."rows") DELETE FROM "plugin_test"."rows" USING "saved" WHERE rows.id = saved.id',
+    "/* nested /* comment */ safe */ WITH source AS (SELECT 'DROP TABLE public.issues; UPDATE' AS value) INSERT INTO plugin_test.rows (label) SELECT value FROM source; -- trailing comment",
+    "WITH source AS (SELECT $$ DELETE FROM public.issues; $$ AS value) INSERT INTO plugin_test.rows (label) SELECT value FROM source",
+  ])("allows namespace-scoped WITH DML: %s", (statement) => {
+    expect(() => validatePluginRuntimeExecute(statement, "plugin_test")).not.toThrow();
+  });
+
+  it.each([
+    "WITH bad AS (DELETE FROM public.issues RETURNING id) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (UPDATE issues SET title = $1 RETURNING id) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH safe AS (SELECT id FROM plugin_test.rows) UPDATE public.issues SET title = $1",
+    "WITH safe AS (SELECT id FROM plugin_test.rows) UPDATE issues SET title = $1",
+    "WITH bad AS (SELECT id FROM plugin_test.public.issues) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM other.rows) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM public /* split */ .issues) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM issues), issues AS (SELECT id FROM plugin_test.rows) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM (WITH issues AS (SELECT id FROM plugin_test.rows) SELECT id FROM issues) local_rows) INSERT INTO plugin_test.rows SELECT id FROM issues",
+    "WITH bad AS (SELECT id FROM ONLY (public.issues)) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH locked AS (SELECT id FROM public.issues FOR UPDATE) INSERT INTO plugin_test.rows SELECT id FROM locked",
+    "WITH locked AS (SELECT id FROM issues FOR NO KEY UPDATE) INSERT INTO plugin_test.rows SELECT id FROM locked",
+    "WITH locked AS (SELECT id FROM plugin_test.rows FOR UPDATE), bad AS (UPDATE public.issues SET title = $1 RETURNING id) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (UPDATE ONLY public.issues SET title = $1 RETURNING id) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM issues) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (SELECT id FROM plugin_test.rows, public.issues) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (DROP TABLE plugin_test.rows) INSERT INTO plugin_test.rows VALUES ($1)",
+    "WITH bad AS (SELECT id INTO plugin_test.hidden FROM plugin_test.rows) INSERT INTO plugin_test.rows SELECT id FROM bad",
+    "WITH bad AS (DELETE FROM plugin_test.rows RETURNING id) SELECT id FROM bad",
+    "WITH source AS (SELECT id FROM plugin_test.rows) INSERT INTO plugin_test.rows SELECT id FROM source; DELETE FROM public.issues",
+  ])("rejects escape or non-DML WITH statements: %s", (statement) => {
+    expect(() => validatePluginRuntimeExecute(statement, "plugin_test")).toThrow();
+  });
+
   it("targets anonymous DO blocks without rejecting do-prefixed aliases", () => {
     expect(() =>
       validatePluginRuntimeQuery(
@@ -580,6 +617,29 @@ describeEmbeddedPostgres("plugin database namespaces", () => {
     await expect(
       pluginDb.execute(pluginId, "UPDATE public.issues SET title = $1", ["bad"]),
     ).rejects.toThrow(/plugin namespace/i);
+  });
+
+  it("executes atomic WITH writes through the real runtime host guard", async () => {
+    const pluginManifest = manifest();
+    const namespace = derivePluginDatabaseNamespace(pluginManifest.id);
+    const packageRoot = await createPluginPackage(pluginManifest,
+      `CREATE TABLE ${namespace}.notes (id uuid PRIMARY KEY, body text NOT NULL);
+       CREATE TABLE ${namespace}.note_copies (id uuid PRIMARY KEY, body text NOT NULL);`);
+    const pluginId = await installPluginRecord(pluginManifest);
+    const pluginDb = pluginDatabaseService(db);
+    await pluginDb.applyMigrations(pluginId, pluginManifest, packageRoot);
+    const id = randomUUID();
+    await pluginDb.execute(pluginId,
+      `WITH inserted AS (INSERT INTO ${namespace}.notes VALUES ($1, $2) RETURNING id, body)
+       INSERT INTO ${namespace}.note_copies SELECT id, body FROM inserted`, [id, "initial"]);
+    await pluginDb.execute(pluginId,
+      `WITH changed AS (UPDATE ${namespace}.notes SET body = $1 WHERE id = $2 RETURNING id, body)
+       UPDATE ${namespace}.note_copies c SET body = changed.body FROM changed WHERE c.id = changed.id`, ["updated", id]);
+    expect(await pluginDb.query(pluginId, `SELECT body FROM ${namespace}.note_copies WHERE id = $1`, [id])).toEqual([{ body: "updated" }]);
+    await expect(pluginDb.execute(pluginId,
+      `WITH hidden AS (DELETE FROM public.issues RETURNING id) INSERT INTO ${namespace}.notes SELECT id, $1 FROM hidden`, ["bad"])).rejects.toThrow(/namespace/i);
+    await expect(pluginDb.execute(pluginId,
+      `WITH hidden AS (UPDATE issues SET title = $1 RETURNING id) INSERT INTO ${namespace}.notes SELECT id, $1 FROM hidden`, ["bad"])).rejects.toThrow(/namespace/i);
   });
 
   it("records a failed migration when SQL escapes the plugin namespace", async () => {

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import {
   useEffect,
   useRef,
@@ -54,6 +55,7 @@ import {
 import { fileKindForName, formatFileSize } from "./task-chat-attachments";
 import {
   MarkdownEditor,
+  isImeComposingKeyEvent,
   type MarkdownEditorRef,
 } from "@/components/MarkdownEditor";
 import {
@@ -208,7 +210,7 @@ export function parseRunnerGoalCommand(value: string): ParsedRunnerGoalCommand {
     if (extra.length > 0) {
       return {
         matched: true,
-        error: `/goal ${subcommand} does not accept extra arguments.`,
+        error: uiText("The /goal {command} command does not accept extra arguments.", { command: subcommand }),
       };
     }
     return {
@@ -299,25 +301,25 @@ function AssigneeIdentityAvatar({
 }
 
 const MODE_DESCRIPTION: Partial<Record<IssueWorkMode, string>> = {
-  standard: "Make changes and run work",
-  planning: "Draft a plan before acting",
-  ask: "Answer questions only, no changes",
+  standard: uiText("Make changes and run work"),
+  planning: uiText("Draft a plan before acting"),
+  ask: uiText("Answer questions only, no changes"),
 };
 
 /** v7 per-mode placeholder copy; `{agent}` is the pending assignee's name. */
 function modePlaceholder(mode: IssueWorkMode, agentName: string, mobile: boolean): string {
   if (mobile) {
-    if (mode === "planning") return `Plan with ${agentName}…`;
-    if (mode === "ask") return `Ask ${agentName}…`;
-    return `Message ${agentName}…`;
+    if (mode === "planning") return uiText("Plan with {agent}…", { agent: agentName });
+    if (mode === "ask") return uiText("Ask {agent}…", { agent: agentName });
+    return uiText("Message {agent}…", { agent: agentName });
   }
   switch (mode) {
     case "planning":
-      return `Plan with ${agentName} — shapes the plan doc, no code changes…`;
+      return uiText("Plan with {agent} — shapes the plan doc, no code changes…", { agent: agentName });
     case "ask":
-      return `Ask ${agentName} a question — read-only, nothing runs…`;
+      return uiText("Ask {agent} a question — read-only, nothing runs…", { agent: agentName });
     default:
-      return `Message ${agentName} — describe what you want done…`;
+      return uiText("Message {agent} — describe what you want done…", { agent: agentName });
   }
 }
 
@@ -373,9 +375,10 @@ function escapeMarkdownLabel(name: string): string {
  * (rich lists, @-mentions, /-commands, inline pasted images) over a 32px
  * comp-bar of [attach] [mode chip] … [assignee] [send]. The mode chip is a
  * borderless filled control carrying the pending mode's hue; the composer chrome
- * itself stays neutral. Cmd/Ctrl+. and Shift+Tab cycle modes (captured before
- * Lexical); Cmd/Ctrl+Enter posts via the editor's native onSubmit; plain Enter
- * stays a newline / next list item. Pasted or dropped images upload through
+ * itself stays neutral. Cmd/Ctrl+. cycles modes (captured before Lexical),
+ * while Shift+Tab cycles only from the mode control; Enter posts via the
+ * editor's native onSubmit and Shift+Enter inserts a line break.
+ * Pasted or dropped images upload through
  * `onAttachImage` (or the `onImageUpload` fallback) and land inline at the
  * caret via the editor's image plugin; non-image files render as shadcn
  * base/attachment chips (kind icon · name · size, remove ×, uploading/error
@@ -484,6 +487,7 @@ export function TaskChatComposer({
     submittedAttachmentIds: string[];
   } | null>(null);
   function changeBody(value: string) {
+    if (value !== bodyRef.current) setActionError(null);
     bodyRef.current = value;
     setBody(value);
     const pending = pendingDraftRef.current;
@@ -634,27 +638,27 @@ export function TaskChatComposer({
   );
   const assigneeValue = pendingAssignee ?? currentAssigneeValue;
   const assigneeLabel =
-    reassignOptions?.find((o) => o.id === assigneeValue)?.label ?? "Unassigned";
+    reassignOptions?.find((o) => o.id === assigneeValue)?.label ?? uiText("Unassigned");
   const assigneeName =
-    assigneeLabel === "Unassigned" ? "the agent" : assigneeLabel;
+    assigneeLabel === uiText("Unassigned") ? uiText("the agent") : assigneeLabel;
   const effectivePlaceholder = queuedEdit
-    ? "Edit queued message…"
+    ? uiText("Edit queued message…")
     : (placeholder ?? modePlaceholder(pendingMode, assigneeName, mobile));
   const goalUnavailable = runnerGoalCapability?.availability !== "available";
   const goalCommandOption: ActionCommandOption = {
     id: "action:goal",
     kind: "action",
     command: "goal",
-    name: "Goal",
+    name: uiText("Goal"),
     description:
       !runnerGoalCapability || runnerGoalCapability.verified === false
-        ? "Support will be verified when the session starts."
-        : "Pursue work across turns.",
+        ? uiText("Support will be verified when the session starts.")
+        : uiText("Pursue work across turns."),
     aliases: ["goal", "pursue", "continue"],
     disabled: goalUnavailable && runnerGoalCapability !== null,
     disabledReason:
       runnerGoalCapability?.reason ??
-      "Session goals are unsupported by this agent.",
+      uiText("Session goals are unsupported by this agent."),
   };
 
   function updatePendingAssignee(value: string | null) {
@@ -680,9 +684,9 @@ export function TaskChatComposer({
       const url = onAttachImage
         ? attachment?.contentPath
         : await onImageUpload?.(file);
-      if (!url) throw new Error("Upload did not return a file URL");
+      if (!url) throw new Error(uiText("Upload did not return a file URL"));
       if (!attachmentsRef.current.some((item) => item.id === id))
-        throw new Error("Attachment was removed");
+        throw new Error(uiText("Attachment was removed"));
       setAttachments((prev) =>
         prev.map((item) =>
           item.id === id
@@ -703,7 +707,7 @@ export function TaskChatComposer({
             ? {
                 ...item,
                 status: "error",
-                error: err instanceof Error ? err.message : "Upload failed",
+                error: err instanceof Error ? err.message : uiText("Upload failed"),
               }
             : item,
         ),
@@ -727,7 +731,7 @@ export function TaskChatComposer({
               ? {
                   ...item,
                   status: "error",
-                  error: "This file type cannot be attached here",
+                  error: uiText("This file type cannot be attached here"),
                 }
               : item,
           ),
@@ -736,7 +740,7 @@ export function TaskChatComposer({
       }
       const attachment = await onAttachImage(file);
       if (!attachment?.contentPath)
-        throw new Error("Upload did not return a file URL");
+        throw new Error(uiText("Upload did not return a file URL"));
       const name = attachment?.originalFilename ?? file.name;
       setAttachments((prev) =>
         prev.map((item) =>
@@ -758,7 +762,7 @@ export function TaskChatComposer({
             ? {
                 ...item,
                 status: "error",
-                error: err instanceof Error ? err.message : "Upload failed",
+                error: err instanceof Error ? err.message : uiText("Upload failed"),
               }
             : item,
         ),
@@ -831,6 +835,14 @@ export function TaskChatComposer({
     Boolean(onStop || stopControl.stopping);
   const uploadPending = attachments.some((item) => item.status === "uploading");
   const uploadFailed = attachments.some((item) => item.status === "error");
+  const showKeyboardHint =
+    !disabled &&
+    !submitting &&
+    !uploadPending &&
+    !uploadFailed &&
+    !uncertainSubmission &&
+    !actionError &&
+    !queuedEdit;
   const takeoverVisible = Boolean(
     takeover && !pause && !queuedEdit && !submitting && !uploadPending,
   );
@@ -860,7 +872,7 @@ export function TaskChatComposer({
       ? ({ matched: false } as const)
       : parseRunnerGoalCommand(submittedBody);
     if (goalCommand.matched && conversationMode) {
-      setActionError("Create a separate task for work that needs an ongoing execution goal.");
+      setActionError(uiText("Create a separate task for work that needs an ongoing execution goal."));
       return;
     }
     if (goalCommand.matched) {
@@ -869,13 +881,13 @@ export function TaskChatComposer({
         return;
       }
       if (attachmentsRef.current.length > 0) {
-        setActionError("Remove attachments before using /goal.");
+        setActionError(uiText("Remove attachments before using /goal."));
         return;
       }
       if (!onRunnerGoalCommand) {
         setActionError(
           runnerGoalCapability?.reason ??
-            "Session goals are unsupported by this agent.",
+            uiText("Session goals are unsupported by this agent."),
         );
         return;
       }
@@ -885,7 +897,7 @@ export function TaskChatComposer({
       ) {
         setActionError(
           runnerGoalCapability.reason ??
-            "Session goals are unsupported by this agent.",
+            uiText("Session goals are unsupported by this agent."),
         );
         return;
       }
@@ -895,7 +907,7 @@ export function TaskChatComposer({
         if (hasReassignment && goalCommand.command.action !== "focus") {
           const reassignment = parseAssigneeValue(assigneeValue);
           if (!reassignment || !onRunnerGoalReassign) {
-            setActionError("Select an agent before starting a session goal.");
+            setActionError(uiText("Select an agent before starting a session goal."));
             return;
           }
           await onRunnerGoalReassign(reassignment);
@@ -913,7 +925,7 @@ export function TaskChatComposer({
         setActionError(
           error instanceof Error
             ? error.message
-            : "The goal action could not be applied.",
+            : uiText("The goal action could not be applied."),
         );
       }
       return;
@@ -1069,7 +1081,7 @@ export function TaskChatComposer({
     if (!uncertainSubmission) return;
     setReviewError(false);
     try {
-      if (!onReviewConversation) throw new Error("Review unavailable");
+      if (!onReviewConversation) throw new Error(uiText("Review unavailable"));
       await onReviewConversation();
       if (mountedTaskKey.current !== draftKey) return;
       const reviewed = { ...uncertainSubmission, reviewed: true };
@@ -1102,7 +1114,7 @@ export function TaskChatComposer({
       setTakeoverError(
         cause instanceof Error
           ? cause.message
-          : "This request could not be skipped.",
+          : uiText("This request could not be skipped."),
       );
     });
   }
@@ -1135,15 +1147,19 @@ export function TaskChatComposer({
         mobile && "p-2",
       )}
       onKeyDownCapture={(e) => {
+        if (isImeComposingKeyEvent(e)) return;
         // Capture mode shortcuts on the wrapper so they work while the rich
         // editor is focused and win over Lexical/browser bindings. Match the
         // period by key and code because hardware keyboards on iOS can omit
         // `code` for Cmd+Period.
         if (disabled || queuedEdit || takeoverVisible) return;
         const isPeriod = e.key === "." || e.code === "Period";
+        const modeTrigger = (e.target as Element | null)?.closest?.(
+          '[data-slot="task-chat-mode-trigger"]',
+        );
         const isModeShortcut =
           (isPeriod && (e.metaKey || e.ctrlKey)) ||
-          (e.key === "Tab" && e.shiftKey);
+          (e.key === "Tab" && e.shiftKey && Boolean(modeTrigger));
         if (isModeShortcut) {
           e.preventDefault();
           e.stopPropagation();
@@ -1167,10 +1183,10 @@ export function TaskChatComposer({
             size="sm"
             onClick={reviewUncertainSubmission}
           >
-            Review conversation
+            {uiText("Review conversation")}
           </Button>
           {reviewError ? (
-            <p>Couldn’t refresh the conversation. Try reviewing it again.</p>
+            <p>{uiText("Couldn’t refresh the conversation. Try reviewing it again.")}</p>
           ) : null}
           {uncertainSubmission.reviewed ? (
             <>
@@ -1184,7 +1200,7 @@ export function TaskChatComposer({
                 size="sm"
                 onClick={discardUncertainDraft}
               >
-                Discard draft and start new
+                {uiText("Discard draft and start new")}
               </Button>
             </>
           ) : null}
@@ -1226,8 +1242,7 @@ export function TaskChatComposer({
                   className="h-7 px-2"
                   onClick={takeover.onShowNext}
                 >
-                  {takeover.pendingCount} pending
-                </Button>
+                  {takeover.pendingCount} {uiText("pending")} </Button>
               ) : null}
               <div
                 ref={setTakeoverControlsSlot}
@@ -1294,17 +1309,16 @@ export function TaskChatComposer({
             >
               <CircleHelp className="h-4 w-4 shrink-0" aria-hidden />
               <span className="min-w-0 flex-1 truncate">
-                {pendingTakeover?.label ?? takeover?.label ?? "Pending input"}
+                {pendingTakeover?.label ?? takeover?.label ?? uiText("Pending input")}
               </span>
               <span className="shrink-0 font-medium">
-                {pendingTakeover?.count ?? takeover?.pendingCount ?? 1} pending
-              </span>
+                {pendingTakeover?.count ?? takeover?.pendingCount ?? 1} {uiText("pending")} </span>
             </button>
           ) : null}
           {pause && conversationMode ? (
             <div className="space-y-2">
               <TaskChatPausedTakeover {...pause} hasDraft={Boolean(body.trim() || attachments.length)} />
-              <p className="text-xs text-muted-foreground">Send /new to start a fresh session and resume this conversation.</p>
+              <p className="text-xs text-muted-foreground">{uiText("Send /new to start a fresh session and resume this conversation.")}</p>
             </div>
           ) : null}
           <div data-testid="task-chat-composer-input">
@@ -1314,17 +1328,18 @@ export function TaskChatComposer({
               onChange={changeBody}
               placeholder={
                 disabled
-                  ? (disabledReason ?? "Composer disabled")
+                  ? (disabledReason ?? uiText("Composer disabled"))
                   : effectivePlaceholder
               }
               readOnly={disabled || !!uncertainSubmission}
               mentions={mentions}
               actionCommands={conversationMode ? [{
-                id: "action:new", kind: "action", command: "new", name: "New session",
-                description: "Start fresh context here, preserving conversation history.", aliases: ["new"],
+                id: "action:new", kind: "action", command: "new", name: uiText("New session"),
+                description: uiText("Start fresh context here, preserving conversation history."), aliases: ["new"],
                 disabled,
               }] : [goalCommandOption]}
               onSubmit={() => void submit()}
+              submitKey="enter"
               imageUploadHandler={
                 canAcceptFiles ? uploadInlineImage : undefined
               }
@@ -1338,6 +1353,12 @@ export function TaskChatComposer({
               }
             />
           </div>
+
+          {showKeyboardHint ? (
+            <p className="px-1 pt-1 text-xs text-muted-foreground" data-testid="task-chat-composer-keyboard-hint">
+              Enter 发送 · Shift+Enter 换行
+            </p>
+          ) : null}
 
           {actionError ? (
             <p
@@ -1383,9 +1404,9 @@ export function TaskChatComposer({
                       </AttachmentTitle>
                       <AttachmentDescription className="max-w-48">
                         {attachment.status === "uploading"
-                          ? "Uploading…"
+                          ? uiText("Uploading…")
                           : attachment.status === "error"
-                            ? (attachment.error ?? "Upload failed")
+                            ? (attachment.error ?? uiText("Upload failed"))
                             : [kind.label, sizeLabel]
                                 .filter(Boolean)
                                 .join(" · ")}
@@ -1426,8 +1447,8 @@ export function TaskChatComposer({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={disabled}
-                  title="Attach file"
-                  aria-label="Attach file"
+                  title={uiText("Attach file")}
+                  aria-label={uiText("Attach file")}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
                   data-testid="task-chat-composer-attach"
                 >
@@ -1439,8 +1460,8 @@ export function TaskChatComposer({
             {queuedEdit ? (
               <span className="px-1 text-xs font-medium text-muted-foreground">
                 {queuedEdit.stale
-                  ? "Queued message changed"
-                  : "Editing queued message"}
+                  ? uiText("Queued message changed")
+                  : uiText("Editing queued message")}
               </span>
             ) : (
               <DropdownMenu>
@@ -1511,10 +1532,10 @@ export function TaskChatComposer({
               <InlineEntitySelector
                 value={assigneeValue}
                 options={reassignOptions ?? []}
-                placeholder="Assignee"
-                noneLabel="No assignee"
-                searchPlaceholder="Search assignees…"
-                emptyMessage="No matches."
+                placeholder={uiText("Assignee")}
+                noneLabel={uiText("No assignee")}
+                searchPlaceholder={uiText("Search assignees…")}
+                emptyMessage={uiText("No matches.")}
                 onChange={updatePendingAssignee}
                 disabled={disabled}
                 triggerTestId="task-chat-composer-assignee"
@@ -1560,9 +1581,7 @@ export function TaskChatComposer({
                 onClick={onCancelQueuedEdit}
                 disabled={submitting}
                 className="h-8 shrink-0 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-              >
-                Cancel
-              </button>
+              > {uiText("Cancel")} </button>
             ) : null}
 
             <button
@@ -1582,28 +1601,28 @@ export function TaskChatComposer({
               title={
                 showStop
                   ? stopControl.stopping
-                    ? "Stopping…"
-                    : "Stop response"
+                    ? uiText("Stopping…")
+                    : uiText("Stop response")
                   : queuedEdit
                     ? queuedEdit.stale
-                      ? "Queue as new message"
-                      : "Save queued message"
+                      ? uiText("Queue as new message")
+                      : uiText("Save queued message")
                     : uploadPending
-                      ? "Waiting for upload to finish"
+                      ? uiText("Waiting for upload to finish")
                       : uploadFailed
-                        ? "Remove the failed attachment to send"
-                        : "Send (⌘+Enter)"
+                        ? uiText("Remove the failed attachment to send")
+                        : uiText("Send (⌘+Enter)")
               }
               aria-label={
                 showStop
                   ? stopControl.stopping
-                    ? "Stopping…"
-                    : "Stop"
+                    ? uiText("Stopping…")
+                    : uiText("Stop")
                   : queuedEdit
                     ? queuedEdit.stale
-                      ? "Queue as new message"
-                      : "Save queued message"
-                    : "Send"
+                      ? uiText("Queue as new message")
+                      : uiText("Save queued message")
+                    : uiText("Send")
               }
               className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 disabled:scale-100",

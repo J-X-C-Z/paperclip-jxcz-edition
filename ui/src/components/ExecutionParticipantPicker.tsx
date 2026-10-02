@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useState } from "react";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -140,7 +141,7 @@ export function ExecutionParticipantPicker({
               onClick={() => toggle(`user:${currentUserId}`)}
             >
               <User className="h-3 w-3 shrink-0 text-muted-foreground" />
-              Assign to me
+              {uiText("Assign to me")}
             </button>
           )}
           {issue.createdByUserId && issue.createdByUserId !== currentUserId && (

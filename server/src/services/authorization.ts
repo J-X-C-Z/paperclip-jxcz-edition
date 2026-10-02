@@ -29,6 +29,8 @@ import {
 } from "./trust-preset-resolver.js";
 import { logger } from "../middleware/logger.js";
 import { normalizeAgentPermissions } from "./agent-permissions.js";
+import { templateActionDenial } from "./agent-template-task-policy.js";
+import { readAgentTemplateMetadata, isTemplateTeamLeader } from "./agent-templates.js";
 import { grantsForHumanRole, normalizeHumanRole } from "./company-member-roles.js";
 
 export type AuthorizationActor =
@@ -236,6 +238,9 @@ type AssignmentPolicyEffect =
 type AgentHierarchyRow = { id: string; reportsTo: string | null };
 type LowTrustBoundaryWithCompany = LowTrustBoundary & { companyId: string };
 type AgentAuthorizationRow = {
+  name: string;
+  title: string | null;
+  metadata: Record<string, unknown> | null;
   id: string;
   companyId: string;
   role: string;
@@ -732,11 +737,14 @@ export function authorizationService(db: Db | DbTransaction) {
     return db
       .select({
         id: agents.id,
+        name: agents.name,
+        title: agents.title,
         companyId: agents.companyId,
         role: agents.role,
         status: agents.status,
         reportsTo: agents.reportsTo,
         permissions: agents.permissions,
+        metadata: agents.metadata,
       })
       .from(agents)
       .where(eq(agents.id, agentId))
@@ -1870,6 +1878,28 @@ export function authorizationService(db: Db | DbTransaction) {
         reason: "deny_company_boundary",
         explanation: "Actor agent was not found in the target company.",
       });
+    }
+
+    const templateDenial = templateActionDenial(actorAgent, input.action, input.resource);
+    if (templateDenial) return deny({ action: input.action, reason: "deny_policy_restricted", explanation: templateDenial });
+    // Group and department managers coordinate only their own direct reports.
+    // Broad legacy grants must not expand this server-enforced boundary.
+    const actorTemplateRole = readAgentTemplateMetadata(actorAgent.metadata)?.role;
+    if (actorTemplateRole === "leader" || actorTemplateRole === "department_head") {
+      const targetAgentId = input.action === "tasks:assign" && input.resource.type === "issue"
+        ? input.resource.assigneeAgentId
+        : ["agent_config:update", "agent:wake", "agents:configure", "agents:pause", "agents:delete"].includes(input.action) && input.resource.type === "agent"
+          ? input.resource.agentId
+          : null;
+      if (input.action === "tasks:assign" && input.resource.type === "issue" && input.resource.assigneeUserId) {
+        return deny({ action: input.action, reason: "deny_policy_restricted", explanation: "Template leaders may only assign tasks within their agent team." });
+      }
+      if (targetAgentId && targetAgentId !== actorAgent.id) {
+        const target = await loadAgent(targetAgentId);
+        if (!target || target.companyId !== companyId || target.reportsTo !== actorAgent.id || (actorTemplateRole === "department_head" && !isTemplateTeamLeader(target))) {
+          return deny({ action: input.action, reason: "deny_policy_restricted", explanation: "Template leaders may only assign or manage their direct team members." });
+        }
+      }
     }
 
     if (input.actor.keyScope?.kind === "skill_test") {

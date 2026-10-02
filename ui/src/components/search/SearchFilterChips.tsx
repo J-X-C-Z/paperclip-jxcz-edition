@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buildFilterChips, type FilterChipLookups, type SearchFilters } from "@/lib/search-filters";
@@ -36,7 +37,7 @@ export function SearchFilterChips({
         className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         onClick={onClearAll}
       >
-        Clear all
+        {uiText("Clear all")}
       </button>
     </div>
   );

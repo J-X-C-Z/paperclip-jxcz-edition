@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Clock, RotateCcw, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export function IssueScheduledRetryCard({
 
   if (scheduledRetry.scheduledRetryReason === "workspace_busy") {
     return (
-      <InlineBanner tone="info" icon={Clock} title="Waiting for workspace" className="mb-3">
+      <InlineBanner tone="info" icon={Clock} title={uiText("Waiting for workspace")} className="mb-3">
         Another task is using this workspace. Work starts automatically when it is available.
       </InlineBanner>
     );
@@ -89,7 +90,7 @@ export function IssueScheduledRetryCard({
               {badgeLabel}
             </Badge>
             {attempt !== null ? (
-              <span className="text-muted-foreground">Attempt {attempt}</span>
+              <span className="text-muted-foreground">{uiText("Attempt {attempt}")}</span>
             ) : null}
             {reason ? (
               <span className="text-muted-foreground">{reason}</span>
@@ -140,9 +141,7 @@ export function IssueScheduledRetryCard({
           >
             {retryNow.isPending ? (
               <span className="inline-flex items-center gap-1.5">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                Retrying…
-              </span>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> {uiText("Retrying…")} </span>
             ) : isSuccessTransient ? (
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -151,7 +150,7 @@ export function IssueScheduledRetryCard({
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                Retry now
+                {uiText("Retry now")}
               </span>
             )}
           </Button>
@@ -196,9 +195,7 @@ export function RetryErrorBand({ error, onRetry, className }: RetryErrorBandProp
         type="button"
         onClick={onRetry}
         className="shrink-0 font-medium text-rose-700 hover:underline dark:text-rose-300"
-      >
-        Try again
-      </button>
+      > {uiText("Try again")} </button>
     </div>
   );
 }

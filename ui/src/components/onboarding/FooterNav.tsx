@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
@@ -65,9 +66,7 @@ export function FooterNav({
           onClick={onBack}
           disabled={loading}
         >
-          <ArrowLeft className="mr-1 size-3.5" />
-          Back
-        </Button>
+          <ArrowLeft className="mr-1 size-3.5" /> {uiText("Back")} </Button>
       ) : (
         <span />
       )}

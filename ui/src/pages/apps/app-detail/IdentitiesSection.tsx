@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Building2, Loader2, Lock, RefreshCw, TriangleAlert, UserRound } from "lucide-react";
 import type {
@@ -176,19 +177,18 @@ export function IdentitiesSection({
     const github = agentGrant?.providerTenant?.github;
     return (
       <section className="space-y-5">
-        <h2 className="text-sm font-semibold text-foreground">GitHub identity</h2>
-        <p className="text-sm text-muted-foreground">This agent uses this GitHub account for everyone’s work, instead of the person giving instructions.</p>
+        <h2 className="text-sm font-semibold text-foreground">{uiText("GitHub identity")}</h2>
+        <p className="text-sm text-muted-foreground">{uiText("This agent uses this GitHub account for everyone’s work, instead of the person giving instructions.")}</p>
         <IdentityRow
-          title={github ? `@${github.login}` : "Dedicated GitHub account"}
+          title={github ? `@${github.login}` : uiText("Dedicated GitHub account")}
           status={agentGrant?.status ?? null}
           detail={dedicatedAgent ? (
             <Link
               to={agentUrl(dedicatedAgent)}
               className="transition-colors hover:text-foreground hover:underline"
-            >
-              Used only by {dedicatedAgent.name}
+            > {uiText("Used only by")} {dedicatedAgent.name}
             </Link>
-          ) : "Dedicated to one agent"}
+          ) : uiText("Dedicated to one agent")}
           actions={!agentGrant && dedicatedAgent && capabilities?.canConfigure ? (
             <Button size="sm" disabled={connectPending} onClick={() => onConnectAgent(dedicatedAgent.id)}>
               {connectPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
@@ -233,9 +233,9 @@ export function IdentitiesSection({
           personalGrant ? null : (
             <IdentityRow
               id="personal-identity"
-              title="Personal account"
+              title={uiText("Personal account")}
               status={null}
-              detail="Personal identity"
+              detail={uiText("Personal identity")}
               actions={capabilities?.canConnectAsCurrentUser ? (
                   <Button size="sm" disabled={connectPending} onClick={onConnectAsMe}>
                     {connectPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
@@ -255,9 +255,9 @@ export function IdentitiesSection({
             ) : null
           ) : (
             <IdentityRow
-              title="Organization account"
+              title={uiText("Organization account")}
               status={null}
-              detail="Organization identity"
+              detail={uiText("Organization identity")}
               actions={capabilities?.canCreateOrganizationGrant ? (
                   <Button size="sm" disabled={connectPending} onClick={onConnectOrganization}>
                     Connect organization identity
@@ -301,17 +301,17 @@ function GitHubConnectionSummary({
       ? github.installationUrl
       : null;
   const repositoryWarning = github.repositorySelection === "all"
-    ? "All current and future repositories"
+    ? uiText("All current and future repositories")
     : github.repositorySelection === "mixed"
-      ? "Mixed access; scope varies by installation"
+      ? uiText("Mixed access; scope varies by installation")
       : null;
   const repositorySummary = github.repositorySelection === "none"
-    ? "No repositories selected"
+    ? uiText("No repositories selected")
     : `${github.repositoryCount} selected ${github.repositoryCount === 1 ? "repository" : "repositories"}`;
   return (
     <div className="divide-y divide-border border-y border-border">
       <div className="py-3">
-        <div className="text-sm font-medium text-foreground">GitHub account</div>
+        <div className="text-sm font-medium text-foreground">{uiText("GitHub account")}</div>
         <a className="text-sm text-muted-foreground hover:underline" href={`https://github.com/${encodeURIComponent(github.login)}`} target="_blank" rel="noreferrer">
           @{github.login}
         </a>
@@ -319,7 +319,7 @@ function GitHubConnectionSummary({
       <div className="space-y-3 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-medium text-foreground">Repositories</div>
+            <div className="text-sm font-medium text-foreground">{uiText("Repositories")}</div>
             {repositoryWarning ? (
               <div
                 role="note"
@@ -337,13 +337,13 @@ function GitHubConnectionSummary({
           </div>
           <div className="flex items-center gap-2">
             {onRefreshAccess && configurationUrl ? (
-              <Button size="icon-sm" variant="outline" aria-label="Refresh access" title="Refresh access" disabled={refreshPending} onClick={onRefreshAccess}>
+              <Button size="icon-sm" variant="outline" aria-label={uiText("Refresh access")} title={uiText("Refresh access")} disabled={refreshPending} onClick={onRefreshAccess}>
                 {refreshPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
               </Button>
             ) : null}
             {configurationUrl ? (
               <Button asChild size="sm" variant="outline">
-                <a href={configurationUrl} target="_blank" rel="noreferrer">Add More Repos on GitHub</a>
+                <a href={configurationUrl} target="_blank" rel="noreferrer">{uiText("Add More Repos on GitHub")}</a>
               </Button>
             ) : onRefreshAccess ? (
               <Button size="sm" variant="outline" disabled={refreshPending} onClick={onRefreshAccess}>
@@ -354,13 +354,13 @@ function GitHubConnectionSummary({
           </div>
         </div>
         {github.repositories ? (
-          github.repositories.length ? <ul aria-label="Accessible GitHub repositories" tabIndex={0} className="max-h-(--sz-github-repository-list) space-y-2 overflow-y-auto text-sm">
+          github.repositories.length ? <ul aria-label={uiText("Accessible GitHub repositories")} tabIndex={0} className="max-h-(--sz-github-repository-list) space-y-2 overflow-y-auto text-sm">
             {github.repositories.map((repository) => (
               <li key={repository.id}>
                 <a className="flex items-center gap-2 text-muted-foreground hover:underline" href={`https://github.com/${repository.fullName.split("/").map(encodeURIComponent).join("/")}`} target="_blank" rel="noreferrer">
                   <GithubIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="break-all">{repository.fullName}</span>
-                  {repository.private === true ? <Lock className="h-3 w-3 shrink-0" role="img" aria-label="Private repository" /> : null}
+                  {repository.private === true ? <Lock className="h-3 w-3 shrink-0" role="img" aria-label={uiText("Private repository")} /> : null}
                 </a>
               </li>
             ))}
@@ -368,10 +368,10 @@ function GitHubConnectionSummary({
             No accessible repositories.
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">Refresh access to load the current repository list.</p>
+          <p className="text-sm text-muted-foreground">{uiText("Refresh access to load the current repository list.")}</p>
         )}
         {configurationUrl ? <p className="text-xs text-muted-foreground">
-          Missing an organization or repository? <a href={configurationUrl} target="_blank" rel="noreferrer" className="text-foreground hover:underline">Configure access on GitHub</a>, then refresh this list.
+          Missing an organization or repository? <a href={configurationUrl} target="_blank" rel="noreferrer" className="text-foreground hover:underline">{uiText("Configure access on GitHub")}</a>, then refresh this list.
         </p> : null}
       </div>
     </div>
@@ -379,7 +379,7 @@ function GitHubConnectionSummary({
 }
 
 function IdentitiesHeading() {
-  return <h2 className="text-sm font-semibold text-foreground">Which humans can use this credential?</h2>;
+  return <h2 className="text-sm font-semibold text-foreground">{uiText("Which humans can use this credential?")}</h2>;
 }
 
 function HumanAccessCards({
@@ -404,7 +404,7 @@ function HumanAccessCards({
   return (
     <div className="space-y-3">
       <RadioCardGroup
-        ariaLabel="Which humans can use this credential"
+        ariaLabel={uiText("Which humans can use this credential")}
         value={personal ? "personal" : restricted ? "selected" : "company"}
         className="sm:grid-cols-2"
         onValueChange={(next) => {
@@ -415,22 +415,22 @@ function HumanAccessCards({
         options={personal ? [
           {
             value: "personal",
-            title: "Just me",
-            description: "Only you can use this connection.",
+            title: uiText("Just me"),
+            description: uiText("Only you can use this connection."),
             icon: <UserRound className="h-4 w-4" />,
           },
         ] : [
           {
             value: "selected",
-            title: "Humans I pick",
-            description: "Only selected people in your company.",
+            title: uiText("Humans I pick"),
+            description: uiText("Only selected people in your company."),
             icon: <UserRound className="h-4 w-4" />,
             disabled: !canEditAudience,
           },
           {
             value: "company",
-            title: "Any human in the company",
-            description: "Anyone in your company can use this connection.",
+            title: uiText("Any human in the company"),
+            description: uiText("Anyone in your company can use this connection."),
             icon: <Building2 className="h-4 w-4" />,
             disabled: !canEditAudience,
           },
@@ -510,7 +510,7 @@ export function AudienceDialog({
     <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Who can use this identity</DialogTitle>
+          <DialogTitle>{uiText("Who can use this identity")}</DialogTitle>
           <DialogDescription>
             {grantAccountLabel(grant)} · {appName}
           </DialogDescription>
@@ -518,19 +518,19 @@ export function AudienceDialog({
 
         <div className="space-y-3">
           <RadioCardGroup
-            ariaLabel="Who can use this identity"
+            ariaLabel={uiText("Who can use this identity")}
             value={scope}
             onValueChange={(next) => setScope(next as "all" | "selected")}
             options={[
               {
                 value: "all",
-                title: "All organization members",
-                description: "Anyone in this organization can have work use this identity.",
+                title: uiText("All organization members"),
+                description: uiText("Anyone in this organization can have work use this identity."),
               },
               {
                 value: "selected",
-                title: "Selected members",
-                description: "Only the people you choose.",
+                title: uiText("Selected members"),
+                description: uiText("Only the people you choose."),
               },
             ]}
           />
@@ -545,7 +545,7 @@ export function AudienceDialog({
               selectedUserIds={selected}
               onChange={setSelected}
               triggerLabel={selected.size === 0
-                ? "Choose people"
+                ? uiText("Choose people")
                 : `${selected.size} ${selected.size === 1 ? "person" : "people"} selected`}
             />
           ) : null}
@@ -563,9 +563,7 @@ export function AudienceDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onCancel} disabled={pending}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onCancel} disabled={pending}> {uiText("Cancel")} </Button>
           <Button
             disabled={pending || !canSave}
             onClick={() => onSave(scope === "all" ? [] : [...selected])}
@@ -611,14 +609,14 @@ export function RevokeGrantDialog({
     ? isOwnIdentity
       ? `Revoke your ${providerName} identity?`
       : `Revoke this ${providerName} identity?`
-    : "Revoke the organization identity?";
+    : uiText("Revoke the organization identity?");
   const body = personal
     ? isOwnIdentity
-      ? "Agents will stop acting as you. Work that needs this identity can ask you to connect again."
-      : "Agents will stop acting as this person. They can connect again themselves; no one else can do it for them."
+      ? uiText("Agents will stop acting as you. Work that needs this identity can ask you to connect again.")
+      : uiText("Agents will stop acting as this person. They can connect again themselves; no one else can do it for them.")
     : credentialPolicy === "per_user"
-      ? "Installed agents lose this shared identity immediately."
-      : "Eligible members and installed agents will lose this shared identity immediately.";
+      ? uiText("Installed agents lose this shared identity immediately.")
+      : uiText("Eligible members and installed agents will lose this shared identity immediately.");
 
   return (
     <AlertDialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
@@ -629,9 +627,7 @@ export function RevokeGrantDialog({
         </AlertDialogHeader>
         {children}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending} autoFocus>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={pending} autoFocus> {uiText("Cancel")} </AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
             onClick={(event) => {

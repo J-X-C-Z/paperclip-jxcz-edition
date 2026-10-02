@@ -209,3 +209,6 @@ export { aiConnectionDefaults } from "./ai_connection_defaults.js";
 export { aiProviderDefaults } from "./ai_provider_defaults.js";
 export * from "./email.js";
 export { announcementDismissals, announcementPublications } from "./announcement_dismissals.js";
+
+export { companyAgentTemplateDefaults } from "./company_agent_template_defaults.js";
+export { projectAgentMemberships } from "./project_agent_memberships.js";

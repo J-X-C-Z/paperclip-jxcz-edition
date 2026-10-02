@@ -95,6 +95,10 @@ import {
   agentConfigurationDoc as kimiAgentConfigurationDoc,
   models as kimiModels,
 } from "@paperclipai/adapter-kimi-local";
+import { execute as dshExecute, testEnvironment as dshTestEnvironment, sessionCodec as dshSessionCodec, getConfigSchema as getDshConfigSchema } from "@paperclipai/adapter-dsh-local/server";
+import { agentConfigurationDoc as dshAgentConfigurationDoc, models as dshModels } from "@paperclipai/adapter-dsh-local";
+import { execute as mimocodeExecute, testEnvironment as mimocodeTestEnvironment, sessionCodec as mimocodeSessionCodec, getConfigSchema as getMimocodeConfigSchema } from "@paperclipai/adapter-mimocode-local/server";
+import { agentConfigurationDoc as mimocodeAgentConfigurationDoc, models as mimocodeModels } from "@paperclipai/adapter-mimocode-local";
 import {
   createHermesGatewayServerAdapter,
   createHermesLocalServerAdapter,
@@ -778,6 +782,46 @@ const kimiLocalAdapter: ServerAdapterModule = {
   agentConfigurationDoc: kimiAgentConfigurationDoc,
 };
 
+const dshLocalAdapter: ServerAdapterModule = {
+  type: "dsh_local",
+  runtimeToolDelivery: "native_mcp",
+  execute: dshExecute,
+  testEnvironment: dshTestEnvironment,
+  acp: {
+    agentId: "dsh",
+    skillsMode: "unsupported",
+    prerequisites: { nodeRange: ">=24.11.0", packages: ["@deepseek-ai/dsh"] },
+  },
+  sessionCodec: dshSessionCodec,
+  sessionManagement: getAdapterSessionManagement("dsh_local") ?? undefined,
+  models: dshModels,
+  supportsLocalAgentJwt: true,
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: false,
+  getRuntimeCommandSpec: (config) => buildNpmRuntimeCommandSpec(config, "dsh", "@deepseek-ai/dsh"),
+  agentConfigurationDoc: dshAgentConfigurationDoc,
+  getConfigSchema: getDshConfigSchema,
+};
+
+const mimocodeLocalAdapter: ServerAdapterModule = {
+  type: "mimocode_local",
+  runtimeToolDelivery: "environment",
+  execute: mimocodeExecute,
+  testEnvironment: mimocodeTestEnvironment,
+  acp: { agentId: "mimocode", skillsMode: "unsupported", prerequisites: { nodeRange: ">=20.0.0", packages: ["@mimo-ai/cli"] } },
+  sessionCodec: mimocodeSessionCodec,
+  sessionManagement: getAdapterSessionManagement("mimocode_local") ?? undefined,
+  models: mimocodeModels,
+  supportsLocalAgentJwt: true,
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: false,
+  getRuntimeCommandSpec: (config) => buildNpmRuntimeCommandSpec(config, "mimo", "@mimo-ai/cli"),
+  agentConfigurationDoc: mimocodeAgentConfigurationDoc,
+  getConfigSchema: getMimocodeConfigSchema,
+};
+
 const hermesGatewayAdapter: ServerAdapterModule = {
   ...createHermesGatewayServerAdapter(),
   runtimeToolDelivery: "invocation_context",
@@ -862,7 +906,9 @@ function registerBuiltInAdapters() {
     cursorLocalAdapter,
     geminiLocalAdapter,
     grokLocalAdapter,
+    dshLocalAdapter,
     kimiLocalAdapter,
+    mimocodeLocalAdapter,
     hermesGatewayAdapter,
     hermesLocalAdapter,
     openclawGatewayAdapter,

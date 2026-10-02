@@ -12,6 +12,21 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), serviceWorkerBuildIdPlugin()],
   build: {
     minify: "esbuild",
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Route splitting otherwise emits dozens of tiny shared icon files.
+            // Keep icons together without pulling lazy pages into the shell.
+            {
+              name: "icons",
+              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+              includeDependenciesRecursively: false,
+            },
+          ],
+        },
+      },
+    },
   },
   esbuild:
     mode === "production"

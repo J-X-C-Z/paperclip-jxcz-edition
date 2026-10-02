@@ -10,6 +10,12 @@ const setSearchParamsMock = vi.hoisted(() => vi.fn());
 const setBreadcrumbsMock = vi.hoisted(() => vi.fn());
 let currentSearch = "";
 
+// Navigation contracts use stable source labels independently of the UI locale.
+vi.mock("@/i18n", () => ({
+  uiText: (value: string) => value,
+  useUiTranslator: () => (value: string) => value,
+}));
+
 vi.mock("@/context/CompanyContext", () => ({
   useCompany: () => ({ selectedCompanyId: "company-1" }),
 }));

@@ -1,8 +1,10 @@
+import { useCostCurrency } from "../context/CostCurrencyContext";
+import { uiText } from "@/i18n";
 import { useMemo } from "react";
 import type { CostByBiller, CostByProviderModel } from "@paperclipai/shared";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { QuotaBar } from "./QuotaBar";
-import { billingTypeDisplayName, formatCents, formatTokens, providerDisplayName } from "@/lib/utils";
+import { billingTypeDisplayName, formatTokens, providerDisplayName } from "@/lib/utils";
 
 interface BillerSpendCardProps {
   row: CostByBiller;
@@ -19,16 +21,19 @@ export function BillerSpendCard({
   totalCompanySpendCents,
   providerRows,
 }: BillerSpendCardProps) {
+  const { formatCost: formatCents } = useCostCurrency();
   const providerBreakdown = useMemo(() => {
-    const map = new Map<string, { provider: string; costCents: number; inputTokens: number; outputTokens: number }>();
+    const map = new Map<string, { provider: string; costCents: number; unpricedEventCount: number; inputTokens: number; outputTokens: number }>();
     for (const entry of providerRows) {
       const current = map.get(entry.provider) ?? {
         provider: entry.provider,
         costCents: 0,
+        unpricedEventCount: 0,
         inputTokens: 0,
         outputTokens: 0,
       };
       current.costCents += entry.costCents;
+      current.unpricedEventCount += entry.unpricedEventCount ?? 0;
       current.inputTokens += entry.inputTokens + entry.cachedInputTokens;
       current.outputTokens += entry.outputTokens;
       map.set(entry.provider, current);
@@ -44,13 +49,14 @@ export function BillerSpendCard({
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [providerRows]);
 
+  const reportedCostCents = row.reportedCostCents ?? row.costCents;
   const providerBudgetShare =
     budgetMonthlyCents > 0 && totalCompanySpendCents > 0
-      ? (row.costCents / totalCompanySpendCents) * budgetMonthlyCents
+      ? (reportedCostCents / totalCompanySpendCents) * budgetMonthlyCents
       : budgetMonthlyCents;
   const budgetPct =
     providerBudgetShare > 0
-      ? Math.min(100, (row.costCents / providerBudgetShare) * 100)
+      ? Math.min(100, (reportedCostCents / providerBudgetShare) * 100)
       : 0;
 
   return (
@@ -62,8 +68,7 @@ export function BillerSpendCard({
               {providerDisplayName(row.biller)}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
-              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> in
-              {" · "}
+              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> {uiText("in")} {" · "}
               <span className="font-mono">{formatTokens(row.outputTokens)}</span> out
               {" · "}
               {row.providerCount} provider{row.providerCount === 1 ? "" : "s"}
@@ -72,17 +77,18 @@ export function BillerSpendCard({
             </CardDescription>
           </div>
           <span className="text-xl font-bold tabular-nums shrink-0">
-            {formatCents(row.costCents)}
+            {formatCents(row.costCents, row.unpricedEventCount)}
           </span>
         </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-4 pt-3 space-y-4">
+        <p className="text-xs text-muted-foreground">参考合计 · 实际 {formatCents(reportedCostCents)} · 估算 {row.estimatedCostCents == null ? "未分类" : formatCents(row.estimatedCostCents)}</p>
         {budgetMonthlyCents > 0 && (
           <QuotaBar
-            label="Period spend"
+            label="期间实付"
             percentUsed={budgetPct}
-            leftLabel={formatCents(row.costCents)}
+            leftLabel={formatCents(reportedCostCents)}
             rightLabel={`${Math.round(budgetPct)}% of allocation`}
           />
         )}
@@ -94,7 +100,7 @@ export function BillerSpendCard({
             ? `${row.subscriptionRunCount} subscription run${row.subscriptionRunCount === 1 ? "" : "s"}`
             : "0 subscription runs"}
           {" · "}
-          {formatCents(weekSpendCents)} this week
+          本周实付 {formatCents(weekSpendCents)}
         </div>
 
         {billingTypeBreakdown.length > 0 && (
@@ -108,7 +114,7 @@ export function BillerSpendCard({
                 {billingTypeBreakdown.map(([billingType, costCents]) => (
                   <div key={billingType} className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-muted-foreground">{billingTypeDisplayName(billingType as any)}</span>
-                    <span className="font-medium tabular-nums">{formatCents(costCents)}</span>
+                    <span className="font-medium tabular-nums">{formatCents(costCents, providerRows.filter((entry) => entry.billingType === billingType).reduce((sum, entry) => sum + (entry.unpricedEventCount ?? 0), 0))}</span>
                   </div>
                 ))}
               </div>
@@ -128,7 +134,7 @@ export function BillerSpendCard({
                   <div key={entry.provider} className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-muted-foreground">{providerDisplayName(entry.provider)}</span>
                     <div className="text-right tabular-nums">
-                      <div className="font-medium">{formatCents(entry.costCents)}</div>
+                      <div className="font-medium">{formatCents(entry.costCents, entry.unpricedEventCount)}</div>
                       <div className="text-muted-foreground">
                         {formatTokens(entry.inputTokens + entry.outputTokens)} tok
                       </div>

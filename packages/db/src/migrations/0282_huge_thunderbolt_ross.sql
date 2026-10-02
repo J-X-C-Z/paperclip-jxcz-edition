@@ -1,0 +1,1 @@
+ALTER TABLE "company_agent_template_defaults" ADD COLUMN "system_prompt" text;

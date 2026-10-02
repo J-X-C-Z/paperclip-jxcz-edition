@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloudAccessGate } from "./components/CloudAccessGate";
 import appSource from "./App.tsx?raw";
+import mainSource from "./main.tsx?raw";
+import markdownEditorSource from "./components/MarkdownEditor.tsx?raw";
 
 const mockHealthApi = vi.hoisted(() => ({
   get: vi.fn(),
@@ -241,6 +243,25 @@ describe("Skill Studio routes", () => {
     expect(detailIndexes).toHaveLength(2);
     expect(createIndexes[0]).toBeLessThan(detailIndexes[0]!);
     expect(createIndexes[1]).toBeLessThan(detailIndexes[1]!);
+  });
+});
+
+describe("startup loading boundaries", () => {
+  it("loads only the selected company layout while keeping route-level fallback coverage", () => {
+    expect(appSource).toContain('const StreamlinedLayout = lazy(() =>');
+    expect(appSource).toContain('import("./components/Layout")');
+    expect(appSource).toContain('const ProductionLayout = lazy(() =>');
+    expect(appSource).toContain('import("./components/Layout.production")');
+    expect(appSource).toContain('element={streamlinedUiEnabled ? <StreamlinedLayout /> : <ProductionLayout />}');
+    expect(appSource).toContain('<Suspense fallback={<PaperclipLoading />}>');
+    expect(appSource).toContain('<Route path="auth" element={<AuthPage />} />');
+    expect(appSource).toContain('<Route path="onboarding" element={<OnboardingRoutePage />} />');
+    expect(appSource).toContain('<Route index element={<CompanyRootRedirect />} />');
+  });
+
+  it("loads MDXEditor styles with the rich editor instead of the application shell", () => {
+    expect(mainSource).not.toContain('@mdxeditor/editor/style.css');
+    expect(markdownEditorSource).toContain('import "@mdxeditor/editor/style.css";');
   });
 });
 

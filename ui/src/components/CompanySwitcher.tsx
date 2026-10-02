@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { ChevronsUpDown, Plus, RefreshCw, Settings } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useCompany } from "../context/CompanyContext";
@@ -57,7 +58,7 @@ export function CompanySwitcher({ open: controlledOpen, onOpenChange }: CompanyS
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-(--sz-220px)">
-        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+        <DropdownMenuLabel>{uiText("Organizations")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {sidebarCompanies.map((company) => (
           <DropdownMenuItem
@@ -75,7 +76,7 @@ export function CompanySwitcher({ open: controlledOpen, onOpenChange }: CompanyS
           // give the customer the way out, since nothing else in the app does.
           companyListUnavailable ? (
             <>
-              <DropdownMenuItem disabled>Couldn't load organizations</DropdownMenuItem>
+              <DropdownMenuItem disabled>{uiText("Couldn't load organizations")}</DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={(event) => {
                   // Keep the menu open so the result of the retry is visible.
@@ -83,26 +84,20 @@ export function CompanySwitcher({ open: controlledOpen, onOpenChange }: CompanyS
                   void retryCompanies?.();
                 }}
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try again
-              </DropdownMenuItem>
+                <RefreshCw className="h-4 w-4 mr-2" /> {uiText("Try again")} </DropdownMenuItem>
             </>
           ) : (
-            <DropdownMenuItem disabled>No organizations</DropdownMenuItem>
+            <DropdownMenuItem disabled>{uiText("No organizations")}</DropdownMenuItem>
           )
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/company/settings" className="no-underline text-inherit">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Link>
+            <Settings className="h-4 w-4 mr-2" /> {uiText("Settings")} </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/companies" className="no-underline text-inherit">
-            <Plus className="h-4 w-4 mr-2" />
-            Manage Organizations
-          </Link>
+            <Plus className="h-4 w-4 mr-2" /> {uiText("Manage Organizations")} </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

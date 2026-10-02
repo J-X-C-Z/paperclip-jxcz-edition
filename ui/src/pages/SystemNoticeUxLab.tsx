@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 // token-extraction: allowlisted — intentional one-off decoration (DECISION-SHEET.md B1
 // user ruling). The bg-[...gradient...] / shadow-[...] literals in this demo/UX-lab page
 // are deliberate one-off decoration, reverted from --gradient-extract-*/--shadow-extract-*
@@ -257,7 +258,7 @@ export function SystemNoticeUxLab() {
                   },
                   {
                     kind: "agent",
-                    label: "Owner",
+                    label: uiText("Owner"),
                     name: "CTO",
                     href: "/PAP/agents/cto",
                   },
@@ -338,7 +339,7 @@ export function SystemNoticeUxLab() {
             <SystemNotice {...dangerCollapsed} />
             <p className="px-1 text-xs text-muted-foreground">
               Same content. The visible body is one short system sentence; reviewers expand{" "}
-              <span className="font-medium text-foreground">Details</span> only when they need run
+              <span className="font-medium text-foreground">{uiText("Details")}</span> only when they need run
               evidence. Tone is reinforced by the octagon icon and the &quot;System alert&quot; label,
               not just red.
             </p>

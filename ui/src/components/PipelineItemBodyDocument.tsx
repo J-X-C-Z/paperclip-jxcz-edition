@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -308,12 +309,10 @@ export function PipelineItemBodyDocument({
             Saving creates rev {(doc?.latestRevisionNumber ?? 0) + 1} · ⌘↵ to save · Esc to cancel
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={saveMutation.isPending}>
-              Cancel
-            </Button>
+            <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={saveMutation.isPending}> {uiText("Cancel")} </Button>
             <Button size="sm" onClick={() => void handleSave()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              {saveMutation.isPending ? "Saving…" : "Save"}
+              {saveMutation.isPending ? uiText("Saving…") : uiText("Save")}
             </Button>
           </div>
         </div>
@@ -406,7 +405,7 @@ export function PipelineItemBodyDocument({
 
   return (
     <section
-      aria-label="Item body"
+      aria-label={uiText("Item body")}
       id="pipeline-item-body-document"
       data-testid="pipeline-item-body-document"
       className="rounded-lg border border-border p-3"
@@ -446,9 +445,7 @@ export function PipelineItemBodyDocument({
           <span className="text-(length:--text-micro) font-medium text-amber-700 dark:text-amber-300">● Editing · unsaved</span>
         ) : (
           <Button variant="ghost" size="sm" className="h-auto gap-1.5 px-2 py-1 text-xs" onClick={beginEdit}>
-            <FilePenLine className="h-3.5 w-3.5" />
-            Edit
-          </Button>
+            <FilePenLine className="h-3.5 w-3.5" /> {uiText("Edit")} </Button>
         )}
       />
 

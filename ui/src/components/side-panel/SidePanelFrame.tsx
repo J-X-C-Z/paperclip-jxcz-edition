@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { CSSProperties, ReactNode } from "react";
 import { Maximize2, Minimize2, PanelRightClose, PanelRightOpen, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -166,8 +167,8 @@ export function SidePanelWindowControls({
           size="icon-sm"
           className="h-(--side-panel-tab-height) w-(--side-panel-tab-height) text-muted-foreground hover:text-foreground focus-visible:text-foreground"
           onClick={onToggle}
-          aria-label="Close side panel"
-          title="Close side panel"
+          aria-label={uiText("Close side panel")}
+          title={uiText("Close side panel")}
         >
           <X aria-hidden />
         </Button>

@@ -47,6 +47,7 @@ export interface AuditActionsResponse {
 
 /** Server-side filters for the audit feed. All optional. */
 export interface AuditActionFilters {
+  projectId?: string | null;
   /** Defaults to `agents`; `all` opts into the unified all-actors feed. */
   actorScope?: "agents" | "all";
   agentId?: string | null;
@@ -66,6 +67,7 @@ export interface AuditActionFilters {
 
 function buildAuditQuery(filters: AuditActionFilters): URLSearchParams {
   const search = new URLSearchParams();
+  if (filters.projectId) search.set("projectId", filters.projectId);
   if (filters.actorScope) search.set("actorScope", filters.actorScope);
   if (filters.agentId) search.set("agentId", filters.agentId);
   if (filters.responsibleUserId) search.set("responsibleUserId", filters.responsibleUserId);

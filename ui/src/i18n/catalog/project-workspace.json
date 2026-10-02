@@ -1,0 +1,21 @@
+{
+  "All Company": "全部项目",
+  "Search projects": "搜索项目",
+  "Loading projects…": "正在加载项目…",
+  "Could not load projects.": "项目加载失败，请重试。",
+  "New Project": "新建项目",
+  "Manage Projects": "管理项目",
+  "Project team": "项目成员",
+  "Add member": "添加成员",
+  "Choose a company agent…": "选择组织中的智能体…",
+  "No project team members yet.": "尚无项目成员，请先添加智能体。",
+  "Loading team…": "正在加载项目成员…",
+  "Project role": "项目职责",
+  "Lead": "组长",
+  "Add project agent": "添加项目成员",
+  "Move up": "上移",
+  "Move down": "下移",
+  "Team": "项目团队",
+  "This project has no agents. Add members in the project team.": "当前项目尚无智能体，请到项目团队添加成员。",
+  "Manage project team": "管理项目团队"
+}

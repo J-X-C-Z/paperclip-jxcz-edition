@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Loader2 } from "lucide-react";
 import {
@@ -36,7 +37,7 @@ export function TaskChatRichInput({
   onUploadingChange,
   ariaLabelledBy,
   testId = "task-chat-rich-input",
-  attachAriaLabel = "Attach image",
+  attachAriaLabel = uiText("Attach image"),
   showImageAttachControls = true,
 }: TaskChatRichInputProps) {
   const editorRef = useRef<MarkdownEditorRef>(null);
@@ -57,7 +58,7 @@ export function TaskChatRichInput({
   }
 
   async function uploadImage(file: File): Promise<string> {
-    if (!imageUploadHandler) throw new Error("Image uploads are unavailable.");
+    if (!imageUploadHandler) throw new Error(uiText("Image uploads are unavailable."));
     uploadCountRef.current += 1;
     updateUploading(true);
     setUploadError(null);
@@ -67,7 +68,7 @@ export function TaskChatRichInput({
       setUploadError(
         error instanceof Error
           ? error.message
-          : "The image could not be uploaded.",
+          : uiText("The image could not be uploaded."),
       );
       throw error;
     } finally {
@@ -103,6 +104,7 @@ export function TaskChatRichInput({
         mentions={mentions}
         readOnly={disabled}
         onSubmit={onSubmit}
+        submitKey="enter"
         bordered={false}
         contentClassName="max-h-(--sz-28dvh) min-h-(--sz-72px) overflow-y-auto px-0 py-0 text-sm scrollbar-auto-hide"
       />
@@ -134,7 +136,7 @@ export function TaskChatRichInput({
             )}
             Attach image
           </Button>
-          <span>or drop/paste an image into the note</span>
+          <span>{uiText("or drop/paste an image into the note")}</span>
         </div>
       ) : null}
       {uploadError ? (

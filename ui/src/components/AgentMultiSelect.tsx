@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { AgentIcon } from "@/components/AgentIconPicker";
@@ -20,7 +21,7 @@ export function AgentSelect({
   value,
   onChange,
   placeholder = "Select agent…",
-  emptyMessage = "No agents yet.",
+  emptyMessage = uiText("No agents yet."),
   disabled = false,
   triggerClassName,
   id,
@@ -74,7 +75,7 @@ export function AgentSelect({
           <Input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            placeholder="Filter agents"
+            placeholder={uiText('Filter agents')}
             className="h-8"
             autoFocus
           />
@@ -102,7 +103,7 @@ export function AgentSelect({
               </button>
             ))}
             {filteredAgents.length === 0 ? (
-              <div className="px-3 py-4 text-sm text-muted-foreground">No matches.</div>
+              <div className="px-3 py-4 text-sm text-muted-foreground">{uiText('No matches.')}</div>
             ) : null}
           </div>
         )}
@@ -212,8 +213,8 @@ export function AgentMultiSelect({
               {triggerIcon}
               <span className="truncate">
                 {triggerLabel ?? (selectedCount === 0
-                  ? "Select agents"
-                  : `${selectedCount} ${selectedCount === 1 ? "agent" : "agents"} selected`)}
+                  ? uiText("Select agents")
+                  : uiText("Selected {count} agents", { count: selectedCount }))}
               </span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -224,7 +225,7 @@ export function AgentMultiSelect({
           <Input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            placeholder="Filter agents"
+            placeholder={uiText('Filter agents')}
             className="h-8"
             autoFocus
           />
@@ -253,7 +254,7 @@ export function AgentMultiSelect({
                   <Checkbox
                     checked={workingAgentIds.has(agent.id)}
                     disabled={optionDisabled}
-                    aria-label={`Allow ${agent.name}`}
+                    aria-label={uiText("Allow {agent}", { agent: agent.name })}
                     onCheckedChange={(checked) => {
                       const next = new Set(workingAgentIds);
                       if (checked) next.add(agent.id);
@@ -273,19 +274,17 @@ export function AgentMultiSelect({
               );
             })}
             {filteredAgents.length === 0 ? (
-              <div className="px-3 py-4 text-sm text-muted-foreground">No matches.</div>
+              <div className="px-3 py-4 text-sm text-muted-foreground">{uiText('No matches.')}</div>
             ) : null}
           </div>
         )}
           <div className="flex items-center justify-between border-t border-border px-3 py-2">
             <span className="text-xs text-muted-foreground">
-              {workingAgentIds.size === 0 ? "No agents selected" : `${workingAgentIds.size} selected`}
+              {workingAgentIds.size === 0 ? uiText("No agents selected") : uiText("{count} selected", { count: workingAgentIds.size })}
             </span>
             <div className="flex items-center gap-2">
               {staged ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={pending}>
-                  Cancel
-                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={pending}> {uiText("Cancel")} </Button>
               ) : null}
               <Button
                 type="button"
@@ -296,7 +295,7 @@ export function AgentMultiSelect({
                 }}
                 disabled={pending}
               >
-                {staged ? (pending ? "Saving…" : "Save") : "Done"}
+                {staged ? (pending ? uiText("Saving…") : uiText("Save")) : uiText("Done")}
               </Button>
             </div>
           </div>
@@ -311,7 +310,7 @@ export function AgentMultiSelect({
             </div>
           ))}
           {selectedAgents.length > 3 ? (
-            <p className="px-1.5 pt-0.5 text-xs text-muted-foreground">and {selectedAgents.length - 3} more</p>
+            <p className="px-1.5 pt-0.5 text-xs text-muted-foreground">{uiText("and {count} more", { count: selectedAgents.length - 3 })}</p>
           ) : null}
         </div>
       ) : null}

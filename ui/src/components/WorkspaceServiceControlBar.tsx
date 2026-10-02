@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -75,7 +76,7 @@ function statusMeta(entry: WorkspaceServiceControlEntry): { label: string; unhea
     case "restarting":
       return { label: "Restarting…", unhealthy: false };
     case "failed":
-      return { label: "Failed", unhealthy: false };
+      return { label: uiText("Failed"), unhealthy: false };
     case "running":
       return entry.healthStatus === "unhealthy"
         ? { label: "Unhealthy", unhealthy: true }
@@ -181,10 +182,10 @@ function UrlSegment({ entry, compact }: { entry: WorkspaceServiceControlEntry; c
           size="icon-xs"
           disabled={!live}
           className="text-muted-foreground hover:text-foreground"
-          title="Open in new tab"
+          title={uiText("Open in new tab")}
         >
           {live ? (
-            <a href={entry.url ?? undefined} target="_blank" rel="noreferrer" aria-label="Open in new tab">
+            <a href={entry.url ?? undefined} target="_blank" rel="noreferrer" aria-label={uiText("Open in new tab")}>
               <ExternalLink className="size-3" />
             </a>
           ) : (
@@ -214,11 +215,11 @@ function ActionSlots({
         className="w-13 justify-center"
         disabled={!canStart}
         onClick={() => onAction("start")}
-        aria-label="Start"
-        title="Start"
+        aria-label={uiText("Start")}
+        title={uiText("Start")}
       >
         <Play className="size-3" />
-        Start
+        {uiText("Start")}
       </Button>
     );
   }
@@ -231,8 +232,8 @@ function ActionSlots({
           size="icon-xs"
           disabled={!canStart}
           onClick={() => onAction("start")}
-          aria-label="Start"
-          title="Start"
+          aria-label={uiText("Start")}
+          title={uiText("Start")}
         >
           <Play className="size-3" />
         </Button>
@@ -241,8 +242,8 @@ function ActionSlots({
           size="icon-xs"
           disabled={!canStart}
           onClick={() => onAction("restart")}
-          aria-label="Restart"
-          title="Restart"
+          aria-label={uiText("Restart")}
+          title={uiText("Restart")}
           className="border border-border text-foreground"
         >
           <RotateCcw className="size-3" />
@@ -258,8 +259,8 @@ function ActionSlots({
         size="icon-xs"
         disabled={transitional}
         onClick={() => onAction("stop")}
-        aria-label="Stop"
-        title="Stop"
+        aria-label={uiText("Stop")}
+        title={uiText("Stop")}
         className="border border-border text-foreground"
       >
         <Square className="size-3" />
@@ -269,8 +270,8 @@ function ActionSlots({
         size="icon-xs"
         disabled={transitional || !canStart}
         onClick={() => onAction("restart")}
-        aria-label="Restart"
-        title="Restart"
+        aria-label={uiText("Restart")}
+        title={uiText("Restart")}
         className="border border-border text-foreground"
       >
         <RotateCcw className="size-3" />
@@ -457,7 +458,7 @@ function MultiServiceBar({
                 aria-label={`${runningCount} of ${services.length} services running — show services`}
               >
                 <StatusIndicator entry={aggregateEntry} />
-                <span className="whitespace-nowrap">{runningCount}/{services.length} running</span>
+                <span className="whitespace-nowrap">{runningCount}/{services.length} {uiText("running")}</span>
                 <ChevronDown className="size-3 text-muted-foreground" />
               </button>
             </PopoverTrigger>
@@ -471,9 +472,9 @@ function MultiServiceBar({
                 ))}
               </div>
               <div className="flex items-center gap-1 border-t border-border px-4 py-2">
-                <Button variant="ghost" size="xs" onClick={() => onAction("start", null)}>Start all</Button>
-                <Button variant="ghost" size="xs" onClick={() => onAction("stop", null)}>Stop all</Button>
-                <Button variant="ghost" size="xs" onClick={() => onAction("restart", null)}>Restart all</Button>
+                <Button variant="ghost" size="xs" onClick={() => onAction("start", null)}>{uiText("Start all")}</Button>
+                <Button variant="ghost" size="xs" onClick={() => onAction("stop", null)}>{uiText("Stop all")}</Button>
+                <Button variant="ghost" size="xs" onClick={() => onAction("restart", null)}>{uiText("Restart all")}</Button>
                 {onManageServices ? (
                   <Button
                     variant="link"

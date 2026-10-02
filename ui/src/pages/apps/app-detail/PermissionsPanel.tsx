@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Ban, Check, FlaskConical, Loader2, RefreshCw, Search, ShieldQuestion } from "lucide-react";
 import type { Agent, ToolCatalogEntry, ToolConnectionCapabilities } from "@paperclipai/shared";
@@ -122,14 +123,14 @@ function AgentAccessSection({
   return (
     <section className="space-y-4 border-t border-border pt-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Which agents can use this connection?</h2>
-        {disabled ? <span className="text-xs text-muted-foreground">Saving…</span> : null}
+        <h2 className="text-sm font-semibold text-foreground">{uiText("Which agents can use this connection?")}</h2>
+        {disabled ? <span className="text-xs text-muted-foreground">{uiText("Saving…")}</span> : null}
       </div>
 
       {canManage ? (
         <div className="space-y-3">
           <RadioCardGroup
-            ariaLabel="Which agents can use this connection"
+            ariaLabel={uiText("Which agents can use this connection")}
             value={access.mode}
             disabled={disabled}
             className="sm:grid-cols-2"
@@ -143,16 +144,16 @@ function AgentAccessSection({
             options={[
               {
                 value: "specific",
-                title: "Just agents I pick",
+                title: uiText("Just agents I pick"),
                 description: install.onAll
-                  ? "Unavailable while this connection is installed for every agent."
-                  : "Available only to selected agents.",
+                  ? uiText("Unavailable while this connection is installed for every agent.")
+                  : uiText("Available only to selected agents."),
                 disabled: install.onAll,
               },
               {
                 value: "all",
-                title: "Any agent",
-                description: "Available across your company.",
+                title: uiText("Any agent"),
+                description: uiText("Available across your company."),
               },
             ]}
           />
@@ -163,11 +164,11 @@ function AgentAccessSection({
               selectedAgentIds={access.agentIds}
               disabled={disabled}
               triggerLabel={access.agentIds.size === 0
-                ? "Choose agents"
+                ? uiText("Choose agents")
                 : `${access.agentIds.size} ${access.agentIds.size === 1 ? "agent" : "agents"} selected`}
-              emptyMessage="You cannot edit any agents yet."
+              emptyMessage={uiText("You cannot edit any agents yet.")}
               isAgentDisabled={(agent) => requiredAgentIds.has(agent.id)}
-              getDescription={(agent) => requiredAgentIds.has(agent.id) ? "Required by this connection's install setting" : agent.title}
+              getDescription={(agent) => requiredAgentIds.has(agent.id) ? uiText("Required by this connection's install setting") : agent.title}
               onChange={(agentIds) => onSave({
                 mode: "specific",
                 agentIds: new Set([...agentIds, ...requiredAgentIds]),
@@ -176,9 +177,9 @@ function AgentAccessSection({
           ) : null}
         </div>
       ) : access.mode === "all" ? (
-        <p className="text-sm text-muted-foreground">Any agent can use this connection.</p>
+        <p className="text-sm text-muted-foreground">{uiText("Any agent can use this connection.")}</p>
       ) : selectedAgents.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No agents can use this connection.</p>
+        <p className="text-sm text-muted-foreground">{uiText("No agents can use this connection.")}</p>
       ) : (
         <div className="space-y-0.5">
           {selectedAgents.map((agent) => (
@@ -246,10 +247,10 @@ function ActionsSection({
   return (
     <section className="space-y-6 border-t border-border pt-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-foreground">Actions</h2>
+        <h2 className="text-lg font-semibold text-foreground">{uiText("Actions")}</h2>
         {canConfigure ? (
           <div className="flex items-center gap-2">
-            {disabled ? <span className="text-xs text-muted-foreground">Saving…</span> : null}
+            {disabled ? <span className="text-xs text-muted-foreground">{uiText("Saving…")}</span> : null}
             <Button
               variant="outline"
               size="sm"
@@ -286,8 +287,8 @@ function ActionsSection({
           <div className="relative min-w-(--sz-12rem) flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              aria-label="Find an action"
-              placeholder="Find an action…"
+              aria-label={uiText("Find an action")}
+              placeholder={uiText("Find an action…")}
               className="pl-9"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -412,9 +413,9 @@ const PERMISSION_OPTIONS: Array<{
   description: string;
   icon: typeof Ban;
 }> = [
-  { value: "off", label: "Off", description: "Agents cannot run this action.", icon: Ban },
-  { value: "ask", label: "Ask first", description: "A human must approve each call.", icon: ShieldQuestion },
-  { value: "allowed", label: "Allowed", description: "Runs without approval.", icon: Check },
+  { value: "off", label: uiText("Off"), description: "Agents cannot run this action.", icon: Ban },
+  { value: "ask", label: uiText("Ask first"), description: "A human must approve each call.", icon: ShieldQuestion },
+  { value: "allowed", label: uiText("Allowed"), description: "Runs without approval.", icon: Check },
 ];
 
 function ActionRow({
@@ -505,9 +506,7 @@ function ActionRow({
             </span>
           )}
           <Button type="button" size="sm" variant="outline" onClick={() => setTestOpen(true)}>
-            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-            Test
-          </Button>
+            <FlaskConical className="mr-1.5 h-3.5 w-3.5" /> {uiText("Test")} </Button>
         </div>
       </div>
       <ActionTestDialog

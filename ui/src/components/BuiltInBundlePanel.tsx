@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ReactNode } from "react";
 
 import { Link } from "@/lib/router";
@@ -75,26 +76,26 @@ function resourceActionCopy(
 ): ResourceActionCopy | null {
   if (resource.stockStatus === "stock_update_available") {
     return {
-      title: `Update ${label} to the newest default?`,
-      body: `You haven't edited this, so Paperclip will replace it with the newer shipped version. Nothing you customized is affected, and your adapter credentials and settings are not touched.`,
-      confirmLabel: "Update",
-      triggerLabel: "Update",
+      title: uiText("Update {value0} to the newest default?", { value0: label }),
+      body: uiText("You haven't edited this, so Paperclip will replace it with the newer shipped version. Nothing you customized is affected, and your adapter credentials and settings are not touched."),
+      confirmLabel: uiText("Update"),
+      triggerLabel: uiText("Update"),
     };
   }
   if (resource.stockStatus === "operator_modified") {
     return {
-      title: `Reset ${label} to the shipped default?`,
-      body: `This replaces your edited version with Paperclip's current default. Your edits can't be recovered. Adapter credentials and settings are not touched.`,
-      confirmLabel: `Reset ${label}`,
-      triggerLabel: "Reset",
+      title: uiText("Reset {value0} to the shipped default?", { value0: label }),
+      body: uiText("This replaces your edited version with Paperclip's current default. Your edits can't be recovered. Adapter credentials and settings are not touched."),
+      confirmLabel: uiText("Reset {value0}", { value0: label }),
+      triggerLabel: uiText("Reset"),
     };
   }
   if (resource.stockStatus === "missing") {
     return {
-      title: `Recreate ${label}?`,
-      body: `This resource is missing. Paperclip will recreate it from the shipped default. Adapter credentials and settings are not touched.`,
-      confirmLabel: "Recreate",
-      triggerLabel: "Recreate",
+      title: uiText("Recreate {value0}?", { value0: label }),
+      body: uiText("This resource is missing. Paperclip will recreate it from the shipped default. Adapter credentials and settings are not touched."),
+      confirmLabel: uiText("Recreate"),
+      triggerLabel: uiText("Recreate"),
     };
   }
   return null;
@@ -117,7 +118,7 @@ function ResourceActionButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm" disabled={pending}>
-          {pending ? "Working…" : copy.triggerLabel}
+          {pending ? uiText("Working…") : copy.triggerLabel}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -126,7 +127,7 @@ function ResourceActionButton({
           <AlertDialogDescription>{copy.body}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{uiText("Cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>{copy.confirmLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -153,7 +154,7 @@ function ConfirmActionButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm" disabled={pending}>
-          {pending ? "Working…" : triggerLabel}
+          {pending ? uiText("Working…") : triggerLabel}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -162,7 +163,7 @@ function ConfirmActionButton({
           <AlertDialogDescription>{body}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{uiText("Cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -209,11 +210,11 @@ function BundleRow({ label, secondary, chips, detail, detailTone = "muted", acti
 function driftDetail(resource: BuiltInManagedResourceState): string | undefined {
   switch (resource.stockStatus) {
     case "operator_modified":
-      return "You've edited this. Your changes are kept until you reset.";
+      return uiText("You've edited this. Your changes are kept until you reset.");
     case "stock_update_available":
-      return "Paperclip shipped a newer default.";
+      return uiText("Paperclip shipped a newer default.");
     case "missing":
-      return "Not materialized yet — recreate it from the shipped default.";
+      return uiText("Not materialized yet — recreate it from the shipped default.");
     default:
       return undefined;
   }
@@ -262,10 +263,10 @@ export function BuiltInBundlePanel({
   let adapterDetail: string | undefined;
   if (status === "pending_approval") {
     adapterChip = "pending_approval";
-    adapterDetail = "Waiting on board hire approval before this coach can run.";
+    adapterDetail = uiText("Waiting on board hire approval before this coach can run.");
   } else if (!adapterReady) {
     adapterChip = "needs_setup";
-    adapterDetail = "Pick an adapter this coach can run on.";
+    adapterDetail = uiText("Pick an adapter this coach can run on.");
   }
 
   const skill = findResource(resources, "skill");
@@ -273,7 +274,7 @@ export function BuiltInBundlePanel({
   const routine = findResource(resources, "routine");
   const scheduleEnabled = routine?.scheduleEnabled === true;
   const routineKey = bundle.routine.routineKey;
-  const scheduleLabel = bundle.routine.scheduleLabel ?? "Weekly schedule";
+  const scheduleLabel = bundle.routine.scheduleLabel ?? uiText("Weekly schedule");
   const proposalIssueRef = routine?.pendingUpdateIssueIdentifier ?? routine?.pendingUpdateIssueId ?? null;
   const proposalHref = proposalIssueRef && routine?.pendingUpdateInteractionId
     ? `/issues/${proposalIssueRef}#interaction-${routine.pendingUpdateInteractionId}`
@@ -302,7 +303,7 @@ export function BuiltInBundlePanel({
         actions={
           <>
             <Button asChild variant="link" size="sm">
-              <Link to={viewHref}>View</Link>
+              <Link to={viewHref}>{uiText("View")}</Link>
             </Button>
             <ResourceActionButton
               resource={resource}
@@ -317,26 +318,24 @@ export function BuiltInBundlePanel({
   };
 
   return (
-    <section className={cn("space-y-2", className)} aria-label="Bundle status">
-      <h3 className="text-sm font-medium">Bundle status</h3>
+    <section className={cn("space-y-2", className)} aria-label={uiText("Bundle status")}>
+      <h3 className="text-sm font-medium">{uiText("Bundle status")}</h3>
 
       <div className="divide-y rounded-lg border px-4">
         {/* Adapter — no resource entry; readiness is the agent lifecycle. */}
         <BundleRow
-          label="Adapter"
+          label={uiText("Adapter")}
           chips={<ResourceStatusChip variant={adapterChip} />}
           detail={adapterDetail}
           actions={
-            <Button variant="outline" size="sm" onClick={onConfigure}>
-              Configure
-            </Button>
+            <Button variant="outline" size="sm" onClick={onConfigure}> {uiText("Configure")} </Button>
           }
         />
 
         {skill &&
           renderResourceRow(
             "skill",
-            "Skill",
+            uiText("Skill"),
             bundle.skill.displayName || skill.resourceKey,
             `/agents/${agentRef}/skills`,
             skill,
@@ -345,7 +344,7 @@ export function BuiltInBundlePanel({
         {instructions &&
           renderResourceRow(
             "instructions",
-            "Instructions",
+            uiText("Instructions"),
             bundle.instructions.entryFile,
             `/agents/${agentRef}/instructions`,
             instructions,
@@ -353,7 +352,7 @@ export function BuiltInBundlePanel({
 
         {/* Routine — zero-token-by-default; the weekly schedule ships off. */}
         <BundleRow
-          label="Routine"
+          label={uiText("Routine")}
           secondary={bundle.routine.title}
           chips={
             <>
@@ -368,18 +367,18 @@ export function BuiltInBundlePanel({
           }
           detail={
             scheduleEnabled
-              ? "The weekly schedule is enabled and can create background work."
-              : "Nothing runs until you enable the weekly schedule — it costs zero tokens by default."
+            ? uiText("The weekly schedule is enabled and can create background work.")
+              : uiText("Nothing runs until you enable the weekly schedule — it costs zero tokens by default.")
           }
           actions={
             routine ? (
               <>
                 {onRunRoutine && (
                   <ConfirmActionButton
-                    title="Run Reflection Coach once?"
-                    body="Paperclip will create one routine task now. This does not enable the weekly schedule or turn on background work."
-                    triggerLabel="Run once"
-                    confirmLabel="Run once"
+                    title={uiText("Run Reflection Coach once?")}
+                    body={uiText("Paperclip will create one routine task now. This does not enable the weekly schedule or turn on background work.")}
+                    triggerLabel={uiText("Run once")}
+                    confirmLabel={uiText("Run once")}
                     pending={routineActionPending === "run"}
                     onConfirm={() => onRunRoutine(routineKey)}
                   />
@@ -387,20 +386,20 @@ export function BuiltInBundlePanel({
                 {scheduleEnabled
                   ? onDisableSchedule && (
                     <ConfirmActionButton
-                      title="Disable the weekly schedule?"
-                      body="Paperclip will stop future scheduled Reflection Coach runs. Manual Run once remains available."
-                      triggerLabel="Disable schedule"
-                      confirmLabel="Disable schedule"
+                      title={uiText("Disable the weekly schedule?")}
+                      body={uiText("Paperclip will stop future scheduled Reflection Coach runs. Manual Run once remains available.")}
+                      triggerLabel={uiText("Disable schedule")}
+                      confirmLabel={uiText("Disable schedule")}
                       pending={routineActionPending === "disable"}
                       onConfirm={() => onDisableSchedule(routineKey)}
                     />
                   )
                   : onEnableSchedule && (
                     <ConfirmActionButton
-                      title="Enable the weekly schedule?"
-                      body="Paperclip will allow Reflection Coach to create routine tasks on the weekly schedule. It can spend tokens when those tasks run."
-                      triggerLabel="Enable weekly"
-                      confirmLabel="Enable weekly"
+                      title={uiText("Enable the weekly schedule?")}
+                      body={uiText("Paperclip will allow Reflection Coach to create routine tasks on the weekly schedule. It can spend tokens when those tasks run.")}
+                      triggerLabel={uiText("Enable weekly")}
+                      confirmLabel={uiText("Enable weekly")}
                       pending={routineActionPending === "enable"}
                       onConfirm={() => onEnableSchedule(routineKey)}
                     />
@@ -408,7 +407,7 @@ export function BuiltInBundlePanel({
                 {driftVariant(routine) && (
                   <ResourceActionButton
                     resource={routine}
-                    label="routine"
+                    label={uiText("routine")}
                     onConfirm={() => onResetResource("routine")}
                     pending={resettingResource === "routine"}
                   />
@@ -419,12 +418,12 @@ export function BuiltInBundlePanel({
         />
         {proposalHref && (
           <BundleRow
-            label="Proposal"
+            label={uiText("Proposal")}
             chips={<ResourceStatusChip variant="proposal_pending" />}
-            detail="A proposed Reflection Coach update is waiting for review."
+            detail={uiText("A proposed Reflection Coach update is waiting for review.")}
             actions={
               <Button asChild variant="link" size="sm">
-                <Link to={proposalHref}>Review proposal</Link>
+                <Link to={proposalHref}>{uiText("Review proposal")}</Link>
               </Button>
             }
           />

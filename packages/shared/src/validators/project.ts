@@ -133,3 +133,11 @@ export const updateProjectSchema = objectWithoutDefaults(
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 
 export type ProjectExecutionWorkspacePolicy = z.infer<typeof projectExecutionWorkspacePolicySchema>;
+
+export const upsertProjectAgentMembershipSchema = z.object({
+  agentId: z.string().guid(),
+  projectRole: z.string().trim().min(1).max(255).nullable().optional(),
+  isLead: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).nullable().optional(),
+}).strict();
+export type UpsertProjectAgentMembership = z.infer<typeof upsertProjectAgentMembershipSchema>;

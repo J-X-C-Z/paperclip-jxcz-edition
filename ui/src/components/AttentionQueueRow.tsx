@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { memo, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -214,18 +215,14 @@ export const AttentionQueueRow = memo(function AttentionQueueRow({
 
           {showOpen && (
             <Button asChild variant="default" size="xs" className={ACTION_BTN}>
-              <Link to={href!}>
-                Open
-                <ExternalLink className="h-3 w-3" />
+              <Link to={href!}> {uiText("Open")} <ExternalLink className="h-3 w-3" />
               </Link>
             </Button>
           )}
 
           {showRestore && (
             <Button type="button" variant="outline" size="xs" className={ACTION_BTN} onClick={() => onRestore(item)}>
-              <RotateCcw className="h-3 w-3" />
-              Restore
-            </Button>
+              <RotateCcw className="h-3 w-3" /> {uiText("Restore")} </Button>
           )}
         </div>
       </div>
@@ -307,7 +304,7 @@ export const AttentionQueueRow = memo(function AttentionQueueRow({
                   variant="ghost"
                   size="icon-xs"
                   className="text-muted-foreground"
-                  aria-label="Row actions"
+                  aria-label={uiText('Row actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -315,14 +312,12 @@ export const AttentionQueueRow = memo(function AttentionQueueRow({
               <DropdownMenuContent align="end">
                 {onSnooze && <SnoozeSubmenu onSnooze={(iso) => onSnooze(item, iso)} />}
                 <DropdownMenuItem onClick={() => onDismiss(item)}>
-                  <X className="h-4 w-4" />
-                  Dismiss
-                </DropdownMenuItem>
+                  <X className="h-4 w-4" /> {uiText("Dismiss")} </DropdownMenuItem>
                 {href && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to={href}>Open source</Link>
+                      <Link to={href}>{uiText('Open source')}</Link>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -534,7 +529,7 @@ function CompactDecisionActions({
   if (actions.length === 0) return null;
 
   return (
-    <div className="flex w-full flex-wrap items-center gap-2 @xl:w-auto @xl:justify-end @xl:gap-1" aria-label="Decision actions">
+    <div className="flex w-full flex-wrap items-center gap-2 @xl:w-auto @xl:justify-end @xl:gap-1" aria-label={uiText('Decision actions')}>
       {actions.map(({ action, id, label, description }) => (
         <Button
           key={id}
@@ -561,15 +556,15 @@ function CompactDecisionActions({
 }
 
 function decisionLabel(action: CompactDecisionAction): string {
-  if (action === "request_revision") return "sent for revision";
-  if (action === "accept" || action === "approve") return "approved";
-  return "rejected";
+  if (action === "request_revision") return uiText("sent for revision");
+  if (action === "accept" || action === "approve") return uiText("approved");
+  return uiText("rejected");
 }
 
 function compactDecisionSuccessLabel(sourceKind: AttentionItem["sourceKind"], action: CompactDecisionAction): string {
-  if (sourceKind === "approval") return `Approval ${decisionLabel(action)}`;
-  if (sourceKind === "join_request") return `Join request ${decisionLabel(action)}`;
-  return action === "accept" ? "Confirmation accepted" : "Confirmation declined";
+  if (sourceKind === "approval") return uiText("Approval {decision}", { decision: decisionLabel(action) });
+  if (sourceKind === "join_request") return uiText("Join request {decision}", { decision: decisionLabel(action) });
+  return action === "accept" ? uiText("Confirmation accepted") : uiText("Confirmation declined");
 }
 
 function decisionVerbVariant(verb: AttentionItem["decisionVerbs"][number]): "default" | "outline" | "destructive" {
@@ -656,16 +651,15 @@ function ExpandedImages({ images, issueHref }: { images: AttentionDetailImage[];
           onClick={(e) => e.stopPropagation()}
           className="flex h-32 w-24 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-ring focus-visible:ring-(length:--rad-3) focus-visible:outline-none"
         >
-          <span className="text-base font-semibold">{extra} more</span>
+          <span className="text-base font-semibold">{extra} {uiText("more")}</span>
           <span className="mt-0.5 inline-flex items-center gap-1 text-(length:--text-nano)">
-            View issue
+            {uiText("View issue")}
             <ExternalLink className="h-3 w-3" />
           </span>
         </Link>
       ) : (
         <span className="flex h-32 w-24 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm font-semibold text-muted-foreground">
-          {extra} more
-        </span>
+          {extra} {uiText("more")} </span>
       ))}
     </div>
   );
@@ -689,7 +683,7 @@ function SnoozeSubmenu({ onSnooze }: { onSnooze: (snoozedUntil: string) => void 
       <DropdownMenuSubContent>
         {SNOOZE_PRESETS.map((preset) => (
           <DropdownMenuItem key={preset.label} onClick={() => onSnooze(preset.resolve())}>
-            {preset.label}
+            {uiText(preset.label)}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
@@ -701,7 +695,7 @@ function SnoozeSubmenu({ onSnooze }: { onSnooze: (snoozedUntil: string) => void 
           onClick={(e) => e.stopPropagation()}
         >
           <span className="text-(length:--text-nano) font-medium uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
-            Custom
+            {uiText("Custom")}
           </span>
           <input
             type="datetime-local"
@@ -710,7 +704,7 @@ function SnoozeSubmenu({ onSnooze }: { onSnooze: (snoozedUntil: string) => void 
             className="w-full rounded-sm border border-border bg-background px-2 py-1 text-xs"
           />
           <Button type="button" size="xs" disabled={!customValue} onClick={applyCustom}>
-            Snooze until…
+            {uiText("Snooze until…")}
           </Button>
         </div>
       </DropdownMenuSubContent>
@@ -726,14 +720,14 @@ function SnoozeSubmenu({ onSnooze }: { onSnooze: (snoozedUntil: string) => void 
 function decideByProvenance(item: AttentionItem): string | null {
   const attribution = item.decideByAttribution;
   if (!attribution) return null;
-  if (attribution.type === "agent") return attribution.agentName ?? "an agent";
-  return "you";
+  if (attribution.type === "agent") return attribution.agentName ?? uiText("an agent");
+  return uiText("you");
 }
 
 /** Compact "when does this snooze end" label, e.g. `in 2h`, `in 3d`. */
 function reappearLabel(snoozedUntil: string): string {
   const diffMs = new Date(snoozedUntil).getTime() - Date.now();
-  if (!Number.isFinite(diffMs) || diffMs <= 0) return "soon";
+  if (!Number.isFinite(diffMs) || diffMs <= 0) return uiText("soon");
   const diffMin = Math.round(diffMs / 60000);
   if (diffMin < 60) return `in ${diffMin}m`;
   const diffHr = Math.round(diffMin / 60);
@@ -777,7 +771,7 @@ function InlineResolver({
   if (item.sourceKind === "issue_thread_interaction") {
     const issueId = (item.subject.metadata?.issueId as string | undefined) ?? item.relatedIssue?.id;
     if (!issueId) {
-      return <p className="text-xs text-muted-foreground">Missing issue reference for this decision.</p>;
+      return <p className="text-xs text-muted-foreground">{uiText('Missing issue reference for this decision.')}</p>;
     }
     return (
       <>
@@ -865,13 +859,9 @@ function ApprovalResolver({ item, companyId, toggle }: { item: AttentionItem; co
           Request revision
         </Button>
         <Button size="sm" variant="destructive" onClick={() => reject.mutate()} disabled={pending}>
-          {reject.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Reject
-        </Button>
+          {reject.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {uiText("Reject")} </Button>
         <Button size="sm" onClick={() => approve.mutate()} disabled={pending}>
-          {approve.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Approve
-        </Button>
+          {approve.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {uiText("Approve")} </Button>
       </ResolverFooter>
     </>
   );
@@ -896,13 +886,9 @@ function JoinRequestResolver({ item, companyId, toggle }: { item: AttentionItem;
   return (
     <ResolverFooter toggle={toggle}>
       <Button size="sm" variant="destructive" onClick={() => reject.mutate()} disabled={pending}>
-        {reject.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Reject
-      </Button>
+        {reject.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {uiText("Reject")} </Button>
       <Button size="sm" onClick={() => approve.mutate()} disabled={pending}>
-        {approve.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Approve
-      </Button>
+        {approve.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {uiText("Approve")} </Button>
     </ResolverFooter>
   );
 }

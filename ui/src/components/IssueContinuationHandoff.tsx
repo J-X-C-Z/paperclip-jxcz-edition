@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IssueDocument } from "@paperclipai/shared";
 import { ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY } from "@paperclipai/shared";
@@ -87,14 +88,13 @@ export function IssueContinuationHandoff({
               handoff
             </Badge>
           </div>
-          <div className="text-(length:--text-micro) text-muted-foreground">
-            Updated {relativeTime(document.updatedAt)}
+          <div className="text-(length:--text-micro) text-muted-foreground"> {uiText("Updated")} {relativeTime(document.updatedAt)}
             {document.latestRevisionNumber > 0 ? ` - revision ${document.latestRevisionNumber}` : ""}
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={copyBody} className="shrink-0">
           {copied ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? uiText("Copied") : uiText("Copy")}
         </Button>
       </div>
       {expanded ? (

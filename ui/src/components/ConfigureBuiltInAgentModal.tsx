@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -158,11 +159,11 @@ export function ConfigureBuiltInAgentModal({
         <div className="space-y-4">
           <InlineBanner tone="info" compact>
             Creates <strong>{definition.displayName}</strong> in your roster, badged{" "}
-            <strong>Built-in</strong>. Organizations that require hire approval will queue this for the
+            <strong>{uiText("Built-in")}</strong>. Organizations that require hire approval will queue this for the
             board.
           </InlineBanner>
 
-          <Field label="Adapter type">
+          <Field label={uiText("Adapter type")}>
             <AdapterTypeDropdown
               value={adapterType}
               onChange={(next) => {

@@ -2,7 +2,7 @@ import { readLocalAiCredentialFile } from "./local-ai-credential-file.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { readClaudeToken, fetchClaudeQuota } from "@paperclipai/adapter-claude-local/server";
-import { readCodexAuthInfo, fetchCodexQuota } from "@paperclipai/adapter-codex-local/server";
+import { readCodexAuthInfo, fetchCodexRpcQuota } from "@paperclipai/adapter-codex-local/server";
 import { parseGrokAuthPayload, hasUsableGrokAuthValue } from "@paperclipai/adapter-grok-local/server";
 import type { AiProvider } from "@paperclipai/shared";
 import { unprocessable } from "../errors.js";
@@ -34,9 +34,15 @@ export async function readVerifiedLocalAiCredential(provider: AiProvider, loginH
       return token;
     }
     if (provider === "openai") {
-      const auth = await readCodexAuthInfo(loginHome);
+      let auth = await readCodexAuthInfo(loginHome);
       if (!auth?.accessToken || !auth.refreshToken || !auth.idToken) throw new Error("Missing login");
-      await fetchCodexQuota(auth.accessToken, auth.accountId);
+      // Verify using Codex's authenticated transport, not the browser WHAM
+      // endpoint (which may be blocked even while Codex works). Scope the child
+      // process to this attempt; never use the operator's ambient login.
+      await fetchCodexRpcQuota(loginHome);
+      // The CLI may rotate tokens during verification. Save the current pair.
+      auth = await readCodexAuthInfo(loginHome);
+      if (!auth?.accessToken || !auth.refreshToken || !auth.idToken) throw new Error("Missing login");
       return JSON.stringify({ tokens: { access_token: auth.accessToken, refresh_token: auth.refreshToken, id_token: auth.idToken, account_id: auth.accountId }, last_refresh: auth.lastRefresh });
     }
     const raw = await fs.readFile(path.join(loginHome!, "auth.json"), "utf8");

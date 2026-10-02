@@ -1,0 +1,590 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:40:25). Use `import.meta.dirname` instead
+  - import "./src/lib/vite-watch" without a file extension (vite.config.ts:5:41). Add the file extension
+  - import "./src/lib/vite-api-proxy" without a file extension (vite.config.ts:6:32). Add the file extension
+  - import "./src/lib/vite-sw-build-id" without a file extension (vite.config.ts:7:44). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+Both esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ drop: [ 'console', 'debugger' ], legalComments: 'none' }`
+vite v8.2.2 building client environment for production...
+transforming...
+Found 4 warnings while optimizing generated CSS:
+
+Issue #1:
+[2m│   background-color: var(--streamlined-task-detail-bg);[22m
+[2m│ }[22m
+[2m│[22m ::highlight(paperclip-doc-annotation-open) {
+[2m┆[22m             [33m[2m^--[22m 'highlight' is not recognized as a valid pseudo-element. Did you mean ':highlight' (pseudo-class) or is this a typo?[39m
+[2m┆[22m
+[2m│   background-color: transparent;[22m
+[2m│   color: inherit;[22m
+
+Issue #2:
+[2m│   color: inherit;[22m
+[2m│ }[22m
+[2m│[22m ::highlight(paperclip-doc-annotation-focused) {
+[2m┆[22m             [33m[2m^--[22m 'highlight' is not recognized as a valid pseudo-element. Did you mean ':highlight' (pseudo-class) or is this a typo?[39m
+[2m┆[22m
+[2m│   background-color: transparent;[22m
+[2m│   color: inherit;[22m
+
+Issue #3:
+[2m│   color: inherit;[22m
+[2m│ }[22m
+[2m│[22m ::highlight(paperclip-doc-annotation-stale) {
+[2m┆[22m             [33m[2m^--[22m 'highlight' is not recognized as a valid pseudo-element. Did you mean ':highlight' (pseudo-class) or is this a typo?[39m
+[2m┆[22m
+[2m│   background-color: transparent;[22m
+[2m│   color: inherit;[22m
+
+Issue #4:
+[2m│   color: inherit;[22m
+[2m│ }[22m
+[2m│[22m ::highlight(paperclip-doc-annotation-resolved) {
+[2m┆[22m             [33m[2m^--[22m 'highlight' is not recognized as a valid pseudo-element. Did you mean ':highlight' (pseudo-class) or is this a typo?[39m
+[2m┆[22m
+[2m│   background-color: transparent;[22m
+[2m│   color: inherit;[22m
+
+✓ 7447 modules transformed.
+
+(!) outDir /tmp/paperclip-task-chat-441-dist-final is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../../../../tmp/paperclip-task-chat-441-dist-final/index.html                                               8.60 kB │ gzip:   2.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyEnvironments-BrP-ENHg.css                  3.93 kB │ gzip:   1.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/index-Cx8i7FN6.css                              502.38 kB │ gzip:  70.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/browserNavigation-Bccu2yyG.js                     0.05 kB │ gzip:   0.07 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/array-DbBWA3E_.js                                 0.11 kB │ gzip:   0.12 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/channel-DlRO_I6j.js                               0.11 kB │ gzip:   0.12 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/treemap-WGGIJYW6-DalCeSvh.js                      0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pie-WAS4IAKB-pGOSxw8H.js                          0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/info-A6RAGUB7-Cz6qDQwi.js                         0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/radar-RG4KPBEZ-BD6q6RIL.js                        0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/packet-AYTQ26CC-BMHPsXzT.js                       0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cynefin-OW5HDTMX-B5ZFR4ff.js                      0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/wardley-WFR3VGLG-9Q2tkeHl.js                      0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/gitGraph-4MIJSDKK-CaHgTKXm.js                     0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/railroad-74A4TZTK-CAEU8Viw.js                     0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/treeView-Q6P3EWNA-CAXVTxJU.js                     0.12 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/railroad-peg-WCYAUIDC-DGF2WcUd.js                 0.13 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/architecture-7GRP2DOG-CkriZcN3.js                 0.13 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/railroad-abnf-HS5TGJTU-B-EHz-28.js                0.13 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/railroad-ebnf-LZEXJU2U-DN2YlJ2m.js                0.13 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/eventmodeling-NTZA5JFV-DIQ3J6CH.js                0.13 kB │ gzip:   0.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/init-y2Fo_kt5.js                                  0.14 kB │ gzip:   0.12 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-Y2CYZVJY-CrVYBJys.js                        0.15 kB │ gzip:   0.14 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-ClKMhlKL.js                                  0.15 kB │ gzip:   0.15 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useCloudInstance-TIOQh36J.js                      0.19 kB │ gzip:   0.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-2Q5K7J3B-CRXVsPGE.js                        0.19 kB │ gzip:   0.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/managed-sandbox-environment-yqowlhe1.js           0.21 kB │ gzip:   0.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-JWPE2WC7-CE3kxLOT.js                        0.22 kB │ gzip:   0.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/skeleton-C8Dsljoo.js                              0.25 kB │ gzip:   0.21 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/use-reduced-motion-DJaD4nhi.js                    0.25 kB │ gzip:   0.21 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-XXDRQBXY-CoimeqAb.js                        0.26 kB │ gzip:   0.23 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/reduced-motion-DSWJC5GQ.js                        0.27 kB │ gzip:   0.20 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-attribution-DIzhqNs1.js                     0.29 kB │ gzip:   0.14 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diff-CkUo3vbi.js                                  0.30 kB │ gzip:   0.23 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/goals-ClU6AWHW.js                                 0.30 kB │ gzip:   0.21 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sidebarPreferences-DnLDlh0a.js                    0.31 kB │ gzip:   0.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issueActiveRun-C9oJXFRP.js                        0.31 kB │ gzip:   0.23 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useManagedSandboxOnly-kWcA9b1G.js                 0.32 kB │ gzip:   0.24 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/GeneralSettingsContext-BN_BBhQF.js                0.32 kB │ gzip:   0.24 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentIconPicker-CbZbGDot.js                       0.35 kB │ gzip:   0.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-5VM5RSS4-tW0M6uUA.js                        0.36 kB │ gzip:   0.27 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/instanceSettings-BJxz_1q_.js                      0.38 kB │ gzip:   0.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/adapters-BYfneJ_Y.js                              0.39 kB │ gzip:   0.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/github-icon-ClSWgz7D.js                           0.40 kB │ gzip:   0.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tool-installs-C4Cjoiff.js                         0.44 kB │ gzip:   0.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AppsConnect-Bfj792pt.js                           0.45 kB │ gzip:   0.32 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/invite-memory-CSLjQHoN.js                         0.49 kB │ gzip:   0.26 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/assets-CeUxAH-I.js                                0.51 kB │ gzip:   0.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/separator-D-_jVI4x.js                             0.51 kB │ gzip:   0.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-Dwk_J25r.js                                  0.53 kB │ gzip:   0.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/activity-B52Je1of.js                              0.54 kB │ gzip:   0.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/recent-selections-4JyS8iNi.js                     0.56 kB │ gzip:   0.35 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/flowDiagram-HODETNUW-C3s_OghW.js                  0.57 kB │ gzip:   0.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-POPQ4Y6H-DIX5L3DW.js                        0.58 kB │ gzip:   0.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/brainfuck-CMTsipah.js                             0.60 kB │ gzip:   0.32 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-CeOea9_j.js                                  0.60 kB │ gzip:   0.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/MissingPluginTabPlaceholder-Dz9ftXbM.js           0.63 kB │ gzip:   0.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/infoDiagram-27XIBGKW-tmLmUh4S.js                  0.65 kB │ gzip:   0.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/properties-S0qkYrRb.js                            0.66 kB │ gzip:   0.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/health-DSzEwb7L.js                                0.67 kB │ gzip:   0.33 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-e2OxkGou.js                                  0.69 kB │ gzip:   0.43 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/review-policy-CPEGzP_Y.js                         0.70 kB │ gzip:   0.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-workspace-selection-BzG83U7-.js             0.71 kB │ gzip:   0.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/email-BGEYpV0C.js                                 0.73 kB │ gzip:   0.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/textarea-B0SA5udv.js                              0.74 kB │ gzip:   0.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/clipboard-DT1Aaw0q.js                             0.76 kB │ gzip:   0.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/rolldown-runtime-BQ-vy_Pv.js                      0.77 kB │ gzip:   0.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cmake-U5GsXmRz.js                                 0.78 kB │ gzip:   0.46 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/asciiarmor-BCMA6NWE.js                            0.78 kB │ gzip:   0.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/line-diff-CDVvLtr6.js                             0.79 kB │ gzip:   0.37 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/label-DuAR587s.js                                 0.79 kB │ gzip:   0.50 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/classDiagram-ZZMXUADV-BwvdXWUu.js                 0.79 kB │ gzip:   0.45 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/classDiagram-v2-VYDZK3BY-BwvdXWUu.js              0.79 kB │ gzip:   0.45 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/stateDiagram-v2-MP3YSRHH-BqqLY1lJ.js              0.80 kB │ gzip:   0.46 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/FilterBar-CViqzOrK.js                             0.82 kB │ gzip:   0.47 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/swimlanesDiagram-VR7AAH4N-B3Tm1YCa.js             0.83 kB │ gzip:   0.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useAutosaveIndicator-DN1-zNkk.js                  0.83 kB │ gzip:   0.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/http-UMnO1pa3.js                                  0.84 kB │ gzip:   0.41 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/agent-icons-66qxlP4f.js                           0.85 kB │ gzip:   0.56 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/protobuf-DxFWsHLN.js                              0.86 kB │ gzip:   0.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/solr-BSz0AZOi.js                                  0.86 kB │ gzip:   0.45 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sizeCapture-INFHLROL-DcFjDF0H.js                  0.88 kB │ gzip:   0.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/audit-navigation-x_RgAOhb.js                      0.89 kB │ gzip:   0.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/input-DYNixpIg.js                                 0.90 kB │ gzip:   0.50 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/color-contrast-C7Rxw2zb.js                        0.94 kB │ gzip:   0.55 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/line-LJDy1sKx.js                                  0.95 kB │ gzip:   0.47 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/troff-8UDMOo-3.js                                 0.95 kB │ gzip:   0.43 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RunChatSurface-bJcoQaHc.js                        0.96 kB │ gzip:   0.59 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AppsReview-D7h7t2Ji.js                            0.99 kB │ gzip:   0.54 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/InlineBanner-BdhzwK4O.js                          0.99 kB │ gzip:   0.55 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/MembershipAction-DpxNJBpv.js                      0.99 kB │ gzip:   0.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/toggle-switch-XHzlW5ka.js                         1.02 kB │ gzip:   0.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/assignees-Cm1ojfmD.js                             1.05 kB │ gzip:   0.47 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/MetricCard-CXmKIRSM.js                            1.06 kB │ gzip:   0.54 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CommentAttributionChip-DdxzVR39.js                1.11 kB │ gzip:   0.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useInfiniteQuery-CTIOIpdD.js                      1.12 kB │ gzip:   0.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CopyText-ePGItM1I.js                              1.13 kB │ gzip:   0.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/spreadsheet-DiqxJV4y.js                           1.13 kB │ gzip:   0.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/toml-Cr58a6NH.js                                  1.13 kB │ gzip:   0.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/audit-Cdkkkgzb.js                                 1.14 kB │ gzip:   0.56 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SidebarContext-UIPNbVw8.js                        1.14 kB │ gzip:   0.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/responsible-user-denial-DhDZSBlN.js               1.17 kB │ gzip:   0.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ordinal-BbH5k6M-.js                               1.19 kB │ gzip:   0.57 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tooltip-B6CZUK_g.js                               1.22 kB │ gzip:   0.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/preload-helper-BATLnrmA.js                        1.22 kB │ gzip:   0.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ReusableExecutionWorkspaceSelect-BnIQlsVX.js      1.23 kB │ gzip:   0.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/routines-BMnYsu29.js                              1.26 kB │ gzip:   0.57 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/searchable-select-DlGa9Jgi.js                     1.26 kB │ gzip:   0.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/BreadcrumbContext-C-RNSkBx.js                     1.28 kB │ gzip:   0.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueReferenceActivitySummary-D0grfTDQ.js         1.29 kB │ gzip:   0.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ResponsibleUserDenialNotice-Chlzvw3x.js           1.33 kB │ gzip:   0.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProjectRepositoryInput-5k05ArDj.js                1.35 kB │ gzip:   0.72 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyActivity-R-v_MO6q.js                       1.36 kB │ gzip:   0.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mbox-BvIJCs03.js                                  1.39 kB │ gzip:   0.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-GVQU2GXP-DhZG4QQ3.js                        1.43 kB │ gzip:   0.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/badge-Cgud9tK1.js                                 1.44 kB │ gzip:   0.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/card-BCaZ9oYe.js                                  1.47 kB │ gzip:   0.59 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/StatusBadge-cgSQv911.js                           1.50 kB │ gzip:   0.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ThemeContext-C4d1s3Lm.js                          1.52 kB │ gzip:   0.79 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ToolsAdminGate-BkViLbH9.js                        1.53 kB │ gzip:   0.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/rpm-CSlbpSDJ.js                                   1.59 kB │ gzip:   0.81 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/projects-DbVQGHPm.js                              1.61 kB │ gzip:   0.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sieve-QxZfwjiW.js                                 1.61 kB │ gzip:   0.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/factor-aVI-w_hC.js                                1.67 kB │ gzip:   0.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/railroadDiagram-O6MQD6OU-C78d9qwp.js              1.67 kB │ gzip:   0.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RoutineActivityRow-DwS_ALdr.js                    1.68 kB │ gzip:   0.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/z80-B8w_N1kM.js                                   1.73 kB │ gzip:   0.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/runRetryState-Mj4hTj0-.js                         1.74 kB │ gzip:   0.75 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/EntityRow-Cg9R9uy8.js                             1.74 kB │ gzip:   0.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Goals-Bkt9ILT3.js                                 1.75 kB │ gzip:   0.91 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/DashboardLive-C0tH0Ozv.js                         1.75 kB │ gzip:   0.85 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/plugins-BhRedb_X.js                               1.77 kB │ gzip:   0.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CaseIdentifierKey-TAcPcHVE.js                     1.78 kB │ gzip:   0.87 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/eiffel-H873bhsD.js                                1.81 kB │ gzip:   0.92 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/elm-ClUTGo5O.js                                   1.86 kB │ gzip:   0.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/GoalTree-BY55IWYf.js                              1.86 kB │ gzip:   0.91 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/abnfDiagram-VCTEODGH-CeUqklE5.js                  1.87 kB │ gzip:   0.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/environments-DTNnUFnt.js                          1.88 kB │ gzip:   0.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mathematica-CRuBwcU2.js                           1.91 kB │ gzip:   0.81 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/agent-order-TNYaFKCI.js                           1.91 kB │ gzip:   0.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dockerfile-DX_VfMW1.js                            1.93 kB │ gzip:   0.65 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/work-mode-meta-EmwWqzhW.js                        1.94 kB │ gzip:   0.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/turtle-DzlWuZvW.js                                1.96 kB │ gzip:   0.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-P2QGCYS3-owBRpBNx.js                        1.96 kB │ gzip:   0.96 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ebnf-VNZi7k5n.js                                  1.98 kB │ gzip:   0.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/reusable-execution-workspaces-DWICOvgK.js         1.98 kB │ gzip:   0.95 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-F27PBJKO-D-T3WcpD.js                        1.99 kB │ gzip:   0.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/smalltalk-DQ4VSJkY.js                             1.99 kB │ gzip:   0.84 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DDUrUlDS.js                                  2.00 kB │ gzip:   1.27 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/radio-card-Dml4q75h.js                            2.01 kB │ gzip:   0.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanySettingsPluginPage-C9nOd74l.js             2.03 kB │ gzip:   1.02 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pegDiagram-XKGWAZYB-CZJCh8aE.js                   2.03 kB │ gzip:   0.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dtd-DeaIxSc8.js                                   2.05 kB │ gzip:   0.87 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/fcl-BAuNlvTV.js                                   2.06 kB │ gzip:   0.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mumps-Dk8iJohU.js                                 2.06 kB │ gzip:   0.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ToastContext-521C_3YI.js                          2.08 kB │ gzip:   1.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ebnfDiagram-PWID7BFC-Cj6UijMt.js                  2.08 kB │ gzip:   0.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/button-D8t0RxB-.js                                2.09 kB │ gzip:   0.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ntriples-BJmuWkiw.js                              2.10 kB │ gzip:   0.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/FoldCurtain-Nf-DeWP0.js                           2.12 kB │ gzip:   1.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/yacas-Dw-sAHuw.js                                 2.15 kB │ gzip:   1.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chatEndpoints-Ds_8jH0s.js                         2.17 kB │ gzip:   0.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-C0kLYwkU.js                                  2.17 kB │ gzip:   0.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentChat-CdPjaAUc.js                             2.25 kB │ gzip:   1.09 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PaperclipCloudOAuthHandoff-Dx8sBiIL.js            2.28 kB │ gzip:   1.05 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/simple-mode-Dt5axubo.js                           2.29 kB │ gzip:   1.10 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/apl-HgHEXXot.js                                   2.29 kB │ gzip:   1.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-assignee-overrides-DIAxoBMi.js              2.29 kB │ gzip:   1.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pascal-D4V8WzY2.js                                2.29 kB │ gzip:   1.19 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/octave-CXDj0uyJ.js                                2.30 kB │ gzip:   1.09 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueReferencePill-D7KOlnm-.js                    2.30 kB │ gzip:   0.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/use-adapter-capabilities-Dz5eFJBH.js              2.31 kB │ gzip:   0.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/commonlisp-Bw-z7IkA.js                            2.32 kB │ gzip:   1.10 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/OnboardingPrimitives-Cueg6x0a.js                  2.33 kB │ gzip:   1.15 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/path-B-366Oci.js                                  2.33 kB │ gzip:   1.02 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tcl-CnSuC1oG.js                                   2.35 kB │ gzip:   1.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/access-CBxRP6Yr.js                                2.36 kB │ gzip:   0.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/trust-policy-ui-jbJp4P5Y.js                       2.39 kB │ gzip:   0.96 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyContext-BmEOy7dh.js                        2.43 kB │ gzip:   1.11 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/run-log-chunks-BkXXEK4H.js                        2.45 kB │ gzip:   1.12 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/model-CNVQzzHi.js                                 2.48 kB │ gzip:   1.02 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/webidl-BNiC0yJq.js                                2.50 kB │ gzip:   1.24 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/heartbeats--ZKeNlo_.js                            2.51 kB │ gzip:   0.97 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TemplateSkillsField-D5NpbKY1.js                   2.51 kB │ gzip:   1.27 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pig-BbLsR4pf.js                                   2.51 kB │ gzip:   1.37 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PillGuy-Y9IVUvXz.js                               2.53 kB │ gzip:   1.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/secrets-DKgePrdP.js                               2.53 kB │ gzip:   0.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/puppet-BLE7Ro_J.js                                2.54 kB │ gzip:   1.20 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/forth-DrZE71Jy.js                                 2.54 kB │ gzip:   1.32 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/shell-B_MNADuE.js                                 2.56 kB │ gzip:   1.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/smoke-lab-matrix-C8SwT6Xq.js                      2.57 kB │ gzip:   1.20 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/profile-summary-lfoT8Ke5.js                       2.57 kB │ gzip:   1.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-KOdM3ETH.js                                  2.62 kB │ gzip:   1.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/velocity-Z2yLaCKG.js                              2.66 kB │ gzip:   1.11 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cases-DiGLO_LB.js                                 2.67 kB │ gzip:   0.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProjectScopeContext-CbbiQpqE.js                   2.71 kB │ gzip:   1.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/collapsible-D9AgTfck.js                           2.72 kB │ gzip:   1.15 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sheet-DpgJ3NaG.js                                 2.74 kB │ gzip:   0.96 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SkillCardIcon-D9pUdKQc.js                         2.74 kB │ gzip:   1.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tiddlywiki-bEePZ2Ra.js                            2.76 kB │ gzip:   1.06 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/modelica-B5lJKsMe.js                              2.78 kB │ gzip:   1.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/adapter-display-registry-2Tsouai3.js              2.87 kB │ gzip:   1.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/oz-CqyT75hx.js                                    2.89 kB │ gzip:   1.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/EnforcementBanner-x_lMnzy2.js                     2.93 kB │ gzip:   1.29 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/r-Bpos9fnB.js                                     2.94 kB │ gzip:   1.36 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/StatusIcon-DAvxpxEJ.js                            2.94 kB │ gzip:   1.20 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/usePrefersReducedMotion-DDpXhnin.js               2.97 kB │ gzip:   1.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-C96vfWgH.js                                  2.99 kB │ gzip:   1.37 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/inboxArchiveCache-t1HNmQcL.js                     3.02 kB │ gzip:   1.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PathInstructionsModal-Djxiv-SD.js                 3.03 kB │ gzip:   1.33 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/stex-CsQikr8H.js                                  3.10 kB │ gzip:   1.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dialog-BwNvbzUS.js                                3.10 kB │ gzip:   1.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/interaction-audience-C-ORwDLf.js                  3.14 kB │ gzip:   1.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Approvals-TibWhrpN.js                             3.21 kB │ gzip:   1.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tiki-BsiOUmcZ.js                                  3.22 kB │ gzip:   1.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/composer-draft-DMVB1EwO.js                        3.27 kB │ gzip:   1.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useSummaryDraftStream-CnXxv70h.js                 3.28 kB │ gzip:   1.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-C6XjyIe3.js                                  3.34 kB │ gzip:   1.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/vhdl-DxqozbPM.js                                  3.34 kB │ gzip:   1.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/model-Ck5WXX5v.js                                 3.39 kB │ gzip:   1.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/lua-5dyAxH4Z.js                                   3.40 kB │ gzip:   1.45 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/arc-BZl4jCoI.js                                   3.49 kB │ gzip:   1.47 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mscgen-CINNGGuz.js                                3.50 kB │ gzip:   0.98 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/NewProjectDialog--7FZViLm.js                      3.51 kB │ gzip:   1.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-output-D4Y5NjY5.js                          3.52 kB │ gzip:   1.41 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sparql-Ba6wVavx.js                                3.54 kB │ gzip:   1.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useQueries-DUkV9uWt.js                            3.55 kB │ gzip:   1.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cypher-CDAKrY0K.js                                3.55 kB │ gzip:   1.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/avatar-Dqb2rBl_.js                                3.56 kB │ gzip:   1.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/BoardClaim-CRrqKXjV.js                            3.56 kB │ gzip:   1.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/d-G8gZfho_.js                                     3.70 kB │ gzip:   1.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/coffeescript-sEBj_57X.js                          3.85 kB │ gzip:   1.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/shared-Dj4oldeI.js                                3.92 kB │ gzip:   1.57 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/vb-LZAplkc9.js                                    3.92 kB │ gzip:   1.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SearchableSelect-CPHo822R.js                      3.95 kB │ gzip:   1.85 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/swift-DFCua_GN.js                                 3.95 kB │ gzip:   1.79 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PluginPage-BII-_mVl.js                            3.95 kB │ gzip:   1.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/connection-identity-j4bwEx_R.js                   3.95 kB │ gzip:   1.41 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentTemplates-CK_vHHvs.js                        3.97 kB │ gzip:   1.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/asn1-Kzy7voXy.js                                  3.98 kB │ gzip:   1.96 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/DocumentFrameHeader-DCLatAVu.js                   3.99 kB │ gzip:   1.49 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/q-pnYhjEv1.js                                     4.03 kB │ gzip:   1.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dylan-Yac_wH_X.js                                 4.03 kB │ gzip:   1.65 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ApprovalCard-DRwdKOnr.js                          4.04 kB │ gzip:   1.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ImageGalleryModal-DWj3NLjW.js                     4.04 kB │ gzip:   1.52 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/livescript-zjWWle_Z.js                            4.09 kB │ gzip:   1.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ttcn-cfg-GPY3QPal.js                              4.10 kB │ gzip:   1.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/alert-dialog-CO8Z6Sq-.js                          4.13 kB │ gzip:   1.36 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/groovy-DyP1Fpyw.js                                4.13 kB │ gzip:   1.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/haskell-Bo1ZIvh5.js                               4.16 kB │ gzip:   1.91 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ChatIdentityConfirm-VtTRALm4.js                   4.19 kB │ gzip:   1.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/select-CX3_8l-x.js                                4.26 kB │ gzip:   1.47 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-filters-CF9cUza0.js                         4.33 kB │ gzip:   1.54 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diagram-Z3DM3KII-BO68fsRP.js                      4.34 kB │ gzip:   1.88 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-NSREQ8UT.js                                  4.35 kB │ gzip:   1.93 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ConfigureBuiltInAgentModal-DClMA-9V.js            4.44 kB │ gzip:   2.06 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/asterisk-ChB64vS0.js                              4.46 kB │ gzip:   1.78 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SetMyUserSecretDialog-3KC9bZ3R.js                 4.48 kB │ gzip:   1.85 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/gas-C05ow7k1.js                                   4.55 kB │ gzip:   1.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Issues-DTB2drlm.js                                4.64 kB │ gzip:   2.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/fortran-DTMl8J_7.js                               4.65 kB │ gzip:   2.03 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/defaultLocale-DxpPsLCS.js                         4.67 kB │ gzip:   2.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Workspaces-C9-4539X.js                            4.74 kB │ gzip:   1.87 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/checkbox-DbB0HW2S.js                              4.77 kB │ gzip:   2.03 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mllike-YIlOgzvN.js                                4.82 kB │ gzip:   1.56 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ttcn-CYYHMuI4.js                                  4.85 kB │ gzip:   2.15 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RepositoryEditor-BLE-JXFt.js                      4.88 kB │ gzip:   1.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-C4RBISct.js                                  4.94 kB │ gzip:   1.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-Dr-N3tYy.js                                  5.00 kB │ gzip:   2.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/crystal-B9RjEXPe.js                               5.12 kB │ gzip:   2.06 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/InlineEditor-C-0ATFTw.js                          5.12 kB │ gzip:   2.06 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ecl-DIrkXxFx.js                                   5.12 kB │ gzip:   2.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/oauthHandoff-DJhhIpR2.js                          5.14 kB │ gzip:   2.04 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/companySkills-BrVAJlAN.js                         5.14 kB │ gzip:   0.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskDetailRelationsPanel-Ds0BRl00.js              5.17 kB │ gzip:   1.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ruby-B_MU5FGb.js                                  5.21 kB │ gzip:   2.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/julia-xNPhGaGn.js                                 5.38 kB │ gzip:   2.14 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/tabs-_crWbKSH.js                                  5.38 kB │ gzip:   1.96 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CliAuth-DJYk8db4.js                               5.45 kB │ gzip:   1.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/portable-files-C_5sWel-.js                        5.47 kB │ gzip:   2.32 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ReviewQueueCard-LwgHf0dv.js                       5.57 kB │ gzip:   2.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/agents-BRnsXCKN.js                                5.59 kB │ gzip:   1.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ActiveAgentsPanel-DEfccsIC.js                     5.61 kB │ gzip:   2.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/linear-OCaJevt3.js                                5.64 kB │ gzip:   2.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/vbscript-CiHBNs7b.js                              5.78 kB │ gzip:   2.59 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Projects-1rbYRCDe.js                              5.81 kB │ gzip:   2.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/codex-reasoning-effort-Cf8DeySB.js                5.87 kB │ gzip:   2.27 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mirc-WDl4E_V9.js                                  5.91 kB │ gzip:   2.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentBubbleActionRow-DiuhNoLt.js                  5.93 kB │ gzip:   2.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-PWAF6VOD-lq2Ihi8Q.js                        5.97 kB │ gzip:   2.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/popover-D0644xIy.js                               6.10 kB │ gzip:   2.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diagram-UQ7AKVKN-CBTP00QI.js                      6.15 kB │ gzip:   2.65 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cobol-DmYfZL7R.js                                 6.23 kB │ gzip:   2.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/JoinRequestQueue-jOcE63CQ.js                      6.24 kB │ gzip:   2.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentMultiSelect-_KN84yRr.js                      6.24 kB │ gzip:   2.07 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/NewGoalDialog-kkM632E9.js                         6.31 kB │ gzip:   2.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/scheme-6o3npgZL.js                                6.36 kB │ gzip:   2.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pieDiagram-E7YTZNPT-BG5RrRld.js                   6.38 kB │ gzip:   2.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/python-m4uYbAuQ.js                                6.43 kB │ gzip:   2.72 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TrustPresetSection-2cD6mNp-.js                    6.47 kB │ gzip:   2.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RichWorkProductCard-Bg49SrL3.js                   6.49 kB │ gzip:   2.67 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/xquery-kQB9s-mX.js                                6.59 kB │ gzip:   2.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Companies-CX-fEdy-.js                             6.65 kB │ gzip:   2.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pug-BuNNmWOl.js                                   6.67 kB │ gzip:   1.98 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/companies-query-C4h07b0B.js                       6.77 kB │ gzip:   2.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/textile-D_DpZr83.js                               6.77 kB │ gzip:   2.43 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ApprovalPayload-BUbqA0mZ.js                       6.77 kB │ gzip:   1.85 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/GoalDetail-BoLYVf4N.js                            6.93 kB │ gzip:   2.57 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/queryClient-CyH1_Y3N.js                           6.95 kB │ gzip:   2.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/nsis-Dn6O1rXh.js                                  7.06 kB │ gzip:   3.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/InstanceAccess-smRlCVys.js                        7.31 kB │ gzip:   2.33 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/nginx-xWbMltqE.js                                 7.33 kB │ gzip:   2.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ResponsibleUserDenialUxLab-D2-gvPO3.js            7.37 kB │ gzip:   1.89 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useProfilesData-6cTX_TNc.js                       7.40 kB │ gzip:   2.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DDgoDEGf.js                                  7.54 kB │ gzip:   2.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CrossIssueCollaborationUxLab-DUxpNLPh.js          7.62 kB │ gzip:   2.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AppNotConnected-B6aZyY-h.js                       7.62 kB │ gzip:   2.84 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/BudgetPolicyCard-nB-AAgmr.js                      7.64 kB │ gzip:   2.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueOutputSection-CG6FVHr3.js                    7.71 kB │ gzip:   2.33 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/powershell-BUvok8HH.js                            7.72 kB │ gzip:   3.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/haxe-DRLWKgjc.js                                  7.88 kB │ gzip:   2.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CopyableGatewayUrl-5KFlRnTt.js                    7.89 kB │ gzip:   3.36 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentBasicsDialog-Bz27qx8G.js                     8.08 kB │ gzip:   3.21 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueAttachmentsSection-f3AoqATs.js               8.08 kB │ gzip:   2.46 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/erlang-Bqdi3Bi8.js                                8.09 kB │ gzip:   2.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-blockers-BHf6yGg6.js                        8.28 kB │ gzip:   3.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-Bb9gUxw5.js                                  8.32 kB │ gzip:   3.07 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/status-colors-DfqNYcKf.js                         8.32 kB │ gzip:   1.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diagram-S7CK7UJ4-Dg-i42B2.js                      8.33 kB │ gzip:   3.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/verilog-BdGaR9ZS.js                               8.48 kB │ gzip:   3.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/agent-config-primitives-5rQC7xXJ.js               8.49 kB │ gzip:   3.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-B9cvm20q.js                                  8.54 kB │ gzip:   3.72 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/BootstrapSetupUxLab-UeGOCNY-.js                   8.69 kB │ gzip:   2.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/GatewaysList-8XoLny0N.js                          9.00 kB │ gzip:   3.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/NewAgentDialog-DClZECIl.js                        9.04 kB │ gzip:   3.91 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RoutineVariablesEditor-3xf1gDcQ.js                9.05 kB │ gzip:   2.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ApprovalDetail-D7kLqIEP.js                        9.25 kB │ gzip:   3.03 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sas-DGRGofQt.js                                   9.33 kB │ gzip:   4.11 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ComposioProvenanceChip-D8-fmd-5.js                9.35 kB │ gzip:   3.19 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/DecisionQueuePage-CDN59z1P.js                     9.49 kB │ gzip:   3.56 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Departments-C9bdyVKg.js                           9.62 kB │ gzip:   3.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueChatLongThreadPerf-Ct7IPMxv.js               9.62 kB │ gzip:   3.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentActionButtons-BicfL6Dy.js                    9.63 kB │ gzip:   3.39 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueWorkspaceCard-Dk7ZPsEG.js                    9.71 kB │ gzip:   3.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/perl-uhCCAAVy.js                                  9.75 kB │ gzip:   3.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-L3NEJ4N5-Bisxd1gC.js                        9.84 kB │ gzip:   2.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProjectWorkspacesContent-CtddC8qN.js              9.96 kB │ gzip:   2.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cynefinDiagram-5FMLGOSQ-cnvXcijg.js              10.15 kB │ gzip:   3.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/gherkin-MY0AvnMW.js                              10.15 kB │ gzip:   5.09 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/OrgChart.production-DkX-uIvM.js                  10.57 kB │ gzip:   3.95 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/stateDiagram-D77RDMKH-BO4nO03f.js                10.78 kB │ gzip:   3.81 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diagram-VSXAHHWV-DCjV5SD2.js                     10.80 kB │ gzip:   4.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/clojure-Cj19RBE9.js                              10.81 kB │ gzip:   4.07 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProfileSettings-ZSTiKQPL.js                      11.00 kB │ gzip:   3.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dagre-GXQ25YYZ-D_xDP9Jk.js                       11.08 kB │ gzip:   4.24 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RoutineRunVariablesDialog-BG9jvYum.js            11.19 kB │ gzip:   3.57 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/useSharedPolling-CUddl6nb.js                     11.40 kB │ gzip:   3.86 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/idl-D1SpNDuX.js                                  11.63 kB │ gzip:   4.65 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-BcX9ftei.js                                 11.86 kB │ gzip:   4.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/system-notice-comment-YA5zTONZ.js                11.87 kB │ gzip:   3.65 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/UserProfile-BD9kCoFk.js                          11.87 kB │ gzip:   3.27 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueWriteDenialNotice-BWdbbvwY.js               12.05 kB │ gzip:   4.46 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Groups-CXK6ss26.js                               12.15 kB │ gzip:   4.13 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-Cq-ikdBf.js                                 12.41 kB │ gzip:   5.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/WhatNeedsMe-BUcWd2GL.js                          12.51 kB │ gzip:   4.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PluginManager-Dz1L1BLi.js                        13.60 kB │ gzip:   3.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyActivity.production-C384FO6S.js           13.75 kB │ gzip:   4.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/scroll-area-D0GpD_wx.js                          14.10 kB │ gzip:   4.45 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/WorkspaceRuntimeControls-CHwnRM34.js             14.47 kB │ gzip:   4.72 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskChatComposerTakeoverContext-zVMrdwgC.js      14.49 kB │ gzip:   4.55 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-kWCa9xNL.js                                 14.59 kB │ gzip:   5.93 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/proposal-review-CJ-0_Qcp.js                      14.89 kB │ gzip:   4.97 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AdapterManager-B1bIO0OI.js                       14.98 kB │ gzip:   4.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dynamic-loader-35EmhF2J.js                       15.31 kB │ gzip:   5.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Artifacts-BmL4uY_Y.js                            15.36 kB │ gzip:   5.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/activity-format-BwhFOapt.js                      15.37 kB │ gzip:   3.71 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-SVP7TREG-BXHkIpKZ.js                       15.75 kB │ gzip:   4.43 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/diagram-VX7I27RA-BfTvz0Je.js                     15.96 kB │ gzip:   5.67 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-BLrCkH26.js                                 16.24 kB │ gzip:   7.49 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SourceTrustBadge-D9XHVWoK.js                     16.48 kB │ gzip:   5.18 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/FolderControls-DFJ1ZN5X.js                       16.57 kB │ gzip:   5.12 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mermaid-parser.core-CQEYnCr6.js                  16.88 kB │ gzip:   3.94 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/javascript-Dpv-sTo5.js                           17.04 kB │ gzip:   5.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/slots-CoEaWQFX.js                                17.24 kB │ gzip:   6.14 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/es2015-CQF0SxQ8.js                               17.29 kB │ gzip:   6.63 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/pipeline-stage-presentation-KCPhjK0e.js          17.60 kB │ gzip:   5.88 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ishikawaDiagram-5VMMS53U-DJmyo96V.js             17.60 kB │ gzip:   6.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/EmailEndpointSetup-eJ68vMUV.js                   19.06 kB │ gzip:   5.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Browse-C6RtP2Se.js                               19.42 kB │ gzip:   6.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProjectWorkspaceDetail-Dg8e2_Qu.js               19.44 kB │ gzip:   5.86 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Auth-ClnhiHM9.js                                 19.52 kB │ gzip:   8.41 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Agents.production-Dl3CqLl1.js                    19.59 kB │ gzip:   6.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-4glTJcdC.js                                 19.76 kB │ gzip:   6.88 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/InviteLanding-COAzTnTn.js                        19.97 kB │ gzip:   5.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SummarySlotCard-Ctpi1wF0.js                      20.37 kB │ gzip:   5.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/kanban-definition-UXKFOSKX-D0VnXXdB.js           20.57 kB │ gzip:   7.35 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DQjRHSM8.js                                 20.79 kB │ gzip:   9.40 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DzxMrAJa.js                                 21.05 kB │ gzip:   9.74 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/InstanceExperimentalSettings-KDA_5HXF.js         21.11 kB │ gzip:   6.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/connection-owner-CTJ07_EM.js                     22.20 kB │ gzip:   7.06 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/clike-BevCOpZ6.js                                22.21 kB │ gzip:   7.85 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProfileDetailRoute-CTbwkjdu.js                   22.30 kB │ gzip:   6.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskChatLab-DX46EAjb.js                          22.74 kB │ gzip:   7.04 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/JsonSchemaForm-DjzQiYWN.js                       22.97 kB │ gzip:   6.93 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-JZfOGwOl.js                                 22.98 kB │ gzip:  10.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dropdown-menu-CoW-ZKCY.js                        23.12 kB │ gzip:   6.50 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sankeyDiagram-P5KCCOFB-DwzeHjbs.js               23.17 kB │ gzip:   8.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanySettings-DNgUNSBY.js                      23.18 kB │ gzip:   6.48 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Dashboard-DNcPKy0O.js                            23.45 kB │ gzip:   7.51 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/journeyDiagram-3NMN7TZE-Ba8gXlko.js              23.58 kB │ gzip:   8.36 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mindmap-definition-YA3MSWOX-DgP2SUGK.js          23.69 kB │ gzip:   8.11 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyExport-GMbQqmwv.js                        23.84 kB │ gzip:   8.32 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/graphlib-CcZRqhff.js                             24.04 kB │ gzip:   8.41 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CaseDetail-_mRS6DRy.js                           25.06 kB │ gzip:   7.81 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProfileWizardRoute-BOk7E6vt.js                   25.23 kB │ gzip:   7.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/wardleyDiagram-VM6X3IG4-BxCub2kp.js              25.57 kB │ gzip:   6.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AuditHub-5mPi7Big.js                             25.71 kB │ gzip:   7.25 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DHELBfsD.js                                 25.78 kB │ gzip:   8.67 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/stylus-Cqzo5uS7.js                               25.79 kB │ gzip:   8.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Costs.production-Cubis38I.js                     26.22 kB │ gzip:   6.54 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Cases-CrGGLoi5.js                                26.31 kB │ gzip:   8.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyAccess-CL0AcSo2.js                        26.62 kB │ gzip:   7.09 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/css-osG3334y.js                                  27.01 kB │ gzip:   8.49 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/NewAgent-w3Z0TaJL.js                             27.04 kB │ gzip:   9.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PluginSettings-CR6xMeho.js                       27.53 kB │ gzip:   6.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Agents-DBzeLmyR.js                               27.71 kB │ gzip:   9.97 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/rough.esm-CSuoPZ5o.js                            27.81 kB │ gzip:   9.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DLCeJ_7y.js                                 28.31 kB │ gzip:  12.92 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DrDUNwFi.js                                 28.56 kB │ gzip:  11.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ChatEndpointDetail-DiFD9XqW.js                   28.74 kB │ gzip:   7.97 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/gitGraphDiagram-WWUBYQGX-DZdZOv4c.js             29.42 kB │ gzip:   8.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskTreeControls-CQN-xWH0.js                     29.53 kB │ gzip:  10.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Routines.production-BU3d0pG5.js                  30.15 kB │ gzip:   8.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DF3mpnZW.js                                 30.74 kB │ gzip:  12.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/timeline-definition-24CTP7MA-CtYtv1Lh.js         30.92 kB │ gzip:  10.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Timeline-DbFcFZxX.js                             30.98 kB │ gzip:  10.81 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-75Z2AOVW-DiS8VKrk.js                       31.11 kB │ gzip:   8.67 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/erDiagram-RLTQ6QDP-DhLLnn7M.js                   31.16 kB │ gzip:  10.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Routines-eYMTiPcd.js                             31.33 kB │ gzip:   9.29 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/requirementDiagram-BXWQKSXE-DvtkJsyN.js          31.36 kB │ gzip:   9.98 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/router-tpSICkZA.js                               31.61 kB │ gzip:  10.88 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-CVYCvcYo.js                                 32.30 kB │ gzip:  13.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/environment-variables-editor-D6rGATgA.js         33.05 kB │ gzip:  10.05 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DY_MaPb1.js                                 33.53 kB │ gzip:  12.61 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueRecoveryActionCard-DTLrZitj.js              33.71 kB │ gzip:   8.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/resizable-panels-BzWmVUmM.js                     33.90 kB │ gzip:  11.46 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/quadrantDiagram-AXDQQJYC-C6TD9oPd.js             33.96 kB │ gzip:   9.95 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/command-B9QWo4o6.js                              34.48 kB │ gzip:  11.86 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-OSK3NFVY-Ddgve4Pk.js                       36.87 kB │ gzip:   8.09 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sql-YkF1z3DZ.js                                  36.91 kB │ gzip:  10.95 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dagre-CJh2-Y3p.js                                37.12 kB │ gzip:  13.53 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RoutineDetail.production-DHo-jzzQ.js             37.43 kB │ gzip:  11.03 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-IMKFNOWR-CNic77Qq.js                       38.15 kB │ gzip:  12.59 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyImport-DFZsdMkU.js                        38.44 kB │ gzip:  11.52 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/OnboardingWizard-Bvrv23Qv.js                     39.14 kB │ gzip:  14.37 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-BxhtpMCI.js                                 40.72 kB │ gzip:  16.95 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/BoardChat-DeNceUNK.js                            41.42 kB │ gzip:  12.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueDocumentAnnotations-Bvy5i3yK.js             41.68 kB │ gzip:  12.88 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/vennDiagram-4TSXK5OY-BaO9UVSs.js                 41.92 kB │ gzip:  15.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/blockDiagram-I7D4REHJ-BwcT_g2x.js                41.93 kB │ gzip:  13.66 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskChatMarker-DnA-ExXQ.js                       42.34 kB │ gzip:  12.21 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/GatewayDetail-BAw1YAFw.js                        43.46 kB │ gzip:  10.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/StatusCards-Dzph458f.js                          43.57 kB │ gzip:  11.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Search-BqKW9o-I.js                               43.93 kB │ gzip:  12.50 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-BVLMbTch.js                                 44.04 kB │ gzip:  15.42 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/xychartDiagram-S5SC5T6Z-BH8mT-UV.js              44.61 kB │ gzip:  12.59 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DoLYC8-U.js                                 45.01 kB │ gzip:  19.44 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/queryKeys-D2VJzyJE.js                            46.01 kB │ gzip:  13.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ExecutionWorkspaceDetail-CLDmDEfJ.js             47.17 kB │ gzip:  12.70 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/src-VN6SNed8.js                                  47.41 kB │ gzip:  16.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/NewIssueDialog-58Wchd3B.js                       48.14 kB │ gzip:  13.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-62JRHF6Z-BP1wfhVd.js                       48.22 kB │ gzip:  16.99 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskChatThreadView-Qu86Mhj2.js                   48.42 kB │ gzip:  14.14 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SkillFolderTree-CBJw57ZE.js                      48.82 kB │ gzip:  13.28 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-TICWLB2K-CnxxJuD4.js                       49.31 kB │ gzip:  16.02 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ChatEndpointSetup-zjzL4jIe.js                    49.51 kB │ gzip:  13.76 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ProjectDetail-4uFB58AZ.js                        50.75 kB │ gzip:  13.60 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-GMAD6QVW-MmvIX4Sc.js                       52.19 kB │ gzip:  17.16 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ScrollToBottom-BfZboTnm.js                       54.33 kB │ gzip:  15.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Costs--1w22Bi_.js                                57.88 kB │ gzip:  12.75 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/DecisionDateChips-D3kCmV8n.js                    59.99 kB │ gzip:  15.73 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/TaskChatProtocolCard-BJntQTJ8.js                 61.20 kB │ gzip:  18.33 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-SHT3W25Y-DKXas9x9.js                       61.85 kB │ gzip:  20.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AdvancedToolsRoute-fkP0gC0s.js                   63.11 kB │ gzip:  16.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AppDetail-ClOt2yNe.js                            63.94 kB │ gzip:  17.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/c4Diagram-7LVT6UL2-atfHjUSb.js                   65.59 kB │ gzip:  19.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ganttDiagram-EL5Y4UJY-Fxr8qnn6.js                70.31 kB │ gzip:  23.78 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DV6M8cBz.js                                 70.78 kB │ gzip:  26.11 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/PipelineSettings-CXRBlc5X.js                     71.38 kB │ gzip:  19.02 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/icons-2KtNjTfG.js                                72.45 kB │ gzip:  22.03 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cose-bilkent-JH36ORCC-DrZwSItB.js                82.24 kB │ gzip:  22.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/ConnectionSetupFlow-BEMnFaUI.js                  84.55 kB │ gzip:  23.69 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-ByUDzO-3.js                                 84.74 kB │ gzip:  33.86 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueThreadInteractionCard-Bj60WRzj.js           91.07 kB │ gzip:  22.24 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mention-chips-DG3ZsPlM.js                        92.08 kB │ gzip:  26.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/SkillStudio-BeCTgr1f.js                          93.65 kB │ gzip:  25.52 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/mermaid.core-BTrfiQpo.js                         95.96 kB │ gzip:  33.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DcNRHj9R.js                                 98.17 kB │ gzip:  28.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/RoutineDetail-DU9fy4hM.js                       100.58 kB │ gzip:  27.64 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/MarkdownBody-Dt5HOalf.js                        101.44 kB │ gzip:  33.58 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/dist-DSBZy6AD.js                                103.90 kB │ gzip:  34.77 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-4HAMMTFA-DqvaupOy.js                      106.54 kB │ gzip:  26.50 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanySkills.production-Ba2r-3xk.js            108.08 kB │ gzip:  27.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanySkills-C6Fl6F6O.js                       109.31 kB │ gzip:  27.72 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/swimlanes-42K2YHIH-Cf8mWlMT.js                  115.75 kB │ gzip:  42.90 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/sequenceDiagram-WJ2MYXX4-BMwJnN_3.js            117.03 kB │ gzip:  31.38 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Inbox-BQqSXqVT.js                               125.43 kB │ gzip:  34.01 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/react-B-_ndwKg.js                               127.99 kB │ gzip:  42.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Pipelines-B9qzUMzK.js                           131.83 kB │ gzip:  35.17 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/issue-properties-D_vAAoYM.js                    132.67 kB │ gzip:  33.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/DesignGuide-QaLoOdsU.js                         136.69 kB │ gzip:  35.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/Secrets-w3KyMSWr.js                             142.06 kB │ gzip:  33.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/architectureDiagram-5GKGNRK7-RqNI_8mY.js        152.21 kB │ gzip:  43.31 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentDetail-RTgvaok6.js                         197.14 kB │ gzip:  51.68 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-DU6HZSFF-BGoS2car.js                      237.85 kB │ gzip:  39.38 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/AgentConfigForm-DGTUrphE.js                     246.33 kB │ gzip:  65.71 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/katex-CX1jT6nm.js                               259.41 kB │ gzip:  77.80 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/i18n-C8nSZHXt.js                                279.28 kB │ gzip:  97.22 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueChatThread-BMhw9wmO.js                     320.14 kB │ gzip:  92.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/IssueDetail-hIr4pbQD.js                         369.93 kB │ gzip: 106.30 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/CompanyEnvironments-D_y17B02.js                 394.95 kB │ gzip: 102.00 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/cytoscape.esm-DqfuVUrS.js                       439.36 kB │ gzip: 141.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/prod-D9EwR80O.js                                452.36 kB │ gzip: 150.82 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/utils-CM4BFZuH.js                               514.73 kB │ gzip: 121.86 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/chunk-FOHPRMQF-Dz43VZiQ.js                      667.01 kB │ gzip: 148.08 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/index-DaPiS2rU.js                               839.43 kB │ gzip: 246.34 kB
+../../../../../tmp/paperclip-task-chat-441-dist-final/assets/MarkdownEditor-rVSOrZzO.js                    1,072.55 kB │ gzip: 351.62 kB
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/pages/NotFound.tsx is dynamically imported by src/App.tsx but also statically imported by src/components/Layout.production.tsx, src/components/Layout.tsx, src/components/UnprefixedExecutionWorkspaceRedirect.tsx, src/pages/CompanySettingsPluginPage.tsx, src/pages/PluginPage.tsx, dynamic import will not move module into another chunk.
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.34s

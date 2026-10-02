@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { mergeRunLogChunks, readChunkSeq } from "../lib/run-log-chunks";
 import { getPageVisibility, usePageVisibility } from "../lib/page-visibility";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -94,6 +95,7 @@ import { RunTranscriptView, type TranscriptMode } from "../components/transcript
 import { AgentToolsTab } from "./AgentToolsTab";
 import { AgentChannelsPanel } from "../components/chat/AgentChannelsPanel";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
+import { useUiTranslator } from "@/i18n";
 import {
   appendCapped,
   LIVE_TRANSCRIPT_RENDER_LIMIT,
@@ -436,6 +438,7 @@ export function RunInvocationCard({
   payload: Record<string, unknown>;
   censorUsernameInLogs: boolean;
 }) {
+  const tr = useUiTranslator();
   const rawCommandLine = [
     typeof payload.command === "string" ? payload.command : null,
     ...(Array.isArray(payload.commandArgs)
@@ -455,29 +458,27 @@ export function RunInvocationCard({
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2">
-      <div className="text-xs font-medium text-muted-foreground">Invocation</div>
+      <div className="text-xs font-medium text-muted-foreground">{tr("Invocation")}</div>
       {typeof payload.adapterType === "string" && (
-        <div className="text-xs"><span className="text-muted-foreground">Adapter: </span>{payload.adapterType}</div>
+        <div className="text-xs"><span className="text-muted-foreground">{tr("Adapter: ")}</span>{payload.adapterType}</div>
       )}
       {typeof payload.cwd === "string" && (
-        <div className="text-xs break-all"><span className="text-muted-foreground">Working dir: </span><span className="font-mono">{payload.cwd}</span></div>
+        <div className="text-xs break-all"><span className="text-muted-foreground">{tr("Working dir: ")}</span><span className="font-mono">{payload.cwd}</span></div>
       )}
       {hasAdvancedDetails && (
         <Collapsible>
           <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors group">
-            <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-            Details
-          </CollapsibleTrigger>
+            <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" /> {uiText("Details")} </CollapsibleTrigger>
           <CollapsibleContent className="pt-2 space-y-2">
             {commandLine && (
               <div className="text-xs break-all">
-                <span className="text-muted-foreground">Command: </span>
+                <span className="text-muted-foreground">{tr("Command: ")}</span>
                 <span className="font-mono">{commandLine}</span>
               </div>
             )}
             {Array.isArray(payload.commandNotes) && payload.commandNotes.length > 0 && (
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Command notes</div>
+                <div className="text-xs text-muted-foreground mb-1">{tr("Command notes")}</div>
                 <ul className="list-disc pl-5 space-y-1">
                   {payload.commandNotes
                     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
@@ -491,7 +492,7 @@ export function RunInvocationCard({
             )}
             {payload.prompt !== undefined && (
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Prompt</div>
+                <div className="text-xs text-muted-foreground mb-1">{tr("Prompt")}</div>
                 <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap">
                   {typeof payload.prompt === "string"
                     ? redactPathText(payload.prompt, censorUsernameInLogs)
@@ -501,7 +502,7 @@ export function RunInvocationCard({
             )}
             {payload.context !== undefined && (
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Context</div>
+                <div className="text-xs text-muted-foreground mb-1">{tr("Context")}</div>
                 <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap">
                   {JSON.stringify(redactPathValue(payload.context, censorUsernameInLogs), null, 2)}
                 </pre>
@@ -509,7 +510,7 @@ export function RunInvocationCard({
             )}
             {payload.env !== undefined && (
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Environment</div>
+                <div className="text-xs text-muted-foreground mb-1">{tr("Environment")}</div>
                 <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
                   {formatEnvForDisplay(payload.env, censorUsernameInLogs)}
                 </pre>
@@ -594,6 +595,7 @@ function WorkspaceOperationLogViewer({
   operation: WorkspaceOperation;
   censorUsernameInLogs: boolean;
 }) {
+  const tr = useUiTranslator();
   const [open, setOpen] = useState(false);
   const { data: logData, isLoading, error } = useQuery({
     queryKey: ["workspace-operation-log", operation.id],
@@ -614,18 +616,18 @@ function WorkspaceOperationLogViewer({
         className="text-(length:--text-micro) text-muted-foreground underline underline-offset-2 hover:text-foreground"
         onClick={() => setOpen((value) => !value)}
       >
-        {open ? "Hide full log" : "Show full log"}
+        {open ? uiText("Hide full log") : uiText("Show full log")}
       </button>
       {open && (
         <div className="rounded-md border border-border bg-background/70 p-2">
-          {isLoading && <div className="text-xs text-muted-foreground">Loading log...</div>}
+          {isLoading && <div className="text-xs text-muted-foreground">{tr("Loading log...")}</div>}
           {error && (
             <div className="text-xs text-destructive">
-              {error instanceof Error ? error.message : "Failed to load workspace operation log"}
+              {error instanceof Error ? error.message : uiText("Failed to load workspace operation log")}
             </div>
           )}
           {!isLoading && !error && chunks.length === 0 && (
-            <div className="text-xs text-muted-foreground">No persisted log lines.</div>
+            <div className="text-xs text-muted-foreground">{tr("No persisted log lines.")}</div>
           )}
           {chunks.length > 0 && (
             <div className="max-h-64 overflow-y-auto rounded bg-neutral-100 p-2 font-mono text-xs dark:bg-neutral-950">
@@ -664,12 +666,13 @@ function WorkspaceOperationsSection({
   operations: WorkspaceOperation[];
   censorUsernameInLogs: boolean;
 }) {
+  const tr = useUiTranslator();
   if (operations.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
       <div className="text-xs font-medium text-muted-foreground">
-        Workspace ({operations.length})
+        {tr("Workspace")}（{operations.length}）
       </div>
       <div className="space-y-3">
         {operations.map((operation) => {
@@ -686,13 +689,13 @@ function WorkspaceOperationsSection({
               </div>
               {operation.command && (
                 <div className="text-xs break-all">
-                  <span className="text-muted-foreground">Command: </span>
+                  <span className="text-muted-foreground">{tr("Command: ")}</span>
                   <span className="font-mono">{operation.command}</span>
                 </div>
               )}
               {operation.cwd && (
                 <div className="text-xs break-all">
-                  <span className="text-muted-foreground">Working dir: </span>
+                  <span className="text-muted-foreground">{tr("Working dir: ")}</span>
                   <span className="font-mono">{operation.cwd}</span>
                 </div>
               )}
@@ -703,19 +706,19 @@ function WorkspaceOperationsSection({
                 || asNonEmptyString(metadata?.cleanupAction)) && (
                 <div className="grid gap-1 text-xs sm:grid-cols-2">
                   {asNonEmptyString(metadata?.branchName) && (
-                    <div><span className="text-muted-foreground">Branch: </span><span className="font-mono">{metadata?.branchName as string}</span></div>
+                    <div><span className="text-muted-foreground">{uiText("Branch: ")}</span><span className="font-mono">{metadata?.branchName as string}</span></div>
                   )}
                   {asNonEmptyString(metadata?.baseRef) && (
-                    <div><span className="text-muted-foreground">Base ref: </span><span className="font-mono">{metadata?.baseRef as string}</span></div>
+                    <div><span className="text-muted-foreground">{uiText("Base ref: ")}</span><span className="font-mono">{metadata?.baseRef as string}</span></div>
                   )}
                   {asNonEmptyString(metadata?.worktreePath) && (
-                    <div className="break-all"><span className="text-muted-foreground">Worktree: </span><span className="font-mono">{metadata?.worktreePath as string}</span></div>
+                    <div className="break-all"><span className="text-muted-foreground">{uiText("Worktree: ")}</span><span className="font-mono">{metadata?.worktreePath as string}</span></div>
                   )}
                   {asNonEmptyString(metadata?.repoRoot) && (
-                    <div className="break-all"><span className="text-muted-foreground">Repo root: </span><span className="font-mono">{metadata?.repoRoot as string}</span></div>
+                    <div className="break-all"><span className="text-muted-foreground">{uiText("Repo root: ")}</span><span className="font-mono">{metadata?.repoRoot as string}</span></div>
                   )}
                   {asNonEmptyString(metadata?.cleanupAction) && (
-                    <div><span className="text-muted-foreground">Cleanup: </span><span className="font-mono">{metadata?.cleanupAction as string}</span></div>
+                    <div><span className="text-muted-foreground">{uiText("Cleanup: ")}</span><span className="font-mono">{metadata?.cleanupAction as string}</span></div>
                   )}
                 </div>
               )}
@@ -726,7 +729,7 @@ function WorkspaceOperationsSection({
               )}
               {operation.stderrExcerpt && operation.stderrExcerpt.trim() && (
                 <div>
-                  <div className="mb-1 text-xs text-red-700 dark:text-red-300">stderr excerpt</div>
+                  <div className="mb-1 text-xs text-red-700 dark:text-red-300">{tr("stderr excerpt")}</div>
                   <pre className="rounded-md bg-red-50 p-2 text-xs whitespace-pre-wrap break-all text-red-800 dark:bg-neutral-950 dark:text-red-100">
                     {redactPathText(operation.stderrExcerpt, censorUsernameInLogs)}
                   </pre>
@@ -734,7 +737,7 @@ function WorkspaceOperationsSection({
               )}
               {operation.stdoutExcerpt && operation.stdoutExcerpt.trim() && (
                 <div>
-                  <div className="mb-1 text-xs text-muted-foreground">stdout excerpt</div>
+                  <div className="mb-1 text-xs text-muted-foreground">{tr("stdout excerpt")}</div>
                   <pre className="rounded-md bg-neutral-100 p-2 text-xs whitespace-pre-wrap break-all dark:bg-neutral-950">
                     {redactPathText(operation.stdoutExcerpt, censorUsernameInLogs)}
                   </pre>
@@ -755,6 +758,7 @@ function WorkspaceOperationsSection({
 }
 
 export function AgentDetail() {
+  const tr = useUiTranslator();
   const { companyPrefix, agentId, tab: urlTab, runId: urlRunId } = useParams<{
     companyPrefix?: string;
     agentId: string;
@@ -1043,7 +1047,7 @@ export function AgentDetail() {
 
   useEffect(() => {
     const crumbs: { label: string; href?: string }[] = [
-      { label: "Agents", href: "/agents" },
+      { label: tr("Agents"), href: "/agents" },
     ];
     const agentName = agent?.name ?? routeAgentRef ?? "Agent";
     if (activeView === "overview" && !urlRunId) {
@@ -1051,17 +1055,17 @@ export function AgentDetail() {
     } else {
       crumbs.push({ label: agentName, href: agentDetailHref(canonicalAgentRef) });
       if (urlRunId) {
-        crumbs.push({ label: "Runs", href: agent?.id ? agentScopedAuditHref(agent.id, "runs") : undefined });
+        crumbs.push({ label: tr("Runs"), href: agent?.id ? agentScopedAuditHref(agent.id, "runs") : undefined });
         crumbs.push({ label: `Run ${urlRunId.slice(0, 8)}` });
       } else {
         const item = AGENT_DETAIL_NAVIGATION
           .flatMap((section) => section.items)
           .find((candidate) => candidate.value === activeView);
-        crumbs.push({ label: item?.label ?? "Overview" });
+        crumbs.push({ label: tr(item?.label ?? "Overview") });
       }
     }
     setBreadcrumbs(crumbs);
-  }, [setBreadcrumbs, agent, routeAgentRef, canonicalAgentRef, activeView, urlRunId]);
+  }, [setBreadcrumbs, agent, routeAgentRef, canonicalAgentRef, activeView, urlRunId, tr]);
 
   useEffect(() => {
     closePanel();
@@ -1183,7 +1187,7 @@ export function AgentDetail() {
       {showLeftAgentNotice ? (
         <div className="flex items-center gap-3 border border-yellow-300/35 bg-yellow-300/10 px-3 py-2 text-sm text-yellow-900 dark:text-yellow-100">
           <p className="min-w-0 flex-1">
-            You left this agent. It no longer appears in your sidebar.
+            {tr("You left this agent. It no longer appears in your sidebar.")}
           </p>
           <MembershipAction
             compact
@@ -1207,7 +1211,7 @@ export function AgentDetail() {
           <button
             type="button"
             className="h-6 w-6 shrink-0 text-yellow-900/70 hover:text-yellow-900 dark:text-yellow-100/70 dark:hover:text-yellow-100"
-            aria-label="Dismiss agent membership notice"
+            aria-label={tr("Dismiss agent membership notice")}
             onClick={() => setDismissedLeftAgentIds((current) => new Set(current).add(agent.id))}
           >
             ×
@@ -1218,8 +1222,8 @@ export function AgentDetail() {
         <div className="flex items-start gap-3 border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 space-y-1">
-            <p className="font-medium">Escalation path is paused</p>
-            <p className="text-amber-900/90 dark:text-amber-100/90">{pausedEscalationWarning}</p>
+            <p className="font-medium">{tr("Escalation path is paused")}</p>
+            <p className="text-amber-900/90 dark:text-amber-100/90">{tr(pausedEscalationWarning)}</p>
           </div>
         </div>
       ) : null}
@@ -1227,18 +1231,18 @@ export function AgentDetail() {
         <div className="flex items-start gap-3 border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 space-y-1">
-            <p className="font-medium">Invalid reporting chain</p>
+            <p className="font-medium">{tr("Invalid reporting chain")}</p>
             <p className="text-amber-900/90 dark:text-amber-100/90">
-              {agent.name} cannot accept tasks or start runs until its reporting chain is repaired.
+              {tr("This agent cannot accept tasks or start runs until its reporting chain is repaired.")}
             </p>
             <p className="break-words font-mono text-xs text-amber-900/80 dark:text-amber-100/80">
               {formatOrgChainHealthPath(agent)}
             </p>
             {agent.orgChainHealth?.repairGuidance ? (
-              <p className="text-amber-900/85 dark:text-amber-100/85">{agent.orgChainHealth.repairGuidance}</p>
+              <p className="text-amber-900/85 dark:text-amber-100/85">{tr(agent.orgChainHealth.repairGuidance)}</p>
             ) : (
               <p className="text-amber-900/85 dark:text-amber-100/85">
-                Assign this agent to an active manager/root, or explicitly pause or terminate the affected agent/subtree.
+                {tr("Assign this agent to an active manager/root, or explicitly pause or terminate the affected agent/subtree.")}
               </p>
             )}
           </div>
@@ -1277,12 +1281,12 @@ export function AgentDetail() {
           <AgentActionButtons
             agent={agent}
             companyId={resolvedCompanyId}
-            assignLabel="Assign Task"
+            assignLabel={tr("Assign Task")}
             showStatus={false}
             canRunWithProviderTrace={canUseProviderTrace}
             actionsDisabled={agentAction.isPending}
             workActionsDisabled={hasInvalidOrgChain}
-            workActionsDisabledReason="Repair this agent's reporting chain before assigning tasks or starting runs"
+            workActionsDisabledReason={tr("Repair this agent's reporting chain before assigning tasks or starting runs")}
             hasPendingNavigationChanges={configDirty}
             onBeforeNavigate={prepareAgentNavigation}
             onActionError={setActionError}
@@ -1312,7 +1316,7 @@ export function AgentDetail() {
                   <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
                 </span>
-                <span className="text-(length:--text-micro) font-medium text-blue-600 dark:text-blue-400">Live</span>
+                <span className="text-(length:--text-micro) font-medium text-blue-600 dark:text-blue-400">{tr("Live")}</span>
               </Link>
             )}
           </AgentActionButtons>
@@ -1322,7 +1326,7 @@ export function AgentDetail() {
       {builtInState && (
         <InlineBanner
           tone="info"
-          title="Built-in agent"
+          title={tr("Built-in agent")}
           actions={
             <Button
               variant="outline"
@@ -1330,11 +1334,10 @@ export function AgentDetail() {
               onClick={() => resetBuiltIn.mutate()}
               disabled={resetBuiltIn.isPending}
             >
-              {resetBuiltIn.isPending ? "Resetting…" : "Reset to defaults"}
+              {resetBuiltIn.isPending ? tr("Resetting…") : tr("Reset to defaults")}
             </Button>
           }
-        >
-          Ships with Paperclip and powers <strong>{builtInFeatureLabel}</strong>. Configure it like
+        > {uiText("Ships with Paperclip and powers")} <strong>{builtInFeatureLabel}</strong>. Configure it like
           any agent — model, instructions, budget. It can be paused but not deleted; pausing it
           pauses {builtInFeatureLabel}.
         </InlineBanner>
@@ -1368,10 +1371,10 @@ export function AgentDetail() {
       )}
 
 
-      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+      {actionError && <p className="text-sm text-destructive">{tr(actionError)}</p>}
       {isPendingApproval && (
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>This agent is pending board approval and cannot be invoked yet.</span>
+          <span>{tr("This agent is pending board approval and cannot be invoked yet.")}</span>
           <Button
             variant="outline"
             size="sm"
@@ -1379,12 +1382,12 @@ export function AgentDetail() {
             disabled={agentAction.isPending}
           >
             <CheckCircle2 className="h-3.5 w-3.5 sm:mr-1" />
-            <span>Approve agent</span>
+            <span>{tr("Approve agent")}</span>
           </Button>
         </div>
       )}
 
-      {activeView !== "run-detail" && activeView !== "channels" && <h2 className="text-xl font-semibold">{activeView === "secrets" ? "Secrets & variables" : AGENT_DETAIL_NAVIGATION.flatMap(section => section.items).find(item => item.value === activeView)?.label}</h2>}
+      {activeView !== "run-detail" && activeView !== "channels" && <h2 className="text-xl font-semibold">{activeView === "secrets" ? tr("Secrets & variables") : tr(AGENT_DETAIL_NAVIGATION.flatMap(section => section.items).find(item => item.value === activeView)?.label ?? "")}</h2>}
 
       {/* View content */}
       {activeView === "overview" && (
@@ -1498,10 +1501,10 @@ export function AgentDetail() {
       )}
 
       {showConfigActionBar && <footer className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background py-4">
-        <p role="status" className="text-xs text-muted-foreground">{configSaving ? "Saving changes…" : configDirty ? "You have unsaved changes." : ""}</p>
+        <p role="status" className="text-xs text-muted-foreground">{configSaving ? tr("Saving changes…") : configDirty ? tr("You have unsaved changes.") : ""}</p>
         <div className="flex gap-2">
-          <Button variant="ghost" disabled={!configDirty || configSaving} onClick={() => cancelConfigActionRef.current?.()}>Discard</Button>
-          <Button disabled={!configDirty || configSaving} onClick={() => {Promise.resolve(saveConfigActionRef.current?.()).catch(() => {});}}>{configSaving ? "Saving…" : "Save changes"}</Button>
+          <Button variant="ghost" disabled={!configDirty || configSaving} onClick={() => cancelConfigActionRef.current?.()}>{tr("Discard")}</Button>
+          <Button disabled={!configDirty || configSaving} onClick={() => {Promise.resolve(saveConfigActionRef.current?.()).catch(() => {});}}>{configSaving ? tr("Saving…") : tr("Save changes")}</Button>
         </div>
       </footer>}
 
@@ -1565,6 +1568,7 @@ function LatestRunCard({
   agentId: string;
   issuesById: Map<string, LatestRunIssue>;
 }) {
+  const tr = useUiTranslator();
   const sorted = useMemo(
     () =>
       [...runs].sort(
@@ -1646,7 +1650,7 @@ function LatestRunCard({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
               </span>
             )}
-            <span>{isLive ? "Live Run" : "Latest Run"}</span>
+            <span>{isLive ? uiText("Live Run") : uiText("Latest Run")}</span>
             <span className="font-mono text-xs font-normal text-muted-foreground">
               &middot; {run.id.slice(0, 8)}
             </span>
@@ -1720,6 +1724,7 @@ export function AgentOverview({
   skillNames: string[];
   agentRouteId: string;
 }) {
+  const tr = useUiTranslator();
   const issuesById = useMemo(() => {
     const map = new Map<string, (typeof assignedIssues)[number]>();
     for (const issue of assignedIssues) map.set(issue.id, issue);
@@ -1728,7 +1733,7 @@ export function AgentOverview({
   const configuredModel = asNonEmptyString(agent.adapterConfig?.model)
     ?? asNonEmptyString(agent.adapterConfig?.modelName)
     ?? asNonEmptyString(agent.runtimeConfig?.model)
-    ?? "Adapter default";
+    ?? tr("Adapter default");
   const lastRun = runs[0] ?? null;
 
   return (
@@ -1738,75 +1743,75 @@ export function AgentOverview({
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-border p-4" aria-labelledby="agent-identity-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 id="agent-identity-heading" className="text-sm font-medium">Identity</h3>
+            <h3 id="agent-identity-heading" className="text-sm font-medium">{tr("Identity")}</h3>
             <StatusBadge status={agent.status} />
           </div>
           <div className="space-y-3">
-            <SummaryRow label="Role"><span className="text-sm">{roleLabels[agent.role] ?? agent.role}</span></SummaryRow>
-            <SummaryRow label="Title"><span className="text-sm">{agent.title ?? "Not set"}</span></SummaryRow>
-            <SummaryRow label="Reports to">
+            <SummaryRow label={tr("Role")}><span className="text-sm">{roleLabels[agent.role] ?? agent.role}</span></SummaryRow>
+            <SummaryRow label={tr("Title")}><span className="text-sm">{agent.title ?? tr("Not set")}</span></SummaryRow>
+            <SummaryRow label={tr("Reports to")}>
               {reportsToAgent ? (
                 <Link className="text-sm hover:underline" to={agentDetailHref(agentRouteRef(reportsToAgent))}>
                   {reportsToAgent.name}
                 </Link>
-              ) : <span className="text-sm">Board</span>}
+              ) : <span className="text-sm">{tr("Board")}</span>}
             </SummaryRow>
-            <SummaryRow label="Direct reports"><span className="text-sm tabular-nums">{directReportCount}</span></SummaryRow>
+            <SummaryRow label={tr("Direct reports")}><span className="text-sm tabular-nums">{directReportCount}</span></SummaryRow>
           </div>
         </section>
 
         <section className="rounded-lg border border-border p-4" aria-labelledby="agent-runtime-heading">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 id="agent-runtime-heading" className="text-sm font-medium">Harness / Runtime</h3>
-            <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "runtime")}>Configure</Link>
+            <h3 id="agent-runtime-heading" className="text-sm font-medium">{tr("Harness / Runtime")}</h3>
+            <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "runtime")}>{tr("Configure")}</Link>
           </div>
           <div className="space-y-3">
-            <SummaryRow label="Adapter"><span className="text-sm">{adapterLabels[agent.adapterType] ?? agent.adapterType}</span></SummaryRow>
-            <SummaryRow label="Model"><span className="max-w-64 truncate text-sm font-mono">{configuredModel}</span></SummaryRow>
-            <SummaryRow label="Session"><span className="max-w-64 truncate text-sm font-mono">{runtimeState?.sessionDisplayId ?? runtimeState?.sessionId ?? "No session"}</span></SummaryRow>
-            <SummaryRow label="Last run">
-              <span className="text-sm">{lastRun ? `${lastRun.status} · ${relativeTime(lastRun.createdAt)}` : "No runs"}</span>
+            <SummaryRow label={tr("Adapter")}><span className="text-sm">{adapterLabels[agent.adapterType] ?? agent.adapterType}</span></SummaryRow>
+            <SummaryRow label={tr("Model")}><span className="max-w-64 truncate text-sm font-mono">{configuredModel}</span></SummaryRow>
+            <SummaryRow label={tr("Session")}><span className="max-w-64 truncate text-sm font-mono">{runtimeState?.sessionDisplayId ?? runtimeState?.sessionId ?? tr("No session")}</span></SummaryRow>
+            <SummaryRow label={tr("Last run")}>
+              <span className="text-sm">{lastRun ? `${lastRun.status} · ${relativeTime(lastRun.createdAt)}` : tr("No runs")}</span>
             </SummaryRow>
           </div>
         </section>
 
         <section className="rounded-lg border border-border p-4" aria-labelledby="agent-capabilities-heading">
-          <h3 id="agent-capabilities-heading" className="mb-3 text-sm font-medium">Capabilities</h3>
+          <h3 id="agent-capabilities-heading" className="mb-3 text-sm font-medium">{tr("Capabilities")}</h3>
           {agent.capabilities?.trim() ? (
             <MarkdownBody className="text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">{agent.capabilities}</MarkdownBody>
           ) : (
-            <p className="text-sm text-muted-foreground">No capability summary has been added.</p>
+            <p className="text-sm text-muted-foreground">{tr("No capability summary has been added.")}</p>
           )}
         </section>
 
         <section className="rounded-lg border border-border p-4" aria-labelledby="agent-skills-heading">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 id="agent-skills-heading" className="text-sm font-medium">Skills</h3>
-            <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "skills")}>Manage</Link>
+            <h3 id="agent-skills-heading" className="text-sm font-medium">{tr("Skills")}</h3>
+            <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "skills")}>{tr("Manage")}</Link>
           </div>
           {skillNames.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {skillNames.slice(0, 8).map((skill) => <Badge key={skill} variant="secondary">{skill}</Badge>)}
-              {skillNames.length > 8 ? <Badge variant="outline">+{skillNames.length - 8} more</Badge> : null}
+              {skillNames.length > 8 ? <Badge variant="outline">+{skillNames.length - 8} {uiText("more")}</Badge> : null}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No skills enabled.</p>
+            <p className="text-sm text-muted-foreground">{tr("No skills enabled.")}</p>
           )}
         </section>
       </div>
 
       <section className="space-y-3" aria-labelledby="agent-recent-tasks-heading">
         <div className="flex items-center justify-between">
-          <h3 id="agent-recent-tasks-heading" className="text-sm font-medium">Recent Tasks</h3>
+          <h3 id="agent-recent-tasks-heading" className="text-sm font-medium">{tr("Recent Tasks")}</h3>
           <Link
             to={`/issues?participantAgentId=${agent.id}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            See All &rarr;
+            {tr("See All")} &rarr;
           </Link>
         </div>
         {assignedIssues.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent tasks.</p>
+          <p className="text-sm text-muted-foreground">{tr("No recent tasks.")}</p>
         ) : (
           <div className="overflow-hidden rounded-lg border border-border">
             {assignedIssues.slice(0, 6).map((issue) => (
@@ -1820,7 +1825,7 @@ export function AgentOverview({
             ))}
             {assignedIssues.length > 6 && (
               <div className="border-t border-border px-3 py-2 text-center text-xs text-muted-foreground">
-                +{assignedIssues.length - 6} more tasks
+                +{assignedIssues.length - 6} {tr("more tasks")}
               </div>
             )}
           </div>
@@ -1828,7 +1833,7 @@ export function AgentOverview({
       </section>
 
       <section className="space-y-3" aria-labelledby="agent-audit-links-heading">
-        <h3 id="agent-audit-links-heading" className="text-sm font-medium">Audit</h3>
+        <h3 id="agent-audit-links-heading" className="text-sm font-medium">{tr("Audit")}</h3>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {(["activity", "runs", "costs", "budgets"] as const).map((section) => (
             <Link
@@ -1836,7 +1841,7 @@ export function AgentOverview({
               to={agentScopedAuditHref(agent.id, section)}
               className="rounded-lg border border-border px-3 py-2 text-sm font-medium capitalize hover:bg-accent"
             >
-              {section}
+              {tr(section)}
             </Link>
           ))}
         </div>
@@ -1877,6 +1882,7 @@ export function AgentRevisionsTab({
   agent: AgentDetailRecord;
   companyId?: string;
 }) {
+  const tr = useUiTranslator();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -1899,11 +1905,11 @@ export function AgentRevisionsTab({
   return (
     <div className="max-w-3xl space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-medium">Configuration Revisions</h3>
+        <h3 className="text-sm font-medium">{tr("Configuration Revisions")}</h3>
         <span className="text-xs text-muted-foreground">{configRevisions?.length ?? 0} total</span>
       </div>
       {(configRevisions ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No configuration revisions yet.</p>
+        <p className="text-sm text-muted-foreground">{tr("No configuration revisions yet.")}</p>
       ) : (
         <div className="space-y-2">
           {(configRevisions ?? []).map((revision) => (
@@ -1921,12 +1927,10 @@ export function AgentRevisionsTab({
                   variant="outline"
                   onClick={() => rollbackConfig.mutate(revision.id)}
                   disabled={rollbackConfig.isPending}
-                >
-                  Restore
-                </Button>
+                > {uiText("Restore")} </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Changed: {revision.changedKeys.length > 0 ? revision.changedKeys.join(", ") : "no tracked changes"}
+                {uiText("Changed: {keys}", { keys: revision.changedKeys.length > 0 ? revision.changedKeys.join(", ") : uiText("no tracked changes") })}
               </p>
             </div>
           ))}
@@ -1963,6 +1967,7 @@ export function ConfigurationTab({
   content?: "runtime" | "permissions" | "secrets";
   canConfigureProviderTrace?: boolean;
 }) {
+  const tr = useUiTranslator();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { tab: urlTab } = useParams<{ tab?: string }>();
@@ -2008,7 +2013,7 @@ export function ConfigurationTab({
       if (!syncAgentRouteAfterRename(queryClient, navigate, agent, updated, urlTab ?? content)) {
         queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.urlKey) });
       }
-      pushToast({ title: "Agent saved", tone: "success" });
+      pushToast({ title: tr("Agent saved"), tone: "success" });
     },
     onError: (err) => {
       setAwaitingRefreshAfterSave(false);
@@ -2017,8 +2022,8 @@ export function ConfigurationTab({
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Could not save agent";
-      pushToast({ title: "Save failed", body: message, tone: "error" });
+            : tr("Could not save agent");
+      pushToast({ title: tr("Save failed"), body: tr(message), tone: "error" });
     },
   });
 
@@ -2043,19 +2048,26 @@ export function ConfigurationTab({
 
   const canCreateAgents = Boolean(agent.permissions?.canCreateAgents);
   const canCreateSkills = agent.permissions?.canCreateSkills !== false;
+  const templateRole = (agent.metadata?.agentTemplate as { role?: string } | undefined)?.role;
+  const templateIsLeader = templateRole === "leader" || templateRole === "department_head";
+  const templatePermissions = agent.metadata?.agentTemplate ? {
+    canCreateTasks: agent.permissions?.canCreateTasks ?? templateIsLeader,
+    canReviewTasks: agent.permissions?.canReviewTasks ?? templateIsLeader,
+    canManageAgents: agent.permissions?.canManageAgents ?? templateIsLeader,
+  } : {};
   const canAssignTasks = Boolean(agent.access?.canAssignTasks);
   const taskAssignSource = agent.access?.taskAssignSource ?? "none";
-  const taskAssignLocked = agent.role === "ceo" || canCreateAgents;
+  const taskAssignLocked = !agent.metadata?.agentTemplate && (agent.role === "ceo" || canCreateAgents);
   const taskAssignHint =
     taskAssignSource === "ceo_role"
-      ? "Enabled automatically for CEO agents."
+      ? tr("Enabled automatically for CEO agents.")
       : taskAssignSource === "agent_creator"
-        ? "Enabled automatically while this agent can create new agents."
+        ? tr("Enabled automatically while this agent can create new agents.")
         : taskAssignSource === "explicit_grant"
-          ? "Enabled via explicit organization permission grant."
+          ? tr("Enabled via explicit organization permission grant.")
           : taskAssignSource === "simple_default"
-            ? "Enabled by simple organization-wide task assignment defaults."
-            : "Disabled unless explicitly granted.";
+            ? tr("Enabled by simple organization-wide task assignment defaults.")
+            : tr("Disabled unless explicitly granted.");
 
   return (
     <div className="agent-settings-form space-y-6">
@@ -2076,7 +2088,7 @@ export function ConfigurationTab({
         environmentVariablesPlacement="configuration"
         compactTestFeedback
         sectionOrder={["identity", "adapter", "configuration", "environment", "environment-variables", "run-policy"]}
-        sectionTitles={{ adapter: "Adapter", configuration: "Configuration", identity: "Agent identity" }}
+        sectionTitles={{ adapter: tr("Adapter"), configuration: tr("Configuration"), identity: tr("Agent identity") }}
         canConfigureProviderTrace={canConfigureProviderTrace}
       /> : null}
 
@@ -2096,6 +2108,7 @@ export function ConfigurationTab({
         candidatesLoading={boundaryProjectsLoading || boundaryIssuesLoading}
         onChange={(nextPermissions) =>
           updatePermissions.mutate({
+                  ...templatePermissions,
             canCreateAgents,
             canCreateSkills,
             canAssignTasks,
@@ -2105,19 +2118,31 @@ export function ConfigurationTab({
       /> : null}
 
       {content === "permissions" ? <div>
-        <h3 className="text-sm font-medium mb-3">Permissions</h3>
+        <h3 className="text-sm font-medium mb-3">{tr("Permissions")}</h3>
         <div className="border border-border rounded-lg p-4 space-y-4">
+          {agent.metadata?.agentTemplate ? ([
+            ["canCreateTasks", "创建与拆分 Task"],
+            ["canReviewTasks", "验收成果"],
+            ["canManageAgents", "管理直属智能体"],
+          ] as const).map(([key, label]) => <div key={key} className="flex items-center justify-between gap-4 text-sm">
+            <span>{label}</span>
+            <ToggleSwitch checked={Boolean(templatePermissions[key])} disabled={updatePermissions.isPending} onCheckedChange={() => updatePermissions.mutate({
+              ...templatePermissions, canCreateAgents, canCreateSkills, canAssignTasks,
+              [key]: !templatePermissions[key],
+            })} />
+          </div>) : null}
           <div className="flex items-center justify-between gap-4 text-sm">
             <div className="space-y-1">
-              <div>Can create new agents</div>
+              <div>{tr("Can create new agents")}</div>
               <p className="text-xs text-muted-foreground">
-                Lets this agent create or hire agents. This also grants task assignment authority.
+                {tr("Lets this agent create or hire agents. This also grants task assignment authority.")}
               </p>
             </div>
             <ToggleSwitch
               checked={canCreateAgents}
               onCheckedChange={() =>
                 updatePermissions.mutate({
+                  ...templatePermissions,
                   canCreateAgents: !canCreateAgents,
                   canCreateSkills,
                   canAssignTasks: !canCreateAgents ? true : canAssignTasks,
@@ -2128,15 +2153,16 @@ export function ConfigurationTab({
           </div>
           <div className="flex items-center justify-between gap-4 text-sm">
             <div className="space-y-1">
-              <div>Can create/import skills</div>
+              <div>{tr("Can create/import skills")}</div>
               <p className="text-xs text-muted-foreground">
-                Lets this agent install, import, create, and scan organization skills without creating agents.
+                {tr("Lets this agent install, import, create, and scan organization skills without creating agents.")}
               </p>
             </div>
             <ToggleSwitch
               checked={canCreateSkills}
               onCheckedChange={() =>
                 updatePermissions.mutate({
+                  ...templatePermissions,
                   canCreateAgents,
                   canCreateSkills: !canCreateSkills,
                   canAssignTasks,
@@ -2147,7 +2173,7 @@ export function ConfigurationTab({
           </div>
           <div className="flex items-center justify-between gap-4 text-sm">
             <div className="space-y-1">
-              <div>Can assign tasks</div>
+              <div>{tr("Can assign tasks")}</div>
               <p className="text-xs text-muted-foreground">
                 {taskAssignHint}
               </p>
@@ -2156,6 +2182,7 @@ export function ConfigurationTab({
               checked={canAssignTasks}
               onCheckedChange={() =>
                 updatePermissions.mutate({
+                  ...templatePermissions,
                   canCreateAgents,
                   canCreateSkills,
                   canAssignTasks: !canAssignTasks,
@@ -2189,6 +2216,7 @@ export function PromptsTab({
   onCancelActionChange: (cancel: (() => void) | null) => void;
   onSavingChange: (saving: boolean) => void;
 }) {
+  const tr = useUiTranslator();
   const queryClient = useQueryClient();
   const { selectedCompanyId } = useCompany();
   const { isMobile } = useSidebar();
@@ -2342,7 +2370,7 @@ export function PromptsTab({
 
   const uploadMarkdownImage = useMutation({
     mutationFn: async ({ file, namespace }: { file: File; namespace: string }) => {
-      if (!selectedCompanyId) throw new Error("Select an organization to upload images");
+      if (!selectedCompanyId) throw new Error(tr("Select an organization to upload images"));
       return assetsApi.uploadImage(selectedCompanyId, file, namespace);
     },
   });
@@ -2540,7 +2568,7 @@ export function PromptsTab({
     return (
       <div className="max-w-3xl">
         <p className="text-sm text-muted-foreground">
-          Instructions bundles are only available for local adapters.
+          {tr("Instructions bundles are only available for local adapters.")}
         </p>
       </div>
     );
@@ -2562,26 +2590,26 @@ export function PromptsTab({
         </div>
       )}
       {showSaveNotice && <p className="text-xs text-muted-foreground">
-        Saved instructions affect the next run. Active runs keep the instructions they started with, and instruction changes may start a fresh adapter session.
+        {tr("Saved instructions affect the next run. Active runs keep the instructions they started with, and instruction changes may start a fresh adapter session.")}
       </p>}
 
       <Collapsible defaultOpen={currentMode === "external"}>
         <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors group">
           <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-          Advanced
+          {tr("Advanced")}
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-4 pb-6">
           <TooltipProvider>
             <div className="grid gap-x-6 gap-y-4 md:grid-cols-(--gtc-18)">
               <label className="space-y-1.5 min-w-0">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  Mode
+                  {tr("Mode")}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      Managed: Paperclip stores and serves the instructions bundle. External: you provide a path on disk where the instructions live.
+                      {tr("Managed: Paperclip stores and serves the instructions bundle. External: you provide a path on disk where the instructions live.")}
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -2607,7 +2635,7 @@ export function PromptsTab({
                       setSelectedFile(nextEntryFile);
                     }}
                   >
-                    Managed
+                    {tr("Managed")}
                   </Button>
                   <Button
                     type="button"
@@ -2624,25 +2652,25 @@ export function PromptsTab({
                       setSelectedFile(externalBundle?.selectedFile ?? nextEntryFile);
                     }}
                   >
-                    External
+                    {tr("External")}
                   </Button>
                 </div>
               </label>
               <label className="space-y-1.5 min-w-0">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  Root path
+                  {tr("Root path")}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      The absolute directory on disk where the instructions bundle lives. In managed mode this is set by Paperclip automatically.
+                      {tr("The absolute directory on disk where the instructions bundle lives. In managed mode this is set by Paperclip automatically.")}
                     </TooltipContent>
                   </Tooltip>
                 </span>
                 {currentMode === "managed" ? (
                   <div className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground pt-1.5">
-                    <span className="min-w-0 truncate" title={currentRootPath || undefined}>{currentRootPath || "(managed)"}</span>
+                    <span className="min-w-0 truncate" title={currentRootPath || undefined}>{currentRootPath || `(${tr("managed")})`}</span>
                     {currentRootPath && (
                       <CopyText text={currentRootPath} className="shrink-0">
                         <Copy className="h-3.5 w-3.5" />
@@ -2679,13 +2707,13 @@ export function PromptsTab({
               </label>
               <label className="space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  Entry file
+                  {tr("Entry file")}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      The main file the agent reads first when loading instructions. Defaults to AGENTS.md.
+                      {tr("The main file the agent reads first when loading instructions. Defaults to AGENTS.md.")}
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -2733,7 +2761,7 @@ export function PromptsTab({
           isMobile && !showFilePanel && "hidden",
         )}>
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Files</h4>
+            <h4 className="text-sm font-medium">{tr("Files")}</h4>
             <div className="flex items-center gap-1">
               {!showNewFileInput && (
                 <Button
@@ -2791,7 +2819,7 @@ export function PromptsTab({
                     setShowNewFileInput(false);
                   }}
                 >
-                  Create
+                  {tr("Create")}
                 </Button>
                 <Button
                   type="button"
@@ -2803,7 +2831,7 @@ export function PromptsTab({
                     setNewFilePath("");
                   }}
                 >
-                  Cancel
+                  {tr("Cancel")}
                 </Button>
               </div>
             </div>
@@ -2836,18 +2864,18 @@ export function PromptsTab({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="ml-3 shrink-0 rounded border border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 text-(length:--text-nano) uppercase tracking-wide cursor-help">
-                        virtual file
+                        {tr("virtual file")}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      Legacy inline prompt — this deprecated virtual file preserves the old promptTemplate content
+                      {tr("Legacy inline prompt — this deprecated virtual file preserves the old promptTemplate content")}
                     </TooltipContent>
                   </Tooltip>
                 );
               }
               return (
                 <span className="ml-3 shrink-0 rounded border border-border text-muted-foreground px-1.5 py-0.5 text-(length:--text-nano) uppercase tracking-wide">
-                  {file.isEntryFile ? "entry" : `${file.size}b`}
+                  {file.isEntryFile ? tr("entry") : `${file.size}b`}
                 </span>
               );
             }}
@@ -2888,7 +2916,7 @@ export function PromptsTab({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-md border border-border p-0.5" role="group" aria-label="Instruction file view">
+              <div className="flex items-center rounded-md border border-border p-0.5" role="group" aria-label={tr("Instruction file view")}>
                 {(["read", "edit", "raw"] as const).map((mode) => (
                   <Button
                     key={mode}
@@ -2906,9 +2934,9 @@ export function PromptsTab({
               {!fileLoading && (
                 <CopyText
                   text={displayValue}
-                  ariaLabel="Copy instructions file as markdown"
-                  title="Copy as markdown"
-                  copiedLabel="Copied"
+                  ariaLabel={tr("Copy instructions file as markdown")}
+                  title={tr("Copy as markdown")}
+                  copiedLabel={tr("Copied")}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
                   <Copy className="h-3.5 w-3.5" />
@@ -2920,7 +2948,7 @@ export function PromptsTab({
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    if (confirm(`Delete ${selectedOrEntryFile}?`)) {
+                    if (confirm(`${tr("Delete")} ${selectedOrEntryFile}?`)) {
                       deleteFile.mutate(selectedOrEntryFile, {
                         onSuccess: () => {
                           setSelectedFile(currentEntryFile);
@@ -2931,7 +2959,7 @@ export function PromptsTab({
                   }}
                   disabled={deleteFile.isPending}
                 >
-                  Delete
+                  {tr("Delete")}
                 </Button>
               )}
             </div>
@@ -2950,7 +2978,7 @@ export function PromptsTab({
                   <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7">{displayValue}</pre>
                 )
               ) : (
-                <p className="text-sm text-muted-foreground">This instruction file is empty.</p>
+                <p className="text-sm text-muted-foreground">{tr("This instruction file is empty.")}</p>
               )}
             </div>
           ) : instructionMode === "raw" ? (
@@ -2976,7 +3004,7 @@ export function PromptsTab({
                   if (!editorInteractedRef.current) return;
                   setDraft(value ?? "");
                 }}
-                placeholder="# Agent instructions"
+                placeholder={tr("# Agent instructions")}
                 className="min-w-0 overflow-hidden"
                 contentClassName="min-h-(--sz-420px) max-w-full break-words text-sm leading-7"
                 imageUploadHandler={async (file) => {
@@ -2988,11 +3016,11 @@ export function PromptsTab({
             </div>
           ) : (
             <textarea
-              aria-label="Instruction file editor"
+              aria-label={tr("Instruction file editor")}
               value={displayValue}
               onChange={(event) => setDraft(event.target.value)}
               className="min-h-(--sz-420px) w-full min-w-0 rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none"
-              placeholder="File contents"
+              placeholder={tr("File contents")}
             />
           )}
         </div>
@@ -3126,10 +3154,11 @@ function RunsTab({
   adapterType: string;
   adapterConfig: Record<string, unknown>;
 }) {
+  const tr = useUiTranslator();
   const { isMobile } = useSidebar();
 
   if (runs.length === 0) {
-    return <p className="text-sm text-muted-foreground">No runs yet.</p>;
+    return <p className="text-sm text-muted-foreground">{tr("No runs yet.")}</p>;
   }
 
   // Sort by created descending
@@ -3151,7 +3180,7 @@ function RunsTab({
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors no-underline"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to runs
+            {tr("Back to runs")}
           </Link>
           <RunDetail key={selectedRun.id} run={selectedRun} agentRouteId={agentRouteId} adapterType={adapterType} adapterConfig={adapterConfig} />
         </div>
@@ -3194,6 +3223,7 @@ function RunsTab({
 /* ---- Run Detail (expanded) ---- */
 
 function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }: { run: HeartbeatRun; agentRouteId: string; adapterType: string; adapterConfig: Record<string, unknown> }) {
+  const tr = useUiTranslator();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { data: hydratedRun } = useQuery({
@@ -3425,7 +3455,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                   onClick={() => cancelRun.mutate()}
                   disabled={cancelRun.isPending}
                 >
-                  {cancelRun.isPending ? "Cancelling…" : "Cancel"}
+                  {cancelRun.isPending ? "Cancelling…" : uiText("Cancel")}
                 </Button>
               )}
               {canResumeLostRun && (
@@ -3437,7 +3467,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                   disabled={resumeRun.isPending}
                 >
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                  {resumeRun.isPending ? "Resuming…" : "Resume"}
+                  {resumeRun.isPending ? uiText("Resuming…") : "Resume"}
                 </Button>
               )}
               {canRetryRun && !canResumeLostRun && (
@@ -3449,7 +3479,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                   disabled={retryRun.isPending}
                 >
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                  {retryRun.isPending ? "Retrying…" : "Retry"}
+                  {retryRun.isPending ? uiText("Retrying…") : uiText("Retry")}
                 </Button>
               )}
               <Button
@@ -3459,7 +3489,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                 onClick={() => setInspectorOpen(true)}
               >
                 <Eye className="h-3.5 w-3.5 mr-1" />
-                Inspect run
+                {uiText("Inspect run")}
               </Button>
               <HoneycombRunLink
                 runId={run.id}
@@ -3504,7 +3534,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                 data-testid="run-detail-on-behalf-of"
                 className="text-xs text-muted-foreground"
               >
-                On behalf of{" "}
+                {uiText("On behalf of")}{" "}
                 <span className="text-foreground">
                   {responsibleUserName ?? responsibleUserLabel(null)}
                 </span>
@@ -3512,7 +3542,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
             )}
             {Boolean(run.identityHistory?.length) && (
               <details className="text-xs text-muted-foreground" data-testid="run-identity-history">
-                <summary className="cursor-pointer">GitHub identity history</summary>
+                <summary className="cursor-pointer">{tr("GitHub identity history")}</summary>
                 <ol className="mt-2 space-y-2">
                   {run.identityHistory!.map((identity) => {
                     const person = userDirectory?.users.find((entry) => entry.principalId === identity.responsibleUserId);
@@ -3526,7 +3556,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                             {identity.github.source ? `${identity.github.source} · ` : ""}
                             {identity.github.status}{identity.github.reason ? `: ${identity.github.reason}` : ""}
                           </span>
-                        ) : <span className="block">No GitHub operation recorded</span>}
+                        ) : <span className="block">{tr("No GitHub operation recorded")}</span>}
                       </li>
                     );
                   })}
@@ -3535,12 +3565,12 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
             )}
             {resumeRun.isError && (
               <div className="text-xs text-destructive">
-                {resumeRun.error instanceof Error ? resumeRun.error.message : "Failed to resume run"}
+                {resumeRun.error instanceof Error ? resumeRun.error.message : uiText("Failed to resume run")}
               </div>
             )}
             {retryRun.isError && (
               <div className="text-xs text-destructive">
-                {retryRun.error instanceof Error ? retryRun.error.message : "Failed to retry run"}
+                {retryRun.error instanceof Error ? retryRun.error.message : uiText("Failed to retry run")}
               </div>
             )}
             {startTime && (
@@ -3582,13 +3612,11 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                   <p className="text-xs text-destructive">
                     {runClaudeLogin.error instanceof Error
                       ? runClaudeLogin.error.message
-                      : "Failed to run Claude login"}
+                      : uiText("Failed to run Claude login")}
                   </p>
                 )}
                 {claudeLoginResult?.loginUrl && (
-                  <p className="text-xs">
-                    Login URL:
-                    <a
+                  <p className="text-xs">{uiText("Login URL:")}<a
                       href={claudeLoginResult.loginUrl}
                       className="text-blue-600 underline underline-offset-2 ml-1 break-all dark:text-blue-400"
                       target="_blank"
@@ -3656,19 +3684,19 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
           {hasMetrics && (
             <div className="border-t sm:border-t-0 sm:border-l border-border p-4 grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-3 content-center tabular-nums">
               <div>
-                <div className="text-xs text-muted-foreground">Input</div>
+                <div className="text-xs text-muted-foreground">{tr("Input")}</div>
                 <div className="text-sm font-medium font-mono">{formatTokens(metrics.input)}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Output</div>
+                <div className="text-xs text-muted-foreground">{tr("Output")}</div>
                 <div className="text-sm font-medium font-mono">{formatTokens(metrics.output)}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Cached</div>
+                <div className="text-xs text-muted-foreground">{tr("Cached")}</div>
                 <div className="text-sm font-medium font-mono">{formatTokens(metrics.cached)}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Cost</div>
+                <div className="text-xs text-muted-foreground">{tr("Cost")}</div>
                 <div className="text-sm font-medium font-mono">{metrics.cost > 0 ? `$${metrics.cost.toFixed(4)}` : "-"}</div>
               </div>
             </div>
@@ -3682,21 +3710,19 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
               className="flex items-center gap-1.5 w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setSessionOpen((v) => !v)}
             >
-              <ChevronRight className={cn("h-3 w-3 transition-transform", sessionOpen && "rotate-90")} />
-              Session
-              {sessionChanged && <span className="text-yellow-400 ml-1">(changed)</span>}
+              <ChevronRight className={cn("h-3 w-3 transition-transform", sessionOpen && "rotate-90")} /> {uiText("Session")} {sessionChanged && <span className="text-yellow-400 ml-1">{uiText("(changed)")}</span>}
             </button>
             {sessionOpen && (
               <div className="px-4 pb-3 space-y-1 text-xs">
                 {run.sessionIdBefore && (
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-12">{sessionChanged ? "Before" : "ID"}</span>
+                    <span className="text-muted-foreground w-12">{sessionChanged ? uiText("Before") : uiText("ID")}</span>
                     <CopyText text={run.sessionIdBefore} className="font-mono" />
                   </div>
                 )}
                 {sessionChanged && run.sessionIdAfter && (
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-12">After</span>
+                    <span className="text-muted-foreground w-12">{uiText("After")}</span>
                     <CopyText text={run.sessionIdAfter} className="font-mono" />
                   </div>
                 )}
@@ -3723,7 +3749,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                       <p className="text-(length:--text-micro) text-destructive mt-1">
                         {clearSessionsForTouchedIssues.error instanceof Error
                           ? clearSessionsForTouchedIssues.error.message
-                          : "Failed to clear sessions"}
+                          : uiText("Failed to clear sessions")}
                       </p>
                     )}
                   </div>
@@ -3759,7 +3785,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
       {/* stderr excerpt for failed runs */}
       {run.stderrExcerpt && (
         <div className="space-y-1">
-          <span className="text-xs font-medium text-red-600 dark:text-red-400">stderr</span>
+          <span className="text-xs font-medium text-red-600 dark:text-red-400">{uiText("stderr")}</span>
           <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">{run.stderrExcerpt}</pre>
         </div>
       )}
@@ -3767,7 +3793,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
       {/* stdout excerpt when no log is available */}
       {run.stdoutExcerpt && !run.logRef && (
         <div className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">stdout</span>
+          <span className="text-xs font-medium text-muted-foreground">{uiText("stdout")}</span>
           <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">{run.stdoutExcerpt}</pre>
         </div>
       )}
@@ -3800,6 +3826,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
 /* ---- Log Viewer ---- */
 
 export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: string }) {
+  const tr = useUiTranslator();
   const { visible } = usePageVisibility();
   const [events, setEvents] = useState<HeartbeatRunEvent[]>([]);
   const [logLines, setLogLines] = useState<RunLogChunk[]>([]);
@@ -4262,11 +4289,11 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
   }, [run.id]);
 
   if (loading && logLoading) {
-    return <p className="text-xs text-muted-foreground">Loading run logs...</p>;
+    return <p className="text-xs text-muted-foreground">{tr("Loading run logs...")}</p>;
   }
 
   if (events.length === 0 && logLines.length === 0 && !logError) {
-    return <p className="text-xs text-muted-foreground">No log events.</p>;
+    return <p className="text-xs text-muted-foreground">{tr("No log events.")}</p>;
   }
 
   const levelColors: Record<string, string> = {
@@ -4293,7 +4320,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
 
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">
-          Transcript ({transcript.length})
+          {uiText("Transcript ({count})", { count: transcript.length })}
         </span>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-lg border border-border/70 bg-background/70 p-0.5">
@@ -4325,7 +4352,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
                 lastMetricsRef.current = readScrollMetrics(container);
               }}
             >
-              Jump to live
+              {uiText("Jump to live")}
             </Button>
           )}
           {isLive && (
@@ -4333,9 +4360,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               <span className="relative flex h-2 w-2">
                 <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-              </span>
-              Live
-            </span>
+              </span> {uiText("Live")} </span>
           )}
         </div>
       </div>
@@ -4357,10 +4382,10 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               onClick={loadMorePersistedLog}
               disabled={loadingMoreLog}
             >
-              {loadingMoreLog ? "Loading..." : "Load more log"}
+              {loadingMoreLog ? uiText("Loading...") : uiText("Load more log")}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Showing the first {Math.round(logOffset / 1024).toLocaleString("en-US")} KB
+              {uiText("Showing the first {size} KB", { size: Math.round(logOffset / 1024).toLocaleString("en-US") })}
               {typeof run.logBytes === "number" && run.logBytes > 0
                 ? ` of ${Math.round(run.logBytes / 1024).toLocaleString("en-US")} KB`
                 : ""}
@@ -4377,16 +4402,16 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
 
       {(run.status === "failed" || run.status === "timed_out") && (
         <div className="rounded-lg border border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-950/20 p-3 space-y-2">
-          <div className="text-xs font-medium text-red-700 dark:text-red-300">Failure details</div>
+          <div className="text-xs font-medium text-red-700 dark:text-red-300">{tr("Failure details")}</div>
           {run.error && (
             <div className="text-xs text-red-600 dark:text-red-200">
-              <span className="text-red-700 dark:text-red-300">Error: </span>
+              <span className="text-red-700 dark:text-red-300">{uiText("Error: ")}</span>
               {redactPathText(run.error, censorUsernameInLogs)}
             </div>
           )}
           {run.stderrExcerpt && run.stderrExcerpt.trim() && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">stderr excerpt</div>
+              <div className="text-xs text-red-700 dark:text-red-300 mb-1">{uiText("stderr excerpt")}</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
                 {redactPathText(run.stderrExcerpt, censorUsernameInLogs)}
               </pre>
@@ -4394,7 +4419,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
           )}
           {run.resultJson && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">adapter result JSON</div>
+              <div className="text-xs text-red-700 dark:text-red-300 mb-1">{uiText("adapter result JSON")}</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
                 {JSON.stringify(redactPathValue(run.resultJson, censorUsernameInLogs), null, 2)}
               </pre>
@@ -4402,7 +4427,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
           )}
           {run.stdoutExcerpt && run.stdoutExcerpt.trim() && !run.resultJson && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">stdout excerpt</div>
+              <div className="text-xs text-red-700 dark:text-red-300 mb-1">{uiText("stdout excerpt")}</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
                 {redactPathText(run.stdoutExcerpt, censorUsernameInLogs)}
               </pre>
@@ -4449,6 +4474,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
 /* ---- Keys Tab ---- */
 
 export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }) {
+  const tr = useUiTranslator();
   const queryClient = useQueryClient();
   const { pushToast } = useToastActions();
   const [newKeyName, setNewKeyName] = useState("");
@@ -4486,7 +4512,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
         setTimeout(() => setCopied(false), 2000);
       })
       .catch(() => {
-        pushToast({ title: "Copy failed", body: "Clipboard access is unavailable.", tone: "error" });
+        pushToast({ title: uiText("Copy failed"), body: "Clipboard access is unavailable.", tone: "error" });
       });
   }
 
@@ -4499,7 +4525,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
       {newToken && (
         <div className="border border-yellow-300 dark:border-yellow-600/40 bg-yellow-50 dark:bg-yellow-500/5 rounded-lg p-4 space-y-2">
           <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-            API key created — copy it now, it will not be shown again.
+            {uiText("API key created — copy it now, it will not be shown again.")}
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 bg-neutral-100 dark:bg-neutral-950 rounded px-3 py-1.5 text-xs font-mono text-green-700 dark:text-green-300 truncate">
@@ -4517,20 +4543,18 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
               variant="ghost"
               size="icon-sm"
               onClick={copyToken}
-              title="Copy"
+              title={tr("Copy")}
             >
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            {copied && <span className="text-xs text-green-400">Copied!</span>}
+            {copied && <span className="text-xs text-green-400">{tr("Copied!")}</span>}
           </div>
           <Button
             variant="ghost"
             size="sm"
             className="text-muted-foreground text-xs"
             onClick={() => setNewToken(null)}
-          >
-            Dismiss
-          </Button>
+          > {uiText("Dismiss")} </Button>
         </div>
       )}
 
@@ -4538,10 +4562,10 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
       <div className="border border-border rounded-lg p-4 space-y-3">
         <h3 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
           <Key className="h-3.5 w-3.5" />
-          Create API Key
+          {uiText("Create API Key")}
         </h3>
         <p className="text-xs text-muted-foreground">
-          API keys allow this agent to authenticate calls to the Paperclip server.
+          {uiText("API keys allow this agent to authenticate calls to the Paperclip server.")}
         </p>
         <div className="flex items-center gap-2">
           <Input
@@ -4558,23 +4582,21 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
             onClick={() => createKey.mutate()}
             disabled={createKey.isPending}
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Create
-          </Button>
+            <Plus className="h-3.5 w-3.5 mr-1" /> {uiText("Create")} </Button>
         </div>
       </div>
 
       {/* Active keys */}
-      {isLoading && <p className="text-sm text-muted-foreground">Loading keys...</p>}
+      {isLoading && <p className="text-sm text-muted-foreground">{tr("Loading keys...")}</p>}
 
       {!isLoading && activeKeys.length === 0 && !newToken && (
-        <p className="text-sm text-muted-foreground">No active API keys.</p>
+        <p className="text-sm text-muted-foreground">{tr("No active API keys.")}</p>
       )}
 
       {activeKeys.length > 0 && (
         <div>
           <h3 className="text-xs font-medium text-muted-foreground mb-2">
-            Active Keys
+            {uiText("Active Keys")}
           </h3>
           <div className="border border-border rounded-lg divide-y divide-border">
             {activeKeys.map((key: AgentKey) => (
@@ -4582,7 +4604,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
                 <div>
                   <span className="text-sm font-medium">{key.name}</span>
                   <span className="text-xs text-muted-foreground ml-3">
-                    Created {formatDate(key.createdAt)}
+                    {tr("Created")} {formatDate(key.createdAt)}
                   </span>
                 </div>
                 <Button
@@ -4591,9 +4613,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
                   className="text-destructive hover:text-destructive text-xs"
                   onClick={() => revokeKey.mutate(key.id)}
                   disabled={revokeKey.isPending}
-                >
-                  Revoke
-                </Button>
+                > {uiText("Revoke")} </Button>
               </div>
             ))}
           </div>
@@ -4604,7 +4624,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
       {revokedKeys.length > 0 && (
         <div>
           <h3 className="text-xs font-medium text-muted-foreground mb-2">
-            Revoked Keys
+            {uiText("Revoked Keys")}
           </h3>
           <div className="border border-border rounded-lg divide-y divide-border opacity-50">
             {revokedKeys.map((key: AgentKey) => (

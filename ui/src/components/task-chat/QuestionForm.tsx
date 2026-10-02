@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
@@ -61,27 +62,27 @@ function answerError(
   answer: Answer | undefined,
 ): string | null {
   if (question.required && !answerHasValue(answer))
-    return "This question is required.";
+    return uiText("This question is required.");
   if (
     question.answerMode !== "text" &&
     answer?.customText !== undefined &&
     !answer.customText.trim()
   ) {
-    return "Enter a custom answer.";
+    return uiText("Enter a custom answer.");
   }
   const value =
     question.answerMode === "text" ? answer?.text : answer?.customText;
   if (value == null || value.length === 0) return null;
   const validation = question.textValidation;
   if (validation?.minLength != null && value.length < validation.minLength)
-    return `Enter at least ${validation.minLength} characters.`;
+    return uiText("Enter at least {value0} characters.", { value0: validation.minLength });
   if (validation?.maxLength != null && value.length > validation.maxLength)
-    return `Enter no more than ${validation.maxLength} characters.`;
+    return uiText("Enter no more than {value0} characters.", { value0: validation.maxLength });
   if (validation?.pattern) {
     const result = matchSafeQuestionValidationPattern(validation.pattern, value);
     if (result === "unsupported")
-      return "This question has an unsupported validation pattern.";
-    if (result === "no_match") return "Use the requested format.";
+      return uiText("This question has an unsupported validation pattern.");
+    if (result === "no_match") return uiText("Use the requested format.");
   }
   if (
     validation?.inputType === "number" ||
@@ -92,12 +93,12 @@ function answerError(
       !Number.isFinite(numeric) ||
       (validation.inputType === "integer" && !Number.isInteger(numeric))
     ) {
-      return `Enter a valid ${validation.inputType}.`;
+      return uiText("Enter a valid {value0}.", { value0: validation.inputType });
     }
     if (validation.minimum != null && numeric < validation.minimum)
-      return `Enter a value of at least ${validation.minimum}.`;
+      return uiText("Enter a value of at least {value0}.", { value0: validation.minimum });
     if (validation.maximum != null && numeric > validation.maximum)
-      return `Enter a value no greater than ${validation.maximum}.`;
+      return uiText("Enter a value no greater than {value0}.", { value0: validation.maximum });
   }
   return null;
 }
@@ -166,7 +167,7 @@ function SelectOption({
           <span>{label}</span>
           {recommended ? (
             <span className="rounded-sm bg-background/70 px-1.5 py-0.5 text-(length:--text-micro) font-medium text-muted-foreground">
-              Recommended
+              {uiText("Recommended")}
             </span>
           ) : null}
         </span>
@@ -214,7 +215,7 @@ export function QuestionResponseSummary({
               </span>
             </dt>
             <dd className="mt-0.5 text-foreground">
-              {values.length > 0 ? values.join(", ") : "No answer"}
+              {values.length > 0 ? values.join(", ") : uiText("No answer")}
             </dd>
           </div>
         );
@@ -431,7 +432,7 @@ export function QuestionForm({
       setError(
         cause instanceof Error
           ? cause.message
-          : "The answers could not be submitted.",
+          : uiText("The answers could not be submitted."),
       );
     } finally {
       setWorking(null);
@@ -449,7 +450,7 @@ export function QuestionForm({
       setError(
         cause instanceof Error
           ? cause.message
-          : "The questions could not be cancelled.",
+          : uiText("The questions could not be cancelled."),
       );
     } finally {
       setWorking(null);
@@ -478,26 +479,26 @@ export function QuestionForm({
     questionSet.questions.length > 1 ? (
       <nav
         className="flex shrink-0 items-center gap-1"
-        aria-label="Question pagination"
+        aria-label={uiText("Question pagination")}
       >
         <Button
           type="button"
           size="icon-xs"
           variant="ghost"
-          aria-label="Previous question"
+          aria-label={uiText("Previous question")}
           disabled={disabled || working != null || page === 0}
           onClick={() => setPage((current) => current - 1)}
         >
           <ChevronLeft aria-hidden />
         </Button>
         <span className="min-w-10 text-center tabular-nums">
-          {page + 1} of {questionSet.questions.length}
+          {page + 1} {uiText("of")} {questionSet.questions.length}
         </span>
         <Button
           type="button"
           size="icon-xs"
           variant="ghost"
-          aria-label="Next question"
+          aria-label={uiText("Next question")}
           // The arrows browse; they do not validate. A send that finds an
           // earlier answer missing returns to that question (see submit).
           disabled={disabled || working != null || isLastPage}
@@ -548,7 +549,7 @@ export function QuestionForm({
       ) : null}
       {question.answerMode === "text" ? (
         <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
-          {question.answerMode === "text" ? <span>Write an answer</span> : null}
+          {question.answerMode === "text" ? <span>{uiText("Write an answer")}</span> : null}
         </div>
       ) : null}
       {pagination ? (
@@ -590,7 +591,7 @@ export function QuestionForm({
             value={answer.text ?? ""}
             disabled={disabled || working != null}
             onChange={(value) => updateAnswer({ text: value })}
-            placeholder="Write your answer"
+            placeholder={uiText("Write your answer")}
             imageUploadHandler={imageUploadHandler}
             mentions={mentions}
             autoFocus
@@ -621,7 +622,7 @@ export function QuestionForm({
                     [question.id]: event.target.value,
                   }))
                 }
-                placeholder="Filter choices"
+                placeholder={uiText("Filter choices")}
                 aria-label={`Filter choices for ${question.prompt}`}
                 className="pl-8"
               />
@@ -645,7 +646,7 @@ export function QuestionForm({
             <div className="space-y-1.5">
               <SelectOption
                 id={`${id}-${question.id}-custom`}
-                label={question.customAnswer?.label ?? "Other"}
+                label={question.customAnswer?.label ?? uiText("Other")}
                 selected={isCustomActive}
                 multiple={multiple}
                 disabled={disabled || working != null}
@@ -657,7 +658,7 @@ export function QuestionForm({
                   testId="question-other-answer-composer"
                   value={answer.customText ?? ""}
                   placeholder={
-                    question.customAnswer?.placeholder ?? "Type your answer"
+                    question.customAnswer?.placeholder ?? uiText("Type your answer")
                   }
                   disabled={disabled || working != null}
                   onChange={(value) =>
@@ -699,9 +700,7 @@ export function QuestionForm({
           >
             {working === "cancel" ? (
               <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
-            ) : null}{" "}
-            Cancel
-          </Button>
+            ) : null}{" "} {uiText("Cancel")} </Button>
         ) : null}
         {!question.required ? (
           <Button
@@ -723,7 +722,7 @@ export function QuestionForm({
           {working === "submit" ? (
             <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
           ) : null}
-          {isLastPage ? (questionSet.submitLabel ?? "Submit answers") : "Next"}
+          {isLastPage ? (questionSet.submitLabel ?? uiText("Submit answers")) : uiText("Next")}
         </Button>
       </div>
     </div>

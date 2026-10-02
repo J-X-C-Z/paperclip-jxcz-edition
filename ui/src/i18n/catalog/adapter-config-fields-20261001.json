@@ -1,0 +1,13 @@
+{
+  "Hide {label}": "隐藏 {label}",
+  "Show {label}": "显示 {label}",
+  "Stored secret; enter a new value to replace it": "密钥已保存；输入新值以替换",
+  "e.g. node, python": "例如 node、python",
+  "e.g. script.js, --flag": "例如 script.js、--flag",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Injected into the system prompt at runtime.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。运行时会注入系统提示。",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Injected into the system prompt at runtime. Note: Codex may still auto-apply repo-scoped AGENTS.md files from the workspace.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。运行时会注入系统提示。注意：Codex 仍可能自动应用工作区中针对仓库的 AGENTS.md 文件。",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Injected into the prompt at runtime.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。运行时会注入提示。",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Prepended to the Gemini prompt at runtime.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。运行时会添加到 Gemini 提示开头。",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Paperclip stages it into the Grok workspace as Agents.md when possible.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。Paperclip 会在可行时将其暂存到 Grok 工作区并命名为 Agents.md。",
+  "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Prepended to the Kimi prompt at runtime.": "定义此智能体行为的 Markdown 文件绝对路径（例如 AGENTS.md）。运行时会添加到 Kimi 提示开头。"
+}

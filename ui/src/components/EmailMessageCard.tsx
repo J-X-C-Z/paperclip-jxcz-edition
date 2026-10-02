@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { createContext, useContext, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Mail, Paperclip } from "lucide-react";
@@ -79,9 +80,7 @@ export function EmailMessageCard({
         <p className="text-sm font-medium">
           {message.from}
           {message.direction === "inbound" && (
-            <span className="ml-2 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
-              External
-            </span>
+            <span className="ml-2 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"> {uiText("External")} </span>
           )}
         </p>
         <p className="break-words text-xs text-muted-foreground">
@@ -117,7 +116,7 @@ export function EmailMessageCard({
         </div>
       )}
       <details className="text-xs text-muted-foreground">
-        <summary className="cursor-pointer">Email details</summary>
+        <summary className="cursor-pointer">{uiText("Email details")}</summary>
         <div className="space-y-2 pt-3">
           {!!message.bcc?.length && <p>Bcc: {message.bcc.join(", ")}</p>}
           <p className="break-all">Message ID: {message.providerMessageId}</p>

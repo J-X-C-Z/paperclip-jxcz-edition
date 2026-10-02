@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "@/lib/router";
 import { accessApi } from "../api/access";
@@ -42,20 +43,20 @@ export function BoardClaimPage() {
   });
 
   if (!token || !code) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">Invalid board claim URL.</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">{uiText("Invalid board claim URL.")}</div>;
   }
 
   if (statusQuery.isLoading || sessionQuery.isLoading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading claim challenge...</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">{uiText("Loading claim challenge...")}</div>;
   }
 
   if (statusQuery.error) {
     return (
       <div className="mx-auto max-w-xl py-10">
         <Card className="block p-6">
-          <h1 className="text-lg font-semibold">Claim challenge unavailable</h1>
+          <h1 className="text-lg font-semibold">{uiText("Claim challenge unavailable")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {statusQuery.error instanceof Error ? statusQuery.error.message : "Challenge is invalid or expired."}
+            {statusQuery.error instanceof Error ? statusQuery.error.message : uiText("Challenge is invalid or expired.")}
           </p>
         </Card>
       </div>
@@ -64,19 +65,19 @@ export function BoardClaimPage() {
 
   const status = statusQuery.data;
   if (!status) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">Claim challenge unavailable.</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">{uiText("Claim challenge unavailable.")}</div>;
   }
 
   if (status.status === "claimed") {
     return (
       <div className="mx-auto max-w-xl py-10">
         <Card className="block p-6">
-          <h1 className="text-lg font-semibold">Board ownership claimed</h1>
+          <h1 className="text-lg font-semibold">{uiText("Board ownership claimed")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This instance is now linked to your authenticated user.
+            {uiText("This instance is now linked to your authenticated user.")}
           </p>
           <Button asChild className="mt-4">
-            <Link to="/">Open board</Link>
+            <Link to="/">{uiText("Open board")}</Link>
           </Button>
         </Card>
       </div>
@@ -87,12 +88,12 @@ export function BoardClaimPage() {
     return (
       <div className="mx-auto max-w-xl py-10">
         <Card className="block p-6">
-          <h1 className="text-lg font-semibold">Sign in required</h1>
+          <h1 className="text-lg font-semibold">{uiText("Sign in required")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in or create an account, then return to this page to claim Board ownership.
+            {uiText("Sign in or create an account, then return to this page to claim Board ownership.")}
           </p>
           <Button asChild className="mt-4">
-            <Link to={`/auth?next=${encodeURIComponent(currentPath)}`}>Sign in / Create account</Link>
+            <Link to={`/auth?next=${encodeURIComponent(currentPath)}`}>{uiText("Sign in / Create account")}</Link>
           </Button>
         </Card>
       </div>
@@ -102,9 +103,9 @@ export function BoardClaimPage() {
   return (
     <div className="mx-auto max-w-xl py-10">
       <Card className="block p-6">
-        <h1 className="text-xl font-semibold">Claim Board ownership</h1>
+        <h1 className="text-xl font-semibold">{uiText("Claim Board ownership")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This will promote your user to instance admin and migrate organization ownership access from local trusted mode.
+          {uiText("This will promote your user to instance admin and migrate organization ownership access from local trusted mode.")}
         </p>
 
         {claimMutation.error && (

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -58,6 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Agent } from "@paperclipai/shared";
+import { useScopedAgents } from "../hooks/useScopedAgents";
 
 /**
  * When no agent is running, the sidebar falls back to showing at most this many
@@ -145,19 +147,19 @@ function SidebarAgentItem({
   const isPaused = agent.status === "paused";
   const isBudgetPaused = isPaused && agent.pauseReason === "budget";
   const hasInvalidOrgChain = agent.orgChainHealth?.status === "invalid_org_chain";
-  const pauseResumeLabel = isPaused ? "Resume agent" : "Pause agent";
+  const pauseResumeLabel = isPaused ? uiText("Resume agent") : uiText("Pause agent");
   const pauseResumeDisabled = disabled || agent.status === "pending_approval" || isBudgetPaused || (isPaused && hasInvalidOrgChain);
   const pauseResumeDisabledLabel = disabled
-    ? "Updating..."
+    ? uiText("Updating...")
     : isBudgetPaused
-      ? "Budget paused"
+      ? uiText("Budget paused")
       : isPaused && hasInvalidOrgChain
-        ? "Invalid org chain"
+        ? uiText("Invalid org chain")
       : pauseResumeLabel;
   const showBuiltInLifecycle = builtInStatus === "needs_setup" || builtInStatus === "pending_approval";
   const trailingLabel = [
-    showBuiltInLifecycle ? `Built-in agent ${builtInStatus.replace(/_/g, " ")}` : null,
-    hasInvalidOrgChain ? "Invalid reporting chain" : null,
+    showBuiltInLifecycle ? uiText("Built-in agent {status}", { status: uiText(builtInStatus!.replace(/_/g, " ")) }) : null,
+    hasInvalidOrgChain ? uiText("Invalid reporting chain") : null,
   ].filter(Boolean).join(", ") || undefined;
 
   // C11 (DECISION-SHEET.md): the row itself is a SidebarNavItem, so agent rows
@@ -181,14 +183,14 @@ function SidebarAgentItem({
           <span className="ml-1 flex shrink-0 items-center gap-1">
             {showBuiltInLifecycle ? <BuiltInLifecycleChip status={builtInStatus} compact /> : null}
             {hasInvalidOrgChain ? (
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Invalid reporting chain" />
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label={uiText("Invalid reporting chain")} />
             ) : null}
           </span>
         ) : undefined
       }
       trailingLabel={trailingLabel}
       liveAccessory={
-        agent.pauseReason === "budget" ? <BudgetSidebarMarker title="Agent paused by budget" /> : undefined
+        agent.pauseReason === "budget" ? <BudgetSidebarMarker title={uiText("Agent paused by budget")} /> : undefined
       }
     />
   );
@@ -228,7 +230,7 @@ function SidebarAgentItem({
                 ? "opacity-100"
                 : "pointer-events-none opacity-0 group-hover/agent:pointer-events-auto group-hover/agent:opacity-100 group-focus-within/agent:pointer-events-auto group-focus-within/agent:opacity-100",
             )}
-            aria-label={`Open actions for ${agent.name}`}
+            aria-label={uiText("Open actions for {agent}", { agent: agent.name })}
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </Button>
@@ -248,7 +250,7 @@ function SidebarAgentItem({
                 ) : (
                   <Star className={cn("size-4", starred && "fill-amber-500 text-amber-500")} />
                 )}
-                <span>{starred ? "Remove from starred" : "Star agent"}</span>
+                <span>{uiText(starred ? "Remove from starred" : "Star agent")}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -261,7 +263,7 @@ function SidebarAgentItem({
               }}
             >
               <Pencil className="size-4" />
-              <span>Edit agent</span>
+              <span>{uiText('Edit agent')}</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -271,7 +273,7 @@ function SidebarAgentItem({
               onPauseResume(agent, isPaused ? "resume" : "pause");
             }}
             disabled={pauseResumeDisabled}
-            title={isBudgetPaused ? "Agent was paused by budget limits" : undefined}
+            title={isBudgetPaused ? uiText("Agent was paused by budget limits") : undefined}
           >
             {isPaused ? <PlayCircle className="size-4" /> : <PauseCircle className="size-4" />}
             <span>{pauseResumeDisabledLabel}</span>
@@ -285,7 +287,7 @@ function SidebarAgentItem({
             disabled={leaving}
           >
             {leaving ? <Loader2 className="size-4 motion-safe:animate-spin" /> : <LogOut className="size-4" />}
-            <span>{leaving ? "Leaving..." : "Leave agent"}</span>
+            <span>{leaving ? uiText("Leaving...") : uiText("Leave agent")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -306,11 +308,8 @@ export function SidebarAgents({ streamlined = false }: { streamlined?: boolean }
   const { pushToast } = useToastActions();
   const location = useLocation();
 
-  const { data: agents } = useQuery({
-    queryKey: queryKeys.agents.list(selectedCompanyId!),
-    queryFn: () => agentsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
-  });
+  const scopedAgents = useScopedAgents();
+  const { agents } = scopedAgents;
   const { data: experimentalSettings } = useQuery({
     queryKey: queryKeys.instance.experimentalSettings,
     queryFn: () => instanceSettingsApi.getExperimental(),
@@ -337,19 +336,19 @@ export function SidebarAgents({ streamlined = false }: { streamlined?: boolean }
   const membershipsQuery = useResourceMemberships(selectedCompanyId);
   const membershipMutation = useResourceMembershipMutation(selectedCompanyId);
 
-  const liveRunsQueryKey = queryKeys.liveRuns(selectedCompanyId!);
+  const liveRunsQueryKey = scopedAgents.projectId ? [...queryKeys.liveRuns(selectedCompanyId!), "project", scopedAgents.projectId] as const : queryKeys.liveRuns(selectedCompanyId!);
   const sharedLiveRuns = useSharedPollingQuery({
     companyId: selectedCompanyId,
     resourceKey: "live-runs",
     queryKey: liveRunsQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && scopedAgents.scopeReady,
     // Event-sourced via LiveUpdatesProvider (issue 9627); no interval poll needed.
     refetchInterval: false,
     leaderOnly: true,
   });
   const { data: liveRuns, dataUpdatedAt: liveRunsUpdatedAt } = useQuery({
     queryKey: liveRunsQueryKey,
-    queryFn: () => heartbeatsApi.liveRunsForCompany(selectedCompanyId!),
+    queryFn: () => heartbeatsApi.liveRunsForCompany(selectedCompanyId!, scopedAgents.projectId ? { projectId: scopedAgents.projectId } : undefined),
     enabled: sharedLiveRuns.enabled,
     refetchInterval: sharedLiveRuns.refetchInterval,
   });
@@ -537,14 +536,14 @@ export function SidebarAgents({ streamlined = false }: { streamlined?: boolean }
         queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agentRouteRef(agent)) }),
       ]);
       pushToast({
-        title: action === "pause" ? "Agent paused" : "Agent resumed",
+        title: action === "pause" ? uiText("Agent paused") : uiText("Agent resumed"),
         body: agent.name,
         tone: "success",
       });
     },
     onError: (error, { agent, action }) => {
       pushToast({
-        title: action === "pause" ? "Could not pause agent" : "Could not resume agent",
+        title: action === "pause" ? uiText("Could not pause agent") : uiText("Could not resume agent"),
         body: error instanceof Error ? error.message : agent.name,
         tone: "error",
       });
@@ -629,23 +628,26 @@ export function SidebarAgents({ streamlined = false }: { streamlined?: boolean }
     />
   );
 
+  if (scopedAgents.scopeError) return rail ? null : <p role="alert" className="px-4 py-2 text-sm text-destructive">{scopedAgents.scopeError.message}</p>;
+  if (scopedAgents.scopeLoading) return rail ? null : <p className="px-4 py-2 text-sm text-muted-foreground">正在加载项目成员…</p>;
+
   return (
     <SidebarSection
-      label="Agents"
+      label={uiText("Agents")}
       collapsible={{ open, onOpenChange: setOpen }}
       headerAction={{
-        ariaLabel: "New agent",
+        ariaLabel: uiText("New agent"),
         icon: Plus,
         onClick: openNewAgent,
       }}
       menu={{
-        ariaLabel: "Agents section actions",
+        ariaLabel: uiText("Agents section actions"),
         actions: [
-          { type: "item", label: "Browse agents", icon: Users, href: "/agents/all" },
+          { type: "item", label: uiText("Browse agents"), icon: Users, href: "/agents/all" },
           { type: "separator" },
         ],
-        radioLabel: "Agent sort",
-        radioChoices: AGENT_SORT_CHOICES,
+        radioLabel: uiText("Agent sort"),
+        radioChoices: AGENT_SORT_CHOICES.map((choice) => ({ ...choice, label: uiText(choice.label) })),
         radioValue: sortMode,
         onRadioValueChange: persistSortMode,
       }}
@@ -659,20 +661,20 @@ export function SidebarAgents({ streamlined = false }: { streamlined?: boolean }
           <Link
             to="/agents/all"
             state={SIDEBAR_SCROLL_RESET_STATE}
-            aria-label={rail ? "See all agents" : undefined}
+            aria-label={rail ? uiText("See all agents") : undefined}
             onClick={() => {
               if (isMobile) setSidebarOpen(false);
             }}
             className="flex items-center gap-2.5 mx-2 rounded-lg px-2 py-1.5 pointer-coarse:py-1 text-(length:--text-compact) font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <Users className="shrink-0 h-4 w-4" />
-            <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : undefined}>See all agents</span>
+            <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : undefined}>{uiText('See all agents')}</span>
           </Link>
         );
         return rail ? (
           <Tooltip>
             <TooltipTrigger asChild>{seeAllLink}</TooltipTrigger>
-            <TooltipContent side="right">See all agents</TooltipContent>
+            <TooltipContent side="right">{uiText('See all agents')}</TooltipContent>
           </Tooltip>
         ) : (
           seeAllLink

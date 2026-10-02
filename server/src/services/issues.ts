@@ -1,3 +1,5 @@
+import { readAgentTemplateMetadata } from "./agent-templates.js";
+import { TEMPLATE_MEMBER_REVIEW_STAGE_ID, assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "./agent-template-task-policy.js";
 import { documentService } from "./documents.js";
 import { parseTaskSearch, taskSearchCtes, taskSearchScore } from "./task-search.js";
 import { createdFromIssueCondition } from "./issue-creation-origin.js";
@@ -96,7 +98,7 @@ import {
   isUuidLike,
   normalizeIssueIdentifier as normalizeIssueReferenceIdentifier,
 } from "@paperclipai/shared";
-import { conflict, HttpError, notFound, unprocessable } from "../errors.js";
+import { conflict, forbidden, HttpError, notFound, unprocessable } from "../errors.js";
 import { isForeignKeyViolation } from "../db-errors.js";
 import { logger } from "../middleware/logger.js";
 import { parseObject } from "../adapters/utils.js";
@@ -130,8 +132,10 @@ import {
   retryNativeChatReviewPresentation,
 } from "./native-runtime/native-chat-review-presentation.js";
 import {
+  applyIssueExecutionPolicyTransition,
   buildInitialIssueMonitorFields,
   normalizeIssueExecutionPolicy,
+  parseIssueExecutionState,
 } from "./issue-execution-policy.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { redactCurrentUserText } from "../log-redaction.js";
@@ -9652,6 +9656,16 @@ export function issueService(db: Db) {
         onDeduplicated,
         ...issueData
       } = data;
+      if (issueData.createdByAgentId) {
+        const creator = await loadTemplateTaskActor(dbOrTx as Db, companyId, issueData.createdByAgentId);
+        if (creator && readAgentTemplateMetadata(creator.metadata) && creator.permissions?.canCreateTasks !== true) {
+          throw forbidden("Template agent cannot create tasks");
+        }
+      }
+      if (issueData.assigneeAgentId) {
+        const reviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, companyId, issueData.assigneeAgentId, issueData.executionPolicy);
+        if (reviewPolicy) issueData.executionPolicy = { ...reviewPolicy };
+      }
       const isolatedWorkspacesEnabled = (
         await instanceSettings.getExperimental()
       ).enableIsolatedWorkspaces;
@@ -10496,6 +10510,71 @@ export function issueService(db: Db) {
         .where(idPredicate)
         .then((rows: Array<typeof issues.$inferSelect>) => rows[0] ?? null);
       if (!existing) return null;
+      const templateActor = await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, data.actorAgentId);
+      if (templateActor) assertTemplateTaskPatch(templateActor, existing, data as Record<string, unknown>, false);
+      const reviewMemberId = data.assigneeAgentId !== undefined ? data.assigneeAgentId : existing.assigneeAgentId;
+      const returnMemberId = parseIssueExecutionState(existing.executionState)?.returnAssignee?.agentId;
+      const enforcedReviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId, data.executionPolicy !== undefined ? data.executionPolicy : existing.executionPolicy);
+      if (enforcedReviewPolicy) data = { ...data, executionPolicy: { ...enforcedReviewPolicy } };
+      const previousTemplateState = parseIssueExecutionState(existing.executionState);
+      const hasTemplateStage = enforcedReviewPolicy?.stages.some(stage => stage.id === TEMPLATE_MEMBER_REVIEW_STAGE_ID);
+      const submittingTemplateMember = data.status === "in_review"
+        ? await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId)
+        : null;
+      const templateMemberManagerId = (submittingTemplateMember as { reportsTo?: string | null } | null)?.reportsTo;
+      const templateMemberManager = templateMemberManagerId
+        ? await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, templateMemberManagerId)
+        : null;
+      const templateMemberReviewerUnavailable = (existing.assigneeAgentId === submittingTemplateMember?.id || returnMemberId === submittingTemplateMember?.id) &&
+        readAgentTemplateMetadata(submittingTemplateMember?.metadata)?.role === "member" &&
+        (!templateMemberManager || readAgentTemplateMetadata(templateMemberManager.metadata)?.role !== "leader" || !["idle", "running", "error"].includes(String((templateMemberManager as { status?: string }).status)));
+      if (readAgentTemplateMetadata(templateActor?.metadata)?.role === "member") {
+        const ownsTask = existing.assigneeAgentId === templateActor!.id || returnMemberId === templateActor!.id;
+        if (!ownsTask) throw forbidden("Template members may only update their assigned tasks");
+        const nextAssignee = data.assigneeAgentId !== undefined ? data.assigneeAgentId : existing.assigneeAgentId;
+        const changingAgentAssignment = data.assigneeAgentId !== undefined && data.assigneeAgentId !== existing.assigneeAgentId;
+        const changingHumanAssignment = data.assigneeUserId !== undefined && data.assigneeUserId !== existing.assigneeUserId;
+        if (changingAgentAssignment || changingHumanAssignment) {
+          const submittedState = parseIssueExecutionState(data.executionState);
+          const mandatoryStage = enforcedReviewPolicy?.stages.find(stage => stage.id === TEMPLATE_MEMBER_REVIEW_STAGE_ID);
+          const typedLeaderHandoff = data.status === "in_review" && submittedState?.status === "pending" &&
+            submittedState.currentStageId === TEMPLATE_MEMBER_REVIEW_STAGE_ID && submittedState.returnAssignee?.agentId === templateActor!.id &&
+            submittedState.currentParticipant?.agentId === nextAssignee && mandatoryStage?.participants.some(participant => participant.type === "agent" && participant.agentId === nextAssignee) &&
+            (data.assigneeUserId === undefined || data.assigneeUserId === null);
+          const typedRecoveryHandoff = templateMemberReviewerUnavailable && data.status === "in_review" && data.executionState === null && nextAssignee === templateActor!.id && (data.assigneeUserId === undefined || data.assigneeUserId === null);
+          if (!typedLeaderHandoff && !typedRecoveryHandoff) throw forbidden("Members cannot reassign tasks outside the server-owned leader review handoff");
+        }
+      }
+      if (templateMemberReviewerUnavailable) {
+        const { issueThreadInteractionService } = await import("./issue-thread-interactions.js");
+        const interactions = issueThreadInteractionService(dbOrTx as Db);
+        const recoveryTitle = "恢复组长验收";
+        const pending = (await interactions.listForIssue(existing.id)).some(interaction => interaction.status === "pending" && interaction.kind === "request_confirmation" && interaction.title === recoveryTitle && interaction.resolverPolicy === "human_only");
+        if (!pending) await interactions.create(existing, {
+          kind: "request_confirmation", resolverPolicy: "human_only", continuationPolicy: "none", title: recoveryTitle,
+          summary: "成果已提交，等待人工恢复或重新指定组长。",
+          payload: { version: 1, prompt: "当前组长不可用。请恢复组长或为组员重新指定有效组长，然后让组员重新提交验收。确认本提示不会完成任务。", acceptLabel: "已恢复或重新指定组长", rejectLabel: "暂缓处理", allowDeclineReason: true },
+        }, { agentId: data.actorAgentId ?? submittingTemplateMember?.id, userId: data.actorUserId ?? null }, { supersedePendingSiblingInteractions: false });
+        data = { ...data, status: "in_review", executionState: null, assigneeAgentId: submittingTemplateMember!.id, assigneeUserId: null };
+      }
+
+      if (!templateMemberReviewerUnavailable && hasTemplateStage && data.actorAgentId && data.status !== undefined && (data.status !== existing.status || (data.status === "in_review" && !previousTemplateState))) {
+        if (previousTemplateState?.status === "pending" && previousTemplateState.currentParticipant?.agentId !== data.actorAgentId) {
+          throw forbidden("Only the current team reviewer can change a pending review");
+        }
+        // HTTP routes already apply the execution kernel. Internal interaction
+        // and decision writes must pass through that same kernel as well.
+        if (data.executionState === undefined) {
+          const requestedStatus = previousTemplateState?.status === "pending" && data.status === "todo" ? "in_progress" : data.status;
+          const transition = applyIssueExecutionPolicyTransition({
+            issue: existing, policy: enforcedReviewPolicy,
+            requestedStatus, requestedAssigneePatch: {},
+            actor: { agentId: data.actorAgentId },
+            commentBody: "Review decision recorded through a Paperclip interaction",
+          });
+          data = { ...data, status: requestedStatus, ...transition.patch };
+        }
+      }
       if (data.parentId !== undefined && data.parentId !== existing.parentId) {
         await assertExecutionTaskParent(dbOrTx, existing.companyId, data.parentId);
       }
@@ -10652,7 +10731,17 @@ export function issueService(db: Db) {
         Boolean(nextAssigneeAgentId) &&
         (issueData.assigneeAgentId !== undefined ||
           patch.status === "in_progress");
-      if (shouldValidateNextAssignee) {
+      // Recovery preserves submitted work rather than dispatching new work.
+      // An unavailable ancestor may invalidate the org chain, but only this
+      // server-owned handoff to the same live, company-scoped member bypasses
+      // the ancestor check. Ordinary assignments retain full validation.
+      const unavailableTemplateReviewRecoveryHandoff = templateMemberReviewerUnavailable &&
+        patch.status === "in_review" && issueData.executionState === null &&
+        nextAssigneeAgentId === submittingTemplateMember?.id &&
+        (existing.assigneeAgentId === submittingTemplateMember?.id || returnMemberId === submittingTemplateMember?.id) &&
+        submittingTemplateMember?.companyId === existing.companyId &&
+        ["idle", "running", "error", "paused"].includes(String((submittingTemplateMember as { status?: string } | null)?.status));
+      if (shouldValidateNextAssignee && !unavailableTemplateReviewRecoveryHandoff) {
         await assertAssignableAgent(
           dbOrTx as Db,
           existing.companyId,

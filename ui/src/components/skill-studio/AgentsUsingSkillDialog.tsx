@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2, Users } from "lucide-react";
@@ -72,7 +73,7 @@ export function AgentsUsingSkillBadge({
         )}
       >
         <Users className="h-3.5 w-3.5" aria-hidden="true" />
-        {count} {count === 1 ? "agent" : "agents"}
+        {count} {count === 1 ? uiText("agent") : "agents"}
       </button>
       <AgentsUsingSkillDialog
         open={open}
@@ -204,7 +205,7 @@ export function AgentsUsingSkillDialog({
       const message = error instanceof Error ? error.message : "Failed to update agent skills.";
       toast?.pushToast({
         tone: "error",
-        title: "Update failed",
+        title: uiText("Update failed"),
         body: message.includes("403") ? "You don't have permission to change this agent's skills." : message,
       });
     },
@@ -341,7 +342,7 @@ function AgentRow({
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         {!hasVersions ? (
           <span className="text-sm text-muted-foreground" aria-label={`${agent.name} version`}>
-            —
+            {uiText("—")}
           </span>
         ) : canManage ? (
           <select
@@ -353,8 +354,7 @@ function AgentRow({
             }
             className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground disabled:opacity-60"
           >
-            <option value={LATEST_VALUE}>
-              Latest{latestRevision !== null ? ` (v${latestRevision})` : ""}
+            <option value={LATEST_VALUE}> {uiText("Latest")}{latestRevision !== null ? ` (v${latestRevision})` : ""}
             </option>
             {versions.map((version) => (
               <option key={version.id} value={version.id}>
@@ -387,11 +387,9 @@ function AgentRow({
               disabled={busy}
               aria-label={`Confirm removing this skill from ${agent.name}`}
             >
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Remove"}
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : uiText("Remove")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={onCancelRemove} disabled={busy}>
-              Cancel
-            </Button>
+            <Button variant="ghost" size="sm" onClick={onCancelRemove} disabled={busy}> {uiText("Cancel")} </Button>
           </div>
         ) : (
           <Button

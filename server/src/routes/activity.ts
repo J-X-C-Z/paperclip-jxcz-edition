@@ -1,3 +1,4 @@
+import { resolveProjectScope } from "../services/project-scope.js";
 import { Router } from "express";
 import { z } from "zod";
 import type { Db } from "@paperclipai/db";
@@ -103,6 +104,7 @@ const agentActionAuditActorScopeSchema = z.enum(["agents", "all"]);
 
 const agentActionAuditQuerySchema = z.object({
   actorScope: agentActionAuditActorScopeSchema.default("agents"),
+  projectId: z.string().guid().optional(),
   agentId: z.string().guid().optional(),
   responsibleUserId: z.string().min(1).optional(),
   runId: z.string().guid().optional(),
@@ -226,6 +228,7 @@ export function activityRoutes(db: Db) {
 
     const filters = {
       companyId,
+      projectId: await resolveProjectScope(db, companyId, req.query.projectId),
       agentId: req.query.agentId as string | undefined,
       entityType: req.query.entityType as string | undefined,
       entityId: req.query.entityId as string | undefined,
@@ -254,6 +257,7 @@ export function activityRoutes(db: Db) {
     if (!parsedQuery.success) {
       throw badRequest("Invalid agent action audit query", parsedQuery.error.issues);
     }
+    await resolveProjectScope(db, companyId, parsedQuery.data.projectId);
     if (parsedQuery.data.actorScope === "agents") {
       const result = await agentAudit.list({ companyId, ...parsedQuery.data });
       res.json({ ...result, accessTier: "full" });
@@ -278,6 +282,7 @@ export function activityRoutes(db: Db) {
     if (!parsedQuery.success) {
       throw badRequest("Invalid agent action audit query", parsedQuery.error.issues);
     }
+    await resolveProjectScope(db, companyId, parsedQuery.data.projectId);
     // Drive our own pagination for the export; a client-supplied cursor/limit
     // would silently truncate the export, so ignore them.
     const { cursor: _cursor, limit: _limit, ...filters } = parsedQuery.data;
@@ -308,6 +313,7 @@ export function activityRoutes(db: Db) {
         truncated: rows.length >= AUDIT_CSV_EXPORT_MAX_ROWS && Boolean(cursor),
         filters: {
           actorScope: filters.actorScope,
+          projectId: filters.projectId ?? null,
           agentId: filters.agentId ?? null,
           responsibleUserId: filters.responsibleUserId ?? null,
           runId: filters.runId ?? null,

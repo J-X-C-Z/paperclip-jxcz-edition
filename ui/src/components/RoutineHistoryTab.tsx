@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { History as HistoryIcon, RotateCcw, Search } from "lucide-react";
@@ -126,8 +127,8 @@ export function RoutineHistoryTab({
       pushToast({
         title: `Restored revision ${restoredFromNumber} as revision ${newNumber}`,
         body: data.secretMaterials.length > 0
-          ? "Trigger enabled state was restored from the snapshot. New webhook secrets are available in the banner above."
-          : "Trigger enabled state was restored from the snapshot.",
+          ? uiText("Trigger enabled state was restored from the snapshot. New webhook secrets are available in the banner above.")
+          : uiText("Trigger enabled state was restored from the snapshot."),
         tone: "success",
       });
       onRestoreSecretMaterials(data);
@@ -153,8 +154,8 @@ export function RoutineHistoryTab({
     },
     onError: (error) => {
       pushToast({
-        title: "Failed to restore revision",
-        body: error instanceof Error ? error.message : "Paperclip could not restore the revision.",
+        title: uiText("Failed to restore revision"),
+        body: error instanceof Error ? error.message : uiText("Paperclip could not restore the revision."),
         tone: "error",
       });
     },
@@ -200,16 +201,14 @@ export function RoutineHistoryTab({
     return (
       <div className="rounded-md border border-l-2 border-l-destructive border-border p-4 space-y-3">
         <div>
-          <p className="text-sm font-medium">Could not load revisions</p>
+          <p className="text-sm font-medium">{uiText("Could not load revisions")}</p>
           <p className="text-xs text-muted-foreground">
             {revisionsQuery.error instanceof Error
               ? revisionsQuery.error.message
-              : "Unknown error loading revisions."}
+              : uiText("Unknown error loading revisions.")}
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => revisionsQuery.refetch()}>
-          Retry
-        </Button>
+        <Button size="sm" variant="outline" onClick={() => revisionsQuery.refetch()}> {uiText("Retry")} </Button>
       </div>
     );
   }
@@ -241,7 +240,7 @@ export function RoutineHistoryTab({
           <div className="space-y-2">
             <EmptyState
               icon={HistoryIcon}
-              message="No edits yet"
+              message={uiText("No edits yet")}
             />
             <p className="text-center text-xs text-muted-foreground">
               Revision 1 is the only history this routine has. Saving an edit creates the first
@@ -375,7 +374,7 @@ function ConflictBanner({
     <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Unsaved routine edits</p>
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{uiText("Unsaved routine edits")}</p>
           <p className="text-xs text-muted-foreground">
             You changed {fieldsText} but haven&apos;t saved yet. Save or discard before previewing or
             restoring an older revision.
@@ -386,7 +385,7 @@ function ConflictBanner({
             Discard changes
           </Button>
           <Button size="sm" onClick={onSave}>
-            Save and continue
+            {uiText("Save and continue")}
           </Button>
         </div>
       </div>
@@ -428,10 +427,8 @@ function RevisionList({
   return (
     <aside className="space-y-1">
       <header className="flex items-center justify-between pb-2">
-        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground">
-          Revisions
-        </p>
-        <span className="text-(length:--text-micro) text-muted-foreground">{totalRevisions} total</span>
+        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground"> {uiText("Revisions")} </p>
+        <span className="text-(length:--text-micro) text-muted-foreground">{uiText("{value0} total", { value0: totalRevisions })}</span>
       </header>
       {revisions.map((revision) => {
         const isSelected = revision.id === selectedRevisionId;
@@ -459,10 +456,10 @@ function RevisionList({
             data-testid={`revision-row-${revision.revisionNumber}`}
           >
             <div className="flex items-center gap-2 text-sm font-medium">
-              <span>rev {revision.revisionNumber}</span>
+              <span>{uiText("rev {value0}", { value0: revision.revisionNumber })}</span>
               {isCurrent && (
                 <Badge variant="outline" className="border-border px-1.5 text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow) text-muted-foreground">
-                  Current
+                  {uiText("Current")}
                 </Badge>
               )}
               {revision.restoredFromRevisionId && (
@@ -523,19 +520,19 @@ function RevisionPreview({
   const fieldRows: Array<{ key: string; label: string; value: string; differs: boolean }> = [
     {
       key: "title",
-      label: "Title",
+      label: uiText("Title"),
       value: snapshot.title,
       differs: !!currentSnapshot && currentSnapshot.title !== snapshot.title,
     },
     {
       key: "priority",
-      label: "Priority",
+      label: uiText("Priority"),
       value: snapshot.priority,
       differs: !!currentSnapshot && currentSnapshot.priority !== snapshot.priority,
     },
     {
       key: "status",
-      label: "Status",
+      label: uiText("Status"),
       value: snapshot.status,
       differs: !!currentSnapshot && currentSnapshot.status !== snapshot.status,
     },
@@ -547,19 +544,19 @@ function RevisionPreview({
     },
     {
       key: "projectId",
-      label: "Project",
+      label: uiText("Project"),
       value: resolveProjectName(snapshot.projectId, projects),
       differs: !!currentSnapshot && currentSnapshot.projectId !== snapshot.projectId,
     },
     {
       key: "concurrencyPolicy",
-      label: "Concurrency",
+      label: uiText("Concurrency"),
       value: snapshot.concurrencyPolicy.replaceAll("_", " "),
       differs: !!currentSnapshot && currentSnapshot.concurrencyPolicy !== snapshot.concurrencyPolicy,
     },
     {
       key: "catchUpPolicy",
-      label: "Catch-up",
+      label: uiText("Catch-up"),
       value: snapshot.catchUpPolicy.replaceAll("_", " "),
       differs: !!currentSnapshot && currentSnapshot.catchUpPolicy !== snapshot.catchUpPolicy,
     },
@@ -576,9 +573,8 @@ function RevisionPreview({
       <header className={`${cardWrapper} p-4 space-y-2`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1 min-w-0">
-            <p className="text-sm font-medium">rev {revision.revisionNumber}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              Saved {relativeTime(revision.createdAt)} by {getActorLabel(revision)}
+            <p className="text-sm font-medium">{uiText("rev {value0}", { value0: revision.revisionNumber })}</p>
+            <p className="text-xs text-muted-foreground truncate"> {uiText("Saved")} {relativeTime(revision.createdAt)} {uiText("by")} {getActorLabel(revision)}
               {revision.changeSummary ? ` · ${revision.changeSummary}` : ""}
             </p>
           </div>
@@ -610,7 +606,7 @@ function RevisionPreview({
             <div key={row.key} className="space-y-1 p-2">
               <p className="text-(length:--text-micro) uppercase tracking-wide text-muted-foreground">{row.label}</p>
               <p className="text-sm">
-                {row.value || <span className="text-muted-foreground">—</span>}
+                {row.value || <span className="text-muted-foreground">{uiText("—")}</span>}
                 {row.differs && (
                   <Badge variant="outline" className="ml-2 border-amber-500/40 bg-amber-500/10 px-1.5 text-(length:--text-nano) uppercase tracking-(--tracking-eyebrow) text-amber-800 dark:text-amber-200">
                     differs from current
@@ -623,14 +619,12 @@ function RevisionPreview({
       </div>
 
       <div className={`${cardWrapper} p-3 space-y-2`}>
-        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground">
-          Description
-        </p>
+        <p className="text-xs font-medium uppercase tracking-(--tracking-caps) text-muted-foreground"> {uiText("Description")} </p>
         <div className="rounded-md bg-background/40 p-3 text-sm leading-7">
           {snapshot.description ? (
             <MarkdownBody>{snapshot.description}</MarkdownBody>
           ) : (
-            <span className="text-muted-foreground">No description</span>
+            <span className="text-muted-foreground">{uiText("No description")}</span>
           )}
         </div>
       </div>
@@ -640,7 +634,7 @@ function RevisionPreview({
           Triggers ({triggers.length})
         </p>
         {triggers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No triggers in this revision.</p>
+          <p className="text-sm text-muted-foreground">{uiText("No triggers in this revision.")}</p>
         ) : (
           <ul className="divide-y divide-border">
             {triggers.map((trigger) => (
@@ -655,7 +649,7 @@ function RevisionPreview({
                 <span
                   className={`ml-auto text-xs ${trigger.enabled ? "text-emerald-400" : "text-muted-foreground"}`}
                 >
-                  {trigger.enabled ? "enabled" : "disabled"}
+                  {trigger.enabled ? uiText("enabled") : "disabled"}
                 </span>
               </li>
             ))}
@@ -716,7 +710,7 @@ function RestoreConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Restore revision {target.revisionNumber}?</DialogTitle>
+          <DialogTitle>{uiText("Restore revision {value0}?", { value0: target.revisionNumber })}</DialogTitle>
           <DialogDescription>
             This creates a new revision {newRevisionNumber} with the same content as revision{" "}
             {target.revisionNumber}. Revisions {target.revisionNumber}–{currentRevisionNumber} stay
@@ -753,17 +747,15 @@ function RestoreConfirmDialog({
           <Input
             id="restore-change-summary"
             value={changeSummary}
-            placeholder="Why are you restoring? Visible in history."
+            placeholder={uiText("Why are you restoring? Visible in history.")}
             onChange={(event) => onChangeSummaryChange(event.target.value)}
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}> {uiText("Cancel")} </Button>
           <Button onClick={onConfirm} disabled={pending}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            {pending ? "Restoring…" : `Restore as revision ${newRevisionNumber}`}
+            {pending ? uiText("Restoring…") : uiText("Restore as revision {value0}", { value0: newRevisionNumber })}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -821,18 +813,18 @@ function RoutineRevisionDiffModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-(--pct-90) w-full max-h-(--sz-85vh) overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Compare routine revisions</DialogTitle>
+          <DialogTitle>{uiText("Compare routine revisions")}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-wrap items-center gap-3">
           <RevisionPicker
-            label="Old"
+            label={uiText("Old")}
             value={leftId}
             onChange={setLeftId}
             revisions={revisions}
             tone="red"
           />
           <RevisionPicker
-            label="New"
+            label={uiText("New")}
             value={rightId}
             onChange={setRightId}
             revisions={revisions}
@@ -845,14 +837,14 @@ function RoutineRevisionDiffModal({
               Field changes
             </p>
             {fieldChanges.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No structural field changes.</p>
+              <p className="text-sm text-muted-foreground">{uiText("No structural field changes.")}</p>
             ) : (
               <table className="w-full text-sm border border-border rounded-md overflow-hidden">
                 <thead>
                   <tr className="text-xs uppercase tracking-wide bg-muted/30 text-muted-foreground">
-                    <th className="px-3 py-2 text-left">Field</th>
-                    <th className="px-3 py-2 text-left">Old value</th>
-                    <th className="px-3 py-2 text-left">New value</th>
+                    <th className="px-3 py-2 text-left">{uiText("Field")}</th>
+                    <th className="px-3 py-2 text-left">{uiText("Old value")}</th>
+                    <th className="px-3 py-2 text-left">{uiText("New value")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -879,9 +871,7 @@ function RoutineRevisionDiffModal({
           </section>
         </div>
         <DialogFooter className="justify-between sm:justify-between">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}> {uiText("Close")} </Button>
           {leftIsHistorical && left && (
             <Button onClick={() => onRestore(left)}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
@@ -935,10 +925,10 @@ function RevisionPicker({
 
 function DiffTable({ rows }: { rows: DiffRow[] }) {
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">No description on either revision.</p>;
+    return <p className="text-sm text-muted-foreground">{uiText("No description on either revision.")}</p>;
   }
   if (rows.every((row) => row.kind === "context")) {
-    return <p className="text-sm text-muted-foreground">Descriptions are identical.</p>;
+    return <p className="text-sm text-muted-foreground">{uiText("Descriptions are identical.")}</p>;
   }
   const lineClassesByKind: Record<DiffRow["kind"], string> = {
     context: "bg-transparent",
@@ -953,10 +943,10 @@ function DiffTable({ rows }: { rows: DiffRow[] }) {
   return (
     <div className="rounded-md border border-border text-xs font-mono leading-6 overflow-hidden">
       <div className="grid grid-cols-(--gtc-1) border-b border-border/60 bg-muted/30 px-3 py-2 text-(length:--text-micro) uppercase tracking-wide text-muted-foreground">
-        <span>Old</span>
-        <span>New</span>
+        <span>{uiText("Old")}</span>
+        <span>{uiText("New")}</span>
         <span />
-        <span>Content</span>
+        <span>{uiText("Content")}</span>
       </div>
       {rows.map((row, index) => (
         <div

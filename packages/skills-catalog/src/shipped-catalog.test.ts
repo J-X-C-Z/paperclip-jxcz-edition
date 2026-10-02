@@ -1,3 +1,4 @@
+import { AGENT_TEMPLATES } from "@paperclipai/shared";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +11,9 @@ const EXPECTED_BUNDLED_KEYS = [
   "paperclipai/bundled/paperclip-operations/reflection-coach",
   "paperclipai/bundled/paperclip-operations/status-card-query",
   "paperclipai/bundled/paperclip-operations/summarize-status",
+  "paperclipai/bundled/paperclip-operations/task-execution",
   "paperclipai/bundled/paperclip-operations/task-planning",
+  "paperclipai/bundled/paperclip-operations/task-review",
   "paperclipai/bundled/product/paperclip-capsules",
   "paperclipai/bundled/product/wireframe",
   "paperclipai/bundled/quality/qa-acceptance",
@@ -73,6 +76,15 @@ function readFrontmatterDescription(markdown: string): string | null {
 }
 
 describe("shipped skills catalog", () => {
+  it("ships installable skill entries for every built-in agent template", () => {
+    for (const template of AGENT_TEMPLATES) {
+      for (const key of template.skills) {
+        const skill = resolveCatalogSkillRef(key);
+        expect(skill, key).not.toBeNull();
+        expect(skill!.files.some((file) => file.path === "SKILL.md")).toBe(true);
+      }
+    }
+  });
   it("ships the summarize-status streaming protocol", () => {
     const skill = readFileSync(
       path.join(

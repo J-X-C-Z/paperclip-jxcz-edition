@@ -131,6 +131,13 @@ export const INSTANCE_FEATURE_CATALOG: Record<InstanceFeatureKey, FeatureCatalog
     cloudDefault: false,
     selfHostedDefault: false,
   },
+  enableProjectWorkspace: {
+    title: "Project Workspace",
+    description: "Use a native project work context across tasks and project resources while preserving company governance.",
+    tier: "managed",
+    cloudDefault: false,
+    selfHostedDefault: false,
+  },
   enableAgentChat: {
     title: "Agent Chat",
     description: "Persistent task-backed conversations that clarify goals and hand work off to tasks.",

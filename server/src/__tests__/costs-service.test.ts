@@ -3,7 +3,8 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { derivePluginDatabaseNamespace } from "../services/plugin-database.js";
 import {
   createDb,
   companies,
@@ -86,6 +87,8 @@ const mockCostService = vi.hoisted(() => ({
   }),
   windowSpend: vi.fn().mockResolvedValue([]),
   byProject: vi.fn().mockResolvedValue([]),
+  byTeam: vi.fn().mockResolvedValue([]),
+  byDepartment: vi.fn().mockResolvedValue([]),
 }));
 const mockFinanceService = vi.hoisted(() => ({
   createEvent: vi.fn(),
@@ -208,6 +211,21 @@ describe("cost routes", () => {
       identifier: "PC1A2-1",
     });
     mockBudgetService.upsertPolicy.mockResolvedValue(undefined);
+  });
+
+  it.each(["by-team", "by-department"])("enforces company cost authorization for %s", async (path) => {
+    mockAccessService.decide.mockResolvedValueOnce({ allowed: false });
+    const response = await request(createApp()).get(`/api/companies/company-1/costs/${path}`);
+    expect(response.status).toBe(403);
+    expect(mockCostService.byTeam).not.toHaveBeenCalled();
+    expect(mockCostService.byDepartment).not.toHaveBeenCalled();
+  });
+
+  it.each(["by-team", "by-department"])("accepts organization cost requests for %s", async (path) => {
+    const response = await request(createApp()).get(`/api/companies/company-1/costs/${path}`).query({ from: "2026-10-01T00:00:00.000Z" });
+    expect(response.status).toBe(200);
+    const aggregate = path === "by-team" ? mockCostService.byTeam : mockCostService.byDepartment;
+    expect(aggregate).toHaveBeenCalledWith("company-1", { from: new Date("2026-10-01T00:00:00.000Z"), to: undefined }, undefined);
   });
 
   it("accepts valid ISO date strings", async () => {
@@ -429,6 +447,49 @@ describeEmbeddedPostgres("cost and finance aggregate overflow handling", () => {
 
   afterAll(async () => {
     await tempDb?.cleanup();
+  });
+
+  it("balances three dimensions and estimates historical usage from live database events", async () => {
+    const companyId = randomUUID(), otherCompanyId = randomUUID(), agentId = randomUUID(), projectId = randomUUID();
+    const teamId = randomUUID(), departmentId = randomUUID(), revision = randomUUID();
+    const namespace = derivePluginDatabaseNamespace("paperclip-improvement-teams", "improvement_teams");
+    const schema = sql.raw(`"${namespace}"`);
+    const table = (name: string) => sql.raw(`"${namespace}"."${name}"`);
+    await db.insert(companies).values([{ id: companyId, name: "Cost company", issuePrefix: "COST" }, { id: otherCompanyId, name: "Other company", issuePrefix: "OTHER" }]);
+    await db.insert(agents).values({ id: agentId, companyId, name: "Member", role: "engineer", status: "active", adapterType: "codex_local" });
+    await db.insert(projects).values({ id: projectId, companyId, name: "Project" });
+    await db.execute(sql`CREATE SCHEMA ${schema}`);
+    try {
+      await db.execute(sql`CREATE TABLE ${table("departments")} (id uuid, company_id uuid, name text)`);
+      await db.execute(sql`CREATE TABLE ${table("teams")} (id uuid, company_id uuid, project_id uuid, name text, department_id uuid, member_revision uuid)`);
+      await db.execute(sql`CREATE TABLE ${table("team_members")} (team_id uuid, company_id uuid, project_id uuid, agent_id uuid, member_revision uuid)`);
+      await db.execute(sql`INSERT INTO ${table("departments")} VALUES (${departmentId}, ${companyId}, 'Department')`);
+      await db.execute(sql`INSERT INTO ${table("teams")} VALUES (${teamId}, ${companyId}, ${projectId}, 'Team', ${departmentId}, ${revision})`);
+      await db.execute(sql`INSERT INTO ${table("team_members")} VALUES (${teamId}, ${companyId}, ${projectId}, ${agentId}, ${revision})`);
+      // A stale revision must not duplicate the same member's costs.
+      await db.execute(sql`INSERT INTO ${table("team_members")} VALUES (${teamId}, ${companyId}, ${projectId}, ${agentId}, ${randomUUID()})`);
+      await db.insert(costEvents).values([
+        { companyId, agentId, projectId, provider: "openai", model: "unknown", costStatus: "reported", costCents: 125, occurredAt: new Date("2026-10-01T00:00:00Z") },
+        { companyId, agentId, projectId, provider: "openai", model: "gpt-6.1-sol", billingType: "subscription_included", costStatus: "unpriced", inputTokens: 1_000_000, costCents: 0, occurredAt: new Date("2026-10-01T00:00:00Z") },
+      ]);
+      const range = { from: new Date("2026-10-01T00:00:00Z"), to: new Date("2026-10-02T00:00:00Z") };
+      const [project, team, department, summary] = await Promise.all([costs.byProject(companyId, range), costs.byTeam(companyId, range), costs.byDepartment(companyId, range), costs.summary(companyId, range)]);
+      for (const rows of await Promise.all([costs.byAgent(companyId, range), costs.byProvider(companyId, range), costs.byBiller(companyId, range), costs.byAgentModel(companyId, range)])) {
+        expect(rows.reduce((sum, row) => sum + row.costCents, 0)).toBe(325);
+        expect(rows.reduce((sum, row) => sum + (row.estimatedCostCents ?? 0), 0)).toBe(200);
+      }
+      for (const rows of [project, team, department]) {
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({ costCents: 325, reportedCostCents: 125, estimatedCostCents: 200, unpricedEventCount: 0 });
+      }
+      expect(team[0]).toMatchObject({ teamId, departmentId, projectId });
+      expect(department[0]).toMatchObject({ departmentId });
+      expect(summary).toMatchObject({ spendCents: 125, referenceCostCents: 325, reportedCostCents: 125, estimatedCostCents: 200, trackingEnabled: true });
+      expect(await costs.byTeam(otherCompanyId, range)).toEqual([]);
+      expect(await costs.byDepartment(otherCompanyId, range)).toEqual([]);
+    } finally {
+      await db.execute(sql`DROP SCHEMA ${schema} CASCADE`);
+    }
   });
 
   it("persists unpriced token usage without inflating monthly spend", async () => {

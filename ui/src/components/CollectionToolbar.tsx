@@ -1,3 +1,4 @@
+import { useUiTranslator } from "@/i18n";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -30,14 +31,15 @@ export function CollectionToolbar({
   actions,
   feedback,
   className,
-  ariaLabel = "Collection controls",
+  ariaLabel,
 }: CollectionToolbarProps) {
+  const tr = useUiTranslator();
   return (
     <div
       data-slot="collection-toolbar"
       className={cn("flex flex-col gap-2", className)}
       role="toolbar"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ? tr(ariaLabel) : tr("Collection controls")}
     >
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
         {context ? (

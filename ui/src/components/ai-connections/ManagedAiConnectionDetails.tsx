@@ -7,12 +7,14 @@ import { useNavigate } from "@/lib/router";
 import { AiConnectionAccountControls } from "./AiConnectionAccountControls";
 import type { ToolConnection } from "@paperclipai/shared";
 import { aiMethodLabel } from "./model";
+import { useUiTranslator } from "@/i18n";
 
 export function ManagedAiConnectionRow({
   connection,
 }: {
   connection: ToolConnection;
 }) {
+  const tr = useUiTranslator();
   const metadata = connection.config?.ai as
     | {
         provider: "anthropic" | "openai" | "openrouter" | "xai";
@@ -24,8 +26,8 @@ export function ManagedAiConnectionRow({
     <p className="text-xs text-muted-foreground">
       {aiMethodLabel(metadata.provider, metadata.method)} ·{" "}
       {connection.credentialPolicy === "per_user"
-        ? "Personal"
-        : "Company shared"}
+        ? tr("Personal")
+        : tr("Company shared")}
     </p>
   );
 }
@@ -34,6 +36,7 @@ export function ManagedAiConnectionDetails({
 }: {
   connection: ToolConnection;
 }) {
+  const tr = useUiTranslator();
   const client = useQueryClient();
   const navigate = useNavigate();
   const runs = useQuery({
@@ -83,8 +86,8 @@ export function ManagedAiConnectionDetails({
     return (
       <p role="status" className="text-sm text-muted-foreground">
         {accounts.isPending || grants.isPending
-          ? "Loading AI account…"
-          : "This account is not available to you."}
+          ? tr("Loading AI account…")
+          : tr("This account is not available to you.")}
       </p>
     );
   return (
@@ -99,7 +102,7 @@ export function ManagedAiConnectionDetails({
           <div className="space-y-2">
             {runs.error && (
               <p role="alert">
-                Could not load active runs. Retry before revoking.
+                {tr("Could not load active runs. Retry before revoking.")}
               </p>
             )}
             {runs.data?.map((run) => (
@@ -108,7 +111,7 @@ export function ManagedAiConnectionDetails({
                 className="flex items-center justify-between gap-3 text-sm"
               >
                 <span>
-                  {run.agentName} · {run.status}
+                  {run.agentName} · {tr(run.status)}
                 </span>
                 <Button
                   variant="outline"
@@ -116,7 +119,7 @@ export function ManagedAiConnectionDetails({
                   disabled={stop.isPending}
                   onClick={() => stop.mutate(run.id)}
                 >
-                  Stop run
+                  {tr("Stop run")}
                 </Button>
               </div>
             ))}

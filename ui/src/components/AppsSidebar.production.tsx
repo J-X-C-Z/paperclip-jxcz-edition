@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { ChevronLeft, AppWindow, Store, ShieldQuestion } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useCompany } from "@/context/CompanyContext";
@@ -6,6 +7,7 @@ import { DEVELOPER_TABS, advancedTabHref, isExperimentalToolTab } from "@/pages/
 import { useSmokeLabEnabled } from "@/hooks/useSmokeLabEnabled";
 import { useReviewCount } from "@/pages/apps/useReviewCount";
 import { SidebarNavItem } from "./SidebarNavItem.production";
+import { useTranslation } from "@/i18n";
 
 /**
  * Secondary sidebar for the prosumer Connectors area (PAP-10856; three-door IA
@@ -25,6 +27,7 @@ import { SidebarNavItem } from "./SidebarNavItem.production";
  * (PAP-10922).
  */
 export function AppsSidebar() {
+  const { t } = useTranslation();
   const { selectedCompany } = useCompany();
   const { isMobile, setSidebarOpen } = useSidebar();
 
@@ -49,33 +52,31 @@ export function AppsSidebar() {
         </Link>
         <div className="flex items-center gap-2 px-2 py-1">
           <AppWindow className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="flex-1 truncate text-sm font-bold text-foreground">Connectors</span>
+          <span className="flex-1 truncate text-sm font-bold text-foreground">{t("ui.connectors")}</span>
         </div>
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide px-3 py-2">
         <div className="px-3 pb-1 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
-          Connectors
+          {t("ui.connectors")}
         </div>
         <div className="flex flex-col gap-0.5">
-          <SidebarNavItem to="/apps" label="Browse" icon={Store} end />
+          <SidebarNavItem to="/apps" label={t("ui.browse")} icon={Store} end />
           <SidebarNavItem
             to="/apps/review"
-            label="Review"
+            label={t("ui.review")}
             icon={ShieldQuestion}
             badge={reviewCount > 0 ? reviewCount : undefined}
             badgeTone="warning"
             badgeLabel="waiting for your OK"
           />
         </div>
-        <div className="px-3 pb-1 pt-4 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
-          Developer
-        </div>
+        <div className="px-3 pb-1 pt-4 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground"> {uiText("Developer")} </div>
         <p className="px-3 pb-1.5 text-(length:--text-micro) leading-snug text-muted-foreground/70">
           Advanced setup for developers. Most teams never open this.
         </p>
         <div className="flex flex-col gap-0.5">
-          <SidebarNavItem to="/apps/connections" label="Connections" icon={AppWindow} end />
+          <SidebarNavItem to="/apps/connections" label={uiText("Connections")} icon={AppWindow} end />
           {developerTabs.map((tab) => (
             <SidebarNavItem
               key={tab.key}

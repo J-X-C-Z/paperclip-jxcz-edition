@@ -1,5 +1,6 @@
 import type {
   Agent,
+  AgentTemplate,
   AgentDesiredSkillEntry,
   AgentSkillAssignmentMode,
   AgentPermissions,
@@ -78,6 +79,9 @@ export interface AgentPermissionUpdate {
   canCreateAgents: boolean;
   canCreateSkills: boolean;
   canAssignTasks: boolean;
+  canCreateTasks?: boolean;
+  canReviewTasks?: boolean;
+  canManageAgents?: boolean;
   trustPreset?: AgentPermissions["trustPreset"];
   authorizationPolicy?: AgentPermissions["authorizationPolicy"];
 }
@@ -103,6 +107,11 @@ function agentPath(id: string, companyId?: string, suffix = "") {
 }
 
 export const agentsApi = {
+  updateTemplateDefaults: (companyId: string, templateId: string, defaults: { skills: string[]; systemPrompt: string }) =>
+    api.put<AgentTemplate>(`/companies/${companyId}/agent-templates/${templateId}`, defaults),
+  updateTemplateSkills: (companyId: string, templateId: string, skills: string[]) =>
+    api.put<AgentTemplate>(`/companies/${companyId}/agent-templates/${templateId}/skills`, { skills }),
+  templates: (companyId: string) => api.get<AgentTemplate[]>(`/companies/${companyId}/agent-templates`),
   list: (companyId: string) => api.get<Agent[]>(`/companies/${companyId}/agents`),
   org: (companyId: string) => api.get<OrgNode[]>(`/companies/${companyId}/org`),
   listConfigurations: (companyId: string) =>

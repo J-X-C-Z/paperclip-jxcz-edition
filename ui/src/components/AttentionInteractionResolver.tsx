@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -128,7 +129,7 @@ export function AttentionInteractionResolver({
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading decision…
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {uiText("Loading decision…")}
       </div>
     );
   }

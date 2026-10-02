@@ -1,3 +1,4 @@
+import { projectActivityCondition } from "./project-scope.js";
 import { executionProjectionsForRuns } from "./execution-projection.js";
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
@@ -22,6 +23,7 @@ import { classifyRunLiveness } from "./run-liveness.js";
 
 export interface ActivityFilters {
   companyId: string;
+  projectId?: string;
   agentId?: string;
   entityType?: string;
   entityId?: string;
@@ -330,6 +332,7 @@ export function activityService(db: Db) {
   return {
     list: (filters: ActivityFilters) => {
       const conditions = [eq(activityLog.companyId, filters.companyId)];
+      if (filters.projectId) conditions.push(projectActivityCondition(filters.companyId, filters.projectId));
       const limit = normalizeActivityLimit(filters.limit);
 
       if (filters.agentId) {

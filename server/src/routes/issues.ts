@@ -1,3 +1,5 @@
+import { assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "../services/agent-template-task-policy.js";
+import { resolveProjectScope } from "../services/project-scope.js";
 import { deliverConversationComments, isConversation } from "../services/agent-conversations.js";
 import { issueRecoveryActionReadModel } from "../services/issue-recovery-actions.js";
 import { getExecutionBlocker } from "../services/execution-blocker.js";
@@ -7837,6 +7839,7 @@ export function issueRoutes(
       return;
     }
     let query = parsedQuery.data;
+    await resolveProjectScope(db, companyId, query.projectId);
     if (query.assigneeUserId === "me") {
       if (req.actor.type !== "board" || !req.actor.userId) {
         res
@@ -12748,6 +12751,8 @@ export function issueRoutes(
         );
         return;
       }
+      const templateActor = await loadTemplateTaskActor(db, existing.companyId, req.actor.type === "agent" ? req.actor.agentId : null);
+      if (templateActor) assertTemplateTaskPatch(templateActor, existing, req.body);
       const issueMutationAccess = await assertAgentIssueMutationAllowed(
         req,
         res,
@@ -13101,10 +13106,10 @@ export function issueRoutes(
       const previousExecutionPolicy = normalizeIssueExecutionPolicy(
         existing.executionPolicy ?? null,
       );
-      const nextExecutionPolicy =
-        updateFields.executionPolicy !== undefined
-          ? (updateFields.executionPolicy as NormalizedExecutionPolicy | null)
-          : previousExecutionPolicy;
+      const reviewMemberId = parseIssueExecutionState(existing.executionState)?.returnAssignee?.agentId ?? existing.assigneeAgentId;
+      const nextExecutionPolicy = await templateMemberReviewPolicy(db, existing.companyId, reviewMemberId,
+        updateFields.executionPolicy !== undefined ? updateFields.executionPolicy : previousExecutionPolicy);
+      if (nextExecutionPolicy) updateFields.executionPolicy = nextExecutionPolicy;
       if (normalizedAssigneeAgentId !== undefined) {
         updateFields.assigneeAgentId = normalizedAssigneeAgentId;
       }
@@ -13119,7 +13124,42 @@ export function issueRoutes(
         req.body.executionPolicy !== undefined && monitorChanged,
       );
 
-      const transition = applyIssueExecutionPolicyTransition({
+      const submittingReviewMember = updateFields.status === "in_review"
+        ? await loadTemplateTaskActor(db, existing.companyId, reviewMemberId)
+        : null;
+      const memberReviewTemplate = submittingReviewMember?.metadata && typeof submittingReviewMember.metadata === "object"
+        ? (submittingReviewMember.metadata as Record<string, unknown>).agentTemplate as { role?: string } | undefined
+        : undefined;
+      const submittingMemberManagerId = (submittingReviewMember as { reportsTo?: string | null } | null)?.reportsTo;
+      const submissionLeader = memberReviewTemplate?.role === "member" && submittingMemberManagerId
+        ? await loadTemplateTaskActor(db, existing.companyId, submittingMemberManagerId)
+        : null;
+      const submissionLeaderTemplate = submissionLeader?.metadata && typeof submissionLeader.metadata === "object"
+        ? (submissionLeader.metadata as Record<string, unknown>).agentTemplate as { role?: string } | undefined
+        : undefined;
+      const unavailableTemplateLeader = memberReviewTemplate?.role === "member" &&
+        (!submissionLeader || submissionLeaderTemplate?.role !== "leader" || !["idle", "running", "error"].includes(String((submissionLeader as { status?: string }).status)));
+      if (unavailableTemplateLeader) {
+        const interactions = issueThreadInteractionService(db);
+        const recoveryTitle = "恢复组长验收";
+        const pendingRecovery = (await interactions.listForIssue(existing.id)).find(interaction =>
+          interaction.status === "pending" && interaction.kind === "request_confirmation" &&
+          interaction.title === recoveryTitle && interaction.resolverPolicy === "human_only");
+        if (!pendingRecovery) {
+          await interactions.create(existing, {
+            kind: "request_confirmation",
+            resolverPolicy: "human_only",
+            continuationPolicy: "none",
+            sourceRunId: actor.runId ?? null,
+            title: recoveryTitle,
+            summary: "成果已提交，等待人工恢复或重新指定组长。",
+            payload: { version: 1, prompt: "当前组长不可用。请恢复组长或为组员重新指定有效组长，然后让组员重新提交验收。确认本提示不会完成任务。", acceptLabel: "已恢复或重新指定组长", rejectLabel: "暂缓处理", allowDeclineReason: true },
+          }, { agentId: actor.agentId, userId: actor.actorType === "user" ? actor.actorId : null }, { supersedePendingSiblingInteractions: false });
+        }
+      }
+      const transition: ReturnType<typeof applyIssueExecutionPolicyTransition> = unavailableTemplateLeader
+        ? { patch: { status: "in_review", executionState: null, assigneeAgentId: reviewMemberId, assigneeUserId: null }, workflowControlledAssignment: true }
+        : applyIssueExecutionPolicyTransition({
         issue: existing,
         policy: nextExecutionPolicy,
         previousPolicy: previousExecutionPolicy,

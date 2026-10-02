@@ -31,6 +31,7 @@ export const AI_PROVIDERS = [
   "openai",
   "openrouter",
   "xai",
+  "xiaomi_mimo",
 ] as const;
 export const aiProviderSchema = z.enum(AI_PROVIDERS);
 export const aiAuthMethodSchema = z.enum(["subscription", "api_key"]);
@@ -106,6 +107,10 @@ export const AI_CONNECTION_CAPABILITIES: Record<
       subscription: { adapters: ["grok_local"], envKey: "GROK_HOME" },
       api_key: { adapters: ["grok_local"], envKey: "XAI_API_KEY" },
     },
+  },
+  xiaomi_mimo: {
+    name: "Xiaomi MiMo",
+    methods: { api_key: { adapters: ["mimocode_local"], envKey: "MIMO_API_KEY" } },
   },
 };
 export function isAiConnectionCompatible(

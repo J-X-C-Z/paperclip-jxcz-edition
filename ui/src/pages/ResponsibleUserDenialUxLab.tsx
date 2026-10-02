@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { ReactNode } from "react";
 import { ResponsibleUserDenialNotice } from "@/components/ResponsibleUserDenialNotice";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,7 @@ function RunLedgerRow({
   return (
     <article className="space-y-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-medium text-foreground">Run</span>
+        <span className="font-medium text-foreground">{uiText("Run")}</span>
         <span className="min-w-0 max-w-full truncate font-mono text-foreground">a1b2c3d4</span>
         <span>by CodexCoder</span>
         {onBehalfOf ? (
@@ -60,7 +61,7 @@ function RunLedgerRow({
           </span>
         ) : null}
         <span className="rounded-md border border-border px-1.5 py-0.5 text-(length:--text-micro) capitalize text-muted-foreground">
-          {denial ? "Failed" : "Succeeded"}
+          {denial ? uiText("Failed") : "Succeeded"}
         </span>
         <span className="ml-auto shrink-0">2m ago</span>
       </div>
@@ -72,7 +73,7 @@ function RunLedgerRow({
           <span className="text-foreground">Last useful action</span> 2m ago
         </div>
         <div className="min-w-0">
-          <span className="text-foreground">Stop</span> {denial ? "Denied" : "Completed"}
+          <span className="text-foreground">Stop</span> {denial ? "Denied" : uiText("Completed")}
         </div>
       </div>
       {denial}
@@ -214,7 +215,7 @@ export function ResponsibleUserDenialUxLab() {
               }
             />
           </BeforeAfter>
-          <BeforeAfter label="Unavailable">
+          <BeforeAfter label={uiText("Unavailable")}>
             <RunLedgerRow
               onBehalfOf="Grace Hopper"
               denial={

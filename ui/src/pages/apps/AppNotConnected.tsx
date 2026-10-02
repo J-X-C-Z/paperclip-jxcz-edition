@@ -21,8 +21,10 @@ import {
 import { connectionAddress } from "./AppDetail";
 import { ReviewPanel } from "./app-detail/ReviewPanel";
 import { appApplicationTabHref, appTabHref, appTabLabel, isAppTabKey, type AppTabKey } from "./app-tabs";
+import { uiText, useUiTranslator } from "@/i18n";
 
 export function AppNotConnected() {
+  const tr = useUiTranslator();
   const { applicationId = "", tab } = useParams<{ applicationId: string; tab?: string }>();
   const navigate = useNavigate();
   const { selectedCompanyId } = useCompany();
@@ -75,16 +77,16 @@ export function AppNotConnected() {
     enabled: !!previousConnection && !!activeTab,
   });
 
-  const appName = application?.name ?? "App";
+  const appName = application?.name ?? uiText("App");
   useEffect(() => {
     if (!activeTab) return;
     setBreadcrumbs([
-      { label: "Connectors", href: "/apps" },
+      { label: tr("Connectors"), href: "/apps" },
       { label: appName, href: appApplicationTabHref(applicationId, "permissions") },
-      { label: appTabLabel(activeTab) },
+      { label: tr(appTabLabel(activeTab)) },
     ]);
     return () => setBreadcrumbs([]);
-  }, [setBreadcrumbs, appName, applicationId, activeTab]);
+  }, [setBreadcrumbs, appName, applicationId, activeTab, tr]);
 
   if (tab === "activity") {
     return <Navigate to="/activity?action=tool_" replace />;
@@ -93,7 +95,7 @@ export function AppNotConnected() {
     return <Navigate to={appApplicationTabHref(applicationId, "permissions")} replace />;
   }
   if (!selectedCompanyId) {
-    return <div className="p-6 text-sm text-muted-foreground">Select an organization to manage apps.</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{tr("Select an organization to manage apps.")}</div>;
   }
   if (!applicationId || !activeTab) {
     return <Navigate to={applicationId ? appApplicationTabHref(applicationId, "permissions") : "/apps"} replace />;
@@ -109,8 +111,8 @@ export function AppNotConnected() {
   if (!application) {
     return (
       <div className="max-w-3xl space-y-3 p-6 text-sm text-muted-foreground">
-        <p>This app doesn’t exist anymore.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate("/apps")}>Back to connectors</Button>
+        <p>{tr("This app doesn’t exist anymore.")}</p>
+        <Button variant="outline" size="sm" onClick={() => navigate("/apps")}>{tr("Back to connectors")}</Button>
       </div>
     );
   }
@@ -151,13 +153,13 @@ export function AppNotConnected() {
       )
       : grantsQuery.data?.capabilities.canConfigure === true);
   const reconnectUnavailableMessage = grantsQuery.isLoading
-    ? "Checking who can reconnect this identity…"
+    ? tr("Checking who can reconnect this identity…")
     : grantsQuery.isError
-      ? "We couldn't verify who can reconnect this identity. Reload the page to try again."
+      ? tr("We couldn't verify who can reconnect this identity. Reload the page to try again.")
       : previousConnection?.credentialPolicy === "per_user"
         && retainedPersonalUserId !== grantsQuery.data?.currentUserId
-        ? "The person this connection belongs to must reconnect it."
-        : "You don't have permission to reconnect this identity.";
+        ? tr("The person this connection belongs to must reconnect it.")
+        : tr("You don't have permission to reconnect this identity.");
   const connectHref = newConnectionHref({
     applicationId,
     appName: application.name,
@@ -188,8 +190,8 @@ export function AppNotConnected() {
           <ReviewPanel connectionId={previousConnection.id} />
         ) : (
           <EmptyTab
-            title="Nothing is waiting for your OK right now."
-            body="Review requests will appear here after this app is connected."
+            title={tr("Nothing is waiting for your OK right now.")}
+            body={tr("Review requests will appear here after this app is connected.")}
           />
         )
       )}
@@ -213,6 +215,7 @@ function ApplicationHeader({
   darkLogoUrl: string | undefined;
   connectedCount: number;
 }) {
+  const tr = useUiTranslator();
   return (
     <header className="flex flex-wrap items-center gap-4">
       <AppLogo name={applicationName} logoUrl={logoUrl} darkLogoUrl={darkLogoUrl} size={48} />
@@ -220,7 +223,7 @@ function ApplicationHeader({
         <div className="flex items-center gap-2">
           <h1 className="truncate text-2xl font-bold tracking-tight">{applicationName}</h1>
           <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {connectedCount > 0 ? `${connectedCount} connected` : "Not connected"}
+            {connectedCount > 0 ? `${connectedCount} ${tr("connected")}` : tr("Not connected")}
           </span>
         </div>
         {description && (
@@ -244,40 +247,42 @@ function ConnectionCallout({
   reconnectUnavailableMessage: string;
   onConnect: () => void;
 }) {
+  const tr = useUiTranslator();
   return (
     <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
       <div>
         <h2 className="text-sm font-semibold text-foreground">
-          {previousConnection ? "Needs attention" : "Not connected"}
+          {tr(previousConnection ? "Needs attention" : "Not connected")}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {previousConnection
             ? previousConnection.authKind === "oauth"
-              ? `Sign in to ${applicationName} again to restore access.`
-              : `Add a working ${applicationName} key to restore access.`
-            : `Connect ${applicationName} so agents can use it.`}
+              ? `${tr("Sign in to")} ${applicationName} ${tr("again to restore access.")}`
+              : `${tr("Add a working")} ${applicationName} ${tr("key to restore access.")}`
+            : `${tr("Connect")} ${applicationName} ${tr("so agents can use it.")}`}
         </p>
         {previousConnection && !canReconnect ? (
           <p className="mt-1 text-sm text-muted-foreground">{reconnectUnavailableMessage}</p>
         ) : null}
       </div>
       {!previousConnection || canReconnect ? (
-        <Button onClick={onConnect}>{previousConnection ? "Reconnect" : "Connect"}</Button>
+        <Button onClick={onConnect}>{tr(previousConnection ? "Reconnect" : "Connect")}</Button>
       ) : null}
     </section>
   );
 }
 
 function PermissionsTab({ previousConnection }: { previousConnection: ToolConnection | null }) {
+  const tr = useUiTranslator();
   return (
     <section>
-      <h2 className="text-sm font-bold text-foreground">Permissions paused</h2>
+      <h2 className="text-sm font-bold text-foreground">{tr("Permissions paused")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Reconnect this app to edit who can use it and which actions need a human first.
+        {tr("Reconnect this app to edit who can use it and which actions need a human first.")}
       </p>
       {previousConnection && (
         <p className="mt-3 text-xs text-muted-foreground">
-          Previous setup is retained for reconnect, but access controls stay read-only until the app is online.
+          {tr("Previous setup is retained for reconnect, but access controls stay read-only until the app is online.")}
         </p>
       )}
     </section>

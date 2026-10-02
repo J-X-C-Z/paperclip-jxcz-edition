@@ -1,0 +1,19 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.ts:7:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/jxcz/Agent Workspace/Paperclip
+
+[13:44:40] [32mINFO[39m: [36mplugin-loader: fetching plugin from local path[39m [90m{"service":"plugin-loader","localPath":"/var/folders/05/y613zbqn1899xvmtjxl4hch80000gn/T/paperclip-plugin-package-ao026h","packageName":"paperclip.escape"}[39m
+[13:44:40] [32mINFO[39m: [36mplugin-loader: activating plugin[39m [90m{"service":"plugin-loader","pluginId":"3ebcc2d3-7b82-4032-af76-a6c36ece3aef","pluginKey":"paperclip.refresh","version":"1.0.0"}[39m
+[13:44:40] [32mINFO[39m: [36mplugin-loader: worker started[39m [90m{"service":"plugin-loader","pluginId":"3ebcc2d3-7b82-4032-af76-a6c36ece3aef","pluginKey":"paperclip.refresh"}[39m
+[13:44:40] [34mDEBUG[39m: [36mplugin-loader: event bus scoped handle ready[39m [90m{"service":"plugin-loader","pluginId":"3ebcc2d3-7b82-4032-af76-a6c36ece3aef","pluginKey":"paperclip.refresh"}[39m
+[13:44:40] [32mINFO[39m: [36mplugin-loader: agent tools registered[39m [90m{"service":"plugin-loader","pluginId":"3ebcc2d3-7b82-4032-af76-a6c36ece3aef","pluginKey":"paperclip.refresh","tools":1}[39m
+[13:44:40] [32mINFO[39m: [36mplugin-loader: plugin activated successfully[39m [90m{"service":"plugin-loader","pluginId":"3ebcc2d3-7b82-4032-af76-a6c36ece3aef","pluginKey":"paperclip.refresh","version":"1.0.0","registered":{"worker":true,"eventSubscriptions":0,"jobs":0,"webhooks":0,"tools":1}}[39m
+[13:44:48] [32mINFO[39m: [36mSetup-token login confidential transport startup assessment[39m [90m{"proxyForwardingEnabled":false,"reason":"no_proxy_allowlist_local_trusted_loopback_only","deploymentMode":"local_trusted"}[39m
+
+ Test Files  3 passed (3)
+      Tests  57 passed (57)
+   Start at  13:44:29
+   Duration  22.92s (transform 10.90s, setup 155ms, import 9.56s, tests 12.90s, environment 0ms)
+

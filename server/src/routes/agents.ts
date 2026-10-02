@@ -1,3 +1,7 @@
+import { updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema } from "@paperclipai/shared";
+import { resolveCatalogSkillReference } from "../services/skills-catalog.js";
+import { agentTemplateDefaultsService, applyAgentTemplateDefaults, readAgentTemplateMetadata, assertTemplateAgentManagement, assertTemplateAgentHire, assertTemplateManager } from "../services/agent-templates.js";
+import { projectRunCondition, resolveProjectScope } from "../services/project-scope.js";
 import { listOpenRouterModels } from "../services/openrouter-models.js";
 import { prepareManagedAiRuntime, assertManagedAiProjectAuth, stripAiAuthBindings } from "../services/ai-connection-runtime.js";
 import { ADAPTER_AUTH_MISSING_CHECK_CODE, AI_CONNECTION_CAPABILITIES, aiConnectionBindingSchema, type AiConnectionBinding } from "@paperclipai/shared";
@@ -9,6 +13,7 @@ import { isAiConnectionCompatible } from "@paperclipai/shared";
 import { applyConnectorSkills, resolveConnectorAssignments, annotateConnectorSkills, isConnectorSkill } from "../services/connector-runtime.js";
 import { getExecutionBlocker } from "../services/execution-blocker.js";
 import { paperclipRunnerTransitionConfig, normalizeLegacyRunnerProvider, isPaperclipRunnerProvider } from "@paperclipai/adapter-utils";
+import { DEFAULT_MIMOCODE_MODEL } from "@paperclipai/adapter-mimocode-local";
 import { executionProjectionForRun, executionProjectionsForRuns } from "../services/execution-projection.js";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
@@ -493,6 +498,7 @@ export function agentRoutes(
     droid_local: "instructionsFilePath",
     gemini_local: "instructionsFilePath",
     kimi_local: "instructionsFilePath",
+    dsh_local: "instructionsFilePath",
     opencode_local: "instructionsFilePath",
     cursor: "instructionsFilePath",
     pi_local: "instructionsFilePath",
@@ -527,6 +533,82 @@ export function agentRoutes(
   const router = Router();
   const svc = agentService(db);
   const access = accessService(db);
+  router.use(async (req, _res, next) => {
+    try {
+      if (["GET", "HEAD", "OPTIONS"].includes(req.method) || req.actor.type !== "agent") return next();
+      const actor = req.actor.agentId ? await svc.getById(req.actor.agentId) : null;
+      const marker = readAgentTemplateMetadata(actor?.metadata);
+      if (!actor || !marker) return next();
+      if (/\/config-revisions\/[^/]+\/rollback$/.test(req.path)) throw forbidden("Template agent configuration rollback requires board authorization");
+      const targetMatch = req.path.match(/^\/agents\/([^/]+)/);
+      if (targetMatch) {
+        const target = await svc.getById(targetMatch[1]!);
+        if (target) assertTemplateAgentManagement(actor, target, req.body);
+      }
+      if (/\/agent-hires$|\/agents$/.test(req.path)) {
+        assertTemplateAgentHire(actor, req.body ?? {});
+      }
+      next();
+    } catch (error) { next(error); }
+  });
+  const templateDefaults = agentTemplateDefaultsService(db);
+  router.get("/companies/:companyId/agent-templates", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    res.json(await templateDefaults.list(companyId));
+  });
+  router.put("/companies/:companyId/agent-templates/:templateId/skills", validate(updateAgentTemplateSkillsSchema), async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertBoard(req);
+    assertCompanyAccess(req, companyId);
+    if (req.actor.source !== "local_implicit" && !req.actor.isInstanceAdmin &&
+        !await access.canUser(companyId, req.actor.userId, "users:manage_permissions"))
+      throw forbidden("Company administrator access required to edit template defaults");
+    const actor = getActorInfo(req);
+    const saved = await db.transaction(async (tx) => {
+      const template = await agentTemplateDefaultsService(tx as unknown as Db).updateSkills(companyId, req.params.templateId as string, req.body);
+      await logActivity(tx as unknown as Db, { companyId, actorType: actor.actorType, actorId: actor.actorId,
+        action: "agent_template.skills_updated", entityType: "agent_template", entityId: template.id, details: { skills: template.skills } });
+      return template;
+    });
+    res.json(saved);
+  });
+  router.put("/companies/:companyId/agent-templates/:templateId", validate(updateAgentTemplateDefaultsSchema), async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertBoard(req);
+    assertCompanyAccess(req, companyId);
+    if (req.actor.source !== "local_implicit" && !req.actor.isInstanceAdmin &&
+        !await access.canUser(companyId, req.actor.userId, "users:manage_permissions"))
+      throw forbidden("Company administrator access required to edit template defaults");
+    const actor = getActorInfo(req);
+    const saved = await db.transaction(async (tx) => {
+      const template = await agentTemplateDefaultsService(tx as unknown as Db).updateDefaults(companyId, req.params.templateId as string, req.body);
+      await logActivity(tx as unknown as Db, { companyId, actorType: actor.actorType, actorId: actor.actorId,
+        action: "agent_template.defaults_updated", entityType: "agent_template", entityId: template.id, details: { skills: template.skills, instructionsEntryFile: "AGENTS.md" } });
+      return template;
+    });
+    res.json(saved);
+  });
+  async function installTemplateSkills(companyId: string, templateId: unknown, requested: unknown) {
+    if (typeof templateId !== "string" || !Array.isArray(requested)) return;
+    const template = (await templateDefaults.list(companyId)).find(entry => entry.id === templateId);
+    if (!template) return;
+    const keys = normalizeDesiredSkillSelections(requested)?.map(entry => entry.key) ?? [];
+    for (const key of keys) {
+      // The catalog installer is idempotent and audits the installed bytes.
+      // Resolve exact keys, never infer availability from a template string.
+      if (resolveCatalogSkillReference(key).skill) await companySkills.installFromCatalog(companyId, { catalogSkillId: key });
+    }
+  }
+  async function applyTemplateDefaults(req: Request, _res: Response, next: NextFunction) {
+    try {
+      if (req.body?.templateId) assertCompanyAccess(req, req.params.companyId as string);
+      const templates = req.body?.templateId ? await templateDefaults.list(req.params.companyId as string) : undefined;
+      req.body = applyAgentTemplateDefaults(req.body ?? {}, templates);
+      next();
+    } catch (error) { next(error); }
+  }
+
   const approvalsSvc = approvalService(db);
   const budgets = budgetService(db);
   const environmentsSvc = environmentService(db);
@@ -1563,6 +1645,9 @@ export function agentRoutes(
       : [];
     const hasExplicitTaskAssignGrant = grants.some((grant) => grant.permissionKey === "tasks:assign");
 
+    if (readAgentTemplateMetadata(agent.metadata) && typeof agent.permissions.canAssignTasks === "boolean") {
+      return { canAssignTasks: agent.permissions.canAssignTasks, taskAssignSource: "explicit_grant" as const, membership, grants };
+    }
     if (agent.role === "ceo") {
       return {
         canAssignTasks: true,
@@ -1701,7 +1786,7 @@ export function agentRoutes(
       "agent",
       agentId,
       "tasks:assign",
-      true,
+      (await svc.getById(agentId))?.permissions.canAssignTasks !== false,
       grantedByUserId,
     );
   }
@@ -1721,6 +1806,8 @@ export function agentRoutes(
     if (!actorAgent || actorAgent.companyId !== companyId) {
       throw forbidden("Agent key cannot access another company");
     }
+    const actorTemplate = readAgentTemplateMetadata(actorAgent.metadata);
+    if (actorTemplate && (actorTemplate.role === "member" || actorAgent.permissions.canCreateAgents === false)) throw forbidden("This agent cannot create agents");
     return actorAgent;
   }
 
@@ -2597,6 +2684,7 @@ export function agentRoutes(
       return normalizePaperclipRunnerAdapterConfig(adapterType, next);
     }
     if (adapterType === "codex_local") {
+      if (!asNonEmptyString(next.engine)) next.engine = "cli";
       const hasBypassFlag =
         typeof next.dangerouslyBypassApprovalsAndSandbox === "boolean" ||
         typeof next.dangerouslyBypassSandbox === "boolean";
@@ -2611,6 +2699,10 @@ export function agentRoutes(
     }
     if (adapterType === "kimi_local" && !asNonEmptyString(next.model)) {
       next.model = DEFAULT_KIMI_LOCAL_MODEL;
+      return ensureGatewayDeviceKey(adapterType, next);
+    }
+    if (adapterType === "mimocode_local" && !asNonEmptyString(next.model)) {
+      next.model = DEFAULT_MIMOCODE_MODEL;
       return ensureGatewayDeviceKey(adapterType, next);
     }
     if (adapterType === "opencode_local" && !asNonEmptyString(next.model)) {
@@ -3303,7 +3395,7 @@ export function agentRoutes(
       return result;
     }
     if (!result.checks.some(check => check.code.includes("hello_probe"))) {
-      const providerAdapter = { anthropic: "claude_local", openai: "codex_local", openrouter: "opencode_local", xai: "grok_local" }[binding.provider];
+      const providerAdapter = { anthropic: "claude_local", openai: "codex_local", openrouter: "opencode_local", xai: "grok_local", xiaomi_mimo: "mimocode_local" }[binding.provider];
       const probe = await requireServerAdapter(providerAdapter).testEnvironment({ ...context, adapterType: providerAdapter, config: { ...context.config, engine: "cli" } });
       result.checks.push(...probe.checks);
       result.status = probe.status === "fail" ? "fail" : result.status === "warn" || probe.status === "warn" ? "warn" : "pass";
@@ -4387,7 +4479,7 @@ export function agentRoutes(
   // adapter-config secret lands in the activity log.
   const hireFingerprint = (body: unknown): string => sha256Digest(body);
 
-  router.post("/companies/:companyId/agent-hires", validate(createAgentHireSchema), async (req, res) => {
+  router.post("/companies/:companyId/agent-hires", applyTemplateDefaults, validate(createAgentHireSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     await assertCanCreateAgentsForCompany(req, companyId);
     const sourceIssueIds = parseSourceIssueIds(req.body);
@@ -4406,8 +4498,10 @@ export function agentRoutes(
       // The onboarding marker is not an agent column. The server consumes it to
       // seed the chief-of-staff persona; it never reaches the insert values.
       onboardingFirstAgent: hireOnboardingFirstAgent,
+      templateId: _hireTemplateId,
       ...hireInput
     } = req.body;
+    if (readAgentTemplateMetadata(hireInput.metadata)) assertTemplateManager({ ...hireInput, companyId }, hireInput.reportsTo ? await svc.getById(hireInput.reportsTo) : null);
     hireInput.adapterType = await assertSelectableAdapterType(hireInput.adapterType);
     const rawHireAdapterConfig = (hireInput.adapterConfig ?? {}) as Record<string, unknown>;
     assertProviderTraceSettingTransition(req, hireInput.runtimeConfig);
@@ -4444,6 +4538,7 @@ export function agentRoutes(
       name: hireInput.name,
       adapterConfig: requestedAdapterConfig,
     });
+    await installTemplateSkills(companyId, _hireTemplateId, requestedDesiredSkills);
     const desiredSkillAssignment = await resolveDesiredSkillAssignment(
       companyId,
       hireInput.adapterType,
@@ -4676,7 +4771,7 @@ export function agentRoutes(
     res.status(outcome.status).json(outcome.body);
   });
 
-  router.post("/companies/:companyId/agents", validate(createAgentSchema), async (req, res) => {
+  router.post("/companies/:companyId/agents", applyTemplateDefaults, validate(createAgentSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     await assertCanCreateAgentsForCompany(req, companyId);
 
@@ -4708,8 +4803,10 @@ export function agentRoutes(
       // The onboarding marker is not an agent column. The server consumes it to
       // seed the chief-of-staff persona; it never reaches the insert values.
       onboardingFirstAgent: createOnboardingFirstAgent,
+      templateId: _createTemplateId,
       ...createInput
     } = req.body;
+    if (readAgentTemplateMetadata(createInput.metadata)) assertTemplateManager({ ...createInput, companyId }, createInput.reportsTo ? await svc.getById(createInput.reportsTo) : null);
     createInput.adapterType = await assertSelectableAdapterType(createInput.adapterType);
     const rawCreateAdapterConfig = (createInput.adapterConfig ?? {}) as Record<string, unknown>;
     assertProviderTraceSettingTransition(req, createInput.runtimeConfig);
@@ -4739,6 +4836,7 @@ export function agentRoutes(
       name: createInput.name,
       adapterConfig: requestedAdapterConfig,
     });
+    await installTemplateSkills(companyId, _createTemplateId, requestedDesiredSkills);
     const desiredSkillAssignment = await resolveDesiredSkillAssignment(
       companyId,
       createInput.adapterType,
@@ -4857,7 +4955,7 @@ export function agentRoutes(
         res.status(403).json({ error: "Forbidden" });
         return;
       }
-      if (actorAgent.role !== "ceo") {
+      if (readAgentTemplateMetadata(actorAgent.metadata) || actorAgent.role !== "ceo") {
         res.status(403).json({ error: "Only CEO can manage permissions" });
         return;
       }
@@ -4872,7 +4970,7 @@ export function agentRoutes(
     }
 
     const effectiveCanAssignTasks =
-      agent.role === "ceo" || Boolean(agent.permissions?.canCreateAgents) || req.body.canAssignTasks;
+      readAgentTemplateMetadata(agent.metadata) ? agent.permissions.canAssignTasks === true : agent.role === "ceo" || Boolean(agent.permissions?.canCreateAgents) || req.body.canAssignTasks;
     await access.ensureMembership(agent.companyId, "agent", agent.id, "member", "active");
     await access.setPrincipalPermission(
       agent.companyId,
@@ -4897,6 +4995,9 @@ export function agentRoutes(
       details: {
         canCreateAgents: agent.permissions?.canCreateAgents ?? false,
         canCreateSkills: agent.permissions?.canCreateSkills ?? true,
+        canCreateTasks: agent.permissions?.canCreateTasks ?? null,
+        canReviewTasks: agent.permissions?.canReviewTasks ?? null,
+        canManageAgents: agent.permissions?.canManageAgents ?? null,
         canAssignTasks: effectiveCanAssignTasks,
         trustPreset: agent.permissions?.trustPreset ?? "standard",
       },
@@ -6579,6 +6680,9 @@ export function agentRoutes(
     assertCompanyAccess(req, companyId);
     if (!(await assertRunTelemetryReadAllowed(req, res, companyId))) return;
 
+    const projectId = await resolveProjectScope(db, companyId, req.query.projectId);
+    const projectCondition = projectId ? projectRunCondition(companyId, projectId) : undefined;
+
     // `minCount` is a padding floor for callers that want a minimum number of
     // recent runs to render (e.g. dashboard cards). It must default to 0 so
     // callers asking for "live runs" get only actually-live runs — otherwise
@@ -6623,6 +6727,7 @@ export function agentRoutes(
       .where(
         and(
           eq(heartbeatRuns.companyId, companyId),
+          projectCondition,
           inArray(heartbeatRuns.status, ["queued", "running"]),
         ),
       )
@@ -6640,6 +6745,7 @@ export function agentRoutes(
         .where(
           and(
             eq(heartbeatRuns.companyId, companyId),
+          projectCondition,
             not(inArray(heartbeatRuns.status, ["queued", "running"])),
             ...(activeIds.length > 0 ? [not(inArray(heartbeatRuns.id, activeIds))] : []),
           ),

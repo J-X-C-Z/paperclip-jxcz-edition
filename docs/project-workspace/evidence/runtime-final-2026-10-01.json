@@ -1,0 +1,8 @@
+{
+  "health": "ok",
+  "bootstrapStatus": "ready",
+  "startupRecovery": "ready",
+  "issue": "JXC-33",
+  "status": "done",
+  "artifactWorkProducts": 4
+}

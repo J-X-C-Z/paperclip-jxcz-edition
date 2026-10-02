@@ -13,6 +13,7 @@ import {
   type AiConnectionRequirement,
   type AiConnectionSummary,
 } from "./model";
+import { useUiTranslator } from "@/i18n";
 
 export interface AiConnectionPickerProps {
   requirement: AiConnectionRequirement;
@@ -42,6 +43,7 @@ export function AiConnectionPicker({
   onConnect,
   onRetry,
 }: AiConnectionPickerProps) {
+  const tr = useUiTranslator();
   const compatible = connections.filter((connection) =>
     matchesAiRequirement(connection, requirement),
   );
@@ -69,7 +71,7 @@ export function AiConnectionPicker({
       grantId: connection.grantId,
     });
   return (
-    <section className="flex flex-col gap-4" aria-label="AI connection">
+    <section className="flex flex-col gap-4" aria-label={tr("AI connection")}>
       <div className="flex items-center gap-3">
         <AppLogo
           name={AI_PROVIDERS[requirement.provider].name}
@@ -79,7 +81,7 @@ export function AiConnectionPicker({
           size={32}
         />
         <div className="flex min-w-0 flex-col gap-1">
-        <h3 className="text-sm font-semibold">AI connection</h3>
+        <h3 className="text-sm font-semibold">{tr("AI connection")}</h3>
         <p className="text-xs text-muted-foreground">
           {AI_PROVIDERS[requirement.provider].name}
           {value && value.mode !== "responsible_user" && ` · ${aiMethodLabel(value.provider, value.method)}`}
@@ -87,7 +89,7 @@ export function AiConnectionPicker({
         </div>
       </div>
       {loading ? (
-        <div role="status" aria-label="Loading AI connections">
+        <div role="status" aria-label={tr("Loading AI connections")}>
           <Skeleton className="h-24 w-full" />
         </div>
       ) : error ? (
@@ -97,7 +99,7 @@ export function AiConnectionPicker({
           </p>
           {onRetry && (
             <Button type="button" variant="outline" onClick={onRetry}>
-              Retry connections
+              {tr("Retry connections")}
             </Button>
           )}
         </div>
@@ -107,14 +109,14 @@ export function AiConnectionPicker({
             disabled={readOnly}
             selectedId={value?.mode === "responsible_user" ? "responsible_user" : value?.connectionId}
             choices={[
-              { id: "responsible_user", name: "Responsible user’s connection", description: <>
-                <span className="block">For you: {personalDefault?.name ?? "Not connected"}</span>
-                <span className="block">Other users’ tasks use their own {AI_PROVIDERS[requirement.provider].name} connection.</span>
+              { id: "responsible_user", name: tr("Responsible user’s connection"), description: <>
+                <span className="block">{tr("For you:")} {personalDefault?.name ?? tr("Not connected")}</span>
+                <span className="block">{tr("Other users’ tasks use their own")} {AI_PROVIDERS[requirement.provider].name} {tr("connection.")}</span>
               </> },
               ...compatible.filter((connection) => connection.ownership === "shared").map((connection) => ({
                 id: connection.id, name: connection.name,
                 disabled: Boolean(aiConnectionProblem(connection)),
-                description: <>Company shared · {aiMethodLabel(connection.provider, connection.method)}{connection.accountLabel ? ` · ${connection.accountLabel}` : ""}{aiConnectionProblem(connection) ? ` · ${aiConnectionProblem(connection)}` : ""}</>,
+                description: <>{tr("Company shared")} · {aiMethodLabel(connection.provider, connection.method)}{connection.accountLabel ? ` · ${connection.accountLabel}` : ""}{aiConnectionProblem(connection) ? ` · ${tr(aiConnectionProblem(connection)!)}` : ""}</>,
               })),
             ]}
             onSelect={(id) => {
@@ -124,7 +126,7 @@ export function AiConnectionPicker({
           />
           {problem && (
             <p role="status" className="text-sm text-destructive">
-              {problem}
+              {tr(problem)}
             </p>
           )}
           {!readOnly && (
@@ -134,7 +136,7 @@ export function AiConnectionPicker({
               className="self-end"
               onClick={onConnect}
             >
-              Connect another account
+              {tr("Connect another account")}
             </Button>
           )}
         </>

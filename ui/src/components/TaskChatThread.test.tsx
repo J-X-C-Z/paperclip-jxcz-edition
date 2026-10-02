@@ -14,6 +14,7 @@ import type {
   IssueThreadInteraction,
 } from "@paperclipai/shared";
 import { heartbeatsApi } from "@/api/heartbeats";
+import { i18n } from "@/i18n";
 import { nativeRunEventsToTranscript } from "./transcript/native-run-events";
 import type { HeartbeatRunEvent } from "@paperclipai/shared";
 
@@ -102,7 +103,8 @@ let container: HTMLDivElement;
 let root: Root | null = null;
 let queryClient: QueryClient;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await i18n.changeLanguage("en");
   localStorage.clear();
   transcriptState.transcriptByRun.clear();
   transcriptState.isInitialHydrating = false;
@@ -164,6 +166,24 @@ it("coordinates first reveal while keeping the composer and visible history moun
     container.querySelector('[data-testid="task-chat-history-loading"]'),
   ).toBeNull();
   expect(container.querySelector('[data-testid="mock-editor"]')).toBe(composer);
+});
+
+it("reveals saved messages while slow execution history is still loading", async () => {
+  transcriptState.isInitialHydrating = true;
+  const comment = {
+    companyId: "company", issueId: "fast-messages", authorAgentId: null,
+    presentation: null, metadata: null, updatedAt: new Date("2026-09-09T12:00:00Z"),
+    id: "saved-message", body: "Read this without waiting for logs",
+    authorType: "user" as const, authorUserId: "board", createdAt: new Date("2026-09-09T12:00:00Z"),
+  };
+  render(<TaskChatThread issueId="fast-messages" comments={[comment]} onAdd={async () => {}} initialHistoryPending initialMessagesPending={false} />);
+  expect(container.querySelector('[data-testid="task-chat-history-loading"]')).toBeNull();
+  expect(container.querySelector('[inert]')).toBeNull();
+  expect(container.textContent).toContain("Read this without waiting for logs");
+  expect(container.textContent).toContain("Loading execution details. Messages are ready to read.");
+  const message = container.querySelector("#comment-saved-message");
+  render(<TaskChatThread issueId="fast-messages" comments={[comment]} onAdd={async () => {}} initialHistoryPending={false} initialMessagesPending={false} />);
+  expect(container.querySelector("#comment-saved-message")).toBe(message);
 });
 
 it("keeps an acknowledged optimistic bubble mounted with its canonical comment target", () => {

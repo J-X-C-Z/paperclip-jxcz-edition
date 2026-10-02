@@ -1,0 +1,35 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.ts:7:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/jxcz/Agent Workspace/Paperclip
+
+(node:27011) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |@paperclipai/ui| src/lib/activity-format.test.ts (15 tests | 1 failed) 12ms
+     × falls back to a generic verdict line when the decision verb is missing 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |@paperclipai/ui| src/lib/activity-format.test.ts > activity formatting > falls back to a generic verdict line when the decision verb is missing
+AssertionError: expected 'shrug' to be 'recorded a review verdict' // Object.is equality
+
+Expected: "recorded a review verdict"
+Received: "shrug"
+
+ ❯ src/lib/activity-format.test.ts:153:8
+    151|     expect(formatIssueActivityAction("issue.stalled_review_decided")).…
+    152|     expect(formatIssueActivityAction("issue.stalled_review_decided", {…
+    153|       .toBe("recorded a review verdict");
+       |        ^
+    154|   });
+    155|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 passed (15)
+   Start at  13:48:00
+   Duration  1.49s (transform 880ms, setup 15ms, import 1.35s, tests 12ms, environment 0ms)
+

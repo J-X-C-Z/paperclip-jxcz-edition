@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -144,7 +145,7 @@ export function ActionTestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-(--sz-85vh) overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Test {title}</DialogTitle>
+          <DialogTitle>{uiText("Test")} {title}</DialogTitle>
           <DialogDescription>
             Run a real action with the same permissions and credentials an agent would use.
           </DialogDescription>
@@ -157,11 +158,11 @@ export function ActionTestDialog({
           </div>
         ) : testAgentsQuery.isError ? (
           <TestLoadError
-            message="We couldn't load the agents available for testing."
+            message={uiText("We couldn't load the agents available for testing.")}
             onRetry={() => { void testAgentsQuery.refetch(); }}
           />
         ) : agents.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">No agents are available to test as.</p>
+          <p className="py-6 text-sm text-muted-foreground">{uiText("No agents are available to test as.")}</p>
         ) : accessQuery.isError && !accessQuery.data ? (
           <TestLoadError
             message={`We couldn't load ${selectedAgentBase?.name ?? "this agent"}'s permissions.`}
@@ -175,7 +176,7 @@ export function ActionTestDialog({
         ) : (
           <div className="space-y-5">
             <div className="rounded-md border border-border bg-muted/30 p-4">
-              <p className="text-xs font-medium text-muted-foreground">Act as</p>
+              <p className="text-xs font-medium text-muted-foreground">{uiText("Act as")}</p>
               <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
                 <AgentPicker
                   agents={agents}
@@ -207,15 +208,15 @@ export function ActionTestDialog({
 
 const DECISION_META: Record<ToolConnectionTestDecision, DecisionMeta> = {
   allowed: {
-    label: "Allowed",
+    label: uiText("Allowed"),
     className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   },
   ask_first: {
-    label: "Ask first",
+    label: uiText("Ask first"),
     className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   },
   off: {
-    label: "Off",
+    label: uiText("Off"),
     className: "border-border bg-muted text-muted-foreground",
   },
 };
@@ -349,7 +350,7 @@ export function TestPanel({
   if (testAgentsQuery.isError) {
     return (
       <TestLoadError
-        message="We couldn't load the agents available for testing."
+        message={uiText("We couldn't load the agents available for testing.")}
         onRetry={() => { void testAgentsQuery.refetch(); }}
       />
     );
@@ -358,12 +359,10 @@ export function TestPanel({
   if (agents.length === 0) {
     return (
       <div className="py-6 text-center">
-        <p className="text-sm font-medium text-foreground">No agents to test as</p>
+        <p className="text-sm font-medium text-foreground">{uiText("No agents to test as")}</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           Only agents you can assign tasks to can preview {appName}. Give an agent access in{" "}
-          <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "permissions")}>
-            Permissions
-          </Link>{" "}
+          <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>{" "}
           to test it here.
         </p>
       </div>
@@ -413,13 +412,13 @@ export function TestPanel({
       )}
 
       <section className="space-y-4 border-t border-border pt-8">
-        <h2 className="text-lg font-semibold text-foreground">Actions</h2>
+        <h2 className="text-lg font-semibold text-foreground">{uiText("Actions")}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-(--sz-12rem) flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              aria-label="Find an action"
-              placeholder="Find an action…"
+              aria-label={uiText("Find an action")}
+              placeholder={uiText("Find an action…")}
               className="pl-9"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -459,7 +458,7 @@ export function TestPanel({
           {visibleQuarantined.length > 0 && selectedAgent && (
             <ActionGroup
               heading={`New (${visibleQuarantined.length})`}
-              subheading="New actions wait, switched off, until you turn them on."
+              subheading={uiText("New actions wait, switched off, until you turn them on.")}
               entries={visibleQuarantined}
               decisionFor={() => "off" as const}
               agent={selectedAgent}
@@ -479,12 +478,12 @@ export function TestPanel({
 function EmptyState({ connectionId, appName }: { connectionId: string; appName: string }) {
   return (
     <div className="py-8 text-center">
-      <p className="text-base font-bold text-foreground">Nothing to test yet</p>
+      <p className="text-base font-bold text-foreground">{uiText("Nothing to test yet")}</p>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
         Once {appName} is connected, the actions it offers will show up here so you can try them out.
       </p>
       <Button asChild className="mt-4" variant="outline">
-        <Link to={appTabHref(connectionId, "permissions")}>Go to Permissions</Link>
+        <Link to={appTabHref(connectionId, "permissions")}>{uiText("Go to Permissions")}</Link>
       </Button>
     </div>
   );
@@ -494,9 +493,7 @@ function TestLoadError({ message, onRetry }: { message: string; onRetry: () => v
   return (
     <div className="py-8 text-center">
       <p className="text-sm font-medium text-foreground">{message}</p>
-      <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}>
-        Try again
-      </Button>
+      <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}> {uiText("Try again")} </Button>
     </div>
   );
 }
@@ -521,14 +518,14 @@ function TestAsHeader({
   return (
     <section className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Test an action</h2>
+        <h2 className="text-lg font-semibold text-foreground">{uiText("Test an action")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Run a real action as an agent.
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">Agent</p>
+          <p className="text-xs font-medium text-muted-foreground">{uiText("Agent")}</p>
           <AgentPicker
             agents={agents}
             selectedAgent={selectedAgent}
@@ -579,7 +576,7 @@ function AgentPicker({
             "items-center gap-1.5 text-foreground outline-none hover:text-primary focus-visible:text-primary",
             inline ? "inline-flex font-semibold underline-offset-2 hover:underline" : "mt-0.5 flex text-lg font-bold",
           )}
-          aria-label="Choose which agent to test as"
+          aria-label={uiText("Choose which agent to test as")}
         >
           {selectedAgent.name}
           <ChevronsUpDown className={cn("text-muted-foreground", inline ? "h-3.5 w-3.5" : "h-4 w-4")} />
@@ -590,8 +587,8 @@ function AgentPicker({
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              aria-label="Search agents"
-              placeholder="Search agents…"
+              aria-label={uiText("Search agents")}
+              placeholder={uiText("Search agents…")}
               className="h-8 pl-8 text-sm"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -601,7 +598,7 @@ function AgentPicker({
         </div>
         <div className="max-h-60 overflow-y-auto p-1">
           {filtered.length === 0 ? (
-            <p className="px-3 py-4 text-center text-xs text-muted-foreground">No agents match.</p>
+            <p className="px-3 py-4 text-center text-xs text-muted-foreground">{uiText("No agents match.")}</p>
           ) : (
             filtered.map((agent) => {
               const detail = agent.title?.trim() || agent.role;
@@ -635,19 +632,17 @@ function AgentPicker({
           )}
         </div>
         <div className="border-t border-border px-3 py-2 text-(length:--text-micro) text-muted-foreground">
-          <p>Only agents you can assign tasks to are listed.</p>
+          <p>{uiText("Only agents you can assign tasks to are listed.")}</p>
           <p>Pick one to preview what they'd see in {appName}.</p>
         </div>
         <div className="border-t border-border p-3">
-          <p className="text-xs font-semibold text-foreground">What the badges mean</p>
+          <p className="text-xs font-semibold text-foreground">{uiText("What the badges mean")}</p>
           <ul className="mt-1.5 space-y-1 text-xs text-muted-foreground">
-            <li><span className="font-medium text-foreground">Allowed</span> — runs immediately when you press Run.</li>
-            <li><span className="font-medium text-foreground">Ask first</span> — Run is parked in Review for your OK.</li>
+            <li><span className="font-medium text-foreground">{uiText("Allowed")}</span>{uiText(" — runs immediately when you press Run.")}</li>
+            <li><span className="font-medium text-foreground">{uiText("Ask first")}</span>{uiText(" — Run is parked in Review for your OK.")}</li>
             <li>
-              <span className="font-medium text-foreground">Off</span> — won't run. Change it in{" "}
-              <Link className="text-primary hover:underline" to={appTabHref(connectionId, "permissions")}>
-                Permissions
-              </Link>.
+              <span className="font-medium text-foreground">{uiText("Off")}</span> — won't run. Change it in{" "}
+              <Link className="text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>.
             </li>
           </ul>
           <p className="mt-2 text-(length:--text-micro) text-muted-foreground">
@@ -960,10 +955,10 @@ function ActionTester({
           onChange={setValues}
           errors={errors}
           disabled={running}
-          advancedLabel="More options"
+          advancedLabel={uiText("More options")}
         />
       ) : (
-        <p className="text-xs text-muted-foreground">This action takes no inputs.</p>
+        <p className="text-xs text-muted-foreground">{uiText("This action takes no inputs.")}</p>
       )}
 
       <p className="text-xs text-muted-foreground">{GUT_CHECK[decision](appName, agent.name)}</p>
@@ -976,13 +971,11 @@ function ActionTester({
             </>
           ) : (
             <>
-              <Play className="h-3.5 w-3.5" /> {outcome ? "Run again" : "Run"}
+              <Play className="h-3.5 w-3.5" /> {outcome ? uiText("Run again") : uiText("Run")}
             </>
           )}
         </Button>
-        <Button onClick={onReset} disabled={running} size="sm" variant="ghost">
-          Reset
-        </Button>
+        <Button onClick={onReset} disabled={running} size="sm" variant="ghost"> {uiText("Reset")} </Button>
       </div>
 
       {running && (
@@ -991,7 +984,7 @@ function ActionTester({
 
       {run.isError && !running && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          Couldn't reach {agent.name}. {run.error instanceof Error ? run.error.message : "Please try again."}
+          Couldn't reach {agent.name}. {run.error instanceof Error ? run.error.message : uiText("Please try again.")}
         </div>
       )}
 
@@ -1019,21 +1012,19 @@ function RunningCard({
   elapsedMs: number;
   onCancel: () => void;
 }) {
-  const verb = entry.isReadOnly ? "Reading from" : entry.isWrite ? "Writing to" : "Calling";
+  const verb = entry.isReadOnly ? uiText("Reading from") : entry.isWrite ? uiText("Writing to") : uiText("Calling");
   return (
     <div className="rounded-md border border-border bg-muted/30 p-4">
       <div className="flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">Running…</span>
+        <span className="text-sm font-medium text-foreground">{uiText("Running…")}</span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {verb} {appName} as {agentName}.
       </p>
       <div className="mt-3 flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Started {seconds(elapsedMs)} ago · Press cancel to stop</span>
-        <Button onClick={onCancel} size="sm" variant="outline">
-          Cancel
-        </Button>
+        <Button onClick={onCancel} size="sm" variant="outline"> {uiText("Cancel")} </Button>
       </div>
     </div>
   );
@@ -1061,7 +1052,7 @@ function ResultPanel({
   if (result.decision === "off") {
     return (
       <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-        {result.error?.message ?? "This action is off and won't run."}
+        {result.error?.message ?? uiText("This action is off and won't run.")}
       </div>
     );
   }
@@ -1092,7 +1083,7 @@ function mcpToolError(value: unknown): { message: string; reasonCode: string | n
   const message =
     (typeof envelope.content === "string" && envelope.content.trim() !== "" && envelope.content)
     || (typeof envelope.error === "string" && envelope.error.trim() !== "" && envelope.error)
-    || "The app returned an error result.";
+    || uiText("The app returned an error result.");
   return { message, reasonCode: "tool_error" };
 }
 
@@ -1133,7 +1124,7 @@ function successHeadline(value: unknown, entry: ToolCatalogEntry, appName: strin
   if (!entry.isReadOnly && verb) return `Worked. Row ${verb}.`;
   const rows = asRows(value);
   if (rows) return `Worked. ${rows.length} ${rows.length === 1 ? "row" : "rows"} came back.`;
-  if (isEmptyResult(value)) return "Worked. No data to show.";
+  if (isEmptyResult(value)) return uiText("Worked. No data to show.");
   return `Worked. ${appName} sent back the result.`;
 }
 
@@ -1162,7 +1153,7 @@ function AllowedResult({
 
       {!isEmptyResult(value) && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preview</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("Preview")}</p>
           <div className="mt-1.5">
             <PrettyPreview value={value} />
           </div>
@@ -1253,7 +1244,7 @@ function RawResponseDisclosure({ value }: { value: unknown }) {
         onClick={() => setShowRaw((prev) => !prev)}
         className="text-xs font-semibold uppercase tracking-wide text-primary hover:underline"
       >
-        {showRaw ? "Hide raw response" : "Show raw response"}
+        {showRaw ? uiText("Hide raw response") : uiText("Show raw response")}
       </button>
       {showRaw && (
         <pre className="mt-2 max-h-64 overflow-auto rounded-md border border-border bg-background p-3 text-xs text-foreground">
@@ -1282,7 +1273,7 @@ function ErrorResult({
     <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-        <span className="text-sm font-medium text-foreground">It didn't work.</span>
+        <span className="text-sm font-medium text-foreground">{uiText("It didn't work.")}</span>
       </div>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
@@ -1294,14 +1285,14 @@ function ErrorResult({
         {error.reasonCode && <p className="mt-0.5 text-xs text-muted-foreground">code: {error.reasonCode}</p>}
       </div>
       <div className="mt-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What to try</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("What to try")}</p>
         <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-foreground">
           {hints.map((hint) => (
             <li key={hint}>{hint}</li>
           ))}
         </ul>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Adjust the input above and try again.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{uiText("Adjust the input above and try again.")}</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Also visible in the{" "}
         <Link className="text-primary hover:underline" to="/activity?mode=agents&action=tool_">
@@ -1403,13 +1394,13 @@ function AskFirstResult({
   const where = formatWhere(status?.parameters);
   const statusLabel =
     phase === "running"
-      ? "Approved · running"
+      ? uiText("Approved · running")
       : phase === "denied"
-        ? "Denied — see Review for why"
+        ? uiText("Denied — see Review for why")
         : phase === "cancelled"
-          ? "Cancelled"
+          ? uiText("Cancelled")
           : phase === "expired"
-            ? "Expired — send it again"
+            ? uiText("Expired — send it again")
             : `Waiting · ${relTime(requestedAt)}`;
   const settled = phase === "denied" || phase === "cancelled" || phase === "expired";
 
@@ -1417,23 +1408,23 @@ function AskFirstResult({
     <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4">
       <div className="flex items-center gap-2">
         <ShieldQuestion className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-        <span className="text-sm font-medium text-foreground">Sent for your OK.</span>
+        <span className="text-sm font-medium text-foreground">{uiText("Sent for your OK.")}</span>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{outcome.agentName} needs your approval before this runs.</p>
 
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex gap-3">
-          <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Action</dt>
+          <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("Action")}</dt>
           <dd className="text-foreground">{entry.title ?? entry.toolName}</dd>
         </div>
         {where && (
           <div className="flex gap-3">
-            <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Where</dt>
+            <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("Where")}</dt>
             <dd className="break-words text-foreground">{where}</dd>
           </div>
         )}
         <div className="flex gap-3">
-          <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</dt>
+          <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("Status")}</dt>
           <dd className={cn("flex items-center gap-1.5 text-foreground", settled && "text-muted-foreground")}>
             {phase === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
             {statusLabel}
@@ -1453,11 +1444,11 @@ function AskFirstResult({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button asChild size="sm" variant="outline">
-          <Link to={appTabHref(connectionId, "review")}>Open Review tab</Link>
+          <Link to={appTabHref(connectionId, "review")}>{uiText("Open Review tab")}</Link>
         </Button>
         {phase === "waiting" && actionRequestId && selectedCompanyId && (
           <Button size="sm" variant="ghost" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-            {cancel.isPending ? "Cancelling…" : "Cancel this request"}
+            {cancel.isPending ? uiText("Cancelling…") : uiText("Cancel this request")}
           </Button>
         )}
       </div>
@@ -1490,7 +1481,7 @@ function OffExplanation({
   const others = allAgents.filter((a) => a.id !== agent.id);
 
   const whyBody = entry.status === "quarantined"
-    ? "This action is new and hasn't been turned on yet."
+    ? uiText("This action is new and hasn't been turned on yet.")
     : `${agent.name}'s access profile sets this action to Off.`;
 
   // "Last changed by {Actor} · {relativeTime}" — only the access config carries
@@ -1509,29 +1500,27 @@ function OffExplanation({
           <Ban className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground">{title} is off for {agent.name}.</p>
-            <p className="mt-0.5">It won't run here, and it won't run from a task either.</p>
+            <p className="mt-0.5">{uiText("It won't run here, and it won't run from a task either.")}</p>
             <p className="mt-2">
-              Want to test it? Turn it on for {agent.name} in{" "}
-              <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "permissions")}>
-                Permissions
-              </Link>{" "}
+              Want to test it? Turn it on for {agent.name} {uiText("in")}{" "}
+              <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>{" "}
               — set it to Allowed or Ask first.
             </p>
           </div>
         </div>
         <Button asChild size="sm">
-          <Link to={permHref}>Open Permissions →</Link>
+          <Link to={permHref}>{uiText("Open Permissions →")}</Link>
         </Button>
         <p className="text-xs text-muted-foreground">No call will be made — this action is off for {agent.name}.</p>
       </div>
 
       <aside>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Why this is off</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("Why this is off")}</p>
         <p className="mt-1.5 text-xs text-muted-foreground">{whyBody}</p>
         {auditHint && <p className="mt-1.5 text-(length:--text-micro) text-muted-foreground">{auditHint}</p>}
         {others.length > 0 && (
           <div className="mt-3">
-            <p className="text-(length:--text-micro) font-medium text-muted-foreground">Try as a different agent:</p>
+            <p className="text-(length:--text-micro) font-medium text-muted-foreground">{uiText("Try as a different agent:")}</p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {others.slice(0, 4).map((other) => (
                 <button
@@ -1572,25 +1561,25 @@ export function errorHints(message: string, reasonCode: string | null | undefine
   const haystack = `${reasonCode ?? ""} ${message}`.toUpperCase();
   if (haystack.includes("NOT_FOUND")) {
     return [
-      "Double-check the ID or name you entered — pick it from a dropdown if one is offered.",
-      "Make sure this agent has access to that resource in the connected account.",
+      uiText("Double-check the ID or name you entered — pick it from a dropdown if one is offered."),
+      uiText("Make sure this agent has access to that resource in the connected account."),
     ];
   }
   if (haystack.includes("PERMISSION") || haystack.includes("FORBIDDEN") || haystack.includes("UNAUTHORIZED")) {
     return [
-      "The connected account may not have permission for this action.",
-      "Reconnect the app from Setup if its access was recently changed.",
+      uiText("The connected account may not have permission for this action."),
+      uiText("Reconnect the app from Setup if its access was recently changed."),
     ];
   }
   if (haystack.includes("INVALID_ARGUMENT") || haystack.includes("INVALID") || haystack.includes("BAD_REQUEST")) {
     return [
-      "Check the field formats above — a value may be the wrong type or shape.",
-      "Open “More options” to confirm any advanced fields are filled in correctly.",
+      uiText("Check the field formats above — a value may be the wrong type or shape."),
+      uiText("Open “More options” to confirm any advanced fields are filled in correctly."),
     ];
   }
   if (haystack.includes("RATE_LIMIT") || haystack.includes("RESOURCE_EXHAUSTED") || haystack.includes("429")) {
-    return ["The app is rate-limiting calls right now — wait a moment and run it again."];
+    return [uiText("The app is rate-limiting calls right now — wait a moment and run it again.")];
   }
   // Locked generic fallback (copy-spec decision #2).
-  return ["Check the inputs above and try again."];
+  return [uiText("Check the inputs above and try again.")];
 }

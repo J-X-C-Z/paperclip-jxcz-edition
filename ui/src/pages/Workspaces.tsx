@@ -10,9 +10,11 @@ import { SummarySlotCard } from "../components/SummarySlotCard";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
+import { useOptionalProjectScope } from "../context/ProjectScopeContext";
 import type { ProjectWorkspaceSummary } from "../lib/project-workspaces-tab";
 import { queryKeys } from "../lib/queryKeys";
 import { projectRouteRef } from "../lib/utils";
+import { useUiTranslator } from "@/i18n";
 
 type ProjectWorkspaceGroup = {
   projectId: string;
@@ -77,7 +79,14 @@ function buildProjectWorkspaceGroups(items: WorkspaceOverviewItem[]): ProjectWor
 }
 
 export function Workspaces() {
+  const tr = useUiTranslator();
   const { selectedCompanyId } = useCompany();
+  const projectScope = useOptionalProjectScope() ?? {
+    enabled: false,
+    projectId: null,
+    loading: false,
+    error: null,
+  };
   const { setBreadcrumbs } = useBreadcrumbs();
   const experimentalSettingsQuery = useQuery({
     queryKey: queryKeys.instance.experimentalSettings,
@@ -87,17 +96,20 @@ export function Workspaces() {
 
   const overviewQuery = useInfiniteQuery({
     queryKey: selectedCompanyId
-      ? queryKeys.executionWorkspaces.overview(selectedCompanyId)
+      ? queryKeys.executionWorkspaces.overview(selectedCompanyId, { projectId: projectScope.projectId ?? "__all-projects__" })
       : ["execution-workspaces", "__workspaces-overview__", "disabled"],
-    queryFn: ({ pageParam }) => executionWorkspacesApi.listOverview(selectedCompanyId!, { offset: pageParam as number }),
+    queryFn: ({ pageParam }) => executionWorkspacesApi.listOverview(selectedCompanyId!, {
+      projectId: projectScope.projectId ?? undefined,
+      offset: pageParam as number,
+    }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
-    enabled: Boolean(selectedCompanyId && isolatedWorkspacesEnabled),
+    enabled: Boolean(selectedCompanyId && isolatedWorkspacesEnabled && !projectScope.loading && !projectScope.error),
   });
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Workspaces" }]);
-  }, [setBreadcrumbs]);
+    setBreadcrumbs([{ label: tr("Workspaces") }]);
+  }, [setBreadcrumbs, tr]);
 
   const overviewPages = overviewQuery.data?.pages ?? [];
   const overviewItems = useMemo(
@@ -112,24 +124,26 @@ export function Workspaces() {
 
   if (experimentalSettingsQuery.isLoading) return <PageSkeleton variant="detail" />;
   if (!isolatedWorkspacesEnabled) return <Navigate to="/issues" replace />;
+  if (projectScope.enabled && projectScope.error) return <p role="alert" className="text-sm text-destructive">{projectScope.error.message}</p>;
+  if (projectScope.loading) return <PageSkeleton variant="list" />;
   if (dataLoading) return <PageSkeleton variant="list" />;
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Workspaces</h2>
+        <h2 className="text-xl font-bold">{tr("Workspaces")}</h2>
       </div>
 
       <SummarySlotCard
         companyId={selectedCompanyId}
         scopeKind="workspaces_overview"
-        title="Workspace summary"
-        description="Summarizer tracks workspace activity, live services, and follow-up needs across projects."
+        title={tr("Workspace summary")}
+        description={tr("Summarizer tracks workspace activity, live services, and follow-up needs across projects.")}
       />
 
       {groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No workspace activity yet.</p>
+        <p className="text-sm text-muted-foreground">{tr("No workspace activity yet.")}</p>
       ) : (
         <div className="space-y-8">
           {groups.map((group) => (
@@ -144,7 +158,7 @@ export function Workspaces() {
                   </Link>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {group.summaries.length} workspace{group.summaries.length === 1 ? "" : "s"}
+                  {group.summaries.length} {tr("workspace")}{group.summaries.length === 1 ? "" : tr("s")}
                 </span>
               </div>
               <ProjectWorkspacesContent
@@ -158,7 +172,7 @@ export function Workspaces() {
           {overviewQuery.hasNextPage ? (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <p className="text-sm text-muted-foreground">
-                Showing {overviewItems.length} of {totalWorkspaceCount} workspaces.
+                {tr("Showing")} {overviewItems.length} {tr("workspaces")} {tr("of")} {totalWorkspaceCount} {tr("workspaces")}.
               </p>
               <Button
                 type="button"
@@ -167,7 +181,7 @@ export function Workspaces() {
                 onClick={() => void overviewQuery.fetchNextPage()}
                 disabled={overviewQuery.isFetchingNextPage}
               >
-                {overviewQuery.isFetchingNextPage ? "Loading..." : "Load more"}
+                {overviewQuery.isFetchingNextPage ? tr("Loading...") : tr("Load more")}
               </Button>
             </div>
           ) : null}

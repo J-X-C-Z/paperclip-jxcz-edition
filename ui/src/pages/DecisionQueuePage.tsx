@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Settings2, X } from "lucide-react";
@@ -212,7 +213,7 @@ export function DecisionQueuePage() {
   });
 
   if (!selectedCompanyId) {
-    return <p className="text-sm text-muted-foreground">Select an organization first.</p>;
+    return <p className="text-sm text-muted-foreground">{uiText("Select an organization first.")}</p>;
   }
   if (isLoading) {
     return <PageSkeleton variant="approvals" />;
@@ -264,17 +265,17 @@ export function DecisionQueuePage() {
 
       {isEmpty ? (
         <div className="rounded-xl border border-dashed border-border py-14 text-center">
-          <p className="text-sm font-medium text-foreground">This queue is empty.</p>
+          <p className="text-sm font-medium text-foreground">{uiText("This queue is empty.")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Decisions land here when they match the queue's rules or an agent adds them.
+            {uiText("Decisions land here when they match the queue's rules or an agent adds them.")}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {visibleCount === 0 ? (
             <div className="rounded-xl border border-dashed border-border py-10 text-center">
-              <p className="text-sm font-medium text-foreground">No decisions match your filters.</p>
-              <p className="mt-1 text-xs text-muted-foreground">Adjust or clear the filters to see the rest.</p>
+              <p className="text-sm font-medium text-foreground">{uiText("No decisions match your filters.")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{uiText("Adjust or clear the filters to see the rest.")}</p>
             </div>
           ) : (
             groups.map((group) => {
@@ -320,13 +321,13 @@ export function DecisionQueuePage() {
 
           {agingItems.length > 0 && (
             <Curtain
-              label="Aging"
+              label={uiText("Aging")}
               count={agingItems.length}
               open={agingOpen}
               onToggle={() => setAgingOpen((prev) => !prev)}
             >
               <p className="text-xs text-muted-foreground">
-                Idle past {ATTENTION_AGING_DAYS} days — kept off the queue. Keep any you still want surfaced.
+                {uiText("Idle past {days} days — kept off the queue. Keep any you still want surfaced.", { days: ATTENTION_AGING_DAYS })}
               </p>
               {agingItems.map((item) => (
                 <AgingItemRow
@@ -374,11 +375,11 @@ function SeedRulesCard({
         <div className="flex min-w-0 items-start gap-2">
           <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 space-y-1">
-            <p className="text-sm font-medium text-foreground">Auto-seeding is {enabled ? "on" : "off"}</p>
+            <p className="text-sm font-medium text-foreground">{uiText("Auto-seeding is {state}", { state: enabled ? uiText("on") : uiText("off") })}</p>
             <p className="text-xs text-muted-foreground">
               {enabled
-                ? "This queue fills itself automatically. Decisions are added the moment they match any of its rules:"
-                : "Automatic adds are paused. These rules would add decisions to the queue when on:"}
+                ? uiText("This queue fills itself automatically. Decisions are added the moment they match any of its rules:")
+                : uiText("Automatic adds are paused. These rules would add decisions to the queue when on:")}
             </p>
             <ul className="mt-0.5 space-y-0.5">
               {rules.map((rule) => (
@@ -390,14 +391,14 @@ function SeedRulesCard({
             </ul>
             <p className="text-(length:--text-nano) text-muted-foreground">
               {enabled
-                ? "Turning it off stops new automatic adds only — decisions already here stay, and you can still add or remove decisions by hand."
-                : "Adding or removing decisions by hand still works while automatic seeding is off."}
+                ? uiText("Turning it off stops new automatic adds only — decisions already here stay, and you can still add or remove decisions by hand.")
+                : uiText("Adding or removing decisions by hand still works while automatic seeding is off.")}
             </p>
           </div>
         </div>
         <Button type="button" variant="outline" size="xs" className="h-7 shrink-0" disabled={pending} onClick={onToggle}>
           {pending && <Loader2 className="h-3 w-3 animate-spin" />}
-          {enabled ? "Disable" : "Enable"}
+          {enabled ? uiText("Disable") : uiText("Enable")}
         </Button>
       </div>
     </div>
@@ -463,11 +464,11 @@ function QueueItemRow({
           <PopoverTrigger asChild>
             <Button type="button" variant="ghost" size="xs" className="h-7 gap-1 text-muted-foreground">
               <X className="h-3.5 w-3.5" />
-              Exclude
+              {uiText("Exclude")}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64 space-y-2 p-3">
-            <p className="text-xs font-medium text-foreground">Remove from this queue</p>
+            <p className="text-xs font-medium text-foreground">{uiText("Remove from this queue")}</p>
             <textarea
               value={reason}
               onChange={(event) => setReason(event.target.value)}
@@ -475,9 +476,7 @@ function QueueItemRow({
               className="min-h-16 w-full rounded-sm border border-border bg-background px-2 py-1 text-xs"
             />
             <div className="flex justify-end gap-1">
-              <Button type="button" variant="ghost" size="xs" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
+              <Button type="button" variant="ghost" size="xs" onClick={() => setOpen(false)}> {uiText("Cancel")} </Button>
               <Button
                 type="button"
                 size="xs"
@@ -486,7 +485,7 @@ function QueueItemRow({
                 onClick={() => exclude.mutate()}
               >
                 {exclude.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                Exclude
+                {uiText("Exclude")}
               </Button>
             </div>
           </PopoverContent>

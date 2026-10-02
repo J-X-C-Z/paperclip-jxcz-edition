@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { readThreadScrollAnchor, threadScrollAnchorDelta, type ThreadScrollAnchor } from "./scroll-anchor";
 import { cn } from "@/lib/utils";
@@ -51,11 +52,16 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
   const appliedNavigation = useRef({ key: navigation.key, hash: navigation.hash });
   const ref = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<ThreadScrollAnchor | null>(null);
+  const anchorScrollTopRef = useRef<number | null>(null);
   const pinnedRef = useRef(true);
   const easingRef = useRef(false);
   const clientHeightRef = useRef<number | null>(null);
   const scrollbarIdleTimerRef = useRef<number | null>(null);
   const scrollbarIdleDelayRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const cancelFrameRef = useRef<(() => void) | null>(null);
+  const pendingRememberRef = useRef(false);
+  const pendingReconcileRef = useRef(false);
   const [pillPhase, setPillPhase] = useState<PillPhase>("hidden");
 
   const showScrollbarWhileScrolling = useCallback(() => {
@@ -116,11 +122,12 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
     return true;
   }, [scrollToBottom]);
 
-  const rememberAnchor = useCallback(() => {
+  const rememberAnchor = useCallback((knownRect?: DOMRect) => {
     const el = ref.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
+    const rect = knownRect ?? el.getBoundingClientRect();
     anchorRef.current = readThreadScrollAnchor(el, rect.top, rect.bottom);
+    anchorScrollTopRef.current = el.scrollTop;
     if (initialPositionApplied.current) navigation.remember(el.scrollTop, anchorRef.current);
   }, [navigation.key, navigation.hash, navigation.ready]);
 
@@ -135,23 +142,77 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
       pinnedRef.current = true;
       hidePill();
     }
+    let rect: DOMRect | undefined;
     if (pinnedRef.current) scrollToBottom();
     else {
-      const delta = threadScrollAnchorDelta(el, anchorRef.current, el.getBoundingClientRect().top);
+      rect = el.getBoundingClientRect();
+      const delta = threadScrollAnchorDelta(el, anchorRef.current, rect.top);
       if (delta) el.scrollTop += delta;
     }
-    rememberAnchor();
+    rememberAnchor(rect);
   }, [rememberAnchor, scrollToBottom, hidePill]);
 
+  const scheduleFrameWork = useCallback((work: "remember" | "reconcile") => {
+    if (work === "reconcile") pendingReconcileRef.current = true;
+    else pendingRememberRef.current = true;
+    if (frameRef.current !== null) return;
+
+    const run = () => {
+      frameRef.current = null;
+      cancelFrameRef.current = null;
+      const reconcile = pendingReconcileRef.current;
+      const remember = pendingRememberRef.current;
+      pendingReconcileRef.current = false;
+      pendingRememberRef.current = false;
+      if (reconcile) {
+        if (followViewportResize()) hidePill();
+        // Reconciliation also records the resulting anchor, so a scroll event
+        // and one or more observer notifications share the same geometry read.
+        reconcileContent();
+      } else if (remember) {
+        rememberAnchor();
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      const frame = window.requestAnimationFrame(run);
+      frameRef.current = frame;
+      cancelFrameRef.current = () => window.cancelAnimationFrame(frame);
+    } else {
+      const timer = window.setTimeout(run, 0);
+      frameRef.current = timer;
+      cancelFrameRef.current = () => window.clearTimeout(timer);
+    }
+  }, [followViewportResize, hidePill, reconcileContent, rememberAnchor]);
+
   const handleScroll = useCallback(() => {
-    rememberAnchor();
     showScrollbarWhileScrolling();
+    const el = ref.current;
+    if (el) {
+      const scrollTop = el.scrollTop;
+      const previousScrollTop = anchorScrollTopRef.current;
+      if (anchorRef.current && previousScrollTop !== null) {
+        // The saved row may no longer be on screen after a large wheel/touch
+        // delta, but its coordinate remains valid. Shift it algebraically so
+        // an immediate content commit can preserve this reading position
+        // without synchronously walking the DOM in every scroll event.
+        anchorRef.current = {
+          ...anchorRef.current,
+          top: anchorRef.current.top + previousScrollTop - scrollTop,
+        };
+      }
+      anchorScrollTopRef.current = scrollTop;
+    }
     // A growing composer shrinks this viewport. Some browsers dispatch the
     // resulting scroll event before ResizeObserver, so preserve the previous
     // pinned state here instead of mistaking the layout change for a user
     // scroll away from the bottom.
     if (followViewportResize()) {
+      // Keep the composer-resize safeguard synchronous: a scroll event can be
+      // delivered before ResizeObserver and must not unpin the reader.
+      pendingReconcileRef.current = false;
       hidePill();
+      scheduleFrameWork("remember");
       return;
     }
     const pinned = isPinned();
@@ -163,17 +224,22 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
         pinnedRef.current = true;
         hidePill();
       }
+      scheduleFrameWork("remember");
       return;
     }
     pinnedRef.current = pinned;
     if (pinned) hidePill();
     else showPill();
+    // Pinned state above changes in the scroll event itself. Only the more
+    // expensive anchor traversal waits for the shared animation frame.
+    pendingReconcileRef.current = false;
+    scheduleFrameWork("remember");
   }, [
-    rememberAnchor,
     followViewportResize,
     isPinned,
     hidePill,
     showPill,
+    scheduleFrameWork,
     showScrollbarWhileScrolling,
   ]);
 
@@ -221,6 +287,9 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
     if (scrollbarIdleTimerRef.current !== null) {
       window.clearTimeout(scrollbarIdleTimerRef.current);
     }
+    cancelFrameRef.current?.();
+    frameRef.current = null;
+    cancelFrameRef.current = null;
   }, []);
 
   useLayoutEffect(() => {
@@ -229,15 +298,14 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
     clientHeightRef.current = el.clientHeight;
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
-      if (followViewportResize()) hidePill();
-      reconcileContent();
+      scheduleFrameWork("reconcile");
     });
     observer.observe(el);
     // The viewport itself does not resize when an image or historical row
     // grows. Observe the content box too, before the browser paints it.
     if (el.firstElementChild) observer.observe(el.firstElementChild);
     return () => observer.disconnect();
-  }, [followViewportResize, hidePill, reconcileContent]);
+  }, [scheduleFrameWork]);
 
   // Follow new content only when already pinned; otherwise hold position.
   useLayoutEffect(() => {
@@ -245,6 +313,13 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
     if (appliedNavigation.current.key !== navigation.key || appliedNavigation.current.hash !== navigation.hash) {
       appliedNavigation.current = { key: navigation.key, hash: navigation.hash };
       initialPositionApplied.current = false;
+      // A pending scroll read belongs to the previous navigation entry. The
+      // new hash/history position below is authoritative for this entry.
+      pendingRememberRef.current = false;
+      pendingReconcileRef.current = false;
+      cancelFrameRef.current?.();
+      frameRef.current = null;
+      cancelFrameRef.current = null;
     }
     if (el && navigation.ready && !initialPositionApplied.current) {
       const top = navigation.initialPosition(el, el.getBoundingClientRect().top, el.scrollTop);
@@ -255,6 +330,15 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
       }
       initialPositionApplied.current = true;
     }
+    // The adjusted logical anchor lets this synchronous commit preserve
+    // scroll position even when a prepend or expansion changed content above
+    // the viewport. Reconciliation also captures the new visible anchor, so it
+    // subsumes pending scroll and observer work.
+    pendingRememberRef.current = false;
+    pendingReconcileRef.current = false;
+    cancelFrameRef.current?.();
+    frameRef.current = null;
+    cancelFrameRef.current = null;
     reconcileContent();
   }, [contentKey, reconcileContent, navigation.key, navigation.hash, navigation.ready]);
 
@@ -283,7 +367,7 @@ export function TaskMessageScroller({ children, contentKey, className }: TaskMes
       {pillPhase !== "hidden" ? (
         <button
           type="button"
-          aria-label="Scroll to latest"
+          aria-label={uiText("Scroll to latest")}
           onClick={handleJumpToLatest}
           onAnimationEnd={() => {
             if (pillPhase === "out") setPillPhase("hidden");

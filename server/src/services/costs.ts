@@ -1,9 +1,10 @@
-import { and, desc, eq, gte, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "@paperclipai/db";
-import { activityLog, agents, companies, costEvents, heartbeatRuns, issues, projects } from "@paperclipai/db";
+import { activityLog, agents, companies, costEvents, heartbeatRuns, issues } from "@paperclipai/db";
 import { notFound, unprocessable } from "../errors.js";
 import { budgetService, type BudgetServiceHooks } from "./budgets.js";
+import { attributedCosts, organizationCosts, projectCosts, type AttributedCost } from "./cost-organization.js";
 import { visibleIssueCondition } from "./issue-visibility.js";
 
 export interface CostDateRange {
@@ -16,6 +17,34 @@ const SUBSCRIPTION_BILLING_TYPES = ["subscription_included", "subscription_overa
 
 function sumAsNumber(column: typeof costEvents.costCents | typeof costEvents.inputTokens | typeof costEvents.cachedInputTokens | typeof costEvents.outputTokens) {
   return sql<number>`coalesce(sum(${column}), 0)::double precision`;
+}
+
+/** Attach the same fractional-cent reference totals to every display dimension.
+ * The integer ledger and budget accounting remain incremental billed spend. */
+export function attachReferenceCosts<T extends { costCents: number }>(
+  rows: T[], costs: AttributedCost[], rowKey: (row: T) => string, costKey: (row: AttributedCost) => string,
+) {
+  const totals = new Map<string, { costCents: number; reportedCostCents: number; estimatedCostCents: number; unpricedEventCount: number }>();
+  for (const cost of costs) {
+    const key = costKey(cost);
+    const total = totals.get(key) ?? { costCents: 0, reportedCostCents: 0, estimatedCostCents: 0, unpricedEventCount: 0 };
+    total.costCents += cost.costCents;
+    total.reportedCostCents += cost.reportedCostCents ?? 0;
+    total.estimatedCostCents += cost.estimatedCostCents ?? 0;
+    total.unpricedEventCount += cost.unpricedEventCount ?? 0;
+    totals.set(key, total);
+  }
+  return rows.map((row) => ({ ...row, ...totals.get(rowKey(row)) })).sort((a, b) => b.costCents - a.costCents);
+}
+
+/** Match the stored/issue/unambiguous-run attribution used by attributedCosts. */
+function projectCostCondition(companyId: string, projectId: string) {
+  return sql`coalesce(${costEvents.projectId},
+    (SELECT i.project_id FROM public.issues i WHERE i.id = ${costEvents.issueId} AND i.company_id = ${companyId}),
+    (SELECT min(i.project_id::text)::uuid FROM public.activity_log al
+      JOIN public.issues i ON al.entity_type = 'issue' AND al.entity_id = i.id::text AND i.company_id = ${companyId}
+      WHERE al.company_id = ${companyId} AND al.run_id = ${costEvents.heartbeatRunId} AND i.project_id IS NOT NULL
+      HAVING count(DISTINCT i.project_id) = 1)) = ${projectId}`;
 }
 
 function currentUtcMonthWindow(now = new Date()) {
@@ -102,7 +131,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       return event;
     },
 
-    summary: async (companyId: string, range?: CostDateRange) => {
+    summary: async (companyId: string, range?: CostDateRange, projectId?: string) => {
       const company = await db
         .select()
         .from(companies)
@@ -112,6 +141,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       if (!company) throw notFound("Company not found");
 
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
+      if (projectId) conditions.push(projectCostCondition(companyId, projectId));
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
@@ -122,16 +152,26 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .from(costEvents)
         .where(and(...conditions));
 
+      const attributed = await attributedCosts(db, companyId, range, projectId);
+      const reportedCostCents = attributed.reduce((sum, row) => sum + (row.reportedCostCents ?? 0), 0);
+      const estimatedCostCents = attributed.reduce((sum, row) => sum + (row.estimatedCostCents ?? 0), 0);
+      const unpricedEventCount = attributed.reduce((sum, row) => sum + (row.unpricedEventCount ?? 0), 0);
       const spendCents = Number(total);
       const utilization =
-        company.budgetMonthlyCents > 0
+        !projectId && company.budgetMonthlyCents > 0
           ? (spendCents / company.budgetMonthlyCents) * 100
           : 0;
 
       return {
         companyId,
+        ...(projectId ? { projectId } : {}),
         spendCents,
-        budgetCents: company.budgetMonthlyCents,
+        referenceCostCents: reportedCostCents + estimatedCostCents,
+        reportedCostCents: Number(reportedCostCents ?? 0),
+        estimatedCostCents: Number(estimatedCostCents ?? 0),
+        unpricedEventCount: Number(unpricedEventCount ?? 0),
+        trackingEnabled: true,
+        budgetCents: projectId ? 0 : company.budgetMonthlyCents,
         utilizationPercent: Number(utilization.toFixed(2)),
       };
     },
@@ -277,12 +317,13 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       };
     },
 
-    byAgent: async (companyId: string, range?: CostDateRange) => {
+    byAgent: async (companyId: string, range?: CostDateRange, projectId?: string) => {
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
+      if (projectId) conditions.push(projectCostCondition(companyId, projectId));
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
-      return db
+      const rows = await db
         .select({
           agentId: costEvents.agentId,
           agentName: agents.name,
@@ -307,14 +348,16 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(and(...conditions))
         .groupBy(costEvents.agentId, agents.name, agents.status)
         .orderBy(desc(sumAsNumber(costEvents.costCents)));
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId]), (row) => JSON.stringify([row.agentId]));
     },
 
-    byProvider: async (companyId: string, range?: CostDateRange) => {
+    byProvider: async (companyId: string, range?: CostDateRange, projectId?: string) => {
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
+      if (projectId) conditions.push(projectCostCondition(companyId, projectId));
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
-      return db
+      const rows = await db
         .select({
           provider: costEvents.provider,
           biller: costEvents.biller,
@@ -339,14 +382,16 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(and(...conditions))
         .groupBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model)
         .orderBy(desc(sumAsNumber(costEvents.costCents)));
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.provider, row.biller, row.billingType, row.model]), (row) => JSON.stringify([row.provider, row.biller, row.billingType, row.model]));
     },
 
-    byBiller: async (companyId: string, range?: CostDateRange) => {
+    byBiller: async (companyId: string, range?: CostDateRange, projectId?: string) => {
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
+      if (projectId) conditions.push(projectCostCondition(companyId, projectId));
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
-      return db
+      const rows = await db
         .select({
           biller: costEvents.biller,
           costCents: sumAsNumber(costEvents.costCents),
@@ -370,6 +415,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(and(...conditions))
         .groupBy(costEvents.biller)
         .orderBy(desc(sumAsNumber(costEvents.costCents)));
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.biller]), (row) => JSON.stringify([row.biller]));
     },
 
     /**
@@ -377,7 +423,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
      * last 5 hours, last 24 hours, last 7 days.
      * purely internal consumption data, no external rate-limit sources.
      */
-    windowSpend: async (companyId: string) => {
+    windowSpend: async (companyId: string, projectId?: string) => {
       const windows = [
         { label: "5h", hours: 5 },
         { label: "24h", hours: 24 },
@@ -401,17 +447,22 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
               and(
                 eq(costEvents.companyId, companyId),
                 gte(costEvents.occurredAt, since),
+                projectId ? projectCostCondition(companyId, projectId) : undefined,
               ),
             )
             .groupBy(costEvents.provider)
             .orderBy(desc(sumAsNumber(costEvents.costCents)));
 
-          return rows.map((row) => ({
+          const references = attachReferenceCosts(rows, await attributedCosts(db, companyId, { from: since }, projectId), (row) => row.provider, (row) => row.provider ?? "unknown");
+          return references.map((row) => ({
             provider: row.provider,
             biller: row.biller,
             window: label as string,
             windowHours: hours,
             costCents: row.costCents,
+            reportedCostCents: row.reportedCostCents,
+            estimatedCostCents: row.estimatedCostCents,
+            unpricedEventCount: row.unpricedEventCount,
             inputTokens: row.inputTokens,
             cachedInputTokens: row.cachedInputTokens,
             outputTokens: row.outputTokens,
@@ -422,8 +473,9 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       return results.flat();
     },
 
-    byAgentModel: async (companyId: string, range?: CostDateRange) => {
+    byAgentModel: async (companyId: string, range?: CostDateRange, projectId?: string) => {
       const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
+      if (projectId) conditions.push(projectCostCondition(companyId, projectId));
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
@@ -431,7 +483,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       // the (companyId, agentId, occurredAt) composite index covers this well.
       // order by provider + model for stable db-level ordering; cost-desc sort
       // within each agent's sub-rows is done client-side in the ui memo.
-      return db
+      const rows = await db
         .select({
           agentId: costEvents.agentId,
           agentName: agents.name,
@@ -456,56 +508,11 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
           costEvents.model,
         )
         .orderBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model);
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model]), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model]));
     },
 
-    byProject: async (companyId: string, range?: CostDateRange) => {
-      const issueIdAsText = sql<string>`${issues.id}::text`;
-      const runProjectLinks = db
-        .selectDistinctOn([activityLog.runId, issues.projectId], {
-          runId: activityLog.runId,
-          projectId: issues.projectId,
-        })
-        .from(activityLog)
-        .innerJoin(
-          issues,
-          and(
-            eq(activityLog.entityType, "issue"),
-            eq(activityLog.entityId, issueIdAsText),
-          ),
-        )
-        .where(
-          and(
-            eq(activityLog.companyId, companyId),
-            eq(issues.companyId, companyId),
-            isNotNull(activityLog.runId),
-            isNotNull(issues.projectId),
-          ),
-        )
-        .orderBy(activityLog.runId, issues.projectId, desc(activityLog.createdAt))
-        .as("run_project_links");
-
-      const effectiveProjectId = sql<string | null>`coalesce(${costEvents.projectId}, ${runProjectLinks.projectId})`;
-      const conditions: ReturnType<typeof eq>[] = [eq(costEvents.companyId, companyId)];
-      if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
-      if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
-
-      const costCentsExpr = sumAsNumber(costEvents.costCents);
-
-      return db
-        .select({
-          projectId: effectiveProjectId,
-          projectName: projects.name,
-          costCents: costCentsExpr,
-          inputTokens: sumAsNumber(costEvents.inputTokens),
-          cachedInputTokens: sumAsNumber(costEvents.cachedInputTokens),
-          outputTokens: sumAsNumber(costEvents.outputTokens),
-        })
-        .from(costEvents)
-        .leftJoin(runProjectLinks, eq(costEvents.heartbeatRunId, runProjectLinks.runId))
-        .innerJoin(projects, sql`${projects.id} = ${effectiveProjectId}`)
-        .where(and(...conditions, sql`${effectiveProjectId} is not null`))
-        .groupBy(effectiveProjectId, projects.name)
-        .orderBy(desc(costCentsExpr));
-    },
+    byProject: (companyId: string, range?: CostDateRange, projectId?: string) => projectCosts(db, companyId, range, projectId),
+    byTeam: async (companyId: string, range?: CostDateRange, projectId?: string) => (await organizationCosts(db, companyId, range, projectId)).teams,
+    byDepartment: async (companyId: string, range?: CostDateRange, projectId?: string) => (await organizationCosts(db, companyId, range, projectId)).departments,
   };
 }

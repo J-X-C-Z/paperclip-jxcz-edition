@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useState, type MouseEvent } from "react";
 import type { Issue } from "@paperclipai/shared";
 import { Link } from "@/lib/router";
@@ -44,7 +45,7 @@ export function RemovableIssueReferencePill({
       <span className="truncate">{issueLabel}</span>
     </>
   );
-  const removeLabel = `Remove ${issueLabel} as blocker`;
+  const removeLabel = uiText("Remove {issue} as blocker", { issue: issueLabel });
   const openRemoveConfirmation = () => setIsConfirmOpen(true);
   const handleRemove = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -67,7 +68,7 @@ export function RemovableIssueReferencePill({
                 data-mention-kind="issue"
                 className={chipClassName}
                 title={issue.title}
-                aria-label={`Actions for blocker ${issueLabel}`}
+                aria-label={uiText("Actions for blocker {issue}", { issue: issueLabel })}
               >
                 {content}
               </button>
@@ -77,13 +78,13 @@ export function RemovableIssueReferencePill({
                 <DropdownMenuItem asChild>
                   <Link to={`/issues/${issue.identifier}`}>
                     <ArrowUpRight className="h-4 w-4" />
-                    Visit task
+                    {uiText("Visit task")}
                   </Link>
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem variant="destructive" onSelect={openRemoveConfirmation}>
                 <X className="h-4 w-4" />
-                Remove blocker
+                {uiText("Remove blocker")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -104,7 +105,7 @@ export function RemovableIssueReferencePill({
                 data-mention-kind="issue"
                 className={chipClassName}
                 title={issue.title}
-                aria-label={`Task ${issueLabel}: ${issue.title}`}
+                aria-label={uiText("Task {identifier}: {title}", { identifier: issueLabel, title: issue.title })}
               >
                 {content}
               </Link>
@@ -113,7 +114,7 @@ export function RemovableIssueReferencePill({
                 data-mention-kind="issue"
                 className={chipClassName}
                 title={issue.title}
-                aria-label={`Task: ${issue.title}`}
+                aria-label={uiText("Task: {title}", { title: issue.title })}
               >
                 {content}
               </span>
@@ -124,17 +125,16 @@ export function RemovableIssueReferencePill({
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove blocker?</DialogTitle>
-            <DialogDescription>
-              Remove {confirmLabel} as a blocker for this task.
+            <DialogTitle>{uiText("Remove blocker?")}</DialogTitle>
+            <DialogDescription>{uiText("Remove {issue} as a blocker for this task.", { issue: confirmLabel })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline">{uiText("Cancel")}</Button>
             </DialogClose>
             <Button type="button" variant="destructive" onClick={confirmRemove}>
-              Remove blocker
+              {uiText("Remove blocker")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -158,9 +158,9 @@ export function ExpandRelationListButton({
       type="button"
       className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
       onClick={onClick}
-      aria-label={expanded ? "Show fewer items" : `Show ${hiddenCount} more items`}
+      aria-label={expanded ? uiText("Show fewer items") : uiText("Show {count} more items", { count: hiddenCount })}
     >
-      {expanded ? "Show less" : `Show ${hiddenCount} more`}
+      {expanded ? uiText("Show less") : uiText("Show {count} more", { count: hiddenCount })}
     </button>
   );
 }

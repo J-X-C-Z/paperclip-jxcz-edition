@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
@@ -369,9 +370,7 @@ export function FileTree({
             <span className="min-w-0 text-destructive">{error.message}</span>
           </div>
           {error.retry && (
-            <Button type="button" size="xs" variant="outline" onClick={error.retry}>
-              Retry
-            </Button>
+            <Button type="button" size="xs" variant="outline" onClick={error.retry}> {uiText("Retry")} </Button>
           )}
         </div>
       </div>

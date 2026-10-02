@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { buildRoutineMentionHref, buildSkillMentionHref } from "@paperclipai/shared";
 import { companySkillsApi } from "../api/companySkills";
@@ -43,30 +43,46 @@ export type SlashCommandOption = SkillCommandOption | RoutineCommandOption | Act
 
 interface EditorAutocompleteContextValue {
   slashCommands: SlashCommandOption[];
+  registerConsumer: () => () => void;
 }
 
 const EditorAutocompleteContext = createContext<EditorAutocompleteContextValue>({
   slashCommands: [],
+  registerConsumer: () => () => {},
 });
 
 export function EditorAutocompleteProvider({ children }: { children: ReactNode }) {
   const { selectedCompanyId } = useCompany();
+  const consumerCount = useRef(0);
+  const [hasConsumers, setHasConsumers] = useState(false);
+  const registerConsumer = useCallback(() => {
+    consumerCount.current += 1;
+    setHasConsumers(true);
+    let registered = true;
+    return () => {
+      if (!registered) return;
+      registered = false;
+      consumerCount.current = Math.max(0, consumerCount.current - 1);
+      setHasConsumers(consumerCount.current > 0);
+    };
+  }, []);
   const { data: companySkills = [] } = useQuery({
     queryKey: selectedCompanyId
       ? queryKeys.companySkills.list(selectedCompanyId)
       : ["company-skills", "__none__"],
     queryFn: () => companySkillsApi.list(selectedCompanyId!),
-    enabled: Boolean(selectedCompanyId),
+    enabled: Boolean(selectedCompanyId && hasConsumers),
   });
   const { data: routines = [] } = useQuery({
     queryKey: selectedCompanyId
       ? queryKeys.routines.list(selectedCompanyId)
       : ["routines", "__none__", "__all-projects__"],
     queryFn: () => routinesApi.list(selectedCompanyId!),
-    enabled: Boolean(selectedCompanyId),
+    enabled: Boolean(selectedCompanyId && hasConsumers),
   });
 
   const value = useMemo<EditorAutocompleteContextValue>(() => ({
+    registerConsumer,
     slashCommands: [
       ...companySkills.map((skill) => ({
         id: `skill:${skill.id}`,
@@ -92,7 +108,7 @@ export function EditorAutocompleteProvider({ children }: { children: ReactNode }
           aliases: [`routine:${routine.title}`, routine.title, routine.id],
         })),
     ],
-  }), [companySkills, routines]);
+  }), [companySkills, routines, registerConsumer]);
 
   return (
     <EditorAutocompleteContext.Provider value={value}>
@@ -102,5 +118,7 @@ export function EditorAutocompleteProvider({ children }: { children: ReactNode }
 }
 
 export function useEditorAutocomplete() {
-  return useContext(EditorAutocompleteContext);
+  const context = useContext(EditorAutocompleteContext);
+  useEffect(() => context.registerConsumer(), [context.registerConsumer]);
+  return { slashCommands: context.slashCommands };
 }

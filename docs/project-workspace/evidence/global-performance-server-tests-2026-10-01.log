@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 /Users/jxcz/Agent Workspace/Paperclip/server
+
+
+ Test Files  4 passed (4)
+      Tests  12 passed (12)
+   Start at  17:31:06
+   Duration  8.96s (transform 4.29s, setup 239ms, import 8.24s, tests 92ms, environment 0ms)
+

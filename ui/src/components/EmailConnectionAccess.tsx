@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Agent } from "@paperclipai/shared";
 import { toolsApi } from "@/api/tools";
@@ -63,13 +64,13 @@ export function EmailConnectionAccess({
     <div className="space-y-8">
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">
-          Which humans can use this credential?
+          {uiText("Which humans can use this credential?")}
         </h2>
         <p className="text-sm">{humanLabel}</p>
       </section>
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">
-          Which agents can use this connection?
+          {uiText("Which agents can use this connection?")}
         </h2>
         <RadioCardGroup
           ariaLabel="Which agents can use this connection"

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { AgentChatPicker } from "@/components/AgentChatPicker";
 import { TaskChatProjectCreatedCard } from "@/components/task-chat/TaskChatProjectCreatedCard";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
@@ -504,10 +505,10 @@ export function DesignGuide() {
     "This is an editable description. Click to edit it — the textarea auto-sizes to fit the content without layout shift."
   );
   const [filters, setFilters] = useState<FilterValue[]>([
-    { key: "status", label: "Status", value: "Active" },
+    { key: "status", label: uiText("Status"), value: "Active" },
     // PAP-411: priority filter demo row suppressed while SHOW_TASK_PRIORITY_UI is off.
     ...(SHOW_TASK_PRIORITY_UI
-      ? [{ key: "priority", label: "Priority", value: "High" } as FilterValue]
+      ? [{ key: "priority", label: uiText("Priority"), value: "High" } as FilterValue]
       : []),
   ]);
   const [allowExternal, setAllowExternal] = useState(false);
@@ -715,7 +716,7 @@ export function DesignGuide() {
       <Section title="Buttons">
         <SubSection title="Variants">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="default">Default</Button>
+            <Button variant="default">{uiText("Default")}</Button>
             <Button variant="secondary">Secondary</Button>
             <Button variant="outline">Outline</Button>
             <Button variant="ghost">Ghost</Button>
@@ -728,7 +729,7 @@ export function DesignGuide() {
           <div className="flex items-center gap-2 flex-wrap">
             <Button size="xs">Extra Small</Button>
             <Button size="sm">Small</Button>
-            <Button size="default">Default</Button>
+            <Button size="default">{uiText("Default")}</Button>
             <Button size="lg">Large</Button>
           </div>
         </SubSection>
@@ -745,15 +746,15 @@ export function DesignGuide() {
         <SubSection title="With icons">
           <div className="flex items-center gap-2 flex-wrap">
             <Button><Plus /> New Issue</Button>
-            <Button variant="outline"><Upload /> Upload</Button>
-            <Button variant="destructive"><Trash2 /> Delete</Button>
+            <Button variant="outline"><Upload /> {uiText("Upload")}</Button>
+            <Button variant="destructive"><Trash2 /> {uiText("Delete")}</Button>
             <Button size="sm"><Plus /> Add</Button>
           </div>
         </SubSection>
 
         <SubSection title="States">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button disabled>Disabled</Button>
+            <Button disabled>{uiText("Disabled")}</Button>
             <Button variant="outline" disabled>Disabled Outline</Button>
           </div>
         </SubSection>
@@ -765,7 +766,7 @@ export function DesignGuide() {
       <Section title="Badges">
         <SubSection title="Variants">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="default">Default</Badge>
+            <Badge variant="default">{uiText("Default")}</Badge>
             <Badge variant="secondary">Secondary</Badge>
             <Badge variant="outline">Outline</Badge>
             <Badge variant="destructive">Destructive</Badge>
@@ -952,7 +953,7 @@ export function DesignGuide() {
       {/* ============================================================ */}
       <Section title="Form Elements">
         <div className="grid gap-6 md:grid-cols-2">
-          <SubSection title="Input">
+          <SubSection title={uiText("Input")}>
             <Input placeholder="Default input" />
             <Input placeholder="Disabled input" disabled className="mt-2" />
           </SubSection>
@@ -1005,7 +1006,7 @@ export function DesignGuide() {
                   onSave={setInlineDesc}
                   as="p"
                   className="text-sm text-muted-foreground"
-                  placeholder="Add a description..."
+                  placeholder={uiText("Add a description...")}
                   multiline
                 />
               </div>
@@ -1029,7 +1030,7 @@ export function DesignGuide() {
                 <SelectItem value="todo">Todo</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="in_review">In Review</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
+                <SelectItem value="done">{uiText("Done")}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">Current value: {selectValue}</p>
@@ -1041,9 +1042,9 @@ export function DesignGuide() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="high">{uiText("High")}</SelectItem>
+                <SelectItem value="medium">{uiText("Medium")}</SelectItem>
+                <SelectItem value="low">{uiText("Low")}</SelectItem>
               </SelectContent>
             </Select>
           </SubSection>
@@ -1116,7 +1117,7 @@ export function DesignGuide() {
           </CollapsibleTrigger>
           <CollapsibleContent className="rounded-md border border-border p-3">
             <div className="space-y-2">
-              <Label htmlFor="owner-filter">Owner</Label>
+              <Label htmlFor="owner-filter">{uiText("Owner")}</Label>
               <Input id="owner-filter" placeholder="Filter by agent name" />
             </div>
           </CollapsibleContent>
@@ -1138,17 +1139,17 @@ export function DesignGuide() {
             </SheetHeader>
             <div className="space-y-4 px-4">
               <div className="space-y-1">
-                <Label htmlFor="sheet-title">Title</Label>
+                <Label htmlFor="sheet-title">{uiText("Title")}</Label>
                 <Input id="sheet-title" defaultValue="Improve onboarding docs" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="sheet-description">Description</Label>
+                <Label htmlFor="sheet-description">{uiText("Description")}</Label>
                 <Textarea id="sheet-description" defaultValue="Capture setup pitfalls and screenshots." />
               </div>
             </div>
             <SheetFooter>
-              <Button variant="outline">Cancel</Button>
-              <Button>Save</Button>
+              <Button variant="outline">{uiText("Cancel")}</Button>
+              <Button>{uiText("Save")}</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -1177,12 +1178,10 @@ export function DesignGuide() {
           <Command>
             <CommandInput placeholder="Type a command or search..." />
             <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>{uiText("No results found.")}</CommandEmpty>
               <CommandGroup heading="Pages">
                 <CommandItem>
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </CommandItem>
+                  <LayoutDashboard className="h-4 w-4" /> {uiText("Dashboard")} </CommandItem>
                 <CommandItem>
                   <CircleDot className="h-4 w-4" />
                   Issues
@@ -1211,7 +1210,7 @@ export function DesignGuide() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="#">Projects</BreadcrumbLink>
+              <BreadcrumbLink href="#">{uiText("Projects")}</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -1256,8 +1255,8 @@ export function DesignGuide() {
               <p className="text-sm">Card content goes here. This is the main body area.</p>
             </CardContent>
             <CardFooter className="gap-2">
-              <Button size="sm">Action</Button>
-              <Button variant="outline" size="sm">Cancel</Button>
+              <Button size="sm">{uiText("Action")}</Button>
+              <Button variant="outline" size="sm">{uiText("Cancel")}</Button>
             </CardFooter>
           </Card>
         </SubSection>
@@ -1279,10 +1278,10 @@ export function DesignGuide() {
         <SubSection title="Default (pill) variant">
           <Tabs defaultValue="overview">
             <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="runs">Runs</TabsTrigger>
+              <TabsTrigger value="overview">{uiText("Overview")}</TabsTrigger>
+              <TabsTrigger value="runs">{uiText("Runs")}</TabsTrigger>
               <TabsTrigger value="config">Config</TabsTrigger>
-              <TabsTrigger value="costs">Costs</TabsTrigger>
+              <TabsTrigger value="costs">{uiText("Costs")}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
               <p className="text-sm text-muted-foreground py-4">Overview tab content.</p>
@@ -1303,7 +1302,7 @@ export function DesignGuide() {
           <Tabs defaultValue="summary">
             <TabsList variant="line">
               <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="details">{uiText("Details")}</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
             </TabsList>
             <TabsContent value="summary">
@@ -1454,10 +1453,10 @@ export function DesignGuide() {
             size="sm"
             onClick={() =>
               setFilters([
-                { key: "status", label: "Status", value: "Active" },
+                { key: "status", label: uiText("Status"), value: "Active" },
                 // PAP-411: priority filter demo row suppressed while SHOW_TASK_PRIORITY_UI is off.
                 ...(SHOW_TASK_PRIORITY_UI
-                  ? [{ key: "priority", label: "Priority", value: "High" } as FilterValue]
+                  ? [{ key: "priority", label: uiText("Priority"), value: "High" } as FilterValue]
                   : []),
               ])
             }
@@ -1479,7 +1478,7 @@ export function DesignGuide() {
           </div>
         </SubSection>
 
-        <SubSection title="Group">
+        <SubSection title={uiText("Group")}>
           <AvatarGroup>
             <Avatar><AvatarFallback>A1</AvatarFallback></Avatar>
             <Avatar><AvatarFallback>A2</AvatarFallback></Avatar>
@@ -1507,7 +1506,7 @@ export function DesignGuide() {
       {/* ============================================================ */}
       {/*  IDENTITY                                                     */}
       {/* ============================================================ */}
-      <Section title="Identity">
+      <Section title={uiText("Identity")}>
         <SubSection title="Sizes">
           <div className="flex items-center gap-6">
             <Identity name="Agent Alpha" size="sm" />
@@ -1544,7 +1543,7 @@ export function DesignGuide() {
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon-sm"><Settings /></Button>
             </TooltipTrigger>
-            <TooltipContent>Settings</TooltipContent>
+            <TooltipContent>{uiText("Settings")}</TooltipContent>
           </Tooltip>
         </div>
       </Section>
@@ -1566,17 +1565,17 @@ export function DesignGuide() {
             </DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Name</Label>
+                <Label>{uiText("Name")}</Label>
                 <Input placeholder="Enter a name" className="mt-1.5" />
               </div>
               <div>
-                <Label>Description</Label>
+                <Label>{uiText("Description")}</Label>
                 <Textarea placeholder="Describe..." className="mt-1.5" />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline">Cancel</Button>
-              <Button>Save</Button>
+              <Button variant="outline">{uiText("Cancel")}</Button>
+              <Button>{uiText("Save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1639,7 +1638,7 @@ export function DesignGuide() {
               <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 animate-pulse" />
               <span className="inline-flex h-full w-full rounded-full bg-blue-500" />
             </span>
-            <span className="text-blue-600 dark:text-blue-400">Live</span>
+            <span className="text-blue-600 dark:text-blue-400">{uiText("Live")}</span>
           </div>
         </div>
       </Section>
@@ -1650,25 +1649,25 @@ export function DesignGuide() {
       <Section title="Property Row Pattern">
         <div className="border border-border rounded-md p-4 space-y-1 max-w-sm">
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-muted-foreground">Status</span>
+            <span className="text-xs text-muted-foreground">{uiText("Status")}</span>
             <StatusBadge status="active" />
           </div>
           {/* PAP-411: priority metadata row hidden behind SHOW_TASK_PRIORITY_UI. */}
           {SHOW_TASK_PRIORITY_UI && (
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-xs text-muted-foreground">Priority</span>
+              <span className="text-xs text-muted-foreground">{uiText("Priority")}</span>
               <PriorityIcon priority="high" />
             </div>
           )}
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-muted-foreground">Responsible</span>
+            <span className="text-xs text-muted-foreground">{uiText("Responsible")}</span>
             <div className="flex items-center gap-1.5">
               <Avatar size="sm"><AvatarFallback>A</AvatarFallback></Avatar>
               <span className="text-xs">Agent Alpha</span>
             </div>
           </div>
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-muted-foreground">Created</span>
+            <span className="text-xs text-muted-foreground">{uiText("Created")}</span>
             <span className="text-xs">Jan 15, 2025</span>
           </div>
         </div>
@@ -1689,9 +1688,7 @@ export function DesignGuide() {
           </p>
           <Card className="block w-60 p-3 space-y-0.5">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-accent-foreground">
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </div>
+              <LayoutDashboard className="h-4 w-4" /> {uiText("Dashboard")} </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
               <CircleDot className="h-4 w-4" />
               Issues
@@ -1700,13 +1697,9 @@ export function DesignGuide() {
               </Badge>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
-              <Bot className="h-4 w-4" />
-              Agents
-            </div>
+              <Bot className="h-4 w-4" /> {uiText("Agents")} </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
-              <Hexagon className="h-4 w-4" />
-              Projects
-            </div>
+              <Hexagon className="h-4 w-4" /> {uiText("Projects")} </div>
           </Card>
         </SubSection>
 
@@ -1717,9 +1710,7 @@ export function DesignGuide() {
               List
             </button>
             <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent/50 rounded-r-md">
-              <Target className="h-3.5 w-3.5 inline mr-1" />
-              Org
-            </button>
+              <Target className="h-3.5 w-3.5 inline mr-1" /> {uiText("Org")} </button>
           </div>
         </SubSection>
       </Section>
@@ -1761,7 +1752,7 @@ export function DesignGuide() {
           <div className="space-y-3">
             <div className="rounded-md border border-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">Agent</span>
+                <span className="text-xs font-medium text-muted-foreground">{uiText("Agent")}</span>
                 <span className="text-xs text-muted-foreground">Jan 15, 2025</span>
               </div>
               <p className="text-sm">Started working on the authentication module. Will need API keys configured.</p>
@@ -1789,9 +1780,9 @@ export function DesignGuide() {
           <table className="w-full text-xs">
             <thead className="border-b border-border bg-accent/20">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Model</th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{uiText("Model")}</th>
                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">Tokens</th>
-                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Cost</th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{uiText("Cost")}</th>
               </tr>
             </thead>
             <tbody>
@@ -2131,8 +2122,8 @@ export function DesignGuide() {
           <BindingsTable
             rows={[
               { label: "Application", value: "Slack · manifest v2.4.1" },
-              { label: "Connection", value: "https://slack.com/api · acme-workspace", mono: true },
-              { label: "Catalog", value: "sha256:9f86d081…f00a08", mono: true },
+              { label: uiText("Connection"), value: "https://slack.com/api · acme-workspace", mono: true },
+              { label: uiText("Catalog"), value: "sha256:9f86d081…f00a08", mono: true },
               { label: "Payload", value: "sha256:2c26b46b…66e7ae", mono: true },
             ]}
           />
@@ -2339,10 +2330,9 @@ export function DesignGuide() {
         <div className="space-y-3">
           <InlineBanner
             tone="info"
-            title="Built-in agent"
-            actions={<Button variant="outline" size="sm">Reset to defaults</Button>}
-          >
-            Ships with Paperclip and powers <strong>Briefs</strong>. It can be paused but not deleted.
+            title={uiText("Built-in agent")}
+            actions={<Button variant="outline" size="sm">{uiText("Reset to defaults")}</Button>}
+          > {uiText("Ships with Paperclip and powers")} <strong>Briefs</strong>. It can be paused but not deleted.
           </InlineBanner>
           <InlineBanner
             tone="warning"
@@ -2359,7 +2349,7 @@ export function DesignGuide() {
           <InlineBanner
             tone="danger"
             title="Summary generation failed."
-            actions={<Button size="sm">Retry</Button>}
+            actions={<Button size="sm">{uiText("Retry")}</Button>}
           >
             The linked issue reached a terminal state before a summary was written.
           </InlineBanner>

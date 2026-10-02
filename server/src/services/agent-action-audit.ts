@@ -1,3 +1,4 @@
+import { projectActivityCondition } from "./project-scope.js";
 import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@paperclipai/db";
@@ -8,6 +9,7 @@ import { visibleIssueCondition } from "./issue-visibility.js";
 
 export interface AgentActionAuditFilters {
   companyId: string;
+  projectId?: string;
   actorScope?: "agents" | "all";
   agentId?: string;
   responsibleUserId?: string;
@@ -55,6 +57,7 @@ export function agentActionAuditService(db: Db) {
       if (filters.cursor && !cursor) throw badRequest("Invalid audit cursor");
       const effectiveResponsibleUserId = sql<string | null>`coalesce(${activityLog.responsibleUserId}, ${heartbeatRuns.responsibleUserId})`;
       const conditions = [eq(activityLog.companyId, filters.companyId)];
+      if (filters.projectId) conditions.push(projectActivityCondition(filters.companyId, filters.projectId));
       // Preserve the historical agent-audit query unless the caller opts into
       // the unified all-actors feed explicitly.
       if (filters.actorScope !== "all") conditions.push(isNotNull(activityLog.agentId));

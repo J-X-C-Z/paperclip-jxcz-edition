@@ -4,9 +4,11 @@ import * as ReactDOM from "react-dom";
 import { BrowserRouter } from "@/lib/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
+import { OrganizationWarmup } from "./components/OrganizationWarmup";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { SentryGate } from "./components/SentryGate";
 import { CompanyProvider, useCompany } from "./context/CompanyContext";
+import { ProjectScopeProvider } from "./context/ProjectScopeContext";
 import { LiveUpdatesProvider } from "./context/LiveUpdatesProvider";
 import { BreadcrumbProvider } from "./context/BreadcrumbContext";
 import { PanelProvider } from "./context/PanelContext";
@@ -21,7 +23,6 @@ import { PluginLauncherProvider } from "./plugins/launchers";
 import { startPerfMeasureReaper } from "./lib/perf-measure-reaper";
 import { getOrCreatePaperclipReactRoot } from "./lib/react-root";
 import { startServiceWorkerUpdates } from "./lib/service-worker-updates";
-import "@mdxeditor/editor/style.css";
 import "./index.css";
 
 initPluginBridge(React, ReactDOM);
@@ -68,6 +69,7 @@ getOrCreatePaperclipReactRoot(window, rootElement).render(
         <ThemeProvider>
           <BrowserRouter>
             <CompanyProvider>
+              <ProjectScopeProvider>
               <EditorAutocompleteProvider>
                 <ToastProvider>
                   <LiveUpdatesProvider>
@@ -77,6 +79,7 @@ getOrCreatePaperclipReactRoot(window, rootElement).render(
                           <PanelProvider>
                             <PluginLauncherProvider>
                               <DialogProvider>
+                                <OrganizationWarmup />
                                 <App />
                               </DialogProvider>
                             </PluginLauncherProvider>
@@ -87,6 +90,7 @@ getOrCreatePaperclipReactRoot(window, rootElement).render(
                   </LiveUpdatesProvider>
                 </ToastProvider>
               </EditorAutocompleteProvider>
+              </ProjectScopeProvider>
             </CompanyProvider>
           </BrowserRouter>
         </ThemeProvider>

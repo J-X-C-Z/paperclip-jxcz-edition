@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Inbox, LoaderCircle, Save } from "lucide-react";
@@ -13,18 +14,18 @@ import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card
 const MODE_OPTIONS: RadioCardOption[] = [
   {
     value: "open",
-    title: "Any of my agents",
-    description: "Let any agent you manage archive tasks out of your inbox.",
+    title: uiText("Any of my agents"),
+    description: uiText("Let any agent you manage archive tasks out of your inbox."),
   },
   {
     value: "allowlist",
-    title: "Only chosen agents",
-    description: "Restrict inbox tidying to the agents you pick below.",
+    title: uiText("Only chosen agents"),
+    description: uiText("Restrict inbox tidying to the agents you pick below."),
   },
   {
     value: "disabled",
-    title: "Off",
-    description: "Agents can never archive tasks from your inbox.",
+    title: uiText("Off"),
+    description: uiText("Agents can never archive tasks from your inbox."),
   },
 ];
 
@@ -118,15 +119,15 @@ export function InboxAgentPolicyControl({ companyId }: { companyId: string | nul
   }
 
   if (policyQuery.isLoading || !draft) {
-    return <div className="text-sm text-muted-foreground">Loading inbox agent policy…</div>;
+    return <div className="text-sm text-muted-foreground">{uiText("Loading inbox agent policy…")}</div>;
   }
 
   return (
-    <section className="space-y-4" aria-label="Let agents tidy my inbox">
+    <section className="space-y-4" aria-label={uiText("Let agents tidy my inbox")}>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <Inbox className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-base font-semibold">Let agents tidy my inbox</h2>
+          <h2 className="text-base font-semibold">{uiText("Let agents tidy my inbox")}</h2>
         </div>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Choose whether the agents you manage may archive tasks out of your inbox on your behalf. You can
@@ -144,7 +145,7 @@ export function InboxAgentPolicyControl({ companyId }: { companyId: string | nul
 
       {draft.mode === "allowlist" ? (
         <div className="max-w-2xl space-y-2">
-          <div className="text-sm font-medium">Agents allowed to tidy my inbox</div>
+          <div className="text-sm font-medium">{uiText("Agents allowed to tidy my inbox")}</div>
           <AgentMultiSelect
             agents={agentOptions}
             selectedAgentIds={selectedAgentIds}
@@ -173,7 +174,7 @@ export function InboxAgentPolicyControl({ companyId }: { companyId: string | nul
 
       <div className="flex max-w-2xl items-center justify-end gap-3">
         {updateMutation.isSuccess && !isDirty ? (
-          <span className="text-xs text-muted-foreground" role="status">Saved</span>
+          <span className="text-xs text-muted-foreground" role="status">{uiText("Saved")}</span>
         ) : null}
         <Button
           type="button"
@@ -181,7 +182,7 @@ export function InboxAgentPolicyControl({ companyId }: { companyId: string | nul
           onClick={() => draft && updateMutation.mutate(draft)}
         >
           {updateMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
-          {updateMutation.isPending ? "Saving…" : "Save"}
+          {updateMutation.isPending ? uiText("Saving…") : uiText("Save")}
         </Button>
       </div>
     </section>

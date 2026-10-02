@@ -101,6 +101,16 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
     description: "Kimi Code CLI harness",
     icon: Moon,
   },
+  dsh_local: {
+    label: "DeepSeek Harness",
+    description: "DeepSeek Harness ACP coding agent",
+    icon: Bot,
+  },
+  mimocode_local: {
+    label: "MiMo Code",
+    description: "Xiaomi MiMo Code CLI harness",
+    icon: Sparkles,
+  },
   hermes_gateway: {
     label: "Hermes Gateway",
     description: "Remote Hermes API server",

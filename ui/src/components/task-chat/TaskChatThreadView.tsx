@@ -1,5 +1,5 @@
 import { TaskChatProjectCreatedCard } from "./TaskChatProjectCreatedCard";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import type { IssueAttachment } from "@paperclipai/shared";
 import { cn } from "@/lib/utils";
 import { useStreamlinedTaskChatPresentation } from "./presentation-mode";
@@ -23,6 +23,7 @@ import { TaskMessageScroller } from "./TaskMessageScroller";
 import { TaskChatProtocolCard } from "./TaskChatProtocolCard";
 import { TaskChatProtocolActivityRow } from "./TaskChatProtocolActivityRow";
 import { TaskChatPlanPreviewCard } from "./TaskChatPlanPreviewCard";
+import { TaskChatSearch } from "./TaskChatSearch";
 
 const EMPTY_ATTACHMENTS: IssueAttachment[] = [];
 
@@ -301,6 +302,7 @@ export function TaskChatThreadView({
   scroll = true,
   attachments = EMPTY_ATTACHMENTS,
 }: TaskChatThreadViewProps) {
+  const searchScope = useRef<HTMLDivElement>(null);
   const streamlined = useStreamlinedTaskChatPresentation();
   const retryableMarkerId =
     onRetryFailedRun || onTryAgainNoLiveExecutionPath
@@ -425,12 +427,15 @@ export function TaskChatThreadView({
     </div>
   );
 
-  if (!scroll) return body;
+  if (!scroll) return <div ref={searchScope}><TaskChatSearch items={items} scope={searchScope} />{body}</div>;
 
   return (
-    <TaskMessageScroller contentKey={contentKey ?? taskChatContentKey(items)}>
-      {body}
-    </TaskMessageScroller>
+    <div ref={searchScope} className="flex min-h-0 flex-1 flex-col">
+      <TaskChatSearch items={items} scope={searchScope} />
+      <TaskMessageScroller contentKey={contentKey ?? taskChatContentKey(items)}>
+        {body}
+      </TaskMessageScroller>
+    </div>
   );
 }
 

@@ -1,3 +1,4 @@
+import { resolveProjectScope } from "../services/project-scope.js";
 import { Router } from "express";
 import type { Db } from "@paperclipai/db";
 import { createGoalSchema, updateGoalSchema } from "@paperclipai/shared";
@@ -14,7 +15,7 @@ export function goalRoutes(db: Db) {
   router.get("/companies/:companyId/goals", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const result = await svc.list(companyId);
+    const result = await svc.list(companyId, await resolveProjectScope(db, companyId, req.query.projectId));
     res.json(result);
   });
 
@@ -38,7 +39,7 @@ export function goalRoutes(db: Db) {
       action: "goal.created",
       entityType: "goal",
       entityId: goal.id,
-      details: { title: goal.title },
+      details: { title: goal.title, ...(req.body.projectId ? { projectId: req.body.projectId } : {}) },
     });
     const telemetryClient = getTelemetryClient();
     if (telemetryClient) {

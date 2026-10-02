@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { memo, type ComponentType, type SVGProps } from "react";
 import { Bot, FileText, Hexagon, MessageSquare, Paperclip, Quote } from "lucide-react";
 import type { Agent, CompanySearchResult } from "@paperclipai/shared";

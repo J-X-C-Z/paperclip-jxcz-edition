@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { uiText } from "@/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { agentChatsApi } from "@/api/agentChats";
 import { agentsApi } from "@/api/agents";
@@ -46,7 +47,7 @@ export function AgentChat() {
       recordAgentChatVisit(agent.companyId, userId, agent.id);
   }, [enabled, agent?.id, agent?.companyId, userId, session.isFetched]);
   const ensureIssue = useCallback(async () => {
-    if (!agent || !selectedCompanyId) throw new Error("Agent not found");
+    if (!agent || !selectedCompanyId) throw new Error(uiText("Agent not found"));
     if (chat.data) return chat.data;
     const promise = (creating.current ??= agentChatsApi.ensure(
       selectedCompanyId,
@@ -64,13 +65,12 @@ export function AgentChat() {
   }, [agent, selectedCompanyId, chat.data, client, userId]);
   if (!loaded || agents.isPending || session.isPending)
     return (
-      <p className="text-sm text-muted-foreground">Loading conversation…</p>
+      <p className="text-sm text-muted-foreground">{uiText("Loading conversation…")}</p>
     );
   if (!enabled && !chat.data)
     return (
       <p className="text-sm text-muted-foreground">
-        Agent Chat is disabled. Enable it in Experimental settings. Existing
-        history remains available through task links.
+        {uiText("Agent Chat is disabled. Enable it in Experimental settings. Existing history remains available through task links.")}
       </p>
     );
   if (agents.error || chat.error)
@@ -80,10 +80,10 @@ export function AgentChat() {
       </p>
     );
   if (!agent)
-    return <p className="text-sm text-destructive">Agent not found.</p>;
+    return <p className="text-sm text-destructive">{uiText("Agent not found.")}</p>;
   if (chat.isPending)
     return (
-      <p className="text-sm text-muted-foreground">Loading conversation…</p>
+      <p className="text-sm text-muted-foreground">{uiText("Loading conversation…")}</p>
     );
   return (
     <TaskDetailSurface

@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -525,12 +526,12 @@ const EnumField = React.memo(({
         disabled={disabled}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select an option" />
+          <SelectValue placeholder={uiText("Select an option")} />
         </SelectTrigger>
         <SelectContent>
           {showUnsetOption && (
             <SelectItem value={ENUM_UNSET_VALUE} textValue="None">
-              <span className="text-muted-foreground">None</span>
+              <span className="text-muted-foreground">{uiText("None")}</span>
             </SelectItem>
           )}
           {options.map((option) => (
@@ -710,7 +711,7 @@ const SecretField = React.memo(({
           value={bindingValue}
           onChange={handlePickerChange}
           label=""
-          placeholder="Select an existing secret"
+          placeholder={uiText("Select an existing secret")}
           allowVersionSelector={false}
           emptyHint="No active secrets yet. Create one or paste a raw value below."
           disabled={disabled}
@@ -980,7 +981,7 @@ const ArrayField = React.memo(({
               }}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Remove item</span>
+              <span className="sr-only">{uiText("Remove item")}</span>
             </Button>
           </div>
         ))}

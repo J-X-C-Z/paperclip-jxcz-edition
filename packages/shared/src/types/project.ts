@@ -127,3 +127,16 @@ export interface ProjectRepositoryOptions {
   connectionCount: number;
   failedConnectionCount: number;
 }
+
+/** Project participation never changes the agent's company role or reportsTo. */
+export interface ProjectAgentMembership {
+  id: string;
+  companyId: string;
+  projectId: string;
+  agentId: string;
+  projectRole: string | null;
+  isLead: boolean;
+  sortOrder: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

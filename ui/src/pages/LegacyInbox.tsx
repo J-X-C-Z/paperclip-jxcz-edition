@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -333,7 +334,7 @@ export function FailedRunInboxRow({
                   "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
                   "hover:bg-(--status-task-in_progress)/20",
                 )}
-                aria-label="Mark as read"
+                aria-label={uiText("Mark as read")}
               >
                 <span className={cn(
                   "block h-2 w-2 rounded-full transition-opacity duration-300",
@@ -392,14 +393,14 @@ export function FailedRunInboxRow({
             disabled={isRetrying}
           >
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            {isRetrying ? "Retrying…" : "Retry"}
+            {isRetrying ? uiText("Retrying…") : uiText("Retry")}
           </Button>
           {!showUnreadSlot && (
             <button
               type="button"
               onClick={onDismiss}
               className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
-              aria-label="Dismiss"
+              aria-label={uiText("Dismiss")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -416,14 +417,14 @@ export function FailedRunInboxRow({
           disabled={isRetrying}
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {isRetrying ? "Retrying…" : "Retry"}
+          {isRetrying ? uiText("Retrying…") : uiText("Retry")}
         </Button>
         {!showUnreadSlot && (
           <button
             type="button"
             onClick={onDismiss}
             className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Dismiss"
+            aria-label={uiText("Dismiss")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -482,7 +483,7 @@ function ApprovalInboxRow({
                   "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
                   "hover:bg-(--status-task-in_progress)/20",
                 )}
-                aria-label="Mark as read"
+                aria-label={uiText("Mark as read")}
               >
                 <span className={cn(
                   "block h-2 w-2 rounded-full transition-opacity duration-300",
@@ -530,18 +531,14 @@ function ApprovalInboxRow({
                   className="h-8 bg-(--status-task-icon-done) px-3 text-white hover:bg-(--status-task-done)"
                   onClick={onApprove}
                   disabled={isPending}
-                >
-                  Approve
-                </Button>
+                > {uiText("Approve")} </Button>
                 <Button
                   variant="destructive"
                   size="sm"
                   className="h-8 px-3"
                   onClick={onReject}
                   disabled={isPending}
-                >
-                  Reject
-                </Button>
+                > {uiText("Reject")} </Button>
               </>
             ) : null}
           </div>
@@ -554,18 +551,14 @@ function ApprovalInboxRow({
             className="h-8 bg-(--status-task-icon-done) px-3 text-white hover:bg-(--status-task-done)"
             onClick={onApprove}
             disabled={isPending}
-          >
-            Approve
-          </Button>
+          > {uiText("Approve")} </Button>
           <Button
             variant="destructive"
             size="sm"
             className="h-8 px-3"
             onClick={onReject}
             disabled={isPending}
-          >
-            Reject
-          </Button>
+          > {uiText("Reject")} </Button>
         </div>
       ) : null}
     </div>
@@ -615,7 +608,7 @@ function JoinRequestInboxRow({
                   "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
                   "hover:bg-(--status-task-in_progress)/20",
                 )}
-                aria-label="Mark as read"
+                aria-label={uiText("Mark as read")}
               >
                 <span className={cn(
                   "block h-2 w-2 rounded-full transition-opacity duration-300",
@@ -653,18 +646,14 @@ function JoinRequestInboxRow({
             className="h-8 bg-(--status-task-icon-done) px-3 text-white hover:bg-(--status-task-done)"
             onClick={onApprove}
             disabled={isPending}
-          >
-            Approve
-          </Button>
+          > {uiText("Approve")} </Button>
           <Button
             variant="destructive"
             size="sm"
             className="h-8 px-3"
             onClick={onReject}
             disabled={isPending}
-          >
-            Reject
-          </Button>
+          > {uiText("Reject")} </Button>
         </div>
       </div>
       <div className="mt-3 flex gap-2 sm:hidden">
@@ -673,18 +662,14 @@ function JoinRequestInboxRow({
           className="h-8 bg-(--status-task-icon-done) px-3 text-white hover:bg-(--status-task-done)"
           onClick={onApprove}
           disabled={isPending}
-        >
-          Approve
-        </Button>
+        > {uiText("Approve")} </Button>
         <Button
           variant="destructive"
           size="sm"
           className="h-8 px-3"
           onClick={onReject}
           disabled={isPending}
-        >
-          Reject
-        </Button>
+        > {uiText("Reject")} </Button>
       </div>
     </div>
   );
@@ -773,7 +758,7 @@ export function Inbox() {
   });
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Inbox" }]);
+    setBreadcrumbs([{ label: uiText("Inbox") }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -1689,7 +1674,7 @@ export function Inbox() {
     },
     onError: (error) => {
       pushToast({
-        title: "Run retry failed",
+        title: uiText("Run retry failed"),
         body: error instanceof Error ? error.message : "Unable to retry run",
         tone: "error",
       });
@@ -2268,7 +2253,7 @@ export function Inbox() {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search inbox…"
+            placeholder={uiText("Search inbox…")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -2305,8 +2290,8 @@ export function Inbox() {
                 label: "Recent",
               },
               { value: "unread", label: "Unread" },
-              { value: "blocked", label: "Blocked" },
-              { value: "all", label: "All" },
+              { value: "blocked", label: uiText("Blocked") },
+              { value: "all", label: uiText("All") },
             ]}
           />
         </Tabs>
@@ -2316,7 +2301,7 @@ export function Inbox() {
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search inbox…"
+              placeholder={uiText("Search inbox…")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -2365,7 +2350,7 @@ export function Inbox() {
                     variant="outline"
                     size="icon"
                     className={cn("h-8 w-8 shrink-0", blockedGroupBy !== "none" && "bg-accent")}
-                    title="Group"
+                    title={uiText("Group")}
                   >
                     <Layers className="h-3.5 w-3.5" />
                   </Button>
@@ -2394,7 +2379,7 @@ export function Inbox() {
                 visibleColumnSet={visibleIssueColumnSet}
                 onToggleColumn={toggleIssueColumn}
                 onResetColumns={() => setIssueColumns(DEFAULT_INBOX_ISSUE_COLUMNS)}
-                title="Choose which inbox columns stay visible"
+                title={uiText("Choose which inbox columns stay visible")}
                 iconOnly
               />
               <Popover>
@@ -2404,7 +2389,7 @@ export function Inbox() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 shrink-0"
-                    title="Sort"
+                    title={uiText("Sort")}
                   >
                     <ArrowUpDown className="h-3.5 w-3.5" />
                   </Button>
@@ -2464,7 +2449,7 @@ export function Inbox() {
                     variant="outline"
                     size="icon"
                     className={cn("h-8 w-8 shrink-0", groupBy !== "none" && "bg-accent")}
-                    title="Group"
+                    title={uiText("Group")}
                   >
                     <Layers className="h-3.5 w-3.5" />
                   </Button>
@@ -2499,7 +2484,7 @@ export function Inbox() {
                 visibleColumnSet={visibleIssueColumnSet}
                 onToggleColumn={toggleIssueColumn}
                 onResetColumns={() => setIssueColumns(DEFAULT_INBOX_ISSUE_COLUMNS)}
-                title="Choose which inbox columns stay visible"
+                title={uiText("Choose which inbox columns stay visible")}
                 iconOnly
               />
               {canMarkAllRead && (
@@ -2512,28 +2497,24 @@ export function Inbox() {
                     onClick={() => setShowMarkAllReadConfirm(true)}
                     disabled={markAllReadMutation.isPending}
                   >
-                    {markAllReadMutation.isPending ? "Marking…" : "Mark all as read"}
+                    {markAllReadMutation.isPending ? uiText("Marking…") : uiText("Mark all as read")}
                   </Button>
                   <Dialog open={showMarkAllReadConfirm} onOpenChange={setShowMarkAllReadConfirm}>
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Mark all as read?</DialogTitle>
+                        <DialogTitle>{uiText("Mark all as read?")}</DialogTitle>
                         <DialogDescription>
                           This will mark {unreadIssueIds.length} unread {unreadIssueIds.length === 1 ? "item" : "items"} as read.
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowMarkAllReadConfirm(false)}>
-                          Cancel
-                        </Button>
+                        <Button variant="outline" onClick={() => setShowMarkAllReadConfirm(false)}> {uiText("Cancel")} </Button>
                         <Button
                           onClick={() => {
                             setShowMarkAllReadConfirm(false);
                             markAllReadMutation.mutate(unreadIssueIds);
                           }}
-                        >
-                          Mark all as read
-                        </Button>
+                        > {uiText("Mark all as read")} </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -2552,15 +2533,15 @@ export function Inbox() {
             onValueChange={(value) => updateAllCategoryFilter(value as InboxCategoryFilter)}
           >
             <SelectTrigger className="h-8 w-(--sz-170px) text-xs">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={uiText("Category")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="everything">All categories</SelectItem>
-              <SelectItem value="issues_i_touched">My recent tasks</SelectItem>
-              <SelectItem value="join_requests">Join requests</SelectItem>
-              <SelectItem value="approvals">Approvals</SelectItem>
-              <SelectItem value="failed_runs">Failed runs</SelectItem>
-              <SelectItem value="alerts">Alerts</SelectItem>
+              <SelectItem value="everything">{uiText("All categories")}</SelectItem>
+              <SelectItem value="issues_i_touched">{uiText("My recent tasks")}</SelectItem>
+              <SelectItem value="join_requests">{uiText("Join requests")}</SelectItem>
+              <SelectItem value="approvals">{uiText("Approvals")}</SelectItem>
+              <SelectItem value="failed_runs">{uiText("Failed runs")}</SelectItem>
+              <SelectItem value="alerts">{uiText("Alerts")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -2570,12 +2551,12 @@ export function Inbox() {
               onValueChange={(value) => updateAllApprovalFilter(value as InboxApprovalFilter)}
             >
               <SelectTrigger className="h-8 w-(--sz-170px) text-xs">
-                <SelectValue placeholder="Approval status" />
+                <SelectValue placeholder={uiText("Approval status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All approval statuses</SelectItem>
-                <SelectItem value="actionable">Needs action</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="all">{uiText("All approval statuses")}</SelectItem>
+                <SelectItem value="actionable">{uiText("Needs action")}</SelectItem>
+                <SelectItem value="resolved">{uiText("Resolved")}</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -2807,7 +2788,7 @@ export function Inbox() {
                       >
                         <div className="h-px flex-1 bg-border/80" />
                         <span className="shrink-0 text-(length:--text-micro) font-semibold uppercase tracking-wide text-muted-foreground">
-                          {group.searchSection === "archived" ? "Archived" : "Other results"}
+                          {group.searchSection === "archived" ? uiText("Archived") : uiText("Other results")}
                         </span>
                         <div className="h-px flex-1 bg-border/80" />
                       </div>,
@@ -2886,9 +2867,7 @@ export function Inbox() {
                       elements.push(
                         <div key={`today-divider-${group.key}-${index}`} className="my-2 flex items-center gap-3 px-4">
                           <div className="flex-1 border-t border-zinc-600" />
-                          <span className="shrink-0 text-(length:--text-micro) font-medium uppercase tracking-wider text-zinc-500">
-                            Earlier
-                          </span>
+                          <span className="shrink-0 text-(length:--text-micro) font-medium uppercase tracking-wider text-zinc-500"> {uiText("Earlier")} </span>
                         </div>,
                       );
                     }
@@ -3101,9 +3080,7 @@ export function Inbox() {
         <>
           {showSeparatorBefore("alerts") && <Separator />}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Alerts
-            </h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground"> {uiText("Alerts")} </h3>
             <div className="divide-y divide-border border border-border">
               {showAggregateAgentError && (
                 <div className="group/alert relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50">
@@ -3114,14 +3091,13 @@ export function Inbox() {
                     <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
                     <span className="text-sm">
                       <span className="font-medium">{dashboard!.agents.error}</span>{" "}
-                      {dashboard!.agents.error === 1 ? "agent has" : "agents have"} errors
-                    </span>
+                      {dashboard!.agents.error === 1 ? "agent has" : "agents have"} {uiText("errors")} </span>
                   </Link>
                   <button
                     type="button"
                     onClick={() => dismissAlert("alert:agent-errors")}
                     className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover/alert:opacity-100"
-                    aria-label="Dismiss"
+                    aria-label={uiText("Dismiss")}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -3144,7 +3120,7 @@ export function Inbox() {
                     type="button"
                     onClick={() => dismissAlert("alert:budget")}
                     className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover/alert:opacity-100"
-                    aria-label="Dismiss"
+                    aria-label={uiText("Dismiss")}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

@@ -1470,3 +1470,17 @@ from stored configuration problems. Verify connection transport and endpoint
 fields before disabling a connection. Verify workspace ownership, active runs,
 Git state, and runtime-service readiness before closing a workspace. A missing
 URL or old workspace timestamp alone does not prove that a row is disposable.
+
+## Company agent template defaults
+
+The organization sidebar's **模板** page edits the default Skills for each
+built-in agent template. Settings persist per company in
+`company_agent_template_defaults`; an absent override uses the built-in list.
+`GET /api/companies/:companyId/agent-templates` returns effective defaults.
+Board company administrators update Skills through
+`PUT /api/companies/:companyId/agent-templates/:templateId/skills` with
+`{ "skills": ["exact-catalog-or-company-skill-key"] }`; an empty array is valid.
+Writes validate available Skills and emit `agent_template.skills_updated`.
+Both the creation form and server-side hire/create defaults read the effective
+company template. Explicit per-agent choices still win, and existing agents
+are not changed when template defaults are saved.

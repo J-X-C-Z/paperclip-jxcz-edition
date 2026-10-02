@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Sparkles } from "lucide-react";
 import { Link } from "@/lib/router";
 import { cn, relativeTime } from "@/lib/utils";
@@ -107,7 +108,7 @@ export function SourceResolvedFoldCallout({
           "[&>*]:border-emerald-300/40 dark:[&>*]:border-emerald-500/20",
         )}
       >
-        <MetaRow label="Source task">
+        <MetaRow label={uiText("Source task")}>
           <span className="inline-flex flex-wrap items-center gap-1.5">
             <Link
               to={issueLink(fold.sourceIssueId, fold.sourceIssueIdentifier)}
@@ -145,7 +146,7 @@ export function SourceResolvedFoldCallout({
               ) : null}
             </span>
           ) : (
-            <span className="text-muted-foreground">unknown</span>
+            <span className="text-muted-foreground">{uiText("unknown")}</span>
           )}
         </MetaRow>
         <MetaRow label="Process cleanup">
