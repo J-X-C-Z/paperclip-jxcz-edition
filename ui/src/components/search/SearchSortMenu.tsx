@@ -23,7 +23,7 @@ export function SearchSortMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs font-normal" aria-label="Sort results">
+        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs font-normal" aria-label={uiText("Sort results")}>
           <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
           <span className="hidden sm:inline text-muted-foreground">{uiText("Sort:")}</span>
           <span>{SORT_LABELS[value]}</span>

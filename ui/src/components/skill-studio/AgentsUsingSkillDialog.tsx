@@ -438,7 +438,7 @@ function AddAgentPicker({
       groups={groups}
       loading={loading}
       loadingMessage="Loading agents..."
-      placeholder="Add agent…"
+      placeholder={uiText("Add agent…")}
       searchPlaceholder="Search agents..."
       emptyMessage="All eligible agents already have this skill."
       disabled={disabled}

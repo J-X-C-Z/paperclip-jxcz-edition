@@ -666,7 +666,7 @@ function TaskTreeNode({
               <TaskField label={uiText("Responsible")} value={assigneeLabel} />
             ) : null}
             {node.task.billingCode ? (
-              <TaskField label="Billing" value={node.task.billingCode} />
+              <TaskField label={uiText("Billing")} value={node.task.billingCode} />
             ) : null}
             {node.task.projectId ? (
               <TaskField label={uiText("Project")} value={node.task.projectId} tone="subtle" />
@@ -841,7 +841,7 @@ function SuggestTasksCard({
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>{uiText("{count} draft issues", { count: totalTasks })}</span>
         {interaction.payload.defaultParentId ? (
-          <TaskField label="Default parent" value={interaction.payload.defaultParentId} tone="subtle" />
+          <TaskField label={uiText("Default parent")} value={interaction.payload.defaultParentId} tone="subtle" />
         ) : null}
       </div>
 
@@ -944,7 +944,7 @@ function SuggestTasksCard({
               <Textarea
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
-                placeholder="Add a short reason for rejecting this suggestion"
+                placeholder={uiText("Add a short reason for rejecting this suggestion")}
                 className="min-h-24 bg-background text-sm"
               />
               <div className="flex justify-end">
@@ -1409,7 +1409,7 @@ function AskUserQuestionsCard({
                 <div className="mt-2 flex flex-wrap gap-2">
                   {labels.length > 0 ? (
                     labels.map((label) => (
-                      <TaskField key={label} label="Answer" value={label} />
+                      <TaskField key={label} label={uiText("Answer")} value={label} />
                     ))
                   ) : (
                     <span className="text-sm text-muted-foreground">{uiText("No answer recorded.")}</span>
@@ -2742,7 +2742,7 @@ function RequestCheckboxConfirmationResolution({
         {visibleLabels.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {visibleLabels.map((label, index) => (
-              <TaskField key={`${label}-${index}`} label="Selected" value={label} />
+              <TaskField key={`${label}-${index}`} label={uiText("Selected")} value={label} />
             ))}
             {hasHiddenLabels ? (
               <button
@@ -3422,7 +3422,7 @@ function RequestItemVerdictsCard({
                     id={`${interaction.id}-${item.id}-reason`}
                     value={draft.reason}
                     onChange={(event) => setDraftReason(item.id, event.target.value)}
-                    placeholder="Give the agent a reason so it can act on this item."
+                    placeholder={uiText("Give the agent a reason so it can act on this item.")}
                     aria-invalid={attempted && invalidDraftIds.has(item.id)}
                     className={cn(
                       "min-h-16 bg-background text-sm",

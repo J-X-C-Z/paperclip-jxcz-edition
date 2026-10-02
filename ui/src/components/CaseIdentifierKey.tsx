@@ -81,7 +81,7 @@ export function CaseIdentifierKey({
     >
       <CaseCopyableToken
         value={identifier}
-        label="case ID"
+        label={uiText("case ID")}
         className="shrink-0 font-mono text-xs text-muted-foreground"
         containerClassName="shrink-0"
         stopPropagation={stopPropagation}

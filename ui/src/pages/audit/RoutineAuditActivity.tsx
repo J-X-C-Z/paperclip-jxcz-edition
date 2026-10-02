@@ -53,7 +53,7 @@ export function RoutineAuditActivity({
   }
 
   return (
-    <div className="border-y border-border" aria-label="Routine activity">
+    <div className="border-y border-border" aria-label={uiText("Routine activity")}>
       {events.map((event) => (
         <RoutineActivityRow key={event.id} event={event} />
       ))}

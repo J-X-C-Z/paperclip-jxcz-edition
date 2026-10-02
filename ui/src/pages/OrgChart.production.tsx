@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { Agents as ScopedOrg } from "./Agents";
 import { useProjectWorkspaceEnabled } from "../hooks/useProjectWorkspaceEnabled";
 import { AgentAvatar } from "@/components/AgentAvatar";
@@ -206,7 +207,7 @@ function CompanyOrgChart() {
   }, [agents]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Org Chart" }]);
+    setBreadcrumbs([{ label: uiText("Org Chart") }]);
   }, [setBreadcrumbs]);
 
   // Layout computation
@@ -504,8 +505,8 @@ function CompanyOrgChart() {
                 });
               }
             }}
-            title="Zoom in"
-            aria-label="Zoom in"
+            title={uiText("Zoom in")}
+            aria-label={uiText("Zoom in")}
           >
             <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
@@ -520,16 +521,16 @@ function CompanyOrgChart() {
                 });
               }
             }}
-            title="Zoom out"
-            aria-label="Zoom out"
+            title={uiText("Zoom out")}
+            aria-label={uiText("Zoom out")}
           >
             <Minus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
           <button
             className="flex size-9 items-center justify-center rounded border border-border bg-background text-(length:--text-nano) transition-colors hover:bg-accent sm:size-7"
             onClick={fitToScreen}
-            title="Fit to screen"
-            aria-label="Fit chart to screen"
+            title={uiText("Fit to screen")}
+            aria-label={uiText("Fit chart to screen")}
           >
             <Maximize2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>

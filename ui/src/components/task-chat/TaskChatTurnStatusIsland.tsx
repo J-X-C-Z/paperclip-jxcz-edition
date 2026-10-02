@@ -249,7 +249,7 @@ export function TaskChatTurnStatusIsland({ model }: { model: TaskChatTurnStatusM
         align="center"
         sideOffset={8}
         className="w-(--sz-turn-status-popover) p-2"
-        aria-label="Turn plan"
+        aria-label={uiText("Turn plan")}
         onPointerEnter={(event) => {
           if (event.pointerType === "mouse") cancelClose();
         }}

@@ -40,12 +40,12 @@ type CaseViewState = {
 };
 
 const STATUS_FILTER_OPTIONS: { value: CaseStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "in_progress", label: "In progress" },
-  { value: "in_review", label: "In review" },
-  { value: "approved", label: "Approved" },
-  { value: "done", label: "Done" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "draft", label: uiText("Draft") },
+  { value: "in_progress", label: uiText("In progress") },
+  { value: "in_review", label: uiText("In review") },
+  { value: "approved", label: uiText("Approved") },
+  { value: "done", label: uiText("Done") },
+  { value: "cancelled", label: uiText("Cancelled") },
 ];
 
 const ALL = "__all__";
@@ -55,7 +55,7 @@ const CASE_COLUMN_ORDER: CaseColumn[] = ["id", "key", "title", "type", "status",
 const CASE_COLUMN_LABELS: Record<CaseColumn, string> = {
   id: "ID",
   key: "Key",
-  title: "Title",
+  title: uiText("Title"),
   status: "Status",
   updated: "Updated",
   created: "Created at",
@@ -66,7 +66,7 @@ const CASE_COLUMN_LABELS: Record<CaseColumn, string> = {
 const CASE_SORT_LABELS: Record<CaseSortField, string> = {
   updated: "Last updated",
   created: "Created at",
-  title: "Title",
+  title: uiText("Title"),
   status: "Status",
   id: "ID",
   type: "Type",
@@ -220,7 +220,7 @@ function CaseStatusPicker({
           type="button"
           disabled={disabled}
           className="inline-flex items-center gap-1 rounded-md hover:bg-accent/50 disabled:opacity-50"
-          aria-label="Change case status"
+          aria-label={uiText("Change case status")}
           onClick={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -288,7 +288,7 @@ function CaseTrailingColumns({
             <CaseCopyableToken
               key={column}
               value={row.identifier}
-              label="case ID"
+              label={uiText("case ID")}
               className="font-mono text-xs text-muted-foreground"
               containerClassName="shrink-0"
               stopPropagation
@@ -300,7 +300,7 @@ function CaseTrailingColumns({
             <CaseCopyableToken
               key={column}
               value={row.key}
-              label="case key"
+              label={uiText("case key")}
               className="font-mono text-xs text-muted-foreground"
               stopPropagation
             />
@@ -439,7 +439,7 @@ function CaseListRow({
           {visibleColumnSet.has("id") ? (
             <CaseCopyableToken
               value={row.identifier}
-              label="case ID"
+              label={uiText("case ID")}
               className="font-mono text-xs text-muted-foreground"
               containerClassName="shrink-0"
               stopPropagation
@@ -448,7 +448,7 @@ function CaseListRow({
           {visibleColumnSet.has("key") && row.key ? (
             <CaseCopyableToken
               value={row.key}
-              label="case key"
+              label={uiText("case key")}
               className="shrink-0 font-mono text-xs text-muted-foreground"
               stopPropagation
             />
@@ -752,7 +752,7 @@ export function Cases() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Cases" }]);
+    setBreadcrumbs([{ label: uiText("Cases") }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -1017,7 +1017,7 @@ export function Cases() {
   }, [selectedIndex]);
 
   const activeFilters: FilterValue[] = [];
-  if (viewState.search.trim()) activeFilters.push({ key: "search", label: "Search", value: viewState.search.trim() });
+  if (viewState.search.trim()) activeFilters.push({ key: "search", label: uiText("Search"), value: viewState.search.trim() });
   if (viewState.typeFilters.length > 0) {
     activeFilters.push({ key: "type", label: uiText("Type"), value: viewState.typeFilters.join(", ") });
   }
@@ -1043,7 +1043,7 @@ export function Cases() {
   }
   if (viewState.labelFilter !== ALL) {
     const name = (labelsQuery.data ?? []).find((l) => l.id === viewState.labelFilter)?.name ?? "Label";
-    activeFilters.push({ key: "label", label: "Label", value: name });
+    activeFilters.push({ key: "label", label: uiText("Label"), value: name });
   }
 
   function removeFilter(key: string) {

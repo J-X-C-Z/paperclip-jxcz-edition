@@ -30,7 +30,7 @@ export function RunsSection() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.routines.detail(routine.id) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.routines.runs(routine.id) });
     },
-    onError: (updateError) => pushToast({ title: "Failed to update task", body: updateError.message, tone: "error" }),
+    onError: (updateError) => pushToast({ title: uiText("Failed to update task"), body: updateError.message, tone: "error" }),
   });
 
   return (
@@ -43,7 +43,7 @@ export function RunsSection() {
       liveIssueIds={new Set(hasLiveRun && activeIssueId ? [activeIssueId] : [])}
       viewStateKey={`paperclip:routine-runs:${companyId}:${routine.id}`}
       searchFilters={filters}
-      issueLinkState={createIssueDetailLocationState("Runs", routineDetailHref(routine.id, "runs"))}
+      issueLinkState={createIssueDetailLocationState(uiText("Runs"), routineDetailHref(routine.id, "runs"))}
       rowPresentation="task"
       toolbarPresentation="collection"
       onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
@@ -59,7 +59,7 @@ export function ActivitySection({ isLoading = false, error }: { isLoading?: bool
   const groups = useMemo(() => {
     const byDay = new Map<string, typeof events>();
     for (const event of events) {
-      let label = "Earlier";
+      let label = uiText("Earlier");
       try {
         label = new Date(event.createdAt).toLocaleDateString(undefined, {
           weekday: "short",

@@ -312,9 +312,9 @@ function stageConfig(stage: PipelineStage | null | undefined): StageConfig {
 }
 
 const STAGE_EXECUTION_WORKSPACE_OPTIONS = [
-  { value: "shared_workspace", label: "Project default" },
-  { value: "isolated_workspace", label: "New isolated workspace" },
-  { value: "reuse_existing", label: "Reuse existing workspace" },
+  { value: "shared_workspace", label: uiText("Project default") },
+  { value: "isolated_workspace", label: uiText("New isolated workspace") },
+  { value: "reuse_existing", label: uiText("Reuse existing workspace") },
 ] as const;
 
 function nullableString(value: unknown) {
@@ -1959,7 +1959,7 @@ export function PipelineSettings() {
       const existingKeys = new Set(stages.map((stage) => stage.key));
       const autoAdvanceTarget = nextStageForInsert(stages, insertPosition);
       const created = await pipelinesApi.createStage(pipelineId, {
-        key: nextStageKey(uiText("New stage"), existingKeys),
+        key: nextStageKey("New stage", existingKeys),
         name: uiText("New stage"),
         kind: "working",
         position: insertPosition,

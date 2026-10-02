@@ -191,7 +191,7 @@ function ChatSdkEndpointSetup() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Connectors", href: "/apps" },
+      { label: uiText("Connectors"), href: "/apps" },
       { label: uiText("Connect chat") },
     ]);
     return () => setBreadcrumbs([]);
@@ -283,7 +283,7 @@ function ChatSdkEndpointSetup() {
     },
     onError: (error) =>
       pushToast({
-        title: "Couldn't start setup",
+        title: uiText("Couldn't start setup"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),

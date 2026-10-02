@@ -24,7 +24,7 @@ export function JoinRequestQueue() {
     setBreadcrumbs([
       { label: selectedCompany?.name ?? "Organization", href: "/dashboard" },
       { label: uiText("Inbox"), href: "/inbox" },
-      { label: "Join Requests" },
+      { label: uiText("Join Requests") },
     ]);
   }, [selectedCompany?.name, setBreadcrumbs]);
 

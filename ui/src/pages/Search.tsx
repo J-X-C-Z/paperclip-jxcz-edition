@@ -161,7 +161,7 @@ export function Search() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Search" }]);
+    setBreadcrumbs([{ label: uiText("Search") }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {

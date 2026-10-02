@@ -95,7 +95,7 @@ export function OnboardingLoginCard({
       <div
         className="flex min-h-(--sz-108px) items-center justify-center rounded-xl bg-muted/40"
         role="status"
-        aria-label="Preparing the sign-in"
+        aria-label={uiText("Preparing the sign-in")}
       >
         <Loader2 className="size-4 animate-spin text-muted-foreground" />
       </div>
@@ -309,7 +309,7 @@ export function OnboardingLoginCodeRow({
       </AnimatePresence>
       <LoginCardCopyButton
         value={code}
-        label="Copy the code"
+        label={uiText("Copy the code")}
         onCopied={() => {
           // No wait here. A press is a direct action, and delaying its
           // acknowledgement would read as the button having missed.
@@ -359,8 +359,8 @@ export function OnboardingCardField({
   onSubmit,
   onPaste,
   disabled,
-  label = "Authorization code",
-  placeholder = "Paste authorization code here",
+  label = uiText("Authorization code"),
+  placeholder = uiText("Paste authorization code here"),
   masked = false,
   autoFocus = false,
 }: {
@@ -478,13 +478,13 @@ export function LocalProviderLoginInstructions({ adapterType, login }: {
   return <div className="min-w-0 max-w-full space-y-3 text-sm text-muted-foreground">
     {ready ? <>
       <p role="status" className="flex items-center gap-2 text-foreground"><Check className="size-4 shrink-0 text-(--status-task-icon-done)" />{provider} is signed in. Click Connect to use this account.</p>
-      {!showCommand && <button type="button" className="underline underline-offset-4" onClick={() => setShowCommand(true)}>Use a different account</button>}
+      {!showCommand && <button type="button" className="underline underline-offset-4" onClick={() => setShowCommand(true)}>{uiText("Use a different account")}</button>}
     </> : <p>{isolated ? `Sign in to ${provider} for this connection on the machine running Paperclip. Your existing terminal login stays separate.` : `Connect uses your local ${provider} account on the machine running Paperclip.`}</p>}
     {(!ready || showCommand) && !login?.error && <>
       <p>Run this in a terminal on that machine and finish signing in in your browser. We’ll check automatically when you return.</p>
       {command && <div className="flex min-w-0 max-w-full items-start gap-2 rounded-md border bg-muted p-3 text-foreground">
         <pre className="min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-xs"><code>{command}</code></pre>
-        <LoginCardCopyButton value={command} label="Copy sign-in command" />
+        <LoginCardCopyButton value={command} label={uiText("Copy sign-in command")} />
       </div>}
     </>}
     {login?.error && <p role="alert">{login.error}</p>}

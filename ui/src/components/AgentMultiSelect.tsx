@@ -20,7 +20,7 @@ export function AgentSelect({
   agents,
   value,
   onChange,
-  placeholder = "Select agent…",
+  placeholder = uiText("Select agent…"),
   emptyMessage = uiText("No agents yet."),
   disabled = false,
   triggerClassName,

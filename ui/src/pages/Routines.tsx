@@ -1433,7 +1433,7 @@ export function Routines() {
                                     : `Moved "${routine.title}" to Unfiled.`,
                                   tone: "success",
                                   action: {
-                                    label: "Undo",
+                                    label: uiText("Undo"),
                                     onClick: () => moveRoutineToFolder.mutate({ itemId: routine.id, folderId: previousFolderId }),
                                   },
                                 });

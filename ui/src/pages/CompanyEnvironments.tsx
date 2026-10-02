@@ -781,7 +781,7 @@ function capabilityState(capability: EnvironmentProviderCapability | null | unde
   if (!capability || capability.status !== "supported" || !capability.supportsInteractiveSetup) {
     return {
       kind: "unsupported" as const,
-      label: "Unsupported provider",
+      label: uiText("Unsupported provider"),
       reason: "This provider does not advertise interactive template setup.",
     };
   }
@@ -789,14 +789,14 @@ function capabilityState(capability: EnvironmentProviderCapability | null | unde
   if (!capability.supportsTemplateCapture) {
     return {
       kind: "capture_unavailable" as const,
-      label: "Setup capture unavailable",
+      label: uiText("Setup capture unavailable"),
       reason: "This provider advertises setup, but image capture is unavailable.",
     };
   }
 
   return {
     kind: "supported" as const,
-    label: "Template setup",
+    label: uiText("Template setup"),
     reason: null,
   };
 }

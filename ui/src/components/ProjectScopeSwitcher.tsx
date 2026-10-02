@@ -36,7 +36,7 @@ export function ProjectScopeSwitcher() {
         className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
       >
         <span className="min-w-0 truncate">{active?.name ?? uiText("All Company")}</span>
-        {loading ? <LoaderCircle aria-label="Loading projects" className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+        {loading ? <LoaderCircle aria-label={uiText("Loading projects")} className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
       </button>
       {open ? (
         <div className="absolute left-3 right-3 top-full z-50 rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-md">
@@ -69,7 +69,7 @@ export function ProjectScopeSwitcher() {
           ) : null}
           {!loading && !error && options.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">{uiText("No projects found.")}</p> : null}
           {!loading && !error ? (
-            <ul role="listbox" aria-label="Project scope" className="mt-1 max-h-60 overflow-auto">
+            <ul role="listbox" aria-label={uiText("Project scope")} className="mt-1 max-h-60 overflow-auto">
               {options.map((option, index) => (
                 <li key={option.id ?? "all"} role="option" aria-selected={projectId === option.id}>
                   <button

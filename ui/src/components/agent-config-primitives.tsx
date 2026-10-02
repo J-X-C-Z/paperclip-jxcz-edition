@@ -395,16 +395,15 @@ export function ChoosePathButton() {
           <DialogHeader>
             <DialogTitle>{uiText("Specify path manually")}</DialogTitle>
             <DialogDescription>
-              Browser security blocks apps from reading full local paths via a file picker.
-              Copy the absolute path and paste it into the input.
+              {uiText("Browser security blocks apps from reading full local paths via a file picker. Copy the absolute path and paste it into the input.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <section className="space-y-1.5">
-              <p className="font-medium">macOS (Finder)</p>
+              <p className="font-medium">{uiText("macOS path instructions")} (Finder)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>{uiText("Find the folder in Finder.")}</li>
-                <li>{uiText("Hold")} <kbd>Option</kbd> and right-click the folder.</li>
+                <li>{uiText("Hold")} <kbd>Option</kbd> {uiText("and right-click the folder.")}</li>
                 <li>{uiText("Click \"Copy <folder name> as Pathname\".")}</li>
                 <li>{uiText("Paste the result into the path input.")}</li>
               </ol>
@@ -413,10 +412,10 @@ export function ChoosePathButton() {
               </p>
             </section>
             <section className="space-y-1.5">
-              <p className="font-medium">Windows (File Explorer)</p>
+              <p className="font-medium">{uiText("Windows path instructions")} (File Explorer)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>{uiText("Find the folder in File Explorer.")}</li>
-                <li>{uiText("Hold")} <kbd>Shift</kbd> and right-click the folder.</li>
+                <li>{uiText("Hold")} <kbd>Shift</kbd> {uiText("and right-click the folder.")}</li>
                 <li>{uiText("Click \"Copy as path\".")}</li>
                 <li>{uiText("Paste the result into the path input.")}</li>
               </ol>
@@ -425,7 +424,7 @@ export function ChoosePathButton() {
               </p>
             </section>
             <section className="space-y-1.5">
-              <p className="font-medium">Terminal fallback (macOS/Linux)</p>
+              <p className="font-medium">{uiText("Terminal fallback (macOS/Linux)")}</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>{uiText("Run")} <code>cd /path/to/folder</code>{uiText(".")}</li>
                 <li>{uiText("Run")} <code>pwd</code>{uiText(".")}</li>
@@ -435,7 +434,7 @@ export function ChoosePathButton() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              OK
+              {uiText("OK")}
             </Button>
           </DialogFooter>
         </DialogContent>

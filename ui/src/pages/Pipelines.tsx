@@ -2146,7 +2146,7 @@ export function PipelineItemDetailView({ pipelineId, caseId }: { pipelineId: str
       options.push({ id: `agent:${agent.id}`, label: agent.name });
     }
     if (currentUserId) {
-      options.push({ id: `user:${currentUserId}`, label: "Me" });
+      options.push({ id: `user:${currentUserId}`, label: uiText("Me") });
     }
     return options;
   }, [agents, companyMembers?.users, currentUserId]);

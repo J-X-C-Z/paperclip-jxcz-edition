@@ -31,10 +31,10 @@ type ProjectSortField = "name" | "updated" | "created" | "targetDate";
 type ProjectSortDir = "asc" | "desc";
 
 const PROJECT_SORT_OPTIONS: Array<{ field: ProjectSortField; label: string }> = [
-  { field: "name", label: "Name" },
-  { field: "updated", label: "Updated" },
-  { field: "created", label: "Created" },
-  { field: "targetDate", label: "Target date" },
+  { field: "name", label: uiText("Name") },
+  { field: "updated", label: uiText("Updated") },
+  { field: "created", label: uiText("Created") },
+  { field: "targetDate", label: uiText("Target date") },
 ];
 
 function compareProjectNames(left: Project, right: Project) {

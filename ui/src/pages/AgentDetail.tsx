@@ -300,15 +300,15 @@ function scrollToContainerBottom(container: ScrollContainer, behavior: ScrollBeh
 export const AGENT_DETAIL_TABS = AGENT_DETAIL_NAVIGATION.flatMap((section) => section.items);
 
 const LEGACY_AGENT_DETAIL_TABS = [
-  { value: "dashboard", label: "Dashboard" },
-  { value: "instructions", label: "Instructions" },
-  { value: "skills", label: "Skills" },
-  { value: "configuration", label: "Configuration" },
-  { value: "secrets", label: "Secrets" },
-  { value: "tools", label: "Tools" },
-  { value: "runs", label: "Runs" },
-  { value: "audit", label: "Audit" },
-  { value: "budget", label: "Budget" },
+  { value: "dashboard", label: uiText("Dashboard") },
+  { value: "instructions", label: uiText("Instructions") },
+  { value: "skills", label: uiText("Skills") },
+  { value: "configuration", label: uiText("Configuration") },
+  { value: "secrets", label: uiText("Secrets") },
+  { value: "tools", label: uiText("Tools") },
+  { value: "runs", label: uiText("Runs") },
+  { value: "audit", label: uiText("Audit") },
+  { value: "budget", label: uiText("Budget") },
 ] as const;
 
 export const DISCARD_AGENT_CONFIG_CHANGES_MESSAGE = "Discard unsaved agent configuration changes?";

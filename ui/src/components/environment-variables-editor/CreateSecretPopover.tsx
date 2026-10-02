@@ -91,7 +91,7 @@ export function SecretPopoverForm({
           autoFocus
           spellCheck={false}
           placeholder="secret_name"
-          aria-label="Secret name"
+        aria-label={uiText("Secret name")}
           aria-invalid={nameError ? true : undefined}
           onChange={(event) => setName(event.target.value)}
           onBlur={() => setTouched(true)}
@@ -115,7 +115,7 @@ export function SecretPopoverForm({
             readOnly={mode === "store"}
             spellCheck={false}
             placeholder={mode === "create" ? "value" : undefined}
-            aria-label="Secret value"
+            aria-label={uiText("Secret value")}
             aria-invalid={valueError ? true : undefined}
             onChange={mode === "create" ? (event) => setValue(event.target.value) : undefined}
           />

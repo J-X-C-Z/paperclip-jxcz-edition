@@ -34,7 +34,7 @@ export function SidePanelFrame({
   open = true,
   maximized = false,
   resizing = false,
-  label = "Side panel",
+  label = uiText("Side panel"),
   headerSize = "default",
   className,
   bodyClassName,
@@ -109,7 +109,7 @@ export function SidePanelToggleButton({
   shortcut?: string;
   className?: string;
 }) {
-  const label = "Toggle side panel";
+  const label = uiText("Toggle side panel");
   return (
     <Tooltip>
       <TooltipTrigger asChild>

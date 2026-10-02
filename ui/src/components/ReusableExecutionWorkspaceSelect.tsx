@@ -29,7 +29,7 @@ export function ReusableExecutionWorkspaceSelect<TWorkspace extends ReusableExec
   value,
   workspaces,
   onValueChange,
-  placeholder = "Choose an existing workspace",
+  placeholder = uiText("Choose an existing workspace"),
   loading = false,
   error = false,
   disabled = false,

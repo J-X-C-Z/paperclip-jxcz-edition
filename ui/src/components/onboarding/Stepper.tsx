@@ -135,7 +135,7 @@ export function Stepper({
       })}
       {/* Out of flow, so it neither takes a row nor picks up the gap. */}
       <span className="sr-only">
-        Step {step} {uiText("of")} {total}
+        {uiText("Step {value0} of {value1}", { value0: step, value1: total })}
       </span>
     </div>
   );

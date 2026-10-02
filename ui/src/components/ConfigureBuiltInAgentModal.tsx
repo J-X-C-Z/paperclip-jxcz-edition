@@ -202,7 +202,7 @@ export function ConfigureBuiltInAgentModal({
             </InlineBanner>
           )}
 
-          <Field label="Monthly budget (optional)" hint="Leave blank for no cap.">
+          <Field label={uiText("Monthly budget (optional)")} hint={uiText("Leave blank for no cap.")}>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">$</span>
               <Input

@@ -31,7 +31,7 @@ export function WorktreeBanner() {
         <button
           type="button"
           onClick={handleCopyName}
-          title="Click to copy worktree name"
+          title={uiText("Click to copy worktree name")}
           className="truncate font-semibold tracking-(--tracking-eyebrow) cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-none p-0 text-current uppercase text-(length:--text-micro)"
         >
           {copied ? uiText("Copied!") : failed ? "Copy failed" : branding.name}

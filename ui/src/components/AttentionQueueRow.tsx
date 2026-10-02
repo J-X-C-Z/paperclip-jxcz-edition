@@ -850,7 +850,7 @@ function ApprovalResolver({ item, companyId, toggle }: { item: AttentionItem; co
       <Textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Optional decision note…"
+        placeholder={uiText("Optional decision note…")}
         className="min-h-16 text-sm"
       />
       <ResolverFooter toggle={toggle}>

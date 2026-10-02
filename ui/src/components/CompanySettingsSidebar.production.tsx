@@ -131,7 +131,7 @@ export function CompanySettingsSidebar() {
               />
             ))}
           {showPage("company.invites") && (
-            <SidebarNavItem to="/company/settings/invites" label="Invites" icon={MailPlus} end />
+            <SidebarNavItem to="/company/settings/invites" label={uiText("Invites")} icon={MailPlus} end />
           )}
           {showPage("company.secrets") && (
             <SidebarNavItem to="/company/settings/secrets" label={uiText("Secrets")} icon={KeyRound} end />
@@ -155,7 +155,7 @@ export function CompanySettingsSidebar() {
           {showPage("instance.heartbeats") && (
             <SidebarNavItem
               to={`${INSTANCE_SETTINGS_PATH_PREFIX}/heartbeats`}
-              label="Heartbeats"
+              label={uiText("Heartbeats")}
               icon={Clock3}
               end
             />

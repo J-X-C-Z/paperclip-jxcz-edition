@@ -202,7 +202,7 @@ export function ActionCard({
       onClick={onApprove}
       disabled={isStale}
       className={mobile ? "w-full" : undefined}
-      title={isStale ? "Re-issue the request before approving — the catalog hash changed." : undefined}
+      title={isStale ? uiText("Re-issue the request before approving — the catalog hash changed.") : undefined}
     > {uiText("Approve")} </Button>
   );
   const denyButton = (

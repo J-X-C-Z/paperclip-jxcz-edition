@@ -1,4 +1,4 @@
-import { ChatSetupNavigation } from "@/components/chat/ChatSetupNavigation";
+import { SetupWizardNavigation } from "@/components/SetupWizard";
 import { useEffect, useState } from "react";
 import { uiText } from "@/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -237,7 +237,8 @@ export function EmailEndpointSetup() {
           {step === 6 ? "Close" : "Cancel"}
         </Button>
       </header>
-      <ChatSetupNavigation
+      <SetupWizardNavigation
+        ariaLabel={uiText("Setup progress")}
         labels={labels}
         step={current}
         availableStep={current}
@@ -279,7 +280,7 @@ export function EmailEndpointSetup() {
               autoComplete="off"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Paste your AgentMail API key"
+              placeholder={uiText("Paste your AgentMail API key")}
             />
             <a
               href="https://console.agentmail.to"
@@ -327,7 +328,7 @@ export function EmailEndpointSetup() {
             <Label>{uiText("Agent")}</Label>
             <SearchableSelect
               value={agentId}
-              placeholder="Choose an agent"
+              placeholder={uiText("Choose an agent")}
               searchPlaceholder="Search all agents…"
               emptyMessage="No agents found."
               groups={[
@@ -388,10 +389,10 @@ export function EmailEndpointSetup() {
               options={[
                 {
                   value: "new",
-                  title: "Create a new address",
+                  title: uiText("Create a new address"),
                   disabled: scopedKey,
                 },
-                { value: "existing", title: "Use an existing inbox" },
+                { value: "existing", title: uiText("Use an existing inbox") },
               ]}
             />
             {addressMode === "new" ? (

@@ -54,11 +54,11 @@ export const AGENT_FILTER_TABS = ["all", "active", "paused", "error", "builtin"]
 type FilterTab = (typeof AGENT_FILTER_TABS)[number];
 
 const AGENT_FILTER_TAB_ITEMS: { value: FilterTab; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "paused", label: "Paused" },
-  { value: "error", label: "Error" },
-  { value: "builtin", label: "Built-in" },
+  { value: "all", label: uiText("All") },
+  { value: "active", label: uiText("Active") },
+  { value: "paused", label: uiText("Paused") },
+  { value: "error", label: uiText("Error") },
+  { value: "builtin", label: uiText("Built-in") },
 ];
 
 function isFilterTab(value: string): value is FilterTab {
@@ -72,15 +72,15 @@ interface EnvironmentDescriptor {
 }
 
 const localEnvironmentDescriptor: EnvironmentDescriptor = {
-  label: "Local",
+  label: uiText("Local"),
   detail: "Paperclip host",
-  title: "Local - Paperclip host",
+  title: uiText("Local - Paperclip host"),
 };
 
 const loadingEnvironmentDescriptor: EnvironmentDescriptor = {
   label: "—",
   detail: "Loading environment",
-  title: "Loading environment",
+  title: uiText("Loading environment"),
 };
 
 // Agents in these states never appear in the agents list — `terminated` is
@@ -504,7 +504,7 @@ function CompanyAgents() {
           </select> : null}
           {/* View toggle */}
           {!forceListView && (
-            <div className="flex items-center border border-border" role="group" aria-label="View mode">
+            <div className="flex items-center border border-border" role="group" aria-label={uiText("View mode")}>
               <button
                 className={cn(
                   "p-1.5 transition-colors",
