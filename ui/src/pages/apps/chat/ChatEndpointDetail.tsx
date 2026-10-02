@@ -234,7 +234,7 @@ export function ChatEndpointDetail() {
   useEffect(() => {
     if (!endpoint || !activeTab) return;
     setBreadcrumbs([
-      { label: "Connectors", href: "/apps" },
+      { label: uiText("Connectors"), href: "/apps" },
       {
         label: `${endpoint.assignedAgentName} · ${providerNames[endpoint.provider]}`,
         href: `/apps/chat/${endpoint.id}/settings`,
@@ -286,7 +286,7 @@ export function ChatEndpointDetail() {
           {endpoint.provider === "imessage-photon" && endpoint.botExternalId && endpoint.photonAllocation !== "shared" && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
               <span>{endpoint.botExternalId}</span>
-              <Button variant="ghost" size="sm" aria-label="Copy dedicated number" onClick={async () => {
+              <Button variant="ghost" size="sm" aria-label={uiText("Copy dedicated number")} onClick={async () => {
                 try { await copyTextToClipboard(endpoint.botExternalId!); setCopyStatus("Number copied"); }
                 catch { setCopyStatus("Could not copy the number. Select and copy it manually."); }
               }}><Copy className="size-4" />{uiText("Copy number")}</Button>
@@ -365,7 +365,7 @@ function Settings({
       ),
     onError: (error) =>
       pushToast({
-        title: "Couldn't update destination",
+        title: uiText("Couldn't update destination"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),
@@ -379,7 +379,7 @@ function Settings({
       ),
     onError: (error) =>
       pushToast({
-        title: "Couldn't update settings",
+        title: uiText("Couldn't update settings"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),
@@ -474,7 +474,7 @@ function Settings({
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">{uiText("Private conversations")}</h3>
           <SettingToggle
-            label="Allow direct messages"
+            label={uiText("Allow direct messages")}
             detail={
               endpoint.provider === "discord"
                 ? "People must also enable Direct Messages in their shared Discord server’s Privacy Settings."
@@ -488,7 +488,7 @@ function Settings({
           />
           {endpoint.provider === "microsoft-teams" && (
             <SettingToggle
-              label="Allow group chats"
+              label={uiText("Allow group chats")}
               detail="The bot may participate in group chats where it is installed."
               checked={endpoint.allowGroupChats ?? false}
               pending={updateEndpoint.isPending}
@@ -563,14 +563,14 @@ function Access({
         new URL(confirmationUrl, window.location.origin).toString(),
       );
       pushToast({
-        title: "Private identity-link URL created",
+        title: uiText("Private identity-link URL created"),
         body: "Send it only to the person whose provider identity is shown.",
         tone: "success",
       });
     },
     onError: (error) =>
       pushToast({
-        title: "Couldn't create identity link",
+        title: uiText("Couldn't create identity link"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),
@@ -777,7 +777,7 @@ function Activity({
     },
     onError: (error) =>
       pushToast({
-        title: "Couldn't replay activity",
+        title: uiText("Couldn't replay activity"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),
@@ -836,7 +836,7 @@ function Activity({
     },
     onError: (error) =>
       pushToast({
-        title: "Couldn't resolve activity",
+        title: uiText("Couldn't resolve activity"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),
@@ -863,7 +863,7 @@ function Activity({
     },
     onError: (error) =>
       pushToast({
-        title: "Couldn't update connection",
+        title: uiText("Couldn't update connection"),
         body: error instanceof Error ? error.message : "Try again.",
         tone: "error",
       }),

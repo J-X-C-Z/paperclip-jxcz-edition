@@ -17,13 +17,13 @@ interface FinanceTimelineCardProps {
 
 export function FinanceTimelineCard({
   rows,
-  emptyMessage = "No financial events in this period.",
+  emptyMessage = uiText("No financial events in this period."),
 }: FinanceTimelineCardProps) {
   const { formatCost: formatCents } = useCostCurrency();
   return (
     <Card>
       <CardHeader className="px-4 pt-4 pb-1">
-        <CardTitle className="text-base">Recent financial events</CardTitle>
+        <CardTitle className="text-base">{uiText("Recent financial events")}</CardTitle>
         <CardDescription>{uiText("Top-ups, fees, credits, commitments, and other non-request charges.")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 px-4 pb-4 pt-3">

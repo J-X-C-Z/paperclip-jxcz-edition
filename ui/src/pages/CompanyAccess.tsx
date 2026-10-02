@@ -273,7 +273,7 @@ export function CompanyAccess() {
           <PageTabBar
             items={[
               { value: "members", label: uiText("Members") },
-              { value: "invites", label: "Invites" },
+              { value: "invites", label: uiText("Invites") },
             ]}
             align="start"
             value={activeTab}

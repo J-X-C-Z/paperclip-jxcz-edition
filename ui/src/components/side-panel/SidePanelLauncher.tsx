@@ -73,7 +73,7 @@ function LauncherContent({
                       </span>
                     ) : null}
                   </span>
-                  {item.alreadyOpen ? <Check className="size-4 text-muted-foreground" aria-label="Already open" /> : null}
+                  {item.alreadyOpen ? <Check className="size-4 text-muted-foreground" aria-label={uiText("Already open")} /> : null}
                   {item.shortcut ? <CommandShortcut>{item.shortcut}</CommandShortcut> : null}
                 </CommandItem>
               ))}
@@ -94,7 +94,7 @@ export function SidePanelLauncher({
   onOpenChange,
   title = "Open a side panel tab",
   description = "Choose a view or resource to open.",
-  placeholder = "Search tabs and resources…",
+  placeholder = uiText("Search tabs and resources…"),
   emptyMessage = "No matching tabs or resources.",
   className,
 }: SidePanelLauncherProps) {

@@ -103,10 +103,10 @@ function EmailDelivery({
               does not resend.
             </p>
             <Input
-              aria-label="Provider message ID"
+              aria-label={uiText("Provider message ID")}
               value={messageId}
               onChange={(e) => setMessageId(e.target.value)}
-              placeholder="Provider message ID"
+              placeholder={uiText("Provider message ID")}
             />
             <div className="flex gap-2">
               <Button

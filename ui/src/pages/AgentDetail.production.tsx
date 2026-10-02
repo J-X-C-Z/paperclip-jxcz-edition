@@ -283,16 +283,16 @@ function scrollToContainerBottom(container: ScrollContainer, behavior: ScrollBeh
 type AgentDetailView = "dashboard" | "instructions" | "configuration" | "secrets" | "skills" | "tools" | "channels" | "runs" | "audit" | "budget";
 
 export const AGENT_DETAIL_TABS: ReadonlyArray<{ value: AgentDetailView; label: string }> = [
-  { value: "dashboard", label: "Dashboard" },
-  { value: "instructions", label: "Instructions" },
-  { value: "skills", label: "Skills" },
-  { value: "configuration", label: "Configuration" },
-  { value: "secrets", label: "Secrets" },
-  { value: "tools", label: "Tools" },
-  { value: "channels", label: "Channels" },
-  { value: "runs", label: "Runs" },
-  { value: "audit", label: "Audit" },
-  { value: "budget", label: "Budget" },
+  { value: "dashboard", label: uiText("Dashboard") },
+  { value: "instructions", label: uiText("Instructions") },
+  { value: "skills", label: uiText("Skills") },
+  { value: "configuration", label: uiText("Configuration") },
+  { value: "secrets", label: uiText("Secrets") },
+  { value: "tools", label: uiText("Tools") },
+  { value: "channels", label: uiText("Channels") },
+  { value: "runs", label: uiText("Runs") },
+  { value: "audit", label: uiText("Audit") },
+  { value: "budget", label: uiText("Budget") },
 ];
 
 export const DISCARD_AGENT_CONFIG_CHANGES_MESSAGE = "Discard unsaved agent configuration changes?";

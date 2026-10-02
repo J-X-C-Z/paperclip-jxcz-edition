@@ -485,7 +485,7 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
           })}
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">No environment variables</p>
+        <p className="text-sm text-muted-foreground">{uiText("No environment variables")}</p>
       )}
 
       {/* Footer bar */}
@@ -555,7 +555,7 @@ export const EnvironmentVariablesEditor = forwardRef<EnvironmentVariablesEditorH
         </div>
       ) : null}
 
-      {hint ? <p className="text-(length:--text-micro) text-muted-foreground/70">{hint}</p> : null}
+      {hint ? <p className="text-(length:--text-micro) text-muted-foreground/70">{typeof hint === "string" ? uiText(hint) : hint}</p> : null}
       {rows.some((row) => row.source === "user_secret" && row.userSecretKey) ? (
         <p className="inline-flex items-start gap-1 text-(length:--text-micro) text-muted-foreground/70">
           <UserRound className="mt-0.5 size-3 shrink-0" />

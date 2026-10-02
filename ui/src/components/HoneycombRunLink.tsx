@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,10 +43,10 @@ export function HoneycombRunLink({
         href={href}
         target="_blank"
         rel="noreferrer"
-        title="Open this run's task.run trace query in Honeycomb"
+        title={uiText("Open this run's task.run trace query in Honeycomb")}
       >
         <ExternalLink />
-        View in Honeycomb
+        {uiText("View in Honeycomb")}
       </a>
     </Button>
   );

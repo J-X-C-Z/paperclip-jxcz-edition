@@ -52,7 +52,7 @@ export const ONBOARDING_STEP_LABELS = [
  * strip on the last segment actually completed.
  */
 export function onboardingStepPositionFor(step: number): number {
-  return ONBOARDING_WIZARD_STEPS.filter((entry) => {uiText("entry")} <= step).length;
+  return ONBOARDING_WIZARD_STEPS.filter((entry) => entry <= step).length;
 }
 
 /**
@@ -135,7 +135,7 @@ export function Stepper({
       })}
       {/* Out of flow, so it neither takes a row nor picks up the gap. */}
       <span className="sr-only">
-        Step {step} {uiText("of")} {total}
+        {uiText("Step {value0} of {value1}", { value0: step, value1: total })}
       </span>
     </div>
   );

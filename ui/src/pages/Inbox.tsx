@@ -2397,9 +2397,9 @@ function StreamlinedInbox() {
           <Tabs value={tab} onValueChange={(value) => navigate(`/inbox/${value}`)}>
             <PageTabBar
               items={[
-                { value: "mine", label: "Mine" },
-                { value: "recent", label: "Recent" },
-                { value: "unread", label: "Unread" },
+                { value: "mine", label: uiText("Mine") },
+                { value: "recent", label: uiText("Recent") },
+                { value: "unread", label: uiText("Unread") },
                 { value: "blocked", label: uiText("Blocked") },
                 { value: "all", label: tr("All") },
               ]}

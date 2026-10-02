@@ -53,7 +53,7 @@ import type {
 export function RunButton({
   onClick,
   disabled,
-  label = "Run now",
+  label = uiText("Run now"),
   size = "sm",
 }: {
   onClick: () => void;

@@ -99,7 +99,7 @@ export function RunsSection() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by source">
+                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label={uiText("Filter by source")}>
                   <span className="text-muted-foreground">{uiText("Source:")}</span>
                   <SelectValue />
                 </SelectTrigger>
@@ -113,7 +113,7 @@ export function RunsSection() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by status">
+                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label={uiText("Filter by status")}>
                   <span className="text-muted-foreground">{uiText("Status:")}</span>
                   <SelectValue />
                 </SelectTrigger>
@@ -127,7 +127,7 @@ export function RunsSection() {
                 </SelectContent>
               </Select>
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label="Filter by date">
+                <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 text-xs" aria-label={uiText("Filter by date")}>
                   <span className="text-muted-foreground">{uiText("Date:")}</span>
                   <SelectValue />
                 </SelectTrigger>
@@ -206,7 +206,7 @@ export function ActivitySection() {
   const groups = useMemo(() => {
     const byDay = new Map<string, typeof events>();
     for (const event of events) {
-      let label = "Earlier";
+      let label = uiText("Earlier");
       try {
         label = new Date(event.createdAt).toLocaleDateString(undefined, {
           weekday: "short",

@@ -338,31 +338,31 @@ function stopReasonLabel(run: RunForIssue) {
 
 function stopStatusLabel(run: LedgerRun, stopReason: string | null) {
   if (stopReason) return stopReason;
-  if (run.status === "scheduled_retry") return "Retry pending";
-  if (run.status === "queued") return "Waiting to start";
-  if (run.status === "running") return "Still running";
-  if (!run.livenessState) return "Unavailable";
-  return "No stop reason";
+  if (run.status === "scheduled_retry") return uiText("Retry pending");
+  if (run.status === "queued") return uiText("Waiting to start");
+  if (run.status === "running") return uiText("Still running");
+  if (!run.livenessState) return uiText("Unavailable");
+  return uiText("No stop reason");
 }
 
 function lastUsefulActionLabel(run: LedgerRun) {
-  if (run.status === "scheduled_retry") return "Waiting for next attempt";
+  if (run.status === "scheduled_retry") return uiText("Waiting for next attempt");
   if (run.lastUsefulActionAt) return relativeTime(run.lastUsefulActionAt);
-  if (isActiveRun(run)) return "No action recorded yet";
+  if (isActiveRun(run)) return uiText("No action recorded yet");
   if (
     run.livenessState === "plan_only" ||
     run.livenessState === "needs_followup"
   ) {
-    return "No concrete action";
+    return uiText("No concrete action");
   }
-  if (run.livenessState === "empty_response") return "No useful output";
-  if (!run.livenessState) return "Unavailable";
-  return "None recorded";
+  if (run.livenessState === "empty_response") return uiText("No useful output");
+  if (!run.livenessState) return uiText("Unavailable");
+  return uiText("None recorded");
 }
 
 function continuationLabel(run: LedgerRun) {
   if (!run.continuationAttempt || run.continuationAttempt <= 0) return null;
-  return `Continuation attempt ${run.continuationAttempt}`;
+  return uiText("Continuation attempt {attempt}", { attempt: run.continuationAttempt });
 }
 
 function hasExhaustedContinuation(run: RunForIssue) {
@@ -423,11 +423,11 @@ function canBoardRecordWatchdogDecision(
 
 function watchdogDecisionErrorMessage(error: unknown) {
   if (error instanceof ApiError && error.status === 403) {
-    return "Only the board or the assigned recovery owner can record watchdog decisions";
+    return uiText("Only the board or the assigned recovery owner can record watchdog decisions");
   }
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
-    : "Paperclip could not record the watchdog decision.";
+    : uiText("Paperclip could not record the watchdog decision.");
 }
 
 export function IssueRunLedger({
@@ -512,7 +512,7 @@ export function IssueRunLedger({
         error instanceof ApiError ? String(error.status) : "error";
       setWatchdogDecisionError(message);
       pushToast({
-        title: "Watchdog decision not recorded",
+        title: uiText("Watchdog decision not recorded"),
         body: message,
         tone: "error",
         dedupeKey: `watchdog-decision:${issueId}:${dedupeSuffix}`,
@@ -539,7 +539,7 @@ export function IssueRunLedger({
         companyId,
       );
       if (!("id" in result))
-        throw new Error(result.message ?? "Trace re-run was skipped.");
+        throw new Error(result.message ?? uiText("Trace re-run was skipped."));
       return result;
     },
     onSuccess: () => {
@@ -552,11 +552,11 @@ export function IssueRunLedger({
     },
     onError: (error) =>
       pushToast({
-        title: "Trace re-run not started",
+        title: uiText("Trace re-run not started"),
         body:
           error instanceof Error
             ? error.message
-            : "Paperclip could not start the trace re-run.",
+            : uiText("Paperclip could not start the trace re-run."),
         tone: "error",
         dedupeKey: `provider-trace-rerun:${issueId}`,
       }),
@@ -669,14 +669,14 @@ export function IssueRunLedgerContent({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Run ledger
+            {uiText("Run ledger")}
           </h3>
           <p className="text-xs text-muted-foreground">
             {latestRun
               ? runSummary(latestRun, agentMap)
               : issueStatus === "in_progress"
-                ? "Waiting for the first run record."
-                : "No runs linked yet."}
+                ? uiText("Waiting for the first run record.")
+                : uiText("No runs linked yet.")}
           </p>
         </div>
         {latestRun ? (
@@ -684,7 +684,7 @@ export function IssueRunLedgerContent({
             to={`/agents/${latestRun.agentId}/runs/${latestRun.runId}`}
             className="shrink-0 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            Latest run
+            {uiText("Latest run")}
           </Link>
         ) : null}
       </div>
@@ -695,8 +695,8 @@ export function IssueRunLedgerContent({
             <span className="font-medium text-foreground">{uiText("Child work")}</span>
             <span className="text-muted-foreground">
               {children.active.length > 0
-                ? `${children.active.length} active, ${children.done} done, ${children.cancelled} cancelled`
-                : `all ${children.total} terminal (${children.done} done, ${children.cancelled} cancelled)`}
+                ? uiText("{active} active, {done} done, {cancelled} cancelled", { active: children.active.length, done: children.done, cancelled: children.cancelled })
+                : uiText("all {total} terminal ({done} done, {cancelled} cancelled)", { total: children.total, done: children.done, cancelled: children.cancelled })}
             </span>
           </div>
           {children.active.length > 0 ? (
@@ -736,13 +736,13 @@ export function IssueRunLedgerContent({
         >
           <p className="font-medium">
             {latestSilentRun.outputSilence.level === "critical"
-              ? "Critical output silence"
-              : "Output silence watchdog warning"}
+              ? uiText("Critical output silence")
+              : uiText("Output silence watchdog warning")}
           </p>
           <p className="mt-1">
-            Latest active run has been silent for{" "}
+            {uiText("Latest active run has been silent for")} {" "}
             {formatSilenceAge(latestSilentRun.outputSilence.silenceAgeMs) ??
-              "an extended period"}
+              uiText("an extended period")}
             .
             {latestSilentRun.outputSilence.evaluationIssueIdentifier ? (
               <>
@@ -759,8 +759,8 @@ export function IssueRunLedgerContent({
           </p>
           <p className="mt-1">
             {latestSilentRun.outputSilence.evaluationIssueIdentifier
-              ? "This signal is informational. Paperclip did not create new delegated recovery work."
-              : "This signal is informational. Paperclip did not create or assign a recovery task."}
+              ? uiText("This signal is informational. Paperclip did not create new delegated recovery work.")
+              : uiText("This signal is informational. Paperclip did not create or assign a recovery task.")}
           </p>
           {onWatchdogDecision && canRecordWatchdogDecisions ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -777,7 +777,7 @@ export function IssueRunLedgerContent({
                 }
                 disabled={pendingWatchdogDecision != null}
               >
-                Continue monitoring
+                {uiText("Continue monitoring")}
               </button>
               <button
                 type="button"
@@ -796,7 +796,7 @@ export function IssueRunLedgerContent({
                 }
                 disabled={pendingWatchdogDecision != null}
               >
-                Snooze 1h
+                {uiText("Snooze 1h")}
               </button>
               <button
                 type="button"
@@ -812,7 +812,7 @@ export function IssueRunLedgerContent({
                 }
                 disabled={pendingWatchdogDecision != null}
               >
-                Mark false positive
+                {uiText("Mark false positive")}
               </button>
             </div>
           ) : null}
@@ -827,8 +827,8 @@ export function IssueRunLedgerContent({
       {feedItems.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">
           {renderActivityEvent
-            ? "Runs and activity will appear here once this task has history."
-            : "Historical runs without liveness metadata will appear here once linked to this task."}
+            ? uiText("Runs and activity will appear here once this task has history.")
+            : uiText("Historical runs without liveness metadata will appear here once linked to this task.")}
         </div>
       ) : (
         <div className="space-y-1.5">

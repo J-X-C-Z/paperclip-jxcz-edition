@@ -254,7 +254,7 @@ export function SecretPicker({
       deriveGroups={deriveGroups}
       disabled={disabled}
       disablePortal={disablePortal}
-      placeholder="Select secret…"
+      placeholder={uiText("Select secret…")}
       searchPlaceholder="Search secrets…"
       emptyMessage="No matching secrets"
       triggerClassName={cn(

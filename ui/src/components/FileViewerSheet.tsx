@@ -78,7 +78,7 @@ function normalizeError(error: unknown): FileViewerErrorShape {
   if (error instanceof Error) {
     return { status: 0, code: "", message: error.message };
   }
-  return { status: 0, code: "", message: "Something went wrong." };
+  return { status: 0, code: "", message: uiText("Something went wrong.") };
 }
 
 function formatBytes(size: number | null | undefined): string | null {
@@ -123,48 +123,48 @@ export function describeDenial(code: string, fallback: string): { title: string;
     return {
       icon: <Lock aria-hidden="true" className="h-6 w-6 text-amber-500" />,
       title: "Viewer blocked for this file",
-      body: "This file is not available through the viewer because it may contain sensitive data.",
+      body: uiText("This file is not available through the viewer because it may contain sensitive data."),
     };
   }
   if (lower.includes("outside") || lower.includes("traversal")) {
     return {
       icon: <Ban aria-hidden="true" className="h-6 w-6 text-red-500" />,
       title: "Path is outside the workspace",
-      body: "The viewer can only open files that live under the issue's workspace.",
+      body: uiText("The viewer can only open files that live under the issue's workspace."),
     };
   }
   if (lower.includes("archive") || lower.includes("cleaned")) {
     return {
       icon: <FolderOpen aria-hidden="true" className="h-6 w-6 text-muted-foreground" />,
       title: "Workspace is no longer available",
-      body: "The isolated worktree for this issue has been cleaned up, so files cannot be previewed.",
+      body: uiText("The isolated worktree for this issue has been cleaned up, so files cannot be previewed."),
     };
   }
   if (lower.includes("remote")) {
     return {
       icon: <AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />,
       title: "Remote workspace preview not supported",
-      body: "This workspace is hosted remotely and is not available for inline preview yet.",
+      body: uiText("This workspace is hosted remotely and is not available for inline preview yet."),
     };
   }
   if (lower.includes("too_large") || lower.includes("size")) {
     return {
       icon: <AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />,
       title: "File is too large to preview",
-      body: "This file exceeds the supported preview size.",
+      body: uiText("This file exceeds the supported preview size."),
     };
   }
   if (lower.includes("binary") || lower.includes("unsupported")) {
     return {
       icon: <AlertTriangle aria-hidden="true" className="h-6 w-6 text-amber-500" />,
       title: "Preview not supported for this file type",
-      body: "This file does not have a text, image, or video preview available.",
+      body: uiText("This file does not have a text, image, or video preview available."),
     };
   }
   return {
     icon: <Ban aria-hidden="true" className="h-6 w-6 text-red-500" />,
     title: "Can't preview this file",
-    body: fallback || "The viewer was unable to load this file.",
+    body: fallback || uiText("The viewer was unable to load this file."),
   };
 }
 
@@ -225,7 +225,7 @@ export function FileViewerMetadataRow({
           ) : null}
         </>
       ) : state ? (
-        <span className="h-3 w-28 rounded bg-muted animate-pulse" aria-label="Loading file details" />
+        <span className="h-3 w-28 rounded bg-muted animate-pulse" aria-label={uiText("Loading file details")} />
       ) : null}
     </div>
   );
@@ -443,7 +443,7 @@ function LoadingView({ elapsedMs }: { elapsedMs: number }) {
   if (elapsedMs < 400) {
     return (
       <div className="flex-1 space-y-2 p-6" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading file preview</span>
+        <span className="sr-only">{uiText("Loading file preview")}</span>
         {Array.from({ length: 10 }).map((_, index) => (
           <div key={index} className="h-3 rounded bg-muted animate-pulse" style={{ width: `${90 - index * 6}%` }} />
         ))}
@@ -458,7 +458,7 @@ function LoadingView({ elapsedMs }: { elapsedMs: number }) {
     >
       <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-        Loading file preview...
+        {uiText("Loading file preview...")}
       </div>
     </div>
   );
@@ -555,14 +555,14 @@ export function FileViewerSheet({
   useEffect(() => {
     if (resolveQuery.isError) {
       const normalized = normalizeError(resolveQuery.error);
-      setAnnouncement(normalized.message || "Unable to load file.");
+      setAnnouncement(normalized.message || uiText("Unable to load file."));
     }
   }, [resolveQuery.isError, resolveQuery.error]);
 
   useEffect(() => {
     if (contentQuery.isError) {
       const normalized = normalizeError(contentQuery.error);
-      setAnnouncement(normalized.message || "Unable to load file content.");
+      setAnnouncement(normalized.message || uiText("Unable to load file content."));
     }
   }, [contentQuery.isError, contentQuery.error]);
 
@@ -711,7 +711,7 @@ export function FileViewerSheet({
   const title = state ? basename(state.path) : "Browse workspace";
   const description = state
     ? middleTruncatePath(state.path)
-    : "Search and preview files from this issue's workspace.";
+    : uiText("Search and preview files from this issue's workspace.");
   const showDescription = state ? description !== title : true;
 
   return (
@@ -958,7 +958,7 @@ export function FileViewerBody({
         <FileViewerStateView
           icon={<FileSearch aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
           title={uiText("File not found")}
-          body="That file was not found in the active workspace."
+          body={uiText("That file was not found in the active workspace.")}
           actions={
             <>
               {onFallbackToProject ? (
@@ -978,7 +978,7 @@ export function FileViewerBody({
         <FileViewerStateView
           icon={<FolderOpen aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
           title={uiText("No workspace available")}
-          body="This issue does not have a workspace that supports preview yet."
+          body={uiText("This issue does not have a workspace that supports preview yet.")}
         />
       );
     }
@@ -1004,7 +1004,7 @@ export function FileViewerBody({
       <FileViewerStateView
         icon={<Cloud aria-hidden="true" className="h-6 w-6 text-muted-foreground" />}
         title={uiText("Remote workspace preview coming soon")}
-        body="This workspace is hosted remotely; inline previews are not supported yet."
+        body={uiText("This workspace is hosted remotely; inline previews are not supported yet.")}
       />
     );
   }

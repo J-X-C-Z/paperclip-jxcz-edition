@@ -3663,7 +3663,7 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
       options.push({ id: `agent:${agent.id}`, label: agent.name });
     }
     if (currentUserId) {
-      options.push({ id: `user:${currentUserId}`, label: "Me" });
+      options.push({ id: `user:${currentUserId}`, label: uiText("Me") });
     }
     return options;
   }, [agents, companyMembers?.users, currentUserId]);
@@ -5283,7 +5283,7 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
         title: tr("Task archived from inbox"),
         tone: "success",
         action: {
-          label: "Undo",
+          label: uiText("Undo"),
           onClick: () => {
             void undoInboxArchive(
               id,
@@ -6452,7 +6452,7 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
     onSuccess: (created) => {
       invalidateIssueCollections();
       pushToast({
-        title: "Isolated re-issue created",
+        title: uiText("Isolated re-issue created"),
         body: created.identifier
           ? `${created.identifier} will run on a fresh isolated workspace.`
           : tr("A fresh isolated re-issue was created."),

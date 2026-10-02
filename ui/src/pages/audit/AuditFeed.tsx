@@ -35,29 +35,29 @@ const ALL = "__all";
 
 /** Action-domain prefixes offered in the filter (server does a prefix match). */
 const ACTION_DOMAINS: { value: string; label: string }[] = [
-  { value: ALL, label: "All actions" },
-  { value: "issue.", label: "Tasks" },
-  { value: "agent.", label: "Agents" },
-  { value: "heartbeat.", label: "Runs" },
-  { value: "approval.", label: "Approvals" },
-  { value: "project.", label: "Projects" },
-  { value: "goal.", label: "Goals" },
-  { value: "tool_", label: "Apps & tools" },
-  { value: "cost.", label: "Costs" },
-  { value: "company.", label: "Organization" },
+  { value: ALL, label: uiText("All actions") },
+  { value: "issue.", label: uiText("Tasks") },
+  { value: "agent.", label: uiText("Agents") },
+  { value: "heartbeat.", label: uiText("Runs") },
+  { value: "approval.", label: uiText("Approvals") },
+  { value: "project.", label: uiText("Projects") },
+  { value: "goal.", label: uiText("Goals") },
+  { value: "tool_", label: uiText("Apps & tools") },
+  { value: "cost.", label: uiText("Costs") },
+  { value: "company.", label: uiText("Organization") },
 ];
 
 /** Entity types offered in the filter (server does an exact match). */
 const ENTITY_TYPES: { value: string; label: string }[] = [
-  { value: ALL, label: "All entities" },
-  { value: "issue", label: "Task" },
-  { value: "agent", label: "Agent" },
-  { value: "heartbeat_run", label: "Run" },
-  { value: "routine", label: "Routine" },
-  { value: "project", label: "Project" },
-  { value: "goal", label: "Goal" },
-  { value: "company", label: "Organization" },
-  { value: "tool_connection", label: "Connection" },
+  { value: ALL, label: uiText("All entities") },
+  { value: "issue", label: uiText("Task") },
+  { value: "agent", label: uiText("Agent") },
+  { value: "heartbeat_run", label: uiText("Run") },
+  { value: "routine", label: uiText("Routine") },
+  { value: "project", label: uiText("Project") },
+  { value: "goal", label: uiText("Goal") },
+  { value: "company", label: uiText("Organization") },
+  { value: "tool_connection", label: uiText("Connection") },
 ];
 
 /**

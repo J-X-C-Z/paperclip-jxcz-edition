@@ -8,6 +8,7 @@
  * in-progress fade to "now", a hover tooltip, and a full-window mini-map with a
  * draggable brush.
  */
+import { uiText } from "@/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "@/lib/router";
 import type { WorkTimelineActor, WorkTimelineResult } from "@paperclipai/shared";
@@ -954,7 +955,7 @@ function MiniMap({
           height={H - 2}
           width={handleW}
           testId="timeline-minimap-left-handle"
-          label="Drag left edge to resize visible range"
+          label={uiText("Drag left edge to resize visible range")}
           onMouseDown={(e) => startRangeDrag("left", e)}
         />
         <MiniMapHandle
@@ -963,7 +964,7 @@ function MiniMap({
           height={H - 2}
           width={handleW}
           testId="timeline-minimap-right-handle"
-          label="Drag right edge to resize visible range"
+          label={uiText("Drag right edge to resize visible range")}
           onMouseDown={(e) => startRangeDrag("right", e)}
         />
       </svg>

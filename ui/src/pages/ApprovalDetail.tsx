@@ -163,11 +163,11 @@ export function ApprovalDetail() {
         }
       : linkedAgentId
         ? {
-            label: "Open hired agent",
+            label: uiText("Open hired agent"),
             to: `/agents/${linkedAgentId}`,
           }
         : {
-            label: "Back to approvals",
+            label: uiText("Back to approvals"),
             to: "/approvals",
           };
 
@@ -334,7 +334,7 @@ export function ApprovalDetail() {
         <Textarea
           value={commentBody}
           onChange={(e) => setCommentBody(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder={uiText("Add a comment...")}
           rows={3}
         />
         <div className="flex justify-end">

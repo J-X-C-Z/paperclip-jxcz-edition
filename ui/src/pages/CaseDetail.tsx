@@ -494,7 +494,7 @@ export function CaseDetail() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Cases", href: caseHref() },
+      { label: uiText("Cases"), href: caseHref() },
       { label: caseData ? `${caseData.identifier} — ${caseData.title}` : (caseIdentifier ?? "Case") },
     ]);
   }, [setBreadcrumbs, caseData, caseIdentifier, caseHref]);

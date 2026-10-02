@@ -308,18 +308,18 @@ export function SkillStudio() {
       isCreateMode
         ? [
             { label: uiText("Skills"), href: "/skills" },
-            { label: "Studio", href: "/skills/studio" },
+            { label: uiText("Studio"), href: "/skills/studio" },
             { label: tr("New skill") },
           ]
         : skill
         ? [
             { label: uiText("Skills"), href: "/skills" },
-            { label: "Studio", href: "/skills/studio" },
+            { label: uiText("Studio"), href: "/skills/studio" },
             { label: skill.name },
           ]
         : [
             { label: uiText("Skills"), href: "/skills" },
-            { label: "Studio" },
+            { label: uiText("Studio") },
           ],
     );
   }, [isCreateMode, setBreadcrumbs, skill]);
@@ -628,7 +628,7 @@ function StudioNewSkillPanel({
               />
             ))}
             <Input
-              aria-label="Hex color"
+              aria-label={uiText("Hex color")}
               value={draft.color}
               onChange={(event) => patchDraft({ color: event.target.value })}
               className="h-7 w-28 font-mono text-xs"
@@ -1147,7 +1147,7 @@ function StudioHeader({
   const copyShareLink = useCallback(() => {
     const href = typeof window !== "undefined" ? window.location.href : "";
     void copyTextToClipboard(href)
-      .then(() => toast?.pushToast({ tone: "success", title: "Link copied", body: "Skill Studio link copied to clipboard." }))
+      .then(() => toast?.pushToast({ tone: "success", title: uiText("Link copied"), body: "Skill Studio link copied to clipboard." }))
       .catch((error) => toast?.pushToast({
         tone: "error",
         title: uiText("Copy failed"),
@@ -2693,7 +2693,7 @@ function RunTemplateAdvancedPanel({
     const custom = templates.filter((template) => !template.builtIn).map(toOption);
     return [
       { id: "built-in", label: tr("Built in"), options: [noTemplateOption, ...builtIn] },
-      ...(custom.length > 0 ? [{ id: "custom", label: "Custom", options: custom }] : []),
+      ...(custom.length > 0 ? [{ id: "custom", label: uiText("Custom"), options: custom }] : []),
     ];
   }, [templates]);
 
@@ -2767,7 +2767,7 @@ function RunTemplateAdvancedPanel({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Edit run template"
+                    aria-label={uiText("Edit run template")}
                     disabled={!canEdit || actionPending}
                     onClick={() => selectedTemplate && onEditTemplate(selectedTemplate)}
                   >
@@ -2784,7 +2784,7 @@ function RunTemplateAdvancedPanel({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Duplicate run template"
+                    aria-label={uiText("Duplicate run template")}
                     disabled={!canDuplicate || actionPending}
                     onClick={() => selectedTemplate && onDuplicateTemplate(selectedTemplate)}
                   >
@@ -3155,7 +3155,7 @@ function RunDetailView({
         {/* snapshot property block */}
         <div className="rounded-md border border-border text-xs">
           <PropRow label={tr("Input")} value={detail.inputId ? "saved input" : "ad-hoc paste"} />
-          <PropRow label="Template" value={detail.templateName ?? tr("No template")} />
+          <PropRow label={uiText("Template")} value={detail.templateName ?? tr("No template")} />
           <PropRow label={tr("Skill version")} value={`v${detail.skillVersion.revisionNumber}`} />
           <PropRow label={uiText("Created")} value={relativeTime(detail.createdAt)} />
         </div>

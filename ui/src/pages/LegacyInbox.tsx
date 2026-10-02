@@ -2283,13 +2283,13 @@ export function Inbox() {
             items={[
               {
                 value: "mine",
-                label: "Mine",
+                label: uiText("Mine"),
               },
               {
                 value: "recent",
-                label: "Recent",
+                label: uiText("Recent"),
               },
-              { value: "unread", label: "Unread" },
+              { value: "unread", label: uiText("Unread") },
               { value: "blocked", label: uiText("Blocked") },
               { value: "all", label: uiText("All") },
             ]}

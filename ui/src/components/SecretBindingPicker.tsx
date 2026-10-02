@@ -88,7 +88,7 @@ export function SecretBindingPicker({
   value,
   onChange,
   label = "Secret",
-  placeholder = "Select secret",
+  placeholder = uiText("Select secret"),
   allowVersionSelector = true,
   emptyHint = "No matching secrets. Create one to bind it here.",
   className,
@@ -305,7 +305,7 @@ export function SecretBindingPicker({
                 value={createValue}
                 onChange={(event) => setCreateValue(event.target.value)}
                 rows={3}
-                placeholder="Paste the secret value"
+                placeholder={uiText("Paste the secret value")}
                 className="font-mono text-xs"
               />
               <p className="text-(length:--text-micro) text-muted-foreground mt-1">
@@ -318,7 +318,7 @@ export function SecretBindingPicker({
                 id="secret-description"
                 value={createDescription}
                 onChange={(event) => setCreateDescription(event.target.value)}
-                placeholder="Optional notes (no values)"
+                placeholder={uiText("Optional notes (no values)")}
               />
             </div>
             {createError ? <p className="text-xs text-destructive">{createError}</p> : null}

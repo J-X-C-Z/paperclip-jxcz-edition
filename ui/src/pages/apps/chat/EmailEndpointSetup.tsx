@@ -237,7 +237,7 @@ export function EmailEndpointSetup() {
         </Button>
       </header>
       {step !== 6 && (
-        <nav aria-label="Setup progress">
+        <nav aria-label={uiText("Setup progress")}>
           <ol className="flex gap-4">
             {labels.map((label, i) => (
               <li
@@ -296,7 +296,7 @@ export function EmailEndpointSetup() {
               autoComplete="off"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Paste your AgentMail API key"
+              placeholder={uiText("Paste your AgentMail API key")}
             />
             <a
               href="https://console.agentmail.to"
@@ -344,7 +344,7 @@ export function EmailEndpointSetup() {
             <Label>{uiText("Agent")}</Label>
             <SearchableSelect
               value={agentId}
-              placeholder="Choose an agent"
+              placeholder={uiText("Choose an agent")}
               searchPlaceholder="Search all agents…"
               emptyMessage="No agents found."
               groups={[
@@ -405,10 +405,10 @@ export function EmailEndpointSetup() {
               options={[
                 {
                   value: "new",
-                  title: "Create a new address",
+                  title: uiText("Create a new address"),
                   disabled: scopedKey,
                 },
-                { value: "existing", title: "Use an existing inbox" },
+                { value: "existing", title: uiText("Use an existing inbox") },
               ]}
             />
             {addressMode === "new" ? (

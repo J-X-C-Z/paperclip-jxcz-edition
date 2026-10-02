@@ -482,13 +482,13 @@ function TrustChip({ level }: { level: CompanySkillTrustLevel }) {
     },
     assets: {
       icon: Folder,
-      label: "Includes assets",
+      label: uiText("Includes assets"),
       tooltip: "Ships images, fonts, or other non-script files.",
       className: "border-cyan-500/30 bg-cyan-500/10 text-cyan-800 dark:text-cyan-200",
     },
     scripts_executables: {
       icon: AlertTriangle,
-      label: "Includes scripts",
+      label: uiText("Includes scripts"),
       tooltip: "Ships executable scripts. Review before installing.",
       className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
     },
@@ -514,13 +514,13 @@ function CompatChip({ compatibility }: { compatibility: CompanySkillCompatibilit
   const map = {
     unknown: {
       icon: HelpCircle,
-      label: "Unknown format",
+      label: uiText("Unknown format"),
       tooltip: tr("Paperclip could not validate this skill as Agent Skills markdown. Install at your own risk."),
       className: "border-yellow-500/40 bg-yellow-500/10 text-yellow-800 dark:text-yellow-200",
     },
     invalid: {
       icon: XOctagon,
-      label: "Invalid",
+      label: uiText("Invalid"),
       tooltip: tr("This skill cannot be installed — content is not valid Agent Skills markdown."),
       className: "border-destructive/40 bg-destructive/10 text-destructive",
     },
@@ -2770,10 +2770,10 @@ function SkillList({
 type SkillDetailTab = "overview" | "files" | "versions" | "agents";
 
 const SKILL_DETAIL_TABS: Array<{ value: SkillDetailTab; label: string; icon: typeof FileText }> = [
-  { value: "overview", label: "Overview", icon: FileText },
-  { value: "files", label: "Files", icon: FolderOpen },
-  { value: "versions", label: "Versions", icon: History },
-  { value: "agents", label: "Agents", icon: Users },
+  { value: "overview", label: uiText("Overview"), icon: FileText },
+  { value: "files", label: uiText("Files"), icon: FolderOpen },
+  { value: "versions", label: uiText("Versions"), icon: History },
+  { value: "agents", label: uiText("Agents"), icon: Users },
 ];
 
 function currentVersionSelection(detail: CompanySkillDetail | null | undefined) {
@@ -4578,7 +4578,7 @@ export function CompanySkills() {
         : activeDetail
           ? skillDetailBreadcrumbs(activeDetail, skillFoldersQuery.data).slice(1)
           : routeSkillToken
-            ? [{ label: "Detail" }]
+            ? [{ label: uiText("Detail") }]
             : []),
     ]);
   }, [activeDetail, isStudioNew, routeSkillToken, setBreadcrumbs, skillFoldersQuery.data, studioForkFromId]);
@@ -5680,7 +5680,7 @@ export function CompanySkills() {
         {!streamlinedUiEnabled ? (
           <div className="px-4 pt-4">
             <Tabs value={legacyDiscoveryTab} onValueChange={(value) => setLegacyDiscoveryTab(value as "all" | "installed" | "catalog" | "bundled")}>
-              <TabsList variant="line" aria-label="Skills view">
+              <TabsList variant="line" aria-label={uiText("Skills view")}>
                 <TabsTrigger value="all">{tr("All")}</TabsTrigger>
                 <TabsTrigger value="installed">{tr("Installed")}</TabsTrigger>
                 <TabsTrigger value="catalog">{tr("Catalog")}</TabsTrigger>
@@ -5761,7 +5761,7 @@ export function CompanySkills() {
                 ? `Moved "${card.name}" to ${skillFolderResult?.folders.find((folder) => folder.id === folderId)?.name ?? "folder"}.`
                 : `Moved "${card.name}" to Unfiled.`,
               action: {
-                label: "Undo",
+                label: uiText("Undo"),
                 onClick: () => moveSkillToFolder.mutate({ itemId: skillId, folderId: previousFolderId }),
               },
             });

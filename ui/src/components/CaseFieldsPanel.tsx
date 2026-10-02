@@ -238,11 +238,11 @@ export function CaseFieldsPanel({ fields }: { fields: Record<string, unknown> })
     <section className="space-y-2">
       <div className="flex items-baseline gap-2">
         <h2 className="text-sm font-semibold">{uiText("Fields")}</h2>
-        <span className="text-xs text-muted-foreground">from the skill&apos;s schema — rendered generically</span>
+        <span className="text-xs text-muted-foreground">{uiText("from the skill's schema — rendered generically")}</span>
       </div>
       <Card className="gap-0 py-0">
         {entries.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-muted-foreground">No fields set</div>
+          <div className="px-4 py-3 text-sm text-muted-foreground">{uiText("No fields set")}</div>
         ) : (
           <dl className="divide-y divide-border">
             {entries.map(([key, value]) => (

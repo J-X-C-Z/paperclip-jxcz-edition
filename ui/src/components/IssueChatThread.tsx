@@ -6650,7 +6650,7 @@ export function IssueChatThread({
                     {legacyRecoverySourceIssue ? (
                       <SystemNotice
                         tone="info"
-                        label="Legacy recovery task"
+                        label={uiText("Legacy recovery task")}
                         body={
                           <span>
                             Legacy recovery task. Newer recovery actions live on

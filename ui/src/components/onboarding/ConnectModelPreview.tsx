@@ -113,7 +113,7 @@ export function ConnectModelPreview({
 
         <div className="space-y-2 pt-12">
           <ModelSourceTiles
-            label="Model source"
+            label={uiText("Model source")}
             sources={MODEL_SOURCES}
             mode={mode}
             selectedId={selectedId}

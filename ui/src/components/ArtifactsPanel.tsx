@@ -97,7 +97,7 @@ export function ArtifactsPanel({ taskId, isAgentWorking, openDocKey, openDocTitl
 
   // Open doc from parent (e.g. clicking plan link in chat)
   const effectiveViewingDoc = openDocKey
-    ? { key: openDocKey, title: openDocTitle ?? "Document" }
+    ? { key: openDocKey, title: openDocTitle ?? uiText("Document") }
     : viewingDoc;
 
   const handleBack = () => {
