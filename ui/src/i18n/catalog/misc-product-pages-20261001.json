@@ -116,7 +116,7 @@
   "Configure": "配置",
   "Enable": "启用",
   "Disable": "停用",
-  "Review": "查看",
+  "Review": "审核",
   "Install": "安装",
   "Cannot delete the managed local environment.": "无法删除受管理的本地环境。",
   "Cannot delete the current instance default environment. Set a new default environment before deleting this one.": "无法删除当前实例的默认环境。请先设置新的默认环境，然后再删除此环境。",

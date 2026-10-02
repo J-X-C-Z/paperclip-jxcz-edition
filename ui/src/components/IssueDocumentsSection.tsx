@@ -1067,7 +1067,7 @@ export function IssueDocumentsSection({
                         isLocked && "text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200",
                       )}
                       title={isLocked ? uiText("Unlock document") : uiText("Lock document")}
-                      aria-label={isLocked ? `Unlock ${doc.key} document` : `Lock ${doc.key} document`}
+                      aria-label={isLocked ? uiText("Unlock {document} document", { document: doc.key }) : uiText("Lock {document} document", { document: doc.key })}
                       onClick={() => toggleDocumentLock(doc, !isLocked)}
                       disabled={lockActionPending}
                     >
