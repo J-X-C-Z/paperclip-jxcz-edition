@@ -244,6 +244,17 @@ describe("legacy continuation persisted authority", () => {
     expect(await f.createRecovery().reconcileLegacyContinuation(f.runId)).toBe("skipped");
     expect(await f.runs()).toHaveLength(1);
   });
+  it("skips a historical run bound to another company's agent during startup recovery", async () => {
+    const f = await fixture();
+    const other = await fixture();
+    await db.update(heartbeatRuns).set({ agentId: other.agentId }).where(eq(heartbeatRuns.id, f.runId));
+    expect(await f.createRecovery().reconcileLegacyContinuation(f.runId)).toBe("skipped");
+    expect(await f.runs()).toHaveLength(1);
+    await expect(f.createRecovery().reconcileStrandedAssignedIssues({ companyId: f.companyId })).resolves.toBeDefined();
+    expect(await f.actions()).toHaveLength(0);
+    const runs = await f.runs();
+    expect(runs.find(run => run.id === f.runId)?.agentId).toBe(other.agentId);
+  });
   it("the delayed sweep ignores old diagnostic labels and uses the same repair path", async () => {
     const f = await fixture();
     await f.createRecovery().reconcileStrandedAssignedIssues({ companyId: f.companyId });

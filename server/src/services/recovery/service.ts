@@ -3700,8 +3700,11 @@ export function recoveryService(
     if ((readNonEmptyString(context.issueId) ?? readNonEmptyString(context.taskId)) !== issue.id) {
       return { kind: "skip" as const, reason: "invalid_issue_binding" };
     }
-    const [agent, pause, budget, stop, active, routine, goal, latest, durableWait, workspaceChildren] = await Promise.all([
-      getAgent(run.agentId),
+    const agent = await getAgent(run.agentId);
+    if (!agent || agent.companyId !== issue.companyId) {
+      return { kind: "skip" as const, reason: "invalid_binding" };
+    }
+    const [pause, budget, stop, active, routine, goal, latest, durableWait, workspaceChildren] = await Promise.all([
       isAutomaticRecoverySuppressedByPauseHold(db, issue.companyId, issue.id, treeControlSvc),
       isInvocationBudgetBlocked(issue, run.agentId),
       readChatControlRecoveryStop(db, { companyId: issue.companyId, issueId: issue.id, agentId: run.agentId, sourceRunId: run.id }),
