@@ -50,4 +50,4 @@ Resolved stale orphan watcher contention during startup. Also repaired an upstre
 
 Live `/api/health`: status `ok`, auth ready, bootstrap ready, startup recovery `ready`; port 3100 belongs to the primary checkout. Read-only browser acceptance confirms Chinese groups/members/project assignment controls, departments, all four templates, cost estimates and organization breakdowns, and project-scoped agent filtering for 手机端开发. Screenshot: `output/playwright/upstream-update-project-scope.png`. No additional provider-auth or model-run smoke test was launched by this update.
 
-Readback, migration evidence, acceptance logs and archives are retained in the backup directory. Temporary preview and rehearsal database are removed after acceptance.
+Readback, migration evidence, acceptance logs and archives are retained in the backup directory. Temporary preview and rehearsal database are removed after acceptance. The isolated integration checkout is retained because another task added new harness-configuration sources there after activation; those concurrent changes are additionally archived and were not overwritten or included in this completed merge.
