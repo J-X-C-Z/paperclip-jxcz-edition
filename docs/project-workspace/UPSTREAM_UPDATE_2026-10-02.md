@@ -36,7 +36,7 @@ Source backup branches: `codex/paperclip-local-backup-20261002` (initial), `code
 
 Concurrent localization was captured in two further snapshots and merged. The completed translation task’s changes were included before activation. UI typecheck, production build, token gates and i18n tests passed again after those additions.
 Source archive, binary diff, status manifest, migration map and rehearsal evidence: `/Users/jxcz/Documents/ChatGPT/paperclip 增强/update-backups/2026-10-02/`.
-Pre-update logical DB backup: `/Users/jxcz/.paperclip/instances/default/data/backups/paperclip-20261002-184829.sql.gz`.
+Pre-update logical DB backups: initial `paperclip-20261002-184829.sql.gz` and latest `paperclip-20261002-191022.sql.gz` in `/Users/jxcz/.paperclip/instances/default/data/backups/`, with copies retained in the source backup directory.
 
 Do not roll source back against the migrated database without accounting for the new migration journal; retain the backup and mapping. No upstream push, external publication, model execution or cloud resource creation is part of this update.
 
