@@ -58,7 +58,7 @@
   "Importing…": "正在导入…",
   "Back": "返回",
   "Cancel": "取消",
-  "Done": "完成",
+  "Done": "已完成",
   "Try again": "重试",
   "Import from path or URL": "从路径或 URL 导入",
   "workspace": "工作区",
@@ -71,6 +71,6 @@
   "Search discovered skills": "搜索已发现的技能",
   "No files were copied. These skills reference the files in the project workspace — editing them in Skill Studio saves directly back to those files.": "没有复制文件。这些技能引用项目工作区中的文件，在 Skill Studio 中编辑会直接保存回这些文件。",
   "imported": "已导入",
-  "updated": "已更新",
+  "updated": "更新了",
   "skipped": "已跳过"
 }

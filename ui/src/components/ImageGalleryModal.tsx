@@ -106,7 +106,7 @@ export function ImageGalleryModal({
                 download={filename}
                 className="text-white/50 hover:text-white transition-colors"
                 title={uiText("Download")}
-                aria-label={`Download ${filename}`}
+                aria-label={uiText("Download {filename}", { filename })}
                 onClick={(e) => e.stopPropagation()}
               >
                 <Download className="h-4.5 w-4.5" />

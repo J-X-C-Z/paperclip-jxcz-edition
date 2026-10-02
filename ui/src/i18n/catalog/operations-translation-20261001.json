@@ -51,7 +51,7 @@
   "Keep my draft": "保留我的草稿",
   "Reload remote": "重新加载远端版本",
   "Remote revision {value0}": "远端修订版本 {value0}",
-  "updated {value0}": "更新于 {value0}",
+  "updated {value0}": "更新了{value0}",
   "Delete this document? This cannot be undone.": "确定删除此文档吗？此操作无法撤销。",
   "Deleting...": "正在删除…",
   "View references ({value0})": "查看引用（{value0}）",

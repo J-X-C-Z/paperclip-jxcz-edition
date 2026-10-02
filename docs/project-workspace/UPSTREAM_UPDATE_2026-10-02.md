@@ -32,7 +32,9 @@ A new logical backup was restored into the isolated `paperclip_update_check_2026
 
 ## Recovery
 
-Source backup branch: `codex/paperclip-local-backup-20261002`.
+Source backup branches: `codex/paperclip-local-backup-20261002` (initial), `codex/paperclip-local-backup-20261002-latest` and `codex/paperclip-local-backup-20261002-final` (completed concurrent localization; final source `7685787c3e5a89e8a5f2877d84dd276f3b7bb606`).
+
+Concurrent localization was captured in two further snapshots and merged. The completed translation task’s changes were included before activation. UI typecheck, production build, token gates and i18n tests passed again after those additions.
 Source archive, binary diff, status manifest, migration map and rehearsal evidence: `/Users/jxcz/Documents/ChatGPT/paperclip 增强/update-backups/2026-10-02/`.
 Pre-update logical DB backup: `/Users/jxcz/.paperclip/instances/default/data/backups/paperclip-20261002-184829.sql.gz`.
 

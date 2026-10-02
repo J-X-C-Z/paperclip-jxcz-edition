@@ -46,9 +46,9 @@ export function AgentChatSidebar({
             type="button"
             variant="ghost"
             size="icon-xs"
-            aria-label={`${pinned ? "Unstar" : "Star"} ${agent.name}`}
+            aria-label={pinned ? uiText("Unstar {agent}", { agent: agent.name }) : uiText("Star {agent}", { agent: agent.name })}
             aria-pressed={pinned}
-            title={pinned ? "Unstar agent" : "Star agent to pin"}
+            title={pinned ? uiText("Unstar agent") : uiText("Star agent to pin")}
             onClick={(event) => {
               event.stopPropagation();
               onToggleStar(agent.id);
