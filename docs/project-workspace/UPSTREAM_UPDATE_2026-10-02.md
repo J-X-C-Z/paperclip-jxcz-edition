@@ -34,7 +34,7 @@ A new logical backup was restored into the isolated `paperclip_update_check_2026
 
 Source backup branches: `codex/paperclip-local-backup-20261002` (initial), `codex/paperclip-local-backup-20261002-latest` and `codex/paperclip-local-backup-20261002-final` (completed concurrent localization; final source `7685787c3e5a89e8a5f2877d84dd276f3b7bb606`).
 
-Concurrent localization was captured in two further snapshots and merged. The completed translation task’s changes were included before activation. UI typecheck, production build, token gates and i18n tests passed again after those additions.
+Concurrent localization was captured in two further snapshots and merged. The last editor color fix is preserved at `cfa506c770a44ce9b0e5809183bfee1a253bac65` / `codex/paperclip-local-backup-20261002-editor`. The completed translation task’s changes were included before activation. UI typecheck, production build, token gates and i18n tests passed again after those additions.
 Source archive, binary diff, status manifest, migration map and rehearsal evidence: `/Users/jxcz/Documents/ChatGPT/paperclip 增强/update-backups/2026-10-02/`.
 Pre-update logical DB backups: initial `paperclip-20261002-184829.sql.gz` and latest `paperclip-20261002-191022.sql.gz` in `/Users/jxcz/.paperclip/instances/default/data/backups/`, with copies retained in the source backup directory.
 
@@ -42,4 +42,12 @@ Do not roll source back against the migrated database without accounting for the
 
 ## Live acceptance
 
-Pending final service restart and browser/API readback.
+Completed on the primary checkout, branch `codex/paperclip-updated-20261002`, containing upstream `c83df091b` and all preserved local snapshots. User authorized immediate restart; 1 run was active at the activation check.
+
+The 14 live migrations completed in place. Exact before/after counts and hashes (including timestamps) match: 3 companies, 42 agents, 12 projects, 74 tasks, 20 project memberships, 2 template overrides, 6 groups, 20 group members and 2 departments. Evidence: `live-database-verification.json` in the backup directory. Runtime recovery may subsequently update task/run states through its normal upstream behavior; the data comparison was taken around migration before restarting.
+
+Resolved stale orphan watcher contention during startup. Also repaired an upstream startup compatibility bug: historical run/agent company mismatches must be skipped before budget lookup, rather than aborting all startup recovery with “Agent not found”. Added a real-database regression; all 40 legacy-continuation authority tests pass. Server typecheck and production build pass after this repair. Final UI production build passes with the concurrently added editor foreground/caret fix.
+
+Live `/api/health`: status `ok`, auth ready, bootstrap ready, startup recovery `ready`; port 3100 belongs to the primary checkout. Read-only browser acceptance confirms Chinese groups/members/project assignment controls, departments, all four templates, cost estimates and organization breakdowns, and project-scoped agent filtering for 手机端开发. Screenshot: `output/playwright/upstream-update-project-scope.png`. No additional provider-auth or model-run smoke test was launched by this update.
+
+Readback, migration evidence, acceptance logs and archives are retained in the backup directory. Temporary preview and rehearsal database are removed after acceptance.
