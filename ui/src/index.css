@@ -1647,10 +1647,11 @@
   white-space: normal;
 }
 
-.paperclip-mdxeditor-content {
+.paperclip-mdxeditor .paperclip-mdxeditor-content {
   font-size: inherit;
   line-height: inherit;
-  color: inherit;
+  color: var(--foreground);
+  caret-color: var(--foreground);
 }
 
 .paperclip-edit-in-place-content {
