@@ -1,4 +1,5 @@
 import { uiText } from "@/i18n";
+import { AgentIdentity } from "@/components/AgentIdentity";
 import { useMemo, useState } from "react";
 import { Link } from "@/lib/router";
 import {
@@ -366,7 +367,7 @@ function KanbanCard({
           {issue.assigneeAgentId && (() => {
             const name = agentName(issue.assigneeAgentId);
             return name ? (
-              <Identity name={name} size="xs" />
+              <AgentIdentity agent={agents?.find((agent) => agent.id === issue.assigneeAgentId) ?? { id: issue.assigneeAgentId, name }} size="xs" />
             ) : (
               <span className="text-xs text-muted-foreground font-mono">
                 {issue.assigneeAgentId.slice(0, 8)}

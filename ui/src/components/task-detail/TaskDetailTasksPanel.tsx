@@ -7,7 +7,7 @@ import { projectRouteRef } from "@/lib/utils";
 import { issueStatusOrder } from "@/lib/issue-filters";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TaskDetailSubtasksPanel, TaskDetailTaskList } from "./TaskDetailRelationsPanel";
+import { RelationNavigationList, TaskDetailSubtasksPanel, TaskDetailTaskList } from "./TaskDetailRelationsPanel";
 
 function TaskGroup({ name, projectPath, children }: { name: string; projectPath?: string; children: ReactNode }) {
   const tr = useUiTranslator();
@@ -36,6 +36,8 @@ function TaskGroup({ name, projectPath, children }: { name: string; projectPath?
 }
 
 export interface TaskDetailTasksPanelProps {
+  /** API order: immediate parent first. Displayed root first. */
+  ancestors?: NonNullable<Issue["ancestors"]>;
   subtasks: Issue[];
   createdTasks: Issue[];
   projects: Project[];
@@ -45,7 +47,7 @@ export interface TaskDetailTasksPanelProps {
   issueLinkState?: unknown;
 }
 
-export function TaskDetailTasksPanel({ subtasks, createdTasks, projects, isLoading, hasError, onRetry, issueLinkState }: TaskDetailTasksPanelProps) {
+export function TaskDetailTasksPanel({ ancestors = [], subtasks, createdTasks, projects, isLoading, hasError, onRetry, issueLinkState }: TaskDetailTasksPanelProps) {
   const tr = useUiTranslator();
   const sortedSubtasks = sortTasks(subtasks);
   const groups = new Map<string, { name: string; path?: string; tasks: Issue[] }>();
@@ -64,6 +66,16 @@ export function TaskDetailTasksPanel({ subtasks, createdTasks, projects, isLoadi
   }
   return (
     <section className="flex flex-col gap-6" aria-label={tr("Related tasks")}>
+      {ancestors.length > 0 && (
+        <TaskGroup name="Ancestors">
+          <RelationNavigationList
+            items={[...ancestors].reverse()}
+            emptyMessage=""
+            ariaLabel="Ancestor tasks, root to parent"
+            issueLinkState={issueLinkState}
+          />
+        </TaskGroup>
+      )}
       {sortedSubtasks.length > 0 && (
         <TaskGroup name={tr("Subtasks")}>
           <TaskDetailSubtasksPanel items={sortedSubtasks} issueLinkState={issueLinkState} />
@@ -81,7 +93,7 @@ export function TaskDetailTasksPanel({ subtasks, createdTasks, projects, isLoadi
           {onRetry && <Button variant="ghost" size="sm" onClick={onRetry}>{tr("Retry")}</Button>}
         </div>
       )}
-      {!isLoading && !hasError && subtasks.length === 0 && createdTasks.length === 0 && (
+      {!isLoading && !hasError && ancestors.length === 0 && subtasks.length === 0 && createdTasks.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">{tr("No tasks yet.")}</p>
       )}
     </section>

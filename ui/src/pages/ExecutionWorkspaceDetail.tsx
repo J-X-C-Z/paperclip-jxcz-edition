@@ -1,4 +1,5 @@
 import { uiText } from "@/i18n";
+import { useWorkspaceIsolationControls } from "@/hooks/useWorkspaceIsolationControls";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -774,6 +775,7 @@ function ExecutionWorkspaceRoutinesList({
 }
 
 export function ExecutionWorkspaceDetail() {
+  const { visible: workspaceIsolationControlsVisible, loaded: workspaceVisibilityLoaded } = useWorkspaceIsolationControls();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -857,8 +859,11 @@ export function ExecutionWorkspaceDetail() {
     [workspacePluginDetailSlots],
   );
   const workspaceTabItems = useMemo(
-    () => orderExecutionWorkspaceTabItems([...EXECUTION_WORKSPACE_BASE_TAB_ITEMS, ...workspacePluginTabItems]),
-    [workspacePluginTabItems],
+    () => orderExecutionWorkspaceTabItems([
+      ...EXECUTION_WORKSPACE_BASE_TAB_ITEMS.filter((item) => item.value !== "configuration" || workspaceIsolationControlsVisible),
+      ...workspacePluginTabItems,
+    ]),
+    [workspacePluginTabItems, workspaceIsolationControlsVisible],
   );
   const inheritedRuntimeConfig = linkedProjectWorkspace?.runtimeConfig?.workspaceRuntime ?? null;
   const effectiveRuntimeConfig = workspace?.config?.workspaceRuntime ?? inheritedRuntimeConfig;
@@ -1006,6 +1011,11 @@ export function ExecutionWorkspaceDetail() {
     entityType: "execution_workspace" as const,
   };
   const activePluginTab = workspacePluginTabItems.find((item) => item.value === activeTab) ?? null;
+
+  if (activeTab === "configuration" && !workspaceVisibilityLoaded) return null;
+  if (workspaceId && activeTab === "configuration" && !workspaceIsolationControlsVisible) {
+    return <LegacyWorkspaceTabRedirect workspaceId={workspaceId} />;
+  }
 
   if (workspaceId && activeTab === null) {
     return <LegacyWorkspaceTabRedirect workspaceId={workspaceId} />;
@@ -1437,7 +1447,7 @@ export function ExecutionWorkspaceDetail() {
               </DetailRow>
               <DetailRow label={uiText("Derived from")}>
                 {derivedWorkspace ? (
-                  <Link to={executionWorkspaceTabPath(derivedWorkspace.id, "configuration")} className="hover:underline">
+                  <Link to={executionWorkspaceTabPath(derivedWorkspace.id, workspaceIsolationControlsVisible ? "configuration" : "issues")} className="hover:underline">
                     {derivedWorkspace.name}
                   </Link>
                 ) : workspace.derivedFromExecutionWorkspaceId ? (

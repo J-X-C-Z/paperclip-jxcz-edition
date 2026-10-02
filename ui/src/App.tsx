@@ -55,6 +55,7 @@ const Workspaces = lazy(() => import("./pages/Workspaces").then((module) => ({ d
 const Issues = lazy(() => import("./pages/Issues").then((module) => ({ default: module.Issues })));
 const Search = lazy(() => import("./pages/Search").then((module) => ({ default: module.Search })));
 const IssueDetail = lazy(() => import("./pages/IssueDetail").then((module) => ({ default: module.IssueDetail })));
+const AgentChats = lazy(() => import("./pages/AgentChats").then((module) => ({ default: module.AgentChats })));
 const AgentChat = lazy(() => import("./pages/AgentChat").then((module) => ({ default: module.AgentChat })));
 const IssueChatLongThreadPerf = lazy(() => import("./pages/IssueChatLongThreadPerf").then((module) => ({ default: module.IssueChatLongThreadPerf })));
 const Routines = lazy(() => import("./pages/Routines").then((module) => ({ default: module.Routines })));
@@ -102,6 +103,7 @@ const PaperclipCloudOAuthHandoffPage = lazy(() => import("./pages/apps/Paperclip
 const GatewaysList = lazy(() => import("./pages/apps/gateways/GatewaysList").then((module) => ({ default: module.GatewaysList })));
 const GatewayDetail = lazy(() => import("./pages/apps/gateways/GatewayDetail").then((module) => ({ default: module.GatewayDetail })));
 const CompanySkills = lazy(() => import("./pages/CompanySkills").then((module) => ({ default: module.CompanySkills })));
+const SkillSources = lazy(() => import("./pages/SkillSources").then((module) => ({ default: module.SkillSources })));
 const SkillStudio = lazy(() => import("./pages/SkillStudio").then((module) => ({ default: module.SkillStudio })));
 const Secrets = lazy(() => import("./pages/Secrets").then((module) => ({ default: module.Secrets })));
 const CompanyImport = lazy(() => import("./pages/CompanyImport").then((module) => ({ default: module.CompanyImport })));
@@ -269,6 +271,8 @@ function boardRoutes(streamlinedUiEnabled: boolean) {
         <Route path="company/settings/instance/adapters" element={<AdapterManager />} />
       </Route>
       <Route path="company/settings/:settingsRoutePath/*" element={<CompanySettingsPluginPage />} />
+      <Route path="skills/sources" element={<SkillSources />} />
+      <Route path="skills/sources/:sourceId" element={<SkillSources />} />
       <Route path="skills/studio" element={<SkillStudio />} />
       <Route path="skills/studio/new" element={<SkillStudio />} />
       <Route path="skills/studio/:skillId" element={<SkillStudio />} />
@@ -322,6 +326,7 @@ function boardRoutes(streamlinedUiEnabled: boolean) {
       <Route path="issues/backlog" element={<Navigate to="/issues" replace />} />
       <Route path="issues/done" element={<Navigate to="/issues" replace />} />
       <Route path="issues/recent" element={<Navigate to="/issues" replace />} />
+      <Route path="chats" element={<AgentChats />} />
       <Route path="chats/:agentRef" element={<AgentChat />} />
       <Route path="issues/:issueId" element={<IssueDetail />} />
       {import.meta.env.DEV ? (
@@ -770,10 +775,10 @@ export function App() {
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
-        <Route element={streamlinedUiLoaded ? <CloudAccessGate /> : <PaperclipLoading />}>
-          <Route path="chat-identity/confirm" element={
-            <ChatConnectorsExperimentalGate><ChatIdentityConfirm /></ChatConnectorsExperimentalGate>
-          } />
+        <Route element={streamlinedUiLoaded ? <CloudAccessGate allowMembershipRequest /> : <PaperclipLoading />}>
+          {/* The identity APIs enforce the chat rollout flag. Nonmembers cannot
+              read experimental settings, but a private invitation may request membership. */}
+          <Route path="chat-identity/confirm" element={<ChatIdentityConfirm />} />
         </Route>
         <Route path="tests/perf/long-thread" element={<IssueChatLongThreadPerf />} />
         <Route path="ux-lab/bootstrap-setup" element={<BootstrapSetupUxLab />} />

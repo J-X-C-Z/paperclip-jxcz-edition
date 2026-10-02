@@ -243,7 +243,6 @@ function makeInstanceSettings({
     defaultEnvironmentId,
     general: {
       censorUsernameInLogs: true,
-      keyboardShortcuts: true,
       feedbackDataSharingPreference: "prompt",
       backupRetention: {
         dailyDays: 7,

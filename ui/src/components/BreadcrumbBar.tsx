@@ -153,7 +153,7 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                     <BreadcrumbLink asChild>
                       {crumb.leading || crumb.identifier ? (
                         <Link
-                          to={crumb.href}
+                          to={crumb.href} onClick={crumb.onClick}
                           className={cn(
                             "flex min-w-0 items-baseline gap-1.5",
                             i === 0 && "font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground",
@@ -168,7 +168,7 @@ export function BreadcrumbBar({ taskDetailLayout = false }: { taskDetailLayout?:
                         </Link>
                       ) : (
                         <Link
-                          to={crumb.href}
+                          to={crumb.href} onClick={crumb.onClick}
                           className={cn(
                             "min-w-0 truncate",
                             i === 0 && "font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground",

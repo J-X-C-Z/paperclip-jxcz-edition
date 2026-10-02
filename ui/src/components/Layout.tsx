@@ -1,3 +1,5 @@
+import { SetupWizardSidebarOutlet } from "./SetupWizard";
+import { ChatSetupSidebarProvider } from "@/context/ChatSetupSidebarContext";
 import { uiText } from "@/i18n";
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -17,18 +19,20 @@ import { DeferredCreationDialogs } from "./DeferredCreationDialogs";
 import { KeyboardShortcutsCheatsheet } from "./KeyboardShortcutsCheatsheet";
 import { ToastViewport } from "./ToastViewport";
 import { AnnouncementWell } from "./AnnouncementWell";
+import { PluginAppShellOverlays } from "./PluginAppShellOverlays";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
 import { StandaloneBrowserControls } from "./StandaloneBrowserControls";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { PaperclipLoading } from "./AnimatedPaperclipIcon";
+import { AgentConversationsSidebar } from "./AgentConversationsSidebar";
+import { useAgentChatEnabled } from "../hooks/useAgentChatEnabled";
 import { SidebarShell } from "./SidebarShell";
 import { SecondarySidebar } from "./SecondarySidebar";
 import { ContextualSidebarFrame } from "./ContextualSidebarFrame";
 import { SidebarAccountMenu } from "./SidebarAccountMenu";
 import { useDialogActions } from "../context/DialogContext";
-import { GeneralSettingsProvider } from "../context/GeneralSettingsContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
@@ -36,7 +40,6 @@ import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useStreamlinedUiEnabled } from "../hooks/useStreamlinedUiEnabled";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
 import { healthApi } from "../api/health";
-import { instanceSettingsApi } from "../api/instanceSettings";
 import { resolveArchivedCompanyBounce, shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { useOptionalToastActions } from "../context/ToastContext";
 import {
@@ -119,7 +122,10 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
   const isCompanySettingsRoute = shellRoute.builtInContextualSurface === "settings";
   const companyPathSegments = shellRoute.companySegments;
   const isTaskDetailRoute = shellRoute.isTaskDetail;
-  const useStreamlinedTaskDetailShell = streamlinedUiEnabled && isTaskDetailRoute;
+  const { enabled: agentChatEnabled } = useAgentChatEnabled();
+  const isAgentChatRoute = agentChatEnabled && companyPathSegments[0]?.toLowerCase() === "chats";
+  // Chat keeps its header beside the agent sidebar, including before an agent is selected.
+  const useStreamlinedTaskDetailShell = streamlinedUiEnabled && (isTaskDetailRoute || isAgentChatRoute);
   const isToolsRoute = companyPathSegments[0]?.toLowerCase() === "tools";
   const isAppsRoute = companyPathSegments[0]?.toLowerCase() === "apps";
   const appDetailConnectionId =
@@ -203,16 +209,17 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
       />
     )
   ) : null;
-  const secondarySidebar = shellRoute.builtInContextualSurface === "agent" && agentId ? (
+  const secondarySidebar = isAgentChatRoute ? <AgentConversationsSidebar /> : shellRoute.builtInContextualSurface === "agent" && agentId ? (
     <AgentContextualSidebar agentRef={agentId} />
   ) : streamlinedUiEnabled && shellRoute.builtInContextualSurface === "routine" && routineId ? (
-    <RoutineContextualSidebar routineId={routineId} />
+    <SetupWizardSidebarOutlet><RoutineContextualSidebar routineId={routineId} /></SetupWizardSidebarOutlet>
   ) : streamlinedUiEnabled && shellRoute.builtInContextualSurface === "skills" ? (
     <SkillsContextualSidebar />
   ) : sharedSecondarySidebar;
   const hasSecondarySidebar = secondarySidebar != null;
   const keepsPrimarySidebar = streamlinedUiEnabled && hasSecondarySidebar && (
-    shellRoute.builtInContextualSurface === "skills"
+    isAgentChatRoute
+    || shellRoute.builtInContextualSurface === "skills"
     || shellRoute.builtInContextualSurface === "agent"
     || shellRoute.builtInContextualSurface === "routine"
     || isAppsRoute
@@ -239,10 +246,6 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
     },
     refetchIntervalInBackground: false,
   });
-  const keyboardShortcutsEnabled = useQuery({
-    queryKey: queryKeys.instance.generalSettings,
-    queryFn: () => instanceSettingsApi.getGeneral(),
-  }).data?.keyboardShortcuts === true;
 
   useLayoutEffect(() => {
     setForceCollapsed(!streamlinedUiEnabled && hasSecondarySidebar);
@@ -451,7 +454,6 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
   useCompanyPageMemory();
 
   useKeyboardShortcuts({
-    enabled: keyboardShortcutsEnabled,
     onNewIssue: () => openNewIssue(),
     onSearch: openSearch,
     onToggleSidebar: toggleSidebar,
@@ -615,7 +617,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
   }, [location.key, location.pathname, location.state, navigationType]);
 
   return (
-    <GeneralSettingsProvider value={{ keyboardShortcutsEnabled }}>
+    <ChatSetupSidebarProvider>
       <div
       className={cn(
         "bg-background text-foreground pt-(--sz-safe-top)",
@@ -738,7 +740,7 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
                 isMobile
                   ? ({
                       "--tc-composer-bottom": mobileNavVisible
-                        ? "var(--sz-calc-14)"
+                        ? "var(--tc-composer-visible-nav-offset)"
                         : "var(--tc-composer-hidden-nav-offset)",
                     } as CSSProperties)
                   : undefined
@@ -753,8 +755,10 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
                 // changes (e.g. switching skill-detail tabs) don't widen/shift
                 // when the vertical scrollbar appears or disappears (PAP-10907).
                 isMobile
-                  ? isTaskDetailRoute && !mobileNavVisible
-                    ? "overflow-visible pb-(--tc-composer-hidden-nav-offset)"
+                  ? isTaskDetailRoute
+                    ? mobileNavVisible
+                      ? "overflow-visible pb-(--tc-composer-visible-nav-offset)"
+                      : "overflow-visible pb-(--tc-composer-hidden-nav-offset)"
                     : "overflow-visible pb-(--sz-calc-14)"
                   : "overflow-auto [scrollbar-gutter:stable]",
               )}
@@ -788,7 +792,8 @@ export function Layout({ sidebarSections }: { sidebarSections?: ReactNode }) {
       <KeyboardShortcutsCheatsheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <ToastViewport />
       <AnnouncementWell health={health} />
+      <PluginAppShellOverlays localTrusted={health?.deploymentMode === "local_trusted"} />
       </div>
-    </GeneralSettingsProvider>
+    </ChatSetupSidebarProvider>
   );
 }

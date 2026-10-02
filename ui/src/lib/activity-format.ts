@@ -331,9 +331,10 @@ function formatIssueUpdatedVerb(details: ActivityDetails): string | null {
   const previous = asRecord(details._previous) ?? {};
   if (details.status !== undefined) {
     const from = previous.status;
+    const to = humanizeValue(details.status === "in_review" && details.externalConversationState === "waiting" ? "idle" : details.status);
     return from
-      ? uiText("changed status from {value0} to {value1} on", { value0: humanizeValue(from), value1: humanizeValue(details.status) })
-      : uiText("changed status to {value0} on", { value0: humanizeValue(details.status) });
+      ? uiText("changed status from {value0} to {value1} on", { value0: humanizeValue(from), value1: to })
+      : uiText("changed status to {value0} on", { value0: to });
   }
   if (details.priority !== undefined) {
     const from = previous.priority;
@@ -364,10 +365,11 @@ function formatIssueUpdatedAction(details: ActivityDetails, options: ActivityFor
 
   if (details.status !== undefined) {
     const from = previous.status;
+    const to = humanizeValue(details.status === "in_review" && details.externalConversationState === "waiting" ? "idle" : details.status);
     parts.push(
       from
-        ? uiText("changed the status from {value0} to {value1}", { value0: humanizeValue(from), value1: humanizeValue(details.status) })
-        : uiText("changed the status to {value0}", { value0: humanizeValue(details.status) }),
+        ? uiText("changed the status from {value0} to {value1}", { value0: humanizeValue(from), value1: to })
+        : uiText("changed the status to {value0}", { value0: to }),
     );
   }
   if (details.priority !== undefined) {

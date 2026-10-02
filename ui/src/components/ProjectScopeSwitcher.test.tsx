@@ -41,7 +41,7 @@ describe("ProjectScopeSwitcher", () => {
   it("searches projects and selects the matching project", async () => {
     const { container, cleanup } = await renderSwitcher();
     await act(async () => container.querySelector("button")!.click());
-    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search projects"]')!;
+    const search = container.querySelector<HTMLInputElement>(`input[aria-label="${uiText("Search projects")}"]`)!;
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(search, "bet");
       search.dispatchEvent(new Event("input", { bubbles: true }));

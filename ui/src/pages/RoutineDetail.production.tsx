@@ -632,6 +632,7 @@ function CompanyRoutineDetail() {
 
   const onHistoryRestoreSecretMaterials = useCallback((response: RestoreRoutineRevisionResponse) => {
     if (response.secretMaterials.length > 0) {
+      navigateToSection("triggers");
       setSecretMessage({
         title:
           response.secretMaterials.length === 1
@@ -643,7 +644,7 @@ function CompanyRoutineDetail() {
         })),
       });
     }
-  }, []);
+  }, [navigateToSection]);
 
   const onHistoryRestored = useCallback(
     (response: RestoreRoutineRevisionResponse) => {

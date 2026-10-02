@@ -1,5 +1,6 @@
 import { uiText } from "@/i18n";
 import { useWorkScope } from "../hooks/useWorkScope";
+import { AgentIdentity } from "@/components/AgentIdentity";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
@@ -396,7 +397,7 @@ export function CommandPalette() {
                   <span className="flex-1 truncate">{issue.title}</span>
                   {issue.assigneeAgentId && (() => {
                     const name = agentName(issue.assigneeAgentId);
-                    return name ? <Identity name={name} size="sm" className="ml-2 hidden sm:inline-flex" /> : null;
+                    return name ? <AgentIdentity agent={agents?.find((agent) => agent.id === issue.assigneeAgentId) ?? { id: issue.assigneeAgentId, name }} size="sm" className="ml-2 hidden sm:inline-flex" /> : null;
                   })()}
                 </CommandItem>
               ))}

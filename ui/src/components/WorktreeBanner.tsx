@@ -1,21 +1,16 @@
 import { uiText } from "@/i18n";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { getWorktreeUiBranding } from "../lib/worktree-branding";
-import { copyTextToClipboard } from "../lib/clipboard";
+import { useCopyAction } from "../lib/use-copy-action";
 
 export function WorktreeBanner() {
   const branding = getWorktreeUiBranding();
-  const [copied, setCopied] = useState(false);
+  const { copied, failed, copy } = useCopyAction();
 
   const handleCopyName = useCallback(() => {
     if (!branding) return;
-    void copyTextToClipboard(branding.name)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      })
-      .catch(() => {});
-  }, [branding]);
+    void copy(branding.name);
+  }, [branding, copy]);
 
   if (!branding) return null;
 
@@ -39,7 +34,7 @@ export function WorktreeBanner() {
           title="Click to copy worktree name"
           className="truncate font-semibold tracking-(--tracking-eyebrow) cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-none p-0 text-current uppercase text-(length:--text-micro)"
         >
-          {copied ? uiText("Copied!") : branding.name}
+          {copied ? uiText("Copied!") : failed ? "Copy failed" : branding.name}
         </button>
       </div>
     </div>

@@ -63,7 +63,7 @@ export {
   chatSdkState,
 } from "./chat_channels.js";
 export { issueRelations } from "./issue_relations.js";
-export { routines, routineRevisions, routineTriggers, routineRuns } from "./routines.js";
+export { routines, routineRevisions, routineTriggers, routineWebhookTestReceipts, routineRuns } from "./routines.js";
 export { pipelines, pipelineStages, pipelineTransitions } from "./pipelines.js";
 export {
   cases,
@@ -115,6 +115,7 @@ export {
 export { feedbackExports } from "./feedback_exports.js";
 export { issueReadStates } from "./issue_read_states.js";
 export { assets } from "./assets.js";
+export { runnerApiResponseReservations } from "./runner_api_response_reservations.js";
 export { issueAttachments } from "./issue_attachments.js";
 export { documents } from "./documents.js";
 export { documentRevisions } from "./document_revisions.js";
@@ -204,6 +205,7 @@ export { toolActionDeliveries } from "./tool_action_deliveries.js";
 export { chatTeamsFileTransfers } from "./chat_teams_file_transfers.js";
 export { chatDiscordCommandOwners } from "./chat_discord_command_owners.js";
 export { chatTelegramDraftIds } from "./chat_telegram_draft_ids.js";
+export { chatGitHubConfigurations, chatGitHubRegistrations, chatGitHubReviews } from "./chat_github.js";
 
 export { aiConnectionDefaults } from "./ai_connection_defaults.js";
 export { aiProviderDefaults } from "./ai_provider_defaults.js";
@@ -212,3 +214,11 @@ export { announcementDismissals, announcementPublications } from "./announcement
 
 export { companyAgentTemplateDefaults } from "./company_agent_template_defaults.js";
 export { projectAgentMemberships } from "./project_agent_memberships.js";
+
+export { chatTaskHandoffs, chatCompletionDeliveries } from "./chat_completion_deliveries.js";
+
+export { agentInstructionRevisions, agentInstructionHeads, agentInstructionWorkingCopies } from "./agent_instruction_revisions.js";
+export { browserUseSettings, browserUseSessions, browserUseRuns, browserUseBrowsers } from "./browser_use.js";
+
+
+export * from "./company_skill_sources.js";

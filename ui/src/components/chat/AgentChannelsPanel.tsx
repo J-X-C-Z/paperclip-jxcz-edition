@@ -10,7 +10,7 @@ import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
 
 const providerNames: Record<ChatProvider, string> = {
   slack: "Slack",
-  github: "GitHub",
+  github: "GitHub Code Review Bot",
   discord: "Discord",
   "microsoft-teams": "Microsoft Teams",
   telegram: "Telegram",
@@ -59,7 +59,7 @@ export function AgentChannelsPanel({
         <div className="rounded-lg border border-dashed border-border p-5">
           <p className="text-sm font-medium">{tr("No channels connected")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {tr("Connect AgentMail, Slack, GitHub, Discord, Microsoft Teams, or Telegram from Connectors.")}
+            {tr("Connect AgentMail, Slack, GitHub Code Review Bot, Discord, Microsoft Teams, or Telegram from Connectors.")}
           </p>
           <Button asChild className="mt-3" variant="outline" size="sm">
             <Link to="/apps">{tr("Open Connectors")}</Link>

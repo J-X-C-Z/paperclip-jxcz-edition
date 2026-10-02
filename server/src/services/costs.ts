@@ -1,3 +1,4 @@
+import { agentAvatarUrl, resolveAgentAppearance } from "@paperclipai/shared";
 import { and, desc, eq, gte, isNull, lt, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "@paperclipai/db";
@@ -56,7 +57,7 @@ function currentUtcMonthWindow(now = new Date()) {
   };
 }
 
-async function getMonthlySpendTotal(
+export async function getMonthlySpendTotal(
   db: Db,
   scope: { companyId: string; agentId?: string | null },
 ) {
@@ -327,6 +328,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .select({
           agentId: costEvents.agentId,
           agentName: agents.name,
+          agentAppearance: agents.appearance,
           agentStatus: agents.status,
           costCents: sumAsNumber(costEvents.costCents),
           inputTokens: sumAsNumber(costEvents.inputTokens),
@@ -346,9 +348,12 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .from(costEvents)
         .leftJoin(agents, eq(costEvents.agentId, agents.id))
         .where(and(...conditions))
-        .groupBy(costEvents.agentId, agents.name, agents.status)
+        .groupBy(costEvents.agentId, agents.name, agents.appearance, agents.status)
         .orderBy(desc(sumAsNumber(costEvents.costCents)));
-      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId]), (row) => JSON.stringify([row.agentId]));
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId]), (row) => JSON.stringify([row.agentId])).map(row => {
+        const appearance = resolveAgentAppearance(row.agentAppearance, row.agentId);
+        return { ...row, agentAppearance: appearance, avatarUrl: agentAvatarUrl(appearance, 512) };
+      });
     },
 
     byProvider: async (companyId: string, range?: CostDateRange, projectId?: string) => {
@@ -487,6 +492,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .select({
           agentId: costEvents.agentId,
           agentName: agents.name,
+          agentAppearance: agents.appearance,
           provider: costEvents.provider,
           biller: costEvents.biller,
           billingType: costEvents.billingType,
@@ -502,13 +508,17 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .groupBy(
           costEvents.agentId,
           agents.name,
+          agents.appearance,
           costEvents.provider,
           costEvents.biller,
           costEvents.billingType,
           costEvents.model,
         )
         .orderBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model);
-      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model]), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model]));
+      return attachReferenceCosts(rows, await attributedCosts(db, companyId, range, projectId), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model]), (row) => JSON.stringify([row.agentId, row.provider, row.biller, row.billingType, row.model])).map(row => {
+        const appearance = resolveAgentAppearance(row.agentAppearance, row.agentId);
+        return { ...row, agentAppearance: appearance, avatarUrl: agentAvatarUrl(appearance, 512) };
+      });
     },
 
     byProject: (companyId: string, range?: CostDateRange, projectId?: string) => projectCosts(db, companyId, range, projectId),

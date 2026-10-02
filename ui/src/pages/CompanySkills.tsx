@@ -1,5 +1,9 @@
 import { uiText } from "@/i18n";
 import { useUiTranslator } from "@/i18n";
+import { SkillBinaryFile } from "../components/SkillBinaryFile";
+import { SkillSourceProvenance } from "../components/SkillSourceProvenance";
+import { AgentIdentity } from "@/components/AgentIdentity";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { useEffect, useMemo, useRef, useState, type SVGProps } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,13 +35,13 @@ import { useBreadcrumbs, type Breadcrumb } from "../context/BreadcrumbContext";
 import { useToastActions } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { copyTextToClipboard } from "../lib/clipboard";
+import { useCopyAction } from "../lib/use-copy-action";
 import { EmptyState } from "../components/EmptyState";
 import { MarkdownBody } from "../components/MarkdownBody";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { CopyText } from "../components/CopyText";
 import { Identity } from "../components/Identity";
-import { AgentIcon } from "../components/AgentIconPicker";
 import { AgentMultiSelect } from "../components/AgentMultiSelect";
 import { useAdapterCapabilities } from "../adapters/use-adapter-capabilities";
 import { useStreamlinedUiEnabled } from "../hooks/useStreamlinedUiEnabled";
@@ -1510,6 +1514,8 @@ export function DiscoveryGrid({
                 <Compass className="mr-2 h-4 w-4" />
                 {tr("Discover skills")}
               </DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/skills/sources/new"><GithubIcon className="mr-2 h-4 w-4" />Import from GitHub</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/skills/sources">Manage sources</Link></DropdownMenuItem>
               <DropdownMenuItem onSelect={onImport}>
                 <Globe className="mr-2 h-4 w-4" />
                 {tr("Import from path or URL")}
@@ -1635,6 +1641,7 @@ export function DiscoveryGrid({
                       <Compass className="mr-1.5 h-3.5 w-3.5" /> {tr("Discover skills")}
                     </Button>
                   ) : null}
+                  <Button size="sm" variant="outline" asChild><Link to="/skills/sources/new">Import from GitHub</Link></Button>
                   <Button size="sm" variant="ghost" onClick={onCreate}>
                     {tr("Create a skill")}
                   </Button>
@@ -2954,7 +2961,7 @@ function SkillLocationCard({
   onMove?: () => void;
 }) {
   const tr = useUiTranslator();
-  const [copied, setCopied] = useState(false);
+  const { copied, failed, copy } = useCopyAction();
   const canonical = folderPath && folderPath.length > 0 ? folderPath : "Unfiled";
   return (
     <section>
@@ -2968,16 +2975,11 @@ function SkillLocationCard({
           size="sm"
           variant="outline"
           onClick={() => {
-            void copyTextToClipboard(canonical)
-              .then(() => {
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1500);
-              })
-              .catch(() => {});
+            void copy(canonical);
           }}
         >
           <Copy className="mr-1.5 h-3.5 w-3.5" />
-          {copied ? uiText("Copied") : tr("Copy path")}
+          {copied ? uiText("Copied") : failed ? "Copy failed" : uiText("Copy path")}
         </Button>
         {onMove ? (
           <Button size="sm" variant="outline" onClick={onMove}>
@@ -3300,7 +3302,7 @@ export function SkillDetailPage({
                   title={skill.editableReason ?? tr("Fork this skill to edit it.")}
                 >
                   <GitFork className="mr-1.5 h-3.5 w-3.5" />
-                  {tr("Fork")}
+                  {skill.sourceType === "github" ? "Make a copy" : uiText("Fork")}
                 </Button>
               ) : null}
             </div>
@@ -3308,8 +3310,8 @@ export function SkillDetailPage({
           {fileLoading ? (
             <PageSkeleton variant="detail" />
           ) : !file ? (
-            <div className="text-sm text-muted-foreground">{tr("Select a file to inspect.")}</div>
-          ) : editMode && file.editable ? (
+            <div className="text-sm text-muted-foreground">{uiText("Select a file to inspect.")}</div>
+          ) : file.encoding === "base64" ? <SkillBinaryFile file={file} /> : editMode && file.editable ? (
             file.markdown ? (
               <MarkdownEditor value={draft} onChange={setDraft} bordered={false} className="min-h-(--sz-520px)" />
             ) : (
@@ -3367,7 +3369,7 @@ export function SkillDetailPage({
                   <span>{tr("Read only")}</span>
                   <Button type="button" variant="outline" size="xs" onClick={onFork}>
                     <GitFork className="mr-1 h-3 w-3" />
-                    {tr("Fork")}
+                    {skill.sourceType === "github" ? "Make a copy" : uiText("Fork")}
                   </Button>
                 </>
               )}
@@ -3464,7 +3466,7 @@ export function SkillDetailPage({
               const meta = attachAgentMetaById.get(agent.id);
               return (
                 <div key={agent.id} className="flex items-center gap-3 border-b border-border py-3 text-sm last:border-b-0">
-                  <AgentIcon icon={meta?.icon ?? null} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <AgentAvatar agent={meta} size={16} className="h-4 w-4 shrink-0 text-muted-foreground"/>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate font-medium">{agent.name}</span>
@@ -3608,7 +3610,7 @@ export function SkillDetailPage({
                 title={tr("Fork this skill")}
               >
                 <GitFork className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{tr("Fork")}</span>
+                <span className="hidden sm:inline">{skill.sourceType === "github" ? "Make a copy" : uiText("Fork")}</span>
                 <span className="font-medium text-foreground">{detail.forkCount}</span>
               </button>
             </div>
@@ -3637,6 +3639,7 @@ export function SkillDetailPage({
         </main>
 
         <aside className="min-w-0 space-y-6 border-t border-border pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+          <SkillSourceProvenance skill={detail} />
           <SkillLocationCard
             folderPath={folderDisplayPath ?? skillFolderPathDisplayFallback(detail.folderPath)}
             onMove={onMoveToFolder}
@@ -3672,7 +3675,7 @@ export function SkillDetailPage({
                         to={`/agents/${agent.urlKey}/skills`}
                         className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm no-underline hover:bg-accent/40"
                       >
-                        <AgentIcon icon={meta?.icon ?? null} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <AgentAvatar agent={meta} size={16} className="h-4 w-4 shrink-0 text-muted-foreground"/>
                         <span className="min-w-0 flex-1 truncate text-foreground">{agent.name}</span>
                         {meta?.paused ? (
                           <Pause className="h-3 w-3 shrink-0 text-amber-500" aria-label={tr("Paused")} />
@@ -4133,7 +4136,7 @@ function SkillPane({
                     to={`/agents/${agent.urlKey}/skills`}
                     className="group rounded-md border border-transparent p-2 no-underline hover:border-border hover:bg-accent/40"
                   >
-                    <Identity name={agent.name} size="sm" />
+                    <AgentIdentity agent={agent} size="sm" />
                   </Link>
                 ))}
               </div>

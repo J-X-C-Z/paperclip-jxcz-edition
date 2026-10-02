@@ -88,5 +88,7 @@ export function resolveRunCost(input: TokenCostInput & {
   const estimate = estimateTokenCostUsd(input);
   if (estimate) return { costUsd: estimate.costUsd, costStatus: "estimated" as CostStatus, estimate };
   const hasUsage = tokens(input.inputTokens) + tokens(input.cachedInputTokens) + tokens(input.outputTokens) > 0;
-  return { costUsd: null, costStatus: (hasUsage ? "unpriced" : "reported") as CostStatus, estimate: null };
+  // No tokens is not a zero-cost receipt: paused turns can be unpriced.
+  // Preserve an explicit subscription zero only when there is no usage to value.
+  return { costUsd: !hasUsage ? reported ?? null : null, costStatus: (!hasUsage && reported != null ? "reported" : "unpriced") as CostStatus, estimate: null };
 }

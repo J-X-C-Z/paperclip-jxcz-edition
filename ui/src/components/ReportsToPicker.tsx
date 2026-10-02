@@ -1,3 +1,4 @@
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { useState } from "react";
 import type { Agent } from "@paperclipai/shared";
 import {
@@ -8,7 +9,6 @@ import {
 import { User } from "lucide-react";
 import { cn } from "../lib/utils";
 import { roleLabels } from "./agent-config-primitives";
-import { AgentIcon } from "./AgentIconPicker";
 import { uiText } from "@/i18n";
 
 export function ReportsToPicker({
@@ -56,7 +56,7 @@ export function ReportsToPicker({
             </>
           ) : current ? (
             <>
-              <AgentIcon icon={current.icon} className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <AgentAvatar agent={current} size={16} className="h-3 w-3 shrink-0 text-muted-foreground"/>
               <span
                 className={cn(
                   "min-w-0 truncate",
@@ -92,7 +92,7 @@ export function ReportsToPicker({
         </button>
         {terminatedManager && (
           <div className="flex min-w-0 items-center gap-2 overflow-hidden px-2 py-1.5 text-xs text-muted-foreground border-b border-border mb-0.5">
-            <AgentIcon icon={current.icon} className="shrink-0 h-3 w-3" />
+            <AgentAvatar agent={current} size={16} className="shrink-0 h-3 w-3"/>
             <span className="min-w-0 truncate">
               {uiText("Current: {name} (terminated)", { name: current.name })}
             </span>
@@ -116,7 +116,7 @@ export function ReportsToPicker({
               setOpen(false);
             }}
           >
-            <AgentIcon icon={a.icon} className="shrink-0 h-3 w-3 text-muted-foreground" />
+            <AgentAvatar agent={a} size={16} className="shrink-0 h-3 w-3 text-muted-foreground"/>
             <span className="min-w-0 truncate">{a.name}</span>
             <span className="text-muted-foreground ml-auto shrink-0">{roleLabels[a.role] ?? a.role}</span>
           </button>

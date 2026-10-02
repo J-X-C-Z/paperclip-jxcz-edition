@@ -1,3 +1,4 @@
+import { uiText } from "@/i18n";
 // @vitest-environment node
 
 const { getCommentMock } = vi.hoisted(() => ({
@@ -24,6 +25,36 @@ describe("LiveUpdatesProvider issue invalidation", () => {
     invalidate.mockClear();
     __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", { entityType: "issue", entityId: "task-1", action: "issue.comment_added", actorType: "system" }, { userId: "user-1", agentId: null });
     expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["organization-groups", "company-1"] });
+    client.clear();
+  });
+  it.each([
+    ["chat-1", "issue.comment_added", "agent", "agent-1", true],
+    ["task-1", "issue.comment_added", "agent", "agent-1", false],
+    ["chat-2", "issue.conversation_opened", "user", "user-1", true],
+    ["chat-2", "issue.conversation_opened", "user", "user-2", false],
+  ])("refreshes only the owner's chat list for relevant activity: %s %s %s %s", (entityId, action, actorType, actorId, refresh) => {
+    const client = new QueryClient();
+    const key = queryKeys.agentChats.list("company-1", "user-1");
+    client.setQueryData(key, [{ id: "chat-1" }]);
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", {
+      entityType: "issue", entityId, action, actorType, actorId,
+    }, { userId: "user-1", agentId: null });
+    if (refresh) expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
+    else expect(invalidate).not.toHaveBeenCalledWith({ queryKey: key });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: queryKeys.agentChats.list("company-1", "user-2") });
+    client.clear();
+  });
+
+  it("refreshes the source task activity when a company skill is created", () => {
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    __liveUpdatesTestUtils.invalidateActivityQueries(client, "company-1", {
+      entityType: "company_skill", entityId: "skill-1", action: "company.skill_created",
+      details: { sourceIssueId: "issue-1" },
+    }, { userId: "user-1", agentId: null });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.issues.activity("issue-1") });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.companySkills.detail("company-1", "skill-1") });
     client.clear();
   });
   it.each(["issue.attachment_added", "issue.attachment_removed", "issue.work_product_created", "issue.work_product_updated"])("refreshes visible delivered files for %s", action => {
@@ -1315,7 +1346,7 @@ describe("LiveUpdatesProvider run lifecycle toasts", () => {
     ).toMatchObject({
       title: "CodexCoder run failed",
       tone: "error",
-      action: { label: "View run" },
+      action: { label: uiText("View run") },
     });
 
     expect(
@@ -1334,7 +1365,7 @@ describe("LiveUpdatesProvider run lifecycle toasts", () => {
       title: "CodexCoder run failed",
       body: "Adapter process exited",
       tone: "error",
-      action: { label: "View run" },
+      action: { label: uiText("View run") },
     });
   });
 });

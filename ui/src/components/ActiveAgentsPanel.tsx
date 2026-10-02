@@ -1,3 +1,4 @@
+import { AgentIdentity } from "@/components/AgentIdentity";
 import { memo, useMemo } from "react";
 import { Link } from "@/lib/router";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import { issuesApi } from "../api/issues";
 import { queryKeys } from "../lib/queryKeys";
 import { cn, relativeTime } from "../lib/utils";
 import { Clock3 } from "lucide-react";
-import { Identity } from "./Identity";
 import { StatusGlyph } from "./StatusGlyph";
 import { RunChatSurface } from "./RunChatSurface";
 import { useLiveRunTranscripts } from "./transcript/useLiveRunTranscripts";
@@ -46,6 +46,7 @@ interface ActiveAgentsPanelProps {
   queryScope?: string;
   showMoreLink?: boolean;
   showTranscripts?: boolean;
+  dedupeLinkedTasks?: boolean;
 }
 
 export function ActiveAgentsPanel({
@@ -61,26 +62,46 @@ export function ActiveAgentsPanel({
   queryScope = "dashboard",
   showMoreLink = true,
   showTranscripts = false,
+  dedupeLinkedTasks = false,
 }: ActiveAgentsPanelProps) {
   const tr = useUiTranslator();
-  const liveRunsQueryKey = [...queryKeys.liveRuns(companyId), queryScope, { minRunCount, fetchLimit, ...(projectId ? { projectId } : {}) }] as const;
+  const effectiveFetchLimit = fetchLimit;
+  const liveRunsQueryKey = [...queryKeys.liveRuns(companyId), queryScope, { minRunCount, fetchLimit: effectiveFetchLimit, dedupeLinkedTasks, ...(projectId ? { projectId } : {}) }] as const;
   const sharedLiveRuns = useSharedPollingQuery({
     companyId,
-    resourceKey: `live-runs:${queryScope}:${minRunCount}:${fetchLimit ?? "default"}`,
+    resourceKey: `live-runs:${queryScope}:${minRunCount}:${effectiveFetchLimit ?? "default"}:${dedupeLinkedTasks}:${projectId ?? "all-projects"}`,
     queryKey: liveRunsQueryKey,
     enabled: !!companyId,
     leaderOnly: true,
   });
   const { data: liveRuns, dataUpdatedAt: liveRunsUpdatedAt } = useQuery({
     queryKey: liveRunsQueryKey,
-    queryFn: () => heartbeatsApi.liveRunsForCompany(companyId, { minCount: minRunCount, limit: fetchLimit, ...(projectId ? { projectId } : {}) }),
+    queryFn: () => heartbeatsApi.liveRunsForCompany(companyId, {
+      minCount: minRunCount,
+      limit: effectiveFetchLimit,
+      distinctTasks: dedupeLinkedTasks,
+      ...(projectId ? { projectId } : {}),
+    }),
     enabled: sharedLiveRuns.enabled,
   });
   usePublishSharedQueryData(sharedLiveRuns, liveRuns, liveRunsUpdatedAt);
 
   const runs = liveRuns ?? [];
-  const visibleRuns = useMemo(() => runs.slice(0, cardLimit), [cardLimit, runs]);
-  const hiddenRunCount = Math.max(0, runs.length - visibleRuns.length);
+  const cardRuns = useMemo(() => {
+    if (!dedupeLinkedTasks) return runs;
+
+    // The endpoint orders active runs first, then recent completed runs. Keep
+    // the first run for each task so an active attempt wins over its history.
+    const seenIssueIds = new Set<string>();
+    return runs.filter((run) => {
+      if (!run.issueId) return true;
+      if (seenIssueIds.has(run.issueId)) return false;
+      seenIssueIds.add(run.issueId);
+      return true;
+    });
+  }, [dedupeLinkedTasks, runs]);
+  const visibleRuns = useMemo(() => cardRuns.slice(0, cardLimit), [cardLimit, cardRuns]);
+  const hiddenRunCount = Math.max(0, cardRuns.length - visibleRuns.length);
   const visibleIssueIds = useMemo(
     () => [...new Set(visibleRuns.map((run) => run.issueId).filter((issueId): issueId is string => Boolean(issueId)))],
     [visibleRuns],
@@ -164,7 +185,7 @@ export const AgentRunCard = memo(function AgentRunCard({
 }: {
   companyId: string;
   run: LiveRunForIssue;
-  issue?: Pick<Issue, "identifier" | "title" | "status">;
+  issue?: Pick<Issue, "identifier" | "title" | "status" | "externalConversationState">;
   transcript?: TranscriptEntry[];
   hasOutput?: boolean;
   showTranscript?: boolean;
@@ -177,6 +198,7 @@ export const AgentRunCard = memo(function AgentRunCard({
   const timestamp = run.finishedAt
     ? `${tr("Finished")} ${relativeTime(run.finishedAt)}`
     : run.startedAt ? `${tr("Started")} ${relativeTime(run.startedAt)}` : `${tr("Queued")} ${relativeTime(run.createdAt)}`;
+  const taskStatus = issue?.status === "in_review" && issue.externalConversationState === "waiting" ? "idle" : issue?.status ?? "backlog";
   const taskTitle = issue?.title ?? (issueLoadFailed ? tr("Task unavailable") : tr("Loading task…"));
 
   return (
@@ -195,7 +217,7 @@ export const AgentRunCard = memo(function AgentRunCard({
           aria-label={`${run.agentName} — ${statusLabel}. ${tr("View run")}`}
           className="flex min-w-0 items-center gap-2 rounded-md text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Identity name={run.agentName} className="gap-2 font-medium" />
+          <AgentIdentity agent={{ id: run.agentId, name: run.agentName, appearance: run.agentAppearance }} size="sm" className="gap-2 font-medium" />
         </Link>
 
         {run.issueId ? (
@@ -207,10 +229,10 @@ export const AgentRunCard = memo(function AgentRunCard({
             <span className="flex min-w-0 items-baseline gap-2">
               <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
                 <StatusGlyph
-                  status={issue?.status ?? "backlog"}
+                  status={taskStatus}
                   size="md"
                   className="self-center"
-                  title={issue ? `${tr("Task")} ${tr(issue.status.replace(/_/g, " "))}` : undefined}
+                  title={issue ? `${tr("Task")} ${tr(taskStatus.replace(/_/g, " "))}` : undefined}
                 />
                 <span className="truncate">{taskTitle}</span>
               </span>

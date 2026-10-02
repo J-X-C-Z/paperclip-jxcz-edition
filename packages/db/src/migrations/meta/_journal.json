@@ -1968,6 +1968,104 @@
       "when": 1790845286457,
       "tag": "0282_huge_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 283,
+      "version": "7",
+      "when": 1790845286458,
+      "tag": "0283_unique_genesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 284,
+      "version": "7",
+      "when": 1790845286459,
+      "tag": "0284_true_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 285,
+      "version": "7",
+      "when": 1790845286460,
+      "tag": "0285_colossal_shocker",
+      "breakpoints": true
+    },
+    {
+      "idx": 286,
+      "version": "7",
+      "when": 1790845286461,
+      "tag": "0286_jittery_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 287,
+      "version": "7",
+      "when": 1790845286462,
+      "tag": "0287_petite_genesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 288,
+      "version": "7",
+      "when": 1790845286463,
+      "tag": "0288_heavy_oracle",
+      "breakpoints": true
+    },
+    {
+      "idx": 289,
+      "version": "7",
+      "when": 1790845286464,
+      "tag": "0289_complete_alice",
+      "breakpoints": true
+    },
+    {
+      "idx": 290,
+      "version": "7",
+      "when": 1790845286465,
+      "tag": "0290_serious_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 291,
+      "version": "7",
+      "when": 1790845286466,
+      "tag": "0291_glorious_jamie_braddock",
+      "breakpoints": true
+    },
+    {
+      "idx": 292,
+      "version": "7",
+      "when": 1790845286467,
+      "tag": "0292_drop_user_keyboard_shortcuts",
+      "breakpoints": true
+    },
+    {
+      "idx": 293,
+      "version": "7",
+      "when": 1790845286468,
+      "tag": "0293_browser_use_cloud",
+      "breakpoints": true
+    },
+    {
+      "idx": 294,
+      "version": "7",
+      "when": 1790845286469,
+      "tag": "0294_conscious_secret_warriors",
+      "breakpoints": true
+    },
+    {
+      "idx": 295,
+      "version": "7",
+      "when": 1790845286470,
+      "tag": "0295_powerful_devos",
+      "breakpoints": true
+    },
+    {
+      "idx": 296,
+      "version": "7",
+      "when": 1790845286471,
+      "tag": "0296_broad_rattler",
+      "breakpoints": true
     }
   ]
 }

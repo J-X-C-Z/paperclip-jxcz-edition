@@ -1,3 +1,8 @@
+import {
+  connectionSetupVerbForApp,
+  isRetiredComposioConnection,
+  RETIRED_COMPOSIO_MESSAGE,
+} from "@paperclipai/shared";
 import { ManagedAiConnectionRow } from "@/components/ai-connections/ManagedAiConnectionDetails";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,12 +23,15 @@ import {
 import type { ToolApplication, ToolConnection } from "@paperclipai/shared";
 import {
   getAppDefinitionForUrl,
+  isMemoryConnectorId,
   getAppStoreDefinition,
   isToolConnectionAttentionHealth,
   aiSubscriptionNeedsIsolatedLogin,
+  GOOGLE_WORKSPACE_CONNECTOR_PROFILES,
 } from "@paperclipai/shared";
 import { useNavigate } from "@/lib/router";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
+import { useMemoryConnectorsEnabled } from "@/hooks/useMemoryConnectorsEnabled";
 import { appCopyFor } from "@/lib/app-gallery-copy";
 import { useCompany } from "@/context/CompanyContext";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
@@ -60,6 +68,7 @@ import { buildCompanyUserProfileMap } from "@/lib/company-members";
 import { AppLogo } from "./AppLogo";
 import {
   appApplicationSourceSlug,
+  appConnectionSourceSlug,
   appDefinitionDarkLogoUrl,
   appDefinitionDescription,
   appDefinitionLogoUrl,
@@ -72,7 +81,6 @@ import {
   appSourceResumeHref,
   appSupportsToolCatalogSetup,
 } from "./app-connect-policy";
-import { composioChildParentConnectionId } from "./composio-services";
 import { uiText, useUiTranslator } from "@/i18n";
 import {
   ConnectionOwnerIdentity,
@@ -102,12 +110,20 @@ type ConnectionState = {
 };
 
 type ConnectionRemovalTarget = {
+  kind?: "chat";
   id: string;
   accountName: string;
   providerName: string;
   remainingConnectionCount: number;
-  childConnectionCount: number;
+
 };
+
+// Temporary, page-only hold until Google OAuth verification is approved.
+// Keep definitions, direct setup/management routes, and runtime access intact.
+// Remove this filter after approval; reviewer instances stay on their pinned build.
+const GOOGLE_CONNECTOR_SLUGS = new Set(
+  Object.values(GOOGLE_WORKSPACE_CONNECTOR_PROFILES).map((profile) => profile.appSlug),
+);
 
 function chatProviderForSlug(slug: string): ChatProvider | null {
   const method = getAppStoreDefinition(slug)?.methods.find(
@@ -162,6 +178,9 @@ function additionalConnectionHref(
 }
 
 function connectionState(connection: ToolConnection): ConnectionState {
+  if (isRetiredComposioConnection(connection)) {
+    return { kind: "attention", label: "Retired", message: RETIRED_COMPOSIO_MESSAGE };
+  }
   if (connection.status === "draft") {
     return {
       kind: "draft",
@@ -245,7 +264,14 @@ function connectorAction(
     };
   }
   if (chatHref) return { label: uiText("Connect"), href: chatHref };
-  if (row.entry) return { label: uiText("Connect"), href: connectHrefFor(row.entry) };
+  // PAP-659 C4: the card's verb comes from the same four-state resolver the
+  // connect screen uses, so uiText("Connect") never turns out to mean "paste a key".
+  if (row.entry) {
+    return {
+      label: connectionSetupVerbForApp(row.entry),
+      href: connectHrefFor(row.entry),
+    };
+  }
   return {
     label: uiText("Connect"),
     href: applicationId ? `/apps/app/${applicationId}/permissions` : null,
@@ -278,6 +304,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
   const { pushToast } = useToast();
   const { selectedCompanyId } = useCompany();
   const { enabled: chatConnectorsEnabled } = useChatConnectorsEnabled();
+  const { enabled: memoryConnectorsEnabled } = useMemoryConnectorsEnabled();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [query, setQuery] = useState("");
   const [connectionToRemove, setConnectionToRemove] =
@@ -316,11 +343,17 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     enabled: !!selectedCompanyId,
   });
   const removeConnection = useMutation({
-    mutationFn: (target: ConnectionRemovalTarget) =>
-      toolsApi.archiveConnection(target.id, {
-        confirmComposioChildren: target.childConnectionCount > 0,
-      }),
+    mutationFn: async (target: ConnectionRemovalTarget) => {
+      if (target.kind === "chat") {
+        await chatEndpointsApi.setup(target.id, { action: "remove" });
+      } else {
+        await toolsApi.archiveConnection(target.id);
+      }
+    },
     onSuccess: (_connection, target) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chatEndpoints.list(selectedCompanyId!),
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.tools.connections(selectedCompanyId!),
       });
@@ -333,7 +366,9 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
       pushToast({
         title: uiText("Connection removed"),
         body:
-          target.remainingConnectionCount > 0
+          target.kind === "chat"
+            ? `${target.providerName} is disconnected. Existing Paperclip tasks remain available.`
+            : target.remainingConnectionCount > 0
             ? `${target.providerName} still has ${target.remainingConnectionCount} active ${target.remainingConnectionCount === 1 ? "connection" : "connections"} available to agents.`
             : `${target.providerName} is no longer available to agents through this connection. Its saved credentials were deleted.`,
         tone: "success",
@@ -351,6 +386,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
   const gallery = (
     (galleryQuery.data?.apps ?? []) as AppGalleryDisplayEntry[]
   ).filter((entry) => {
+    if (!memoryConnectorsEnabled && isMemoryConnectorId(appDefinitionSlug(entry))) return false;
     const definition = getAppStoreDefinition(appDefinitionSlug(entry));
     return (
       chatConnectorsEnabled ||
@@ -374,9 +410,8 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     ).filter(
       (application) =>
         application.status !== "archived" &&
-        (chatConnectorsEnabled ||
-          (application.type !== "chat" &&
-            application.metadata?.purpose !== "channel")),
+        application.type !== "chat" &&
+        application.metadata?.purpose !== "channel",
     );
     const connectionsByApplicationId = new Map<string, ToolConnection[]>();
     for (const connection of activeConnections) {
@@ -415,51 +450,46 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
         chatEndpoints: [],
       });
     }
-    const nativeChatProviders = [
-      { provider: "imessage-photon", name: "iMessage Photon", description: uiText("Message agents and share photos from Apple Messages with a dedicated Photon number.") },
+    const nativeChatApps = [
+      { slug: "imessage-photon", name: "iMessage Photon", description: uiText("Message agents and share photos from Apple Messages with a dedicated Photon number.") },
       {
-        provider: "slack",
+        slug: "slack",
         name: "Slack",
         description:
           uiText("Chat with agents from Slack channels and direct messages."),
       },
       {
-        provider: "github",
-        name: "GitHub",
+        slug: "github-code-review-bot",
+        name: "GitHub Code Review Bot",
         description:
-          uiText("Chat with agents from issues, pull requests, and review threads."),
+          "Have an agent review pull requests and respond to GitHub mentions.",
       },
       {
-        provider: "discord",
+        slug: "discord",
         name: "Discord",
         description:
           uiText("Chat with agents from Discord channels, threads, and direct messages."),
       },
       {
-        provider: "microsoft-teams",
+        slug: "microsoft-teams",
         name: "Microsoft Teams",
         description: uiText("Chat with agents from Teams channels and conversations."),
       },
       {
-        provider: "telegram",
+        slug: "telegram",
         name: "Telegram",
         description:
           uiText("Chat with agents from Telegram direct messages, groups, and topics."),
       },
     ] as const;
-    for (const item of chatConnectorsEnabled ? nativeChatProviders : []) {
-      if (
-        [...rowsBySlug.values()].some(
-          (row) => chatProviderForSlug(row.slug) === item.provider,
-        )
-      )
-        continue;
-      rowsBySlug.set(item.provider, {
-        key: `native-chat:${item.provider}`,
-        slug: item.provider,
+    for (const item of chatConnectorsEnabled ? nativeChatApps : []) {
+      if (rowsBySlug.has(item.slug)) continue;
+      rowsBySlug.set(item.slug, {
+        key: `native-chat:${item.slug}`,
+        slug: item.slug,
         name: item.name,
         description: item.description,
-        brandKey: item.provider,
+        brandKey: item.slug,
         entry: null,
         applications: [],
         connections: [],
@@ -469,8 +499,18 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
 
     const customRows: ConnectorRowModel[] = [];
     for (const application of activeApplications) {
-      const appConnections =
+      const applicationSlug = appApplicationSourceSlug(application);
+      const savedAppConnections =
         connectionsByApplicationId.get(application.id) ?? [];
+      const appConnections = savedAppConnections.filter(
+        (connection) => !GOOGLE_CONNECTOR_SLUGS.has(appConnectionSourceSlug(connection) ?? ""),
+      );
+      // Hide source-only Google rows, but keep independently identified connectors.
+      if (
+        (!applicationSlug || applicationSlug === "link") &&
+        savedAppConnections.length > 0 &&
+        appConnections.length === 0
+      ) continue;
       const configuredConnectionSlug = appConnections
         .map(
           (connection) =>
@@ -492,7 +532,6 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
             : null,
         )
         .find((value): value is string => Boolean(value));
-      const applicationSlug = appApplicationSourceSlug(application);
       const resolvedSlug =
         applicationSlug &&
         applicationSlug !== "link" &&
@@ -529,6 +568,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     for (const endpoint of chatConnectorsEnabled
       ? (chatEndpointsQuery.data ?? [])
       : []) {
+      if (endpoint.status === "archived") continue;
       let target = [...rowsBySlug.values()].find(
         (row) => chatProviderForSlug(row.slug) === endpoint.provider,
       );
@@ -559,6 +599,7 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
     }
 
     return [...rowsBySlug.values(), ...customRows]
+      .filter((row) => !GOOGLE_CONNECTOR_SLUGS.has(row.slug))
       .map((row) => ({
         ...row,
         connections: [...row.connections].sort(
@@ -683,7 +724,6 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
               renderAccountDetails={renderAccountDetails}
               key={row.key}
               row={row}
-              allConnections={connectionsQuery.data?.connections ?? []}
               userProfileById={userProfileById}
               onNavigate={navigate}
               onRequestRemove={setConnectionToRemove}
@@ -709,8 +749,8 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
               {tr("Remove")} {connectionToRemove?.accountName ?? tr("this")} {tr("connection?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {connectionToRemove && connectionToRemove.childConnectionCount > 0
-                ? `This also removes ${connectionToRemove.childConnectionCount} connected ${connectionToRemove.childConnectionCount === 1 ? "service" : "services"} and takes agent access away immediately. The Composio key and child session credentials are deleted.`
+              {connectionToRemove?.kind === "chat"
+                ? `This connection will stop receiving new work from ${connectionToRemove.providerName}. Existing Paperclip tasks and conversation history remain available. This does not delete the app, bot, or account in ${connectionToRemove.providerName}.`
                 : connectionToRemove &&
                     connectionToRemove.remainingConnectionCount > 0
                   ? `This connection's saved credentials are deleted and agents lose access through it immediately. They can still use ${connectionToRemove.providerName} through ${connectionToRemove.remainingConnectionCount} other active ${connectionToRemove.remainingConnectionCount === 1 ? "connection" : "connections"}.`
@@ -747,7 +787,6 @@ export function Browse({ renderAccountDetails = (connection) => connection.conne
 export function ConnectorCard({
   renderAccountDetails,
   row,
-  allConnections,
   userProfileById,
   onNavigate,
   onRequestRemove,
@@ -756,7 +795,6 @@ export function ConnectorCard({
 }: {
   renderAccountDetails?: (connection: ToolConnection) => ReactNode;
   row: ConnectorRowModel;
-  allConnections: ToolConnection[];
   userProfileById: ReadonlyMap<string, ConnectionOwnerProfile>;
   onNavigate: (href: string) => void;
   onRequestRemove: (target: ConnectionRemovalTarget) => void;
@@ -835,11 +873,6 @@ export function ConnectorCard({
                       candidate.status === "active" &&
                       candidate.enabled,
                   ).length,
-                  childConnectionCount: allConnections.filter(
-                    (candidate) =>
-                      composioChildParentConnectionId(candidate) ===
-                      connection.id,
-                  ).length,
                 });
               }}
             />
@@ -851,17 +884,17 @@ export function ConnectorCard({
           {row.chatEndpoints.map((endpoint) => (
             <div
               key={endpoint.id}
-              className="flex flex-wrap items-center gap-3 px-4 py-3"
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
             >
               <div className="min-w-0 flex-1">
                 <button
                   type="button"
-                  className="truncate text-left text-sm font-medium hover:underline"
+                  className="block max-w-full truncate text-left text-sm font-medium hover:underline"
                   onClick={() =>
                     onNavigate(`/apps/chat/${endpoint.id}/settings`)
                   }
                 >
-                  {endpoint.assignedAgentName} · {endpoint.provider === "agentmail" ? uiText("Email") : uiText("Chat")}
+                  {endpoint.assignedAgentName} · {endpoint.provider === "agentmail" ? uiText("Email") : endpoint.provider === "github" ? "Code review bot" : uiText("Chat")}
                 </button>
                 <p className="truncate text-xs text-muted-foreground">
                   {endpoint.providerAccountLabel ??
@@ -869,22 +902,51 @@ export function ConnectorCard({
                     tr("Provider identity")}
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {endpoint.status.replace(/_/g, " ")}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  onNavigate(
-                    endpoint.status === "draft"
-                      ? `/apps/chat/connect?provider=${endpoint.provider}&purpose=chat&resume=${endpoint.id}`
-                      : `/apps/chat/${endpoint.id}/settings`,
-                  )
-                }
-              >
-                {endpoint.status === "draft" ? tr("Finish setup") : tr("Manage")}
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {endpoint.status.replace(/_/g, " ")}
+                </span>
+                {endpoint.status === "draft" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onNavigate(`/apps/chat/connect?provider=${endpoint.provider}&purpose=chat&resume=${endpoint.id}`)}
+                  >
+                    {uiText("Finish setup")}
+                  </Button>
+                ) : null}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Manage ${endpoint.assignedAgentName} ${row.name} connection`}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => onNavigate(`/apps/chat/${endpoint.id}/settings`)}>
+                      {uiText("Manage")}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => onRequestRemove({
+                        kind: "chat",
+                        id: endpoint.id,
+                        accountName: `${endpoint.assignedAgentName} · ${row.name}`,
+                        providerName: row.name,
+                        remainingConnectionCount: 0,
+                      })}
+                    >
+                      <Trash2 />
+                      Remove connection
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           ))}
         </div>

@@ -1,12 +1,11 @@
 import { uiText } from "@/i18n";
-import { useEffect, useRef, useState } from "react";
 import type {
   FeedbackDataSharingPreference,
   FeedbackVoteValue,
 } from "@paperclipai/shared";
-import { copyTextToClipboard } from "@/lib/clipboard";
+import { useCopyAction } from "@/lib/use-copy-action";
 import { IssueChatFeedbackButtons } from "@/components/AgentBubbleActionRow";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 
 /** Feedback-vote wiring for an agent bubble, resolved per comment by the host. */
 export interface TaskChatBubbleFeedback {
@@ -34,32 +33,29 @@ export function TaskChatBubbleActions({
   copyText: string;
   feedback?: TaskChatBubbleFeedback | null;
 }) {
-  const [copied, setCopied] = useState(false);
-  const [copyFailed, setCopyFailed] = useState(false);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (resetTimer.current !== null) clearTimeout(resetTimer.current); }, []);
+  const { copied, failed, copy } = useCopyAction(2000);
+  const label = failed ? "Couldn’t copy message" : "Copy message";
 
   return (
     <div className="flex flex-wrap items-center gap-0.5" data-testid="task-chat-bubble-actions">
       <button
         type="button"
         className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title={uiText(copied ? "Message copied" : "Copy message")}
-        aria-label={uiText(copied ? "Message copied" : "Copy message")}
+        title={uiText(copied ? "Message copied" : label)}
+        aria-label={uiText(copied ? "Message copied" : label)}
         onClick={() => {
-          setCopyFailed(false);
-          void copyTextToClipboard(copyText)
-            .then(() => {
-              setCopied(true);
-              if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-              resetTimer.current = setTimeout(() => setCopied(false), 2000);
-            })
-            .catch(() => { setCopied(false); setCopyFailed(true); });
+          void copy(copyText);
         }}
       >
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copied ? (
+          <Check className="h-3.5 w-3.5" />
+        ) : failed ? (
+          <X className="h-3.5 w-3.5 text-destructive" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
       </button>
-      <span className={copyFailed ? "text-xs text-destructive" : "sr-only"} role={copyFailed ? "alert" : "status"}>{copyFailed ? uiText("Copy failed. Select the message text and copy it manually.") : copied ? uiText("Message copied") : ""}</span>
+      <span className={failed ? "text-xs text-destructive" : "sr-only"} role={failed ? "alert" : "status"}>{failed ? uiText("Copy failed. Select the message text and copy it manually.") : copied ? uiText("Message copied") : ""}</span>
       {feedback ? (
         <IssueChatFeedbackButtons
           activeVote={feedback.activeVote}

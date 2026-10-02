@@ -22,7 +22,7 @@ function app(companyId = "company-a") {
   return server;
 }
 
-describe("sidebar badge lightweight alerts", () => {
+describe("sidebar badge company health separation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.get.mockResolvedValue({ inbox: 3, approvals: 2, failedRuns: 0, joinRequests: 1 });
@@ -30,15 +30,15 @@ describe("sidebar badge lightweight alerts", () => {
     mocks.summary.mockRejectedValue(new Error("Full dashboard must not be read"));
   });
 
-  it("keeps badge fields and includes error and 80-percent budget alerts", async () => {
+  it("preserves personal inbox badges without adding company health alerts", async () => {
     const response = await request(app()).get("/companies/company-a/sidebar-badges");
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ inbox: 5, approvals: 2, failedRuns: 0, joinRequests: 1 });
-    expect(mocks.alertSummary).toHaveBeenCalledWith("company-a");
+    expect(response.body).toEqual({ inbox: 3, approvals: 2, failedRuns: 0, joinRequests: 1 });
+    expect(mocks.alertSummary).not.toHaveBeenCalled();
     expect(mocks.summary).not.toHaveBeenCalled();
   });
 
-  it("does not duplicate the error alert when failed runs are present", async () => {
+  it("preserves service-selected failure counts without recomputing inbox", async () => {
     mocks.get.mockResolvedValue({ inbox: 4, approvals: 2, failedRuns: 1, joinRequests: 1 });
     mocks.alertSummary.mockResolvedValue({ agents: { error: 2 }, costs: { monthBudgetCents: 100, monthUtilizationPercent: 79.99 } });
     const response = await request(app()).get("/companies/company-a/sidebar-badges");

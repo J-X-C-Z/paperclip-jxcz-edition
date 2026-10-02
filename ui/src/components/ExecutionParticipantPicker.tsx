@@ -1,4 +1,5 @@
 import { uiText } from "@/i18n";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { useMemo, useState } from "react";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +15,6 @@ import {
 import { cn } from "../lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { User, Eye, ShieldCheck } from "lucide-react";
-import { AgentIcon } from "./AgentIconPicker";
 
 type StageType = "review" | "approval";
 
@@ -190,7 +190,7 @@ export function ExecutionParticipantPicker({
                   )}
                   onClick={() => toggle(encoded)}
                 >
-                  <AgentIcon icon={agent.icon} className="shrink-0 h-3 w-3 text-muted-foreground" />
+                  <AgentAvatar agent={agent} size={16} className="shrink-0 h-3 w-3 text-muted-foreground"/>
                   {agent.name}
                 </button>
               );

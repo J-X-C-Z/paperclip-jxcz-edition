@@ -29,7 +29,13 @@ describe("token cost estimation", () => {
   });
   it("avoids invalid negative or nonfinite usage and empty runs", () => {
     expect(estimateTokenCostUsd({ ...usage, inputTokens: -1, cachedInputTokens: Number.NaN, outputTokens: Number.POSITIVE_INFINITY })).toBeNull();
-    expect(resolveRunCost({ ...usage, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 }).costStatus).toBe("reported");
+    expect(resolveRunCost({ ...usage, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 }).costStatus).toBe("unpriced");
+  });
+  it.each([null, undefined, Number.NaN, Number.POSITIVE_INFINITY, -1])("keeps empty paused turns without a valid receipt unpriced (%s)", (costUsd) => {
+    expect(resolveRunCost({ ...usage, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, costUsd })).toMatchObject({ costUsd: null, costStatus: "unpriced", estimate: null });
+  });
+  it("preserves an explicit zero receipt for an empty subscription turn", () => {
+    expect(resolveRunCost({ ...usage, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, costUsd: 0, billingType: "subscription_included" })).toMatchObject({ costUsd: 0, costStatus: "reported", estimate: null });
   });
   it("uses published GPT-6 rates without aliasing distinct cache rates", () => {
     expect(estimateTokenCostUsd({ ...usage, model: "gpt-6-sol" })?.costUsd).toBeCloseTo(0.156);

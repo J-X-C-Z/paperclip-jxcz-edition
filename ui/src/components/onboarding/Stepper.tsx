@@ -52,7 +52,7 @@ export const ONBOARDING_STEP_LABELS = [
  * strip on the last segment actually completed.
  */
 export function onboardingStepPositionFor(step: number): number {
-  return ONBOARDING_WIZARD_STEPS.filter((entry) => {uiText("entry")} <= step).length;
+  return ONBOARDING_WIZARD_STEPS.filter((entry) => entry <= step).length;
 }
 
 /**
