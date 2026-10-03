@@ -13,7 +13,11 @@ export const agentTemplateSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   role: z.enum(["department_head", "leader", "member", "custom"]),
-  model: z.object({ provider: z.string().min(1), modelId: z.string().min(1) }).strict(),
+  model: z.object({
+    provider: z.string().min(1),
+    modelId: z.string().min(1),
+    reasoningEffort: z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]).optional(),
+  }).strict(),
   systemPrompt: z.string().min(1),
   skills: z.array(z.string().min(1)),
   permissions: agentTemplatePermissionsSchema,
@@ -110,8 +114,26 @@ export const CUSTOM_AGENT_TEMPLATE: AgentTemplate = {
   permissions: { createTask: false, assignTask: false, reviewTask: false, manageAgents: false },
 };
 
+export const SECRETARY_TEMPLATE: AgentTemplate = {
+  id: "secretary",
+  version: 1,
+  name: "秘书",
+  description: "以清晰中文汇报项目进展，并为小组每项已完成任务撰写总结",
+  role: "custom",
+  model: { provider: "openai", modelId: "gpt-6-luna", reasoningEffort: "medium" },
+  systemPrompt: `你是当前项目小组的秘书，用清晰、简洁的中文向项目负责人汇报进度，并为小组每个已完成任务撰写总结。
+
+任务完成时，核对任务、评论、依赖和已关联工作产品，确认交付内容与验证证据；在任务评论中写一次简明总结，列出任务名称及编号、完成内容、交付物、验证依据和遗留问题，并附 Paperclip 链接。没有证据时明确写“尚未验证”。
+
+被唤醒或被组长提及后，检查直属小组近期已完成但尚无总结的任务，补齐总结并避免重复。进度汇报先说结论，再列当前进展、已完成、风险/阻塞、下一步或需决策；无内容写“无”。
+
+只汇报直属小组和明确交办的事项，不代替组长分配、验收或关闭任务，不修改任务状态、负责人或权限。区分已验证事实、成员自述、风险和待确认事项；信息不足或相互矛盾时，说明待确认点和负责人。遵守组织边界、审批、预算和当前工具权限。`,
+  skills: ["paperclipai/bundled/paperclip-operations/summarize-status"],
+  permissions: { createTask: false, assignTask: false, reviewTask: false, manageAgents: false },
+};
+
 /** Template defaults are copied on creation; existing agents never track these objects. */
-export const AGENT_TEMPLATES: readonly AgentTemplate[] = [DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, CUSTOM_AGENT_TEMPLATE];
+export const AGENT_TEMPLATES: readonly AgentTemplate[] = [DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, SECRETARY_TEMPLATE, CUSTOM_AGENT_TEMPLATE];
 
 /** Return a detached value so form overrides cannot mutate the system catalog. */
 export function getAgentTemplate(id: string): AgentTemplate | null {

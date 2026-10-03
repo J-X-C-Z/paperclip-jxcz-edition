@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue, IssueDocument } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/i18n";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   taskPanelDocumentTab,
@@ -114,7 +115,8 @@ describe("TaskSidePanel", () => {
   let container: HTMLDivElement;
   let queryClient: QueryClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     window.localStorage.clear();
     browserFixture.data = [];
     browserFixture.control.mockClear();
@@ -396,6 +398,21 @@ describe("TaskSidePanel", () => {
     await act(async () => tasks?.click());
     expect(container.textContent).toContain("Cross-project follow-up");
     expect(container.textContent).not.toContain("Subtasks content");
+  });
+
+  it("exposes pending related tasks without inventing a count and mounts them on selection", async () => {
+    const opened = vi.fn();
+    function Content() {
+      opened();
+      return <div>Related tasks loaded on demand</div>;
+    }
+    await render(panel({ showSubtasksTab: true, tasksTab: { count: 0, pending: true, content: <Content /> } }));
+    expect(opened).not.toHaveBeenCalled();
+    const tasks = container.querySelector<HTMLButtonElement>('[data-side-panel-tab-target="subtasks"]');
+    expect(tasks?.textContent?.trim()).toBe("Tasks");
+    await act(async () => tasks?.click());
+    expect(opened).toHaveBeenCalled();
+    expect(container.textContent).toContain("Related tasks loaded on demand");
   });
 
   it("exposes failed task loading even when no task count is available", async () => {

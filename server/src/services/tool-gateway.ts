@@ -1031,6 +1031,8 @@ const VIRTUAL_TOOLS = [VIRTUAL_SEARCH_TOOLS, VIRTUAL_RUN_TOOL];
 export function createToolGatewayService(
   db: Db,
   options: {
+    /** Maintenance scans may use a separate pool to the same database. */
+    backgroundDb?: Db;
     pluginToolDispatcher?: PluginToolDispatcher;
     deploymentMode?: DeploymentMode;
     deploymentExposure?: DeploymentExposure;
@@ -2060,8 +2062,8 @@ export function createToolGatewayService(
     errorCode?: string | null;
     errorMessage?: string | null;
     resultSummary?: string | null;
-  }): Promise<void> {
-    const [linked] = await db
+  }, lifecycleDb: Db = db): Promise<void> {
+    const [linked] = await lifecycleDb
       .select({
         companyId: toolActionRequests.companyId,
         interactionId: toolActionRequests.interactionId,
@@ -2073,7 +2075,7 @@ export function createToolGatewayService(
     if (!linked?.interactionId) return;
 
     const interactionId = linked.interactionId;
-    const changed = await db.transaction(async (tx) => {
+    const changed = await lifecycleDb.transaction(async (tx) => {
       const [interaction] = await tx
         .select({
           status: issueThreadInteractions.status,
@@ -2142,7 +2144,7 @@ export function createToolGatewayService(
       return true;
     });
     if (!changed) return;
-    await logActivity(db, {
+    await logActivity(lifecycleDb, {
       companyId: linked.companyId,
       actorType: "system",
       actorId: "tool-gateway",
@@ -9242,9 +9244,10 @@ export function createToolGatewayService(
     },
 
     async sweepActionReviews() {
+      const sweepDb = options.backgroundDb ?? db;
       // A process may stop between persisting a provider outcome and updating the
       // feed projection. Reconcile from authoritative rows before delivering it.
-      const unreflected = await db
+      const unreflected = await sweepDb
         .select({ request: toolActionRequests, invocation: toolInvocations })
         .from(toolActionRequests)
         .innerJoin(
@@ -9275,13 +9278,13 @@ export function createToolGatewayService(
           errorCode: invocation.errorCode,
           errorMessage: invocation.errorMessage,
           resultSummary: invocation.resultSummary?.summary,
-        });
+        }, sweepDb);
       const now = new Date();
       const staleAt = new Date(now.getTime() - 10 * 60_000);
       let cursor: string | undefined;
       let scanned = 0;
       for (;;) {
-        const rows = await db
+        const rows = await sweepDb
           .select()
           .from(toolActionRequests)
           .where(
@@ -9325,7 +9328,7 @@ export function createToolGatewayService(
             status === "failed"
               ? "Execution was interrupted; the external outcome is unknown. Inspect the provider before retrying."
               : "The approval request expired before a decision.";
-          const [changed] = await db
+          const [changed] = await sweepDb
             .update(toolActionRequests)
             .set({ status, resolvedAt: now, updatedAt: now })
             .where(
@@ -9337,7 +9340,7 @@ export function createToolGatewayService(
             )
             .returning();
           if (!changed) continue;
-          await db
+          await sweepDb
             .update(toolInvocations)
             .set({
               status: "failed",
@@ -9347,13 +9350,13 @@ export function createToolGatewayService(
               updatedAt: now,
             })
             .where(eq(toolInvocations.id, row.invocationId));
-          void emitConnectionInvoked(db, row.invocationId);
+          void emitConnectionInvoked(sweepDb, row.invocationId);
           await reflectToolActionInteractionLifecycle({
             actionRequestId: row.id,
             status,
             errorCode,
             errorMessage,
-          });
+          }, sweepDb);
         }
         scanned += rows.length;
         if (rows.length < 100) break;

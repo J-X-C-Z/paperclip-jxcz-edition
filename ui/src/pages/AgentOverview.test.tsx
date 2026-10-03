@@ -3,7 +3,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AgentDetail, AgentRuntimeState, HeartbeatRun, Issue } from "@paperclipai/shared";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/i18n";
 import { AgentOverview } from "./AgentDetail";
 
 vi.mock("@/lib/router", async () => {
@@ -21,6 +22,7 @@ vi.mock("../components/MarkdownBody", () => ({
 }));
 
 describe("AgentOverview", () => {
+  beforeEach(async () => { await i18n.changeLanguage("en"); });
   it("prioritizes identity, capability, runtime, skills, tasks, and scoped Audit entry points", () => {
     const agent = {
       id: "agent-1",

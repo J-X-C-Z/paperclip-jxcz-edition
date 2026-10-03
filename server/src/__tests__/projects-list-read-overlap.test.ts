@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { Db } from "@paperclipai/db";
-import { budgetPolicies, issues, projectGoals, projects, projectWorkspaces } from "@paperclipai/db";
+import { budgetPolicies, issues, pluginManagedResources, projectGoals, projects, projectWorkspaces } from "@paperclipai/db";
 import { projectService } from "../services/projects.js";
 
 const baseRows = [
-  { id: "project-a", companyId: "company-a", name: "First", description: "kept", archivedAt: null, executionWorkspacePolicy: null },
+  { id: "project-a", companyId: "company-a", name: "First", description: "kept", archivedAt: null, executionWorkspacePolicy: { enabled: true, defaultMode: "isolated" } },
   { id: "project-b", companyId: "company-a", name: "Second", archivedAt: new Date("2026-01-01"), executionWorkspacePolicy: null },
 ];
 
@@ -41,26 +41,28 @@ function mockDb(options: { empty?: boolean; goals?: Promise<unknown[]>; metricEr
 }
 
 describe("project list read overlap", () => {
-  it("starts both metrics before goal hydration completes and preserves fields, ordering and defaults", async () => {
+  it("starts workspaces, plugin metadata and both metrics before goals complete and preserves fields, ordering and defaults", async () => {
     const goals = Promise.withResolvers<unknown[]>();
     const mock = mockDb({ goals: goals.promise });
     const listing = projectService(mock.db).list("company-a");
     await vi.waitFor(() => {
       expect(mock.started).toContain(issues);
       expect(mock.started).toContain(budgetPolicies);
+      expect(mock.started).toContain(projectWorkspaces);
+      expect(mock.started).toContain(pluginManagedResources);
     });
     expect(mock.started).toContain(projectGoals);
-    expect(mock.started).not.toContain(projectWorkspaces);
     goals.resolve([{ projectId: "project-a", goalId: "goal-a", goalTitle: "Goal" }]);
     const result = await listing;
     expect(result.map(({ id }) => id)).toEqual(["project-a", "project-b"]);
     expect(result[0]).toMatchObject({
       description: "kept", goalIds: ["goal-a"], goals: [{ id: "goal-a", title: "Goal" }],
+      executionWorkspacePolicy: { enabled: true, defaultMode: "isolated_workspace" },
       workspaces: [], primaryWorkspace: null, managedByPlugin: null, taskCount: 0,
       budget: { amountCents: 100, windowKind: "lifetime" },
     });
     expect(result[0]?.codebase.origin).toBe("managed_checkout");
-    expect(result[1]).toMatchObject({ archivedAt: baseRows[1]?.archivedAt, taskCount: 7, budget: null });
+    expect(result[1]).toMatchObject({ archivedAt: baseRows[1]?.archivedAt, goalIds: [], goals: [], executionWorkspacePolicy: null, taskCount: 7, budget: null });
     const basePredicate = mock.predicates.find(({ table }) => table === projects);
     expect(basePredicate?.params).toEqual(["company-a"]);
     expect(basePredicate?.sql).not.toContain("archived_at");

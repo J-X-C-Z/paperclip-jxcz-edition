@@ -43,6 +43,7 @@ const {
   }) as never);
   const createBetterAuthInstanceMock = vi.fn(() => ({}));
   const createDbMock = vi.fn(() => ({
+    $client: { options: { max: 20 }, end: vi.fn(async () => undefined) },
     select: vi.fn(() => ({
       from: vi.fn(() => ({ where: vi.fn(async () => []) })),
     })),
@@ -530,9 +531,11 @@ describe("startServer feedback export wiring", () => {
     expect(createAppMock).toHaveBeenCalledTimes(1);
     expect(createAppMock.mock.calls[0]?.[1]).toMatchObject({
       feedbackExportService: feedbackExportServiceMock,
+      backgroundDb: createDbMock.mock.results[1]?.value,
       storageService: { id: "storage-service" },
       serverPort: 3210,
     });
+    expect(feedbackServiceFactoryMock).toHaveBeenCalledWith(createDbMock.mock.results[1]?.value, expect.any(Object));
   });
 
   it("keeps startup available when completion delivery recovery fails", async () => {
@@ -582,7 +585,7 @@ describe("startServer feedback export wiring", () => {
       await startServer();
       await new Promise<void>((resolve) => setImmediate(resolve));
       expect(reconcileSafeNativeReplacements).toHaveBeenCalledExactlyOnceWith(
-        createDbMock.mock.results[0]?.value,
+        createDbMock.mock.results[1]?.value,
         expect.any(Date),
         { verifyStoppedSession: expect.any(Function) },
       );
@@ -622,8 +625,7 @@ describe("startServer feedback export wiring", () => {
 
       expect(intervalCallback).not.toBeNull();
       intervalCallback?.();
-      await Promise.resolve();
-      await Promise.resolve();
+      await new Promise<void>((resolve) => setImmediate(resolve));
 
       expect(heartbeatServiceMock.tickTimers).not.toHaveBeenCalled();
       expect(externalObjectsServiceMock.refreshDueObjectsForActiveCompanies).toHaveBeenCalledTimes(1);

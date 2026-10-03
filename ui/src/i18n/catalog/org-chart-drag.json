@@ -1,0 +1,6 @@
+{
+  "Could not update reporting relationship.": "汇报关系保存失败，请重试。",
+  "Saving reporting relationship…": "正在保存汇报关系…",
+  "Release on the highlighted agent to set its manager. Escape cancels.": "在高亮智能体上松开，即可设为上级。按 Esc 可取消。",
+  "Long press an agent, then drag it onto its new manager. Its team moves with it.": "长按智能体后拖到新的上级卡片上，整组成员会一起移动。"
+}

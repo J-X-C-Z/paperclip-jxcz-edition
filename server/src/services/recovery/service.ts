@@ -70,7 +70,7 @@ import {
   nativeRunnerOwnershipNotHeldCondition,
 } from "../native-runtime/native-runner-ownership.js";
 import { visibleIssueCondition } from "../issue-visibility.js";
-import { forbidden, notFound } from "../../errors.js";
+import { forbidden, HttpError, notFound } from "../../errors.js";
 import { logger } from "../../middleware/logger.js";
 import {
   isPidAlive,
@@ -1931,7 +1931,26 @@ export function recoveryService(
           return null;
         }
         if (deps.scheduleRecoveryRetry) {
-          const retry = await deps.scheduleRecoveryRetry(predecessor.id);
+          let retry;
+          try {
+            retry = await deps.scheduleRecoveryRetry(predecessor.id);
+          } catch (error) {
+            if (
+              error instanceof HttpError &&
+              error.status === 403 &&
+              error.message === "Queued-message interrupt authority is unavailable"
+            ) {
+              // A historical queued-message receipt cannot authorize a new
+              // run. Leave this issue for intervention without aborting the
+              // startup recovery of every other issue.
+              logger.warn(
+                { issueId: input.issueId, runId: predecessor.id },
+                "skipping recovery retry with unavailable queued-message authority",
+              );
+              return null;
+            }
+            throw error;
+          }
           if (retry) return retry;
           // A spent budget is the one "no retry" the sweeper must not wait
           // out: nothing else will ever queue a successor for this run, so

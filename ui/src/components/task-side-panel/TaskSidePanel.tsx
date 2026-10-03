@@ -110,7 +110,7 @@ export interface TaskSidePanelProps {
   streamlinedTabs?: boolean;
   showSubtasksTab?: boolean;
   /** Optional related-work projection; the host still owns tab layout and state. */
-  tasksTab?: { count: number; content: ReactNode; hasError?: boolean };
+  tasksTab?: { count: number; content: ReactNode; hasError?: boolean; pending?: boolean };
   onAttachmentOpened?: () => void;
   openAttachment?: { id: string; title: string; requestId: number } | null;
   openSkillId?: string | null;
@@ -268,7 +268,7 @@ export function TaskSidePanel({
   );
   const taskCount = tasksTab?.count ?? childIssues.length;
   const taskLabel = tasksTab ? "Tasks" : "Subtasks";
-  const initialSubtasksAvailableRef = useRef(showSubtasksTab && (taskCount > 0 || tasksTab?.hasError === true));
+  const initialSubtasksAvailableRef = useRef(showSubtasksTab && (taskCount > 0 || tasksTab?.hasError === true || tasksTab?.pending === true));
   const subtasksDismissedRef = useRef(
     restoredRef.current?.userInteracted === true
       && restoredRef.current.state.tabs.length === 0,
@@ -324,7 +324,7 @@ export function TaskSidePanel({
     }
   }, [openBrowserId, controller.activeTabId, onBrowserOpened, accountScope, issue.companyId, issue.id, fileTabsEnabled]);
   const activeTab = controller.tabs.find((tab) => tab.id === controller.activeTabId) ?? null;
-  const subtasksAvailable = showSubtasksTab && (taskCount > 0 || tasksTab?.hasError === true);
+  const subtasksAvailable = showSubtasksTab && (taskCount > 0 || tasksTab?.hasError === true || tasksTab?.pending === true);
   const hasSubtasksTab = controller.tabs.some((tab) => tab.id === "subtasks");
 
   useEffect(() => {
@@ -545,7 +545,7 @@ export function TaskSidePanel({
   const launcherSections = useMemo<SidePanelLauncherSection[]>(() => {
     const primary: SidePanelLauncherItem[] = [
       { id: "properties", label: uiText("Properties"), icon: <SlidersHorizontal />, alreadyOpen: controller.tabs.some((tab) => tab.id === "properties") },
-      ...(subtasksAvailable ? [{ id: "subtasks", label: taskLabel, description: tasksTab?.hasError ? "Could not load all tasks" : `${taskCount} total`, icon: <ListTree />, alreadyOpen: controller.tabs.some((tab) => tab.id === "subtasks") }] : []),
+      ...(subtasksAvailable ? [{ id: "subtasks", label: taskLabel, description: tasksTab?.hasError ? "Could not load all tasks" : tasksTab?.pending ? "Load related tasks" : `${taskCount} total`, icon: <ListTree />, alreadyOpen: controller.tabs.some((tab) => tab.id === "subtasks") }] : []),
       { id: "artifacts", label: uiText("Artifacts"), icon: <Box />, alreadyOpen: controller.tabs.some((tab) => tab.id === "artifacts") },
     ];
     for (const [index, browser] of (browsersQuery.data ?? []).entries()) {
@@ -598,7 +598,7 @@ export function TaskSidePanel({
       });
     }
     return sections;
-  }, [browsersQuery.data, taskCount, taskLabel, tasksTab?.hasError, controller.tabs, documents, fileTabsEnabled, planDocument, recentFilesQuery.data, recentFilesQuery.isError, recentFilesQuery.isLoading, subtasksAvailable]);
+  }, [browsersQuery.data, taskCount, taskLabel, tasksTab?.hasError, tasksTab?.pending, controller.tabs, documents, fileTabsEnabled, planDocument, recentFilesQuery.data, recentFilesQuery.isError, recentFilesQuery.isLoading, subtasksAvailable]);
 
   function selectLauncherItem(item: SidePanelLauncherItem) {
     markInteracted();

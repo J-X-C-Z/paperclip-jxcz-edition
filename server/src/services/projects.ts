@@ -232,15 +232,40 @@ function pickPrimaryWorkspace(
 }
 
 /** Batch-load workspace refs for a set of projects. */
-async function attachWorkspaces(db: Db, rows: ProjectWithGoals[]): Promise<ProjectWithGoals[]> {
+async function attachWorkspaces<T extends Pick<ProjectRow, "id" | "companyId">>(
+  db: Db,
+  rows: T[],
+): Promise<Array<T & Pick<ProjectWithGoals, "codebase" | "workspaces" | "primaryWorkspace" | "managedByPlugin">>> {
   if (rows.length === 0) return [];
 
   const projectIds = rows.map((r) => r.id);
-  const workspaceRows = await db
-    .select()
-    .from(projectWorkspaces)
-    .where(inArray(projectWorkspaces.projectId, projectIds))
-    .orderBy(desc(projectWorkspaces.isPrimary), asc(projectWorkspaces.createdAt), asc(projectWorkspaces.id));
+  // Both reads depend only on project IDs; plugin metadata can overlap workspace loading.
+  const [workspaceRows, managedRows] = await Promise.all([
+    db
+      .select()
+      .from(projectWorkspaces)
+      .where(inArray(projectWorkspaces.projectId, projectIds))
+      .orderBy(desc(projectWorkspaces.isPrimary), asc(projectWorkspaces.createdAt), asc(projectWorkspaces.id)),
+    db
+      .select({
+        id: pluginManagedResources.id,
+        pluginId: pluginManagedResources.pluginId,
+        pluginKey: pluginManagedResources.pluginKey,
+        manifestJson: plugins.manifestJson,
+        resourceKind: pluginManagedResources.resourceKind,
+        resourceKey: pluginManagedResources.resourceKey,
+        resourceId: pluginManagedResources.resourceId,
+        defaultsJson: pluginManagedResources.defaultsJson,
+        createdAt: pluginManagedResources.createdAt,
+        updatedAt: pluginManagedResources.updatedAt,
+      })
+      .from(pluginManagedResources)
+      .innerJoin(plugins, eq(pluginManagedResources.pluginId, plugins.id))
+      .where(and(
+        eq(pluginManagedResources.resourceKind, "project"),
+        inArray(pluginManagedResources.resourceId, projectIds),
+      )),
+  ]);
   const runtimeServicesByWorkspaceId = await listCurrentRuntimeServicesForProjectWorkspaces(
     db,
     rows[0]!.companyId,
@@ -263,25 +288,6 @@ async function attachWorkspaces(db: Db, rows: ProjectWithGoals[]): Promise<Proje
     arr.push(row);
   }
 
-  const managedRows = await db
-    .select({
-      id: pluginManagedResources.id,
-      pluginId: pluginManagedResources.pluginId,
-      pluginKey: pluginManagedResources.pluginKey,
-      manifestJson: plugins.manifestJson,
-      resourceKind: pluginManagedResources.resourceKind,
-      resourceKey: pluginManagedResources.resourceKey,
-      resourceId: pluginManagedResources.resourceId,
-      defaultsJson: pluginManagedResources.defaultsJson,
-      createdAt: pluginManagedResources.createdAt,
-      updatedAt: pluginManagedResources.updatedAt,
-    })
-    .from(pluginManagedResources)
-    .innerJoin(plugins, eq(pluginManagedResources.pluginId, plugins.id))
-    .where(and(
-      eq(pluginManagedResources.resourceKind, "project"),
-      inArray(pluginManagedResources.resourceId, projectIds),
-    ));
   const managedByProjectId = new Map<string, ProjectManagedByPlugin>();
   for (const row of managedRows) {
     managedByProjectId.set(row.resourceId, {
@@ -626,13 +632,14 @@ export function projectService(db: Db) {
         : and(eq(projects.companyId, companyId), isNull(projects.archivedAt));
       const rows = await db.select().from(projects).where(where);
       if (rows.length === 0) return [];
-      // Metrics depend only on the company and project IDs, so their two
-      // aggregate reads can overlap the existing metadata-loading chain.
-      const [withWorkspaces, { taskCountByProjectId, budgetByProjectId }] = await Promise.all([
-        attachGoals(db, rows).then((withGoals) => attachWorkspaces(db, withGoals)),
+      // Goals, workspace metadata and metrics depend only on the base project rows.
+      const [withGoals, withWorkspaces, { taskCountByProjectId, budgetByProjectId }] = await Promise.all([
+        attachGoals(db, rows),
+        attachWorkspaces(db, rows),
         loadListMetrics(db, companyId, rows),
       ]);
-      return withWorkspaces.map((row) => ({
+      return withGoals.map((row, index) => ({
+        ...withWorkspaces[index]!,
         ...row,
         taskCount: taskCountByProjectId.get(row.id) ?? 0,
         budget: budgetByProjectId.get(row.id) ?? null,

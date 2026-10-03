@@ -1437,6 +1437,26 @@ describe("IssueDetail", () => {
     expect(mockIssuesApi.markRead).toHaveBeenCalledWith(canonical.id);
   });
 
+  it("does not offer an indefinitely pending related tasks panel for a draft conversation", async () => {
+    mockSidebarState.isMobile = true;
+    mockLocation.state = createIssueDetailLocationState("Inbox", "/inbox/mine", "inbox");
+    const agent = createAgent();
+    const ensureIssue = vi.fn();
+    await act(async () => {
+      root.render(<QueryClientProvider client={queryClient}><TaskDetailSurface conversation={{ agent, issue: null, ensureIssue }} /></QueryClientProvider>);
+    });
+    await flushReact();
+    const toolbar = mockSetMobileToolbar.mock.calls.map(([node]) => node).filter(Boolean).at(-1);
+    expect(toolbar).toBeDefined();
+    await act(async () => { toolbar.props.onProperties(); });
+    await flushReact();
+    const panelProps = mockTaskSidePanelRender.mock.calls.at(-1)?.[0];
+    expect(panelProps?.issue.id).toMatch(/^chat:/);
+    expect(panelProps?.tasksTab).toBeUndefined();
+    expect(mockIssuesApi.listAll.mock.calls.some(([, filters]) => filters?.createdFromIssueId?.startsWith("chat:"))).toBe(false);
+    expect(ensureIssue).not.toHaveBeenCalled();
+  });
+
   it.each(["message", "attachment"])("creates an unused conversation only for the first %s and updates its canonical cache", async (kind) => {
     mockIssuesApi.markRead.mockClear();
     const agent = createAgent();
@@ -2324,7 +2344,22 @@ describe("IssueDetail", () => {
     expect(panel?.querySelector('[data-slot="sheet-close"]')).not.toBeNull();
   });
 
-  it("loads ancestors, subtask membership and created work independently and refreshes on issue activity", async () => {
+  it("defers the task reference pool until an editor receives focus", async () => {
+    mockIssuesApi.get.mockResolvedValue(createIssue());
+    await act(async () => { root.render(<QueryClientProvider client={queryClient}><IssueDetail /></QueryClientProvider>); });
+    await flushReact();
+    const mentionRequests = () => mockIssuesApi.list.mock.calls.filter(([, filters]) => filters?.limit === 100);
+    expect(mentionRequests()).toHaveLength(0);
+    const editor = document.createElement("textarea");
+    container.querySelector("[data-task-chat-shell]")!.appendChild(editor);
+    await act(async () => { editor.focus(); });
+    await flushReact();
+    expect(mentionRequests()).toHaveLength(1);
+    await act(async () => { editor.blur(); editor.focus(); });
+    expect(mentionRequests()).toHaveLength(1);
+  });
+
+  it("loads created work only when related tasks open and refreshes on issue activity", async () => {
     const ancestors = [{ id: "parent-task", identifier: "PAP-0", title: "Parent task", status: "in_progress" }] as Issue["ancestors"];
     const source = createIssue({ ancestors });
     const child = createIssue({ id: "manual-child", parentId: source.id, title: "Manual child" });
@@ -2337,9 +2372,16 @@ describe("IssueDetail", () => {
     await flushReact();
     await flushReact();
     const taskProjection = () => mockOpenPanel.mock.calls.at(-1)?.[0]?.props.children?.props.tasksTab;
-    expect(taskProjection()?.content.props.subtasks.map((row: Issue) => row.id)).toEqual([child.id]);
-    expect(taskProjection()?.content.props.createdTasks.map((row: Issue) => row.id)).toEqual([created.id]);
-    expect(taskProjection()?.content.props.ancestors).toEqual(ancestors);
+    expect(taskProjection()?.pending).toBe(true);
+    expect(mockIssuesApi.listAll.mock.calls.some(([, filters]) => filters?.createdFromIssueId === source.id)).toBe(false);
+    const tasksHost = document.createElement("div");
+    const tasksRoot = createRoot(tasksHost);
+    await act(async () => { tasksRoot.render(taskProjection().content); });
+    await flushReact();
+    await waitForAssertion(() => { expect(taskProjection()?.pending).toBe(false); });
+    expect(taskProjection()?.content.props.children.props.subtasks.map((row: Issue) => row.id)).toEqual([child.id]);
+    expect(taskProjection()?.content.props.children.props.createdTasks.map((row: Issue) => row.id)).toEqual([created.id]);
+    expect(taskProjection()?.content.props.children.props.ancestors).toEqual(ancestors);
     expect(taskProjection()?.count).toBe(3);
 
     const next = createIssue({ id: "new-created-task", parentId: source.id });
@@ -2349,7 +2391,8 @@ describe("IssueDetail", () => {
     await act(async () => { await queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(source.companyId) }); });
     await flushReact();
     expect(taskProjection()?.count).toBe(4);
-    expect(taskProjection()?.content.props.createdTasks.map((row: Issue) => row.id)).toContain(next.id);
+    expect(taskProjection()?.content.props.children.props.createdTasks.map((row: Issue) => row.id)).toContain(next.id);
+    await act(async () => { tasksRoot.unmount(); });
   });
 
   it("moves subtask data into the properties panel instead of the chat center pane", async () => {
@@ -5302,7 +5345,7 @@ describe("IssueDetail", () => {
     ).toBeNull();
   });
 
-  it("passes @task mention options to the thread by default", async () => {
+  it("passes @task mention options to the thread after editor focus", async () => {
     const mentionPoolIssue = {
       ...createIssue(),
       id: "issue-mention-1",
@@ -5327,6 +5370,9 @@ describe("IssueDetail", () => {
     await flushReact();
     await flushReact();
 
+    const editor = document.createElement("textarea");
+    container.querySelector("[data-task-chat-shell]")!.appendChild(editor);
+    await act(async () => { editor.focus(); });
     await waitForAssertion(() => {
       expect(mockIssueChatThreadRender.mock.calls.at(-1)?.[0].mentions).toEqual(
         expect.arrayContaining([

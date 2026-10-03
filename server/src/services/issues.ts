@@ -3403,7 +3403,7 @@ type IssueBlockerAttentionAgentRow = {
 
 async function activeRunMapForIssues(
   dbOrTx: any,
-  issueRows: IssueWithLabels[],
+  issueRows: Array<Pick<IssueRow, "id" | "companyId" | "executionRunId">>,
 ): Promise<Map<string, IssueActiveRunRow>> {
   const map = new Map<string, IssueActiveRunRow>();
   const runIds = issueRows
@@ -3733,16 +3733,11 @@ async function listIssueBlockerAttentionMap(
       [...new Set(frontier)],
       ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
     )) {
-      const readinessByIssueId = await listIssueDependencyReadinessMap(
+      const readinessPromise = listIssueDependencyReadinessMap(
         dbOrTx,
         companyId,
         chunk,
       );
-      for (const readiness of readinessByIssueId.values()) {
-        for (const blockerIssueId of readiness.pendingFinalizeBlockerIssueIds) {
-          pendingFinalizeBlockerIssueIds.add(blockerIssueId);
-        }
-      }
       const explicitBlockerRowsPromise: Promise<
         IssueBlockerAttentionQueryRow[]
       > = dbOrTx
@@ -3794,10 +3789,16 @@ async function listIssueBlockerAttentionMap(
             ),
           ),
         );
-      const [explicitBlockerRows, childRows] = await Promise.all([
+      const [readinessByIssueId, explicitBlockerRows, childRows] = await Promise.all([
+        readinessPromise,
         explicitBlockerRowsPromise,
         childRowsPromise,
       ]);
+      for (const readiness of readinessByIssueId.values()) {
+        for (const blockerIssueId of readiness.pendingFinalizeBlockerIssueIds) {
+          pendingFinalizeBlockerIssueIds.add(blockerIssueId);
+        }
+      }
 
       const unresolvedExplicitBlockerRows = explicitBlockerRows.filter(
         (row) =>
@@ -3860,228 +3861,239 @@ async function listIssueBlockerAttentionMap(
       issueIdByExecutionRunId.set(node.executionRunId, node.id);
   }
 
-  for (const chunk of chunkList(
-    [...issueIdByExecutionRunId.keys()],
-    ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
-  )) {
-    const runRows: Array<{ id: string }> = await dbOrTx
-      .select({
-        id: heartbeatRuns.id,
-      })
-      .from(heartbeatRuns)
-      .where(
-        and(
-          eq(heartbeatRuns.companyId, companyId),
-          inArray(heartbeatRuns.status, BLOCKER_ATTENTION_ACTIVE_RUN_STATUSES),
-          inArray(heartbeatRuns.id, chunk),
-        ),
-      );
-
-    for (const row of runRows) {
-      const issueId = issueIdByExecutionRunId.get(row.id);
-      if (issueId) activeIssueIds.add(issueId);
-    }
-  }
-
-  for (const chunk of chunkList(nodeIds, ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE)) {
-    const wakeRowsPromise: Promise<IssueBlockerAttentionActivePathRow[]> =
-      dbOrTx
-        .select({
-          issueId: sql<
-            string | null
-          >`${agentWakeupRequests.payload} ->> 'issueId'`,
-        })
-        .from(agentWakeupRequests)
-        .where(
-          and(
-            eq(agentWakeupRequests.companyId, companyId),
-            inArray(
-              agentWakeupRequests.status,
-              BLOCKER_ATTENTION_ACTIVE_WAKE_STATUSES,
-            ),
-            sql`${agentWakeupRequests.runId} is null`,
-            inArray(
-              sql<string>`${agentWakeupRequests.payload} ->> 'issueId'`,
-              chunk,
-            ),
-          ),
-        );
-    const wakeRows = await wakeRowsPromise;
-    for (const row of wakeRows) {
-      if (row.issueId) activeIssueIds.add(row.issueId);
-    }
-  }
-
   const explicitWaitCandidateIds = [...nodesById.values()]
     .filter((node) => node.status !== "done")
     .map((node) => node.id);
   const explicitWaitingIssueIds = new Set<string>();
-  if (explicitWaitCandidateIds.length > 0) {
-    for (const chunk of chunkList(
-      explicitWaitCandidateIds,
-      ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
-    )) {
-      const interactionRows: Array<{ issueId: string }> = await dbOrTx
-        .select({ issueId: issueThreadInteractions.issueId })
-        .from(issueThreadInteractions)
-        .where(
-          and(
-            eq(issueThreadInteractions.companyId, companyId),
-            inArray(
-              issueThreadInteractions.status,
-              BLOCKER_ATTENTION_PENDING_INTERACTION_STATUSES,
-            ),
-            inArray(issueThreadInteractions.issueId, chunk),
-          ),
-        );
-      for (const row of interactionRows)
-        explicitWaitingIssueIds.add(row.issueId);
-
-      const approvalRows: Array<{ issueId: string }> = await dbOrTx
-        .select({ issueId: issueApprovals.issueId })
-        .from(issueApprovals)
-        .innerJoin(approvals, eq(issueApprovals.approvalId, approvals.id))
-        .where(
-          and(
-            eq(issueApprovals.companyId, companyId),
-            inArray(
-              approvals.status,
-              BLOCKER_ATTENTION_PENDING_APPROVAL_STATUSES,
-            ),
-            inArray(issueApprovals.issueId, chunk),
-          ),
-        );
-      for (const row of approvalRows) explicitWaitingIssueIds.add(row.issueId);
-    }
-
-    // Recovery rows are intentionally company-wide: a liveness escalation for
-    // the same leaf blocker represents an active waiting path even when that
-    // blocker is reached through another blocked graph.
-    const recoveryRows: Array<{ id: string; originId: string | null }> =
-      await dbOrTx
-        .select({ id: issues.id, originId: issues.originId })
-        .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, companyId),
-            eq(issues.originKind, BLOCKER_ATTENTION_OPEN_RECOVERY_ORIGIN_KIND),
-            visibleIssueCondition(),
-            notInArray(
-              issues.status,
-              BLOCKER_ATTENTION_OPEN_RECOVERY_TERMINAL_STATUSES,
-            ),
-          ),
-        );
-    for (const row of recoveryRows) {
-      const parsed = parseIssueGraphLivenessIncidentKey(row.originId);
-      if (!parsed || parsed.companyId !== companyId) continue;
-      explicitWaitingIssueIds.add(row.id);
-      explicitWaitingIssueIds.add(parsed.issueId);
-      explicitWaitingIssueIds.add(parsed.leafIssueId);
-    }
-
-    const recoveryActionRows: Array<{
-      id: string;
-      sourceIssueId: string;
-      status: string;
-      ownerType: string;
-      ownerAgentId: string | null;
-      ownerUserId: string | null;
-    }> = await dbOrTx
-      .select({
-        id: issueRecoveryActions.id,
-        sourceIssueId: issueRecoveryActions.sourceIssueId,
-        status: issueRecoveryActions.status,
-        ownerType: issueRecoveryActions.ownerType,
-        ownerAgentId: issueRecoveryActions.ownerAgentId,
-        ownerUserId: issueRecoveryActions.ownerUserId,
-      })
-      .from(issueRecoveryActions)
-      .where(
-        and(
-          eq(issueRecoveryActions.companyId, companyId),
-          inArray(issueRecoveryActions.status, ["active", "escalated"]),
-          inArray(issueRecoveryActions.sourceIssueId, explicitWaitCandidateIds),
-        ),
-      );
-    const recoveryActionIds = recoveryActionRows.map((row) => row.id);
-    const liveRecoveryActionIds = new Set<string>();
-    for (const chunk of chunkList(
-      recoveryActionIds,
-      ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
-    )) {
-      const [runRows, wakeRows] = await Promise.all([
-        dbOrTx
+  // Graph scope is complete. Independent liveness and owner reads overlap,
+  // while each category keeps bounded chunks sequential.
+  const [, , , , agentRows] = await Promise.all([
+    (async () => {
+      for (const chunk of chunkList(
+        [...issueIdByExecutionRunId.keys()],
+        ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
+      )) {
+        const runRows: Array<{ id: string }> = await dbOrTx
           .select({
-            recoveryActionId: sql<
-              string | null
-            >`${heartbeatRuns.contextSnapshot} ->> 'recoveryActionId'`,
+            id: heartbeatRuns.id,
           })
           .from(heartbeatRuns)
           .where(
             and(
               eq(heartbeatRuns.companyId, companyId),
-              inArray(
-                heartbeatRuns.status,
-                BLOCKER_ATTENTION_ACTIVE_RUN_STATUSES,
-              ),
-              inArray(
-                sql<string>`${heartbeatRuns.contextSnapshot} ->> 'recoveryActionId'`,
-                chunk,
-              ),
+              inArray(heartbeatRuns.status, BLOCKER_ATTENTION_ACTIVE_RUN_STATUSES),
+              inArray(heartbeatRuns.id, chunk),
             ),
-          ),
-        dbOrTx
-          .select({
-            recoveryActionId: sql<
-              string | null
-            >`${agentWakeupRequests.payload} ->> 'recoveryActionId'`,
-          })
-          .from(agentWakeupRequests)
-          .where(
-            and(
-              eq(agentWakeupRequests.companyId, companyId),
-              inArray(
-                agentWakeupRequests.status,
-                BLOCKER_ATTENTION_ACTIVE_WAKE_STATUSES,
-              ),
-              inArray(
-                sql<string>`${agentWakeupRequests.payload} ->> 'recoveryActionId'`,
-                chunk,
-              ),
-            ),
-          ),
-      ]);
-      for (const row of [...runRows, ...wakeRows]) {
-        if (row.recoveryActionId)
-          liveRecoveryActionIds.add(row.recoveryActionId);
-      }
-    }
-    for (const row of recoveryActionRows) {
-      const healthy =
-        (row.status === "escalated" && row.ownerType === "board") ||
-        Boolean(row.ownerUserId) ||
-        (Boolean(row.ownerAgentId) && liveRecoveryActionIds.has(row.id));
-      if (healthy) explicitWaitingIssueIds.add(row.sourceIssueId);
-    }
-  }
+          );
 
-  const agentRows: IssueBlockerAttentionAgentRow[] =
-    agentIds.size > 0
-      ? await dbOrTx
+        for (const row of runRows) {
+          const issueId = issueIdByExecutionRunId.get(row.id);
+          if (issueId) activeIssueIds.add(issueId);
+        }
+      }
+    })(),
+    (async () => {
+      for (const chunk of chunkList(nodeIds, ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE)) {
+        const wakeRowsPromise: Promise<IssueBlockerAttentionActivePathRow[]> =
+          dbOrTx
+            .select({
+              issueId: sql<
+                string | null
+              >`${agentWakeupRequests.payload} ->> 'issueId'`,
+            })
+            .from(agentWakeupRequests)
+            .where(
+              and(
+                eq(agentWakeupRequests.companyId, companyId),
+                inArray(
+                  agentWakeupRequests.status,
+                  BLOCKER_ATTENTION_ACTIVE_WAKE_STATUSES,
+                ),
+                sql`${agentWakeupRequests.runId} is null`,
+                inArray(
+                  sql<string>`${agentWakeupRequests.payload} ->> 'issueId'`,
+                  chunk,
+                ),
+              ),
+            );
+        const wakeRows = await wakeRowsPromise;
+        for (const row of wakeRows) {
+          if (row.issueId) activeIssueIds.add(row.issueId);
+        }
+      }
+    })(),
+    (async () => {
+      if (explicitWaitCandidateIds.length > 0) {
+        for (const chunk of chunkList(
+          explicitWaitCandidateIds,
+          ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
+        )) {
+          const interactionRows: Array<{ issueId: string }> = await dbOrTx
+            .select({ issueId: issueThreadInteractions.issueId })
+            .from(issueThreadInteractions)
+            .where(
+              and(
+                eq(issueThreadInteractions.companyId, companyId),
+                inArray(
+                  issueThreadInteractions.status,
+                  BLOCKER_ATTENTION_PENDING_INTERACTION_STATUSES,
+                ),
+                inArray(issueThreadInteractions.issueId, chunk),
+              ),
+            );
+          for (const row of interactionRows)
+            explicitWaitingIssueIds.add(row.issueId);
+
+          const approvalRows: Array<{ issueId: string }> = await dbOrTx
+            .select({ issueId: issueApprovals.issueId })
+            .from(issueApprovals)
+            .innerJoin(approvals, eq(issueApprovals.approvalId, approvals.id))
+            .where(
+              and(
+                eq(issueApprovals.companyId, companyId),
+                inArray(
+                  approvals.status,
+                  BLOCKER_ATTENTION_PENDING_APPROVAL_STATUSES,
+                ),
+                inArray(issueApprovals.issueId, chunk),
+              ),
+            );
+          for (const row of approvalRows) explicitWaitingIssueIds.add(row.issueId);
+        }
+      }
+    })(),
+    (async () => {
+      if (explicitWaitCandidateIds.length > 0) {
+        // Recovery rows are intentionally company-wide: a liveness escalation for
+        // the same leaf blocker represents an active waiting path even when that
+        // blocker is reached through another blocked graph.
+        const recoveryRows: Array<{ id: string; originId: string | null }> =
+          await dbOrTx
+            .select({ id: issues.id, originId: issues.originId })
+            .from(issues)
+            .where(
+              and(
+                eq(issues.companyId, companyId),
+                eq(issues.originKind, BLOCKER_ATTENTION_OPEN_RECOVERY_ORIGIN_KIND),
+                visibleIssueCondition(),
+                notInArray(
+                  issues.status,
+                  BLOCKER_ATTENTION_OPEN_RECOVERY_TERMINAL_STATUSES,
+                ),
+              ),
+            );
+        for (const row of recoveryRows) {
+          const parsed = parseIssueGraphLivenessIncidentKey(row.originId);
+          if (!parsed || parsed.companyId !== companyId) continue;
+          explicitWaitingIssueIds.add(row.id);
+          explicitWaitingIssueIds.add(parsed.issueId);
+          explicitWaitingIssueIds.add(parsed.leafIssueId);
+        }
+
+        const recoveryActionRows: Array<{
+          id: string;
+          sourceIssueId: string;
+          status: string;
+          ownerType: string;
+          ownerAgentId: string | null;
+          ownerUserId: string | null;
+        }> = await dbOrTx
           .select({
-            id: agents.id,
-            companyId: agents.companyId,
-            status: agents.status,
+            id: issueRecoveryActions.id,
+            sourceIssueId: issueRecoveryActions.sourceIssueId,
+            status: issueRecoveryActions.status,
+            ownerType: issueRecoveryActions.ownerType,
+            ownerAgentId: issueRecoveryActions.ownerAgentId,
+            ownerUserId: issueRecoveryActions.ownerUserId,
           })
-          .from(agents)
+          .from(issueRecoveryActions)
           .where(
             and(
-              eq(agents.companyId, companyId),
-              inArray(agents.id, [...agentIds]),
+              eq(issueRecoveryActions.companyId, companyId),
+              inArray(issueRecoveryActions.status, ["active", "escalated"]),
+              inArray(issueRecoveryActions.sourceIssueId, explicitWaitCandidateIds),
             ),
-          )
-      : [];
+          );
+        const recoveryActionIds = recoveryActionRows.map((row) => row.id);
+        const liveRecoveryActionIds = new Set<string>();
+        for (const chunk of chunkList(
+          recoveryActionIds,
+          ISSUE_LIST_RELATED_QUERY_CHUNK_SIZE,
+        )) {
+          const [runRows, wakeRows] = await Promise.all([
+            dbOrTx
+              .select({
+                recoveryActionId: sql<
+                  string | null
+                >`${heartbeatRuns.contextSnapshot} ->> 'recoveryActionId'`,
+              })
+              .from(heartbeatRuns)
+              .where(
+                and(
+                  eq(heartbeatRuns.companyId, companyId),
+                  inArray(
+                    heartbeatRuns.status,
+                    BLOCKER_ATTENTION_ACTIVE_RUN_STATUSES,
+                  ),
+                  inArray(
+                    sql<string>`${heartbeatRuns.contextSnapshot} ->> 'recoveryActionId'`,
+                    chunk,
+                  ),
+                ),
+              ),
+            dbOrTx
+              .select({
+                recoveryActionId: sql<
+                  string | null
+                >`${agentWakeupRequests.payload} ->> 'recoveryActionId'`,
+              })
+              .from(agentWakeupRequests)
+              .where(
+                and(
+                  eq(agentWakeupRequests.companyId, companyId),
+                  inArray(
+                    agentWakeupRequests.status,
+                    BLOCKER_ATTENTION_ACTIVE_WAKE_STATUSES,
+                  ),
+                  inArray(
+                    sql<string>`${agentWakeupRequests.payload} ->> 'recoveryActionId'`,
+                    chunk,
+                  ),
+                ),
+              ),
+          ]);
+          for (const row of [...runRows, ...wakeRows]) {
+            if (row.recoveryActionId)
+              liveRecoveryActionIds.add(row.recoveryActionId);
+          }
+        }
+        for (const row of recoveryActionRows) {
+          const healthy =
+            (row.status === "escalated" && row.ownerType === "board") ||
+            Boolean(row.ownerUserId) ||
+            (Boolean(row.ownerAgentId) && liveRecoveryActionIds.has(row.id));
+          if (healthy) explicitWaitingIssueIds.add(row.sourceIssueId);
+        }
+      }
+    })(),
+    (async (): Promise<IssueBlockerAttentionAgentRow[]> => (
+      agentIds.size > 0
+        ? await dbOrTx
+            .select({
+              id: agents.id,
+              companyId: agents.companyId,
+              status: agents.status,
+            })
+            .from(agents)
+            .where(
+              and(
+                eq(agents.companyId, companyId),
+                inArray(agents.id, [...agentIds]),
+              ),
+            )
+        : []
+    ))(),
+  ]);
   const agentsById = new Map(agentRows.map((agent) => [agent.id, agent]));
 
   type PathClassification = {
@@ -8063,22 +8075,27 @@ export function issueService(db: Db) {
           ISSUE_LIST_DESCRIPTION_MAX_CHARS,
         ),
       }));
-      const withLabels = await withIssueLabels(db, rows);
-      const runMap = await activeRunMapForIssues(db, withLabels);
-      const withRuns = withActiveRuns(withLabels, runMap);
-      if (withRuns.length === 0) {
-        return withRuns;
+      if (rows.length === 0) {
+        const emptyRows: IssueWithLabelsAndRun[] = [];
+        return emptyRows;
       }
-
-      const issueIds = withRuns.map((row) => row.id);
+      const issueIds = rows.map((row) => row.id);
+      // Every sidecar derives its scope from the base rows, so independent reads overlap.
       const [
+        withLabels,
+        runMap,
         statsRows,
         readRows,
         lastActivityRows,
         archiveRows,
         blockedByMap,
         liveDescendantCountByIssueId,
+        blockerAttentionByIssueId,
+        reviewAttentionByIssueId,
+        blockedInboxAttentionByIssueId,
       ] = await Promise.all([
+        withIssueLabels(db, rows),
+        activeRunMapForIssues(db, rows),
         contextUserId
           ? userCommentStatsForIssues(db, companyId, contextUserId, issueIds)
           : Promise.resolve([]),
@@ -8095,7 +8112,13 @@ export function issueService(db: Db) {
         includeLiveDescendantSummary
           ? liveDescendantCountMapForIssues(db, companyId, issueIds)
           : Promise.resolve(new Map<string, number>()),
+        listIssueBlockerAttentionMap(db, companyId, rows),
+        listIssueReviewAttentionMap(db, companyId, rows),
+        includeBlockedInboxAttention
+          ? listIssueBlockedInboxAttentionMap(db, companyId, rows)
+          : Promise.resolve(new Map<string, IssueBlockedInboxAttention>()),
       ]);
+      const withRuns = withActiveRuns(withLabels, runMap);
       const statsByIssueId = new Map(
         statsRows.map((row) => [row.issueId, row]),
       );
@@ -8105,17 +8128,6 @@ export function issueService(db: Db) {
       const archiveByIssueId = new Map(
         archiveRows.map((row) => [row.issueId, row]),
       );
-      const [
-        blockerAttentionByIssueId,
-        reviewAttentionByIssueId,
-        blockedInboxAttentionByIssueId,
-      ] = await Promise.all([
-        listIssueBlockerAttentionMap(db, companyId, withRuns),
-        listIssueReviewAttentionMap(db, companyId, withRuns),
-        includeBlockedInboxAttention
-          ? listIssueBlockedInboxAttentionMap(db, companyId, withRuns)
-          : Promise.resolve(new Map<string, IssueBlockedInboxAttention>()),
-      ]);
 
       if (!contextUserId) {
         return withRuns.map((row) => {

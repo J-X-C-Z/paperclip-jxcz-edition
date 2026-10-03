@@ -921,14 +921,14 @@ export function AgentDetail() {
   });
 
   const { data: heartbeats } = useQuery({
-    queryKey: queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined),
-    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined),
+    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), needsOverviewData ? "summary" : "detail-list"],
+    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined, undefined, { summary: needsOverviewData }),
     enabled: !!resolvedCompanyId && !!agent?.id && shouldLoadHeartbeats,
   });
 
   const { data: allIssues } = useQuery({
-    queryKey: [...queryKeys.issues.list(resolvedCompanyId!), "participant-agent", resolvedAgentId ?? "__none__"],
-    queryFn: () => issuesApi.list(resolvedCompanyId!, { participantAgentId: resolvedAgentId! }),
+    queryKey: [...queryKeys.issues.list(resolvedCompanyId!), "participant-agent", resolvedAgentId ?? "__none__", "compact"],
+    queryFn: () => issuesApi.listCompact(resolvedCompanyId!, { participantAgentId: resolvedAgentId! }).then((rows) => rows as Issue[]),
     enabled: !!resolvedCompanyId && !!resolvedAgentId && needsOverviewData,
   });
 
@@ -938,17 +938,7 @@ export function AgentDetail() {
     enabled: !!resolvedCompanyId && needsOverviewData,
   });
 
-  const { data: skillSnapshot } = useQuery({
-    queryKey: queryKeys.agents.skills(resolvedAgentId ?? "__none__"),
-    queryFn: () => agentsApi.skills(resolvedAgentId!, resolvedCompanyId ?? undefined),
-    enabled: Boolean(resolvedCompanyId && resolvedAgentId && needsOverviewData),
-  });
-
-  const { data: overviewCompanySkills } = useQuery({
-    queryKey: queryKeys.companySkills.list(resolvedCompanyId ?? "__none__"),
-    queryFn: () => companySkillsApi.list(resolvedCompanyId!),
-    enabled: Boolean(resolvedCompanyId && needsOverviewData),
-  });
+  const overviewSkills = useAgentOverviewSkills(resolvedCompanyId, resolvedAgentId, needsOverviewData);
 
   const assignedIssues = useMemo(
     () => [...(allIssues ?? [])].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
@@ -956,10 +946,6 @@ export function AgentDetail() {
   );
   const reportsToAgent = (allAgents ?? []).find((a) => a.id === agent?.reportsTo);
   const directReports = (allAgents ?? []).filter((a) => a.reportsTo === agent?.id && a.status !== "terminated");
-  const overviewSkillNames = useMemo(() => {
-    const namesByKey = new Map((overviewCompanySkills ?? []).map((skill) => [skill.key, skill.name]));
-    return (skillSnapshot?.desiredSkills ?? []).map((key) => namesByKey.get(key) ?? key);
-  }, [overviewCompanySkills, skillSnapshot?.desiredSkills]);
   const mobileLiveRun = useMemo(
     () => (heartbeats ?? []).find((r) => r.status === "running" || r.status === "queued") ?? null,
     [heartbeats],
@@ -1401,7 +1387,12 @@ export function AgentDetail() {
           runtimeState={runtimeState}
           reportsToAgent={reportsToAgent}
           directReportCount={directReports.length}
-          skillNames={overviewSkillNames}
+          skillNames={overviewSkills.names}
+          skillsExpanded={overviewSkills.expanded}
+          skillsLoading={overviewSkills.loading}
+          skillsError={overviewSkills.error?.message}
+          onRetrySkills={overviewSkills.retry}
+          onExpandSkills={overviewSkills.expand}
           agentRouteId={canonicalAgentRef}
         />
       )}
@@ -1562,7 +1553,7 @@ export function resolveLatestRunNavigation(
   return { task, runHref, rowHref };
 }
 
-function LatestRunCard({
+export function LatestRunCard({
   runs,
   agentId,
   issuesById,
@@ -1581,7 +1572,15 @@ function LatestRunCard({
   );
 
   const liveRun = sorted.find((r) => r.status === "running" || r.status === "queued");
-  const run = liveRun ?? sorted[0];
+  const selectedRun = liveRun ?? sorted[0];
+  // The overview list carries only metadata; hydrate the one displayed run.
+  const { data: displayedRun } = useQuery({
+    queryKey: queryKeys.runDetail(selectedRun?.id ?? "__none__"),
+    queryFn: () => heartbeatsApi.get(selectedRun!.id),
+    enabled: Boolean(selectedRun?.id),
+    refetchInterval: (query) => runDetailRefetchIntervalMs((query.state.data ?? selectedRun)?.status ?? "succeeded"),
+  });
+  const run = displayedRun ?? selectedRun;
 
   // The assigned-issues list this card resolves against is bounded (server page
   // limit), so a live run can reference a valid issue that isn't on the loaded
@@ -1706,6 +1705,36 @@ function LatestRunCard({
   );
 }
 
+/** Load the overview's skill catalog only when its card is expanded. */
+export function useAgentOverviewSkills(companyId: string | null | undefined, agentId: string | null, visible: boolean) {
+  const scope = `${companyId ?? ""}:${agentId ?? ""}`;
+  const [expandedScope, setExpandedScope] = useState<string | null>(null);
+  const expanded = expandedScope === scope;
+  const enabled = Boolean(companyId && agentId && visible && expanded);
+  const snapshot = useQuery({
+    queryKey: queryKeys.agents.skills(agentId ?? "__none__"),
+    queryFn: () => agentsApi.skills(agentId!, companyId ?? undefined),
+    enabled,
+  });
+  const catalog = useQuery({
+    queryKey: queryKeys.companySkills.list(companyId ?? "__none__"),
+    queryFn: () => companySkillsApi.list(companyId!),
+    enabled,
+  });
+  const names = useMemo(() => {
+    const namesByKey = new Map((catalog.data ?? []).map((skill) => [skill.key, skill.name]));
+    return (snapshot.data?.desiredSkills ?? []).map((key) => namesByKey.get(key) ?? key);
+  }, [catalog.data, snapshot.data?.desiredSkills]);
+  return {
+    names,
+    expanded,
+    loading: snapshot.isFetching || catalog.isFetching,
+    error: snapshot.error ?? catalog.error,
+    expand: () => setExpandedScope(scope),
+    retry: () => { void snapshot.refetch(); void catalog.refetch(); },
+  };
+}
+
 /* ---- Agent Overview ---- */
 
 export function AgentOverview({
@@ -1716,6 +1745,11 @@ export function AgentOverview({
   reportsToAgent,
   directReportCount,
   skillNames,
+  skillsExpanded = true,
+  skillsLoading = false,
+  skillsError,
+  onRetrySkills,
+  onExpandSkills,
   agentRouteId,
 }: {
   agent: AgentDetailRecord;
@@ -1725,6 +1759,11 @@ export function AgentOverview({
   reportsToAgent?: Agent;
   directReportCount: number;
   skillNames: string[];
+  skillsExpanded?: boolean;
+  skillsLoading?: boolean;
+  skillsError?: string;
+  onRetrySkills?: () => void;
+  onExpandSkills?: () => void;
   agentRouteId: string;
 }) {
   const tr = useUiTranslator();
@@ -1792,7 +1831,16 @@ export function AgentOverview({
             <h3 id="agent-skills-heading" className="text-sm font-medium">{tr("Skills")}</h3>
             <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "skills")}>{tr("Manage")}</Link>
           </div>
-          {skillNames.length > 0 ? (
+          {!skillsExpanded ? (
+            <Button variant="outline" size="sm" onClick={onExpandSkills}>{tr("View")}</Button>
+          ) : skillsError ? (
+            <div className="space-y-2">
+              <p role="alert" className="text-sm text-destructive">{skillsError}</p>
+              <Button variant="outline" size="sm" onClick={onRetrySkills} disabled={skillsLoading}>{tr("Retry")}</Button>
+            </div>
+          ) : skillsLoading ? (
+            <p role="status" className="text-sm text-muted-foreground">{tr("Loading…")}</p>
+          ) : skillNames.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {skillNames.slice(0, 8).map((skill) => <Badge key={skill} variant="secondary">{skill}</Badge>)}
               {skillNames.length > 8 ? <Badge variant="outline">+{skillNames.length - 8} {uiText("more")}</Badge> : null}

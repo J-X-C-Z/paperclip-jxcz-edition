@@ -351,39 +351,45 @@ export function healthRoutes(
     }
 
     const persistedDevServerStatus = readPersistedDevServerStatus();
-    let devServer: ReturnType<typeof toDevServerHealthStatus> | undefined;
-    if (exposeDevServerDetails && persistedDevServerStatus && typeof (db as { select?: unknown }).select === "function") {
-      const instanceSettings = instanceSettingsService(db);
-      const experimentalSettings = await instanceSettings.getExperimental();
-      const activeRunCount = await db
-        .select({ count: count() })
-        .from(heartbeatRuns)
-        .where(inArray(heartbeatRuns.status, ["queued", "running"]))
-        .then((rows) => Number(rows[0]?.count ?? 0));
+    // These diagnostics have independent inputs after the database probe succeeds.
+    const [devServer, workspaceReadiness, nativeRecovery] = await Promise.all([
+      (async () => {
+        if (!exposeDevServerDetails || !persistedDevServerStatus || typeof (db as { select?: unknown }).select !== "function") {
+          return undefined;
+        }
+        const instanceSettings = instanceSettingsService(db);
+        const [experimentalSettings, activeRunCount] = await Promise.all([
+          instanceSettings.getExperimental(),
+          db
+            .select({ count: count() })
+            .from(heartbeatRuns)
+            .where(inArray(heartbeatRuns.status, ["queued", "running"]))
+            .then((rows) => Number(rows[0]?.count ?? 0)),
+        ]);
 
-      devServer = toDevServerHealthStatus(persistedDevServerStatus, {
-        autoRestartEnabled: experimentalSettings.autoRestartDevServerWhenIdle ?? false,
-        activeRunCount,
-      });
-    }
-
-    const workspaceReadiness = exposeWorkspaceReadiness
-      ? await resolveWorkspaceReadiness({ db, handoffSubject }).catch((error) => {
-          logger.warn({ err: error }, "workspace readiness probe failed");
-          return null;
-        })
-      : null;
+        return toDevServerHealthStatus(persistedDevServerStatus, {
+          autoRestartEnabled: experimentalSettings.autoRestartDevServerWhenIdle ?? false,
+          activeRunCount,
+        });
+      })(),
+      exposeWorkspaceReadiness
+        ? resolveWorkspaceReadiness({ db, handoffSubject }).catch((error) => {
+            logger.warn({ err: error }, "workspace readiness probe failed");
+            return null;
+          })
+        : null,
+      exposeFullDetails
+        ? nativeRestartRecoverySummary(db).catch((error) => {
+            logger.warn({ err: error }, "native recovery health summary failed");
+            return {};
+          })
+        : undefined,
+    ]);
 
     const databaseBackup = opts.databaseBackupHealth
       ? inspectDatabaseBackupHealth(opts.databaseBackupHealth)
       : undefined;
     const warnings = databaseBackup?.warnings.length ? databaseBackup.warnings : undefined;
-    const nativeRecovery = exposeFullDetails
-      ? await nativeRestartRecoverySummary(db).catch((error) => {
-          logger.warn({ err: error }, "native recovery health summary failed");
-          return {};
-        })
-      : undefined;
 
     if (!exposeFullDetails) {
       const redactedDatabaseBackup = databaseBackup ? redactedDatabaseBackupHealth(databaseBackup) : undefined;

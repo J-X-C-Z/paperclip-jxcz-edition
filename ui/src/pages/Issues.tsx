@@ -19,8 +19,7 @@ import type { Issue } from "@paperclipai/shared";
 import { useStreamlinedUiEnabled } from "../hooks/useStreamlinedUiEnabled";
 import { useOptionalProjectScope } from "../context/ProjectScopeContext";
 
-const WORKSPACE_FILTER_ISSUE_LIMIT = 1000;
-const ISSUES_PAGE_SIZE = 100;
+const ISSUES_PAGE_SIZE = 30;
 export const ISSUES_ROW_PRESENTATION = "task" as const;
 export const ISSUES_TOOLBAR_PRESENTATION = "collection" as const;
 
@@ -146,7 +145,7 @@ export function Issues() {
     setBreadcrumbs([{ label: tr("Tasks") }]);
   }, [setBreadcrumbs, tr]);
 
-  const issuePageSize = workspaceIdFilter ? WORKSPACE_FILTER_ISSUE_LIMIT : ISSUES_PAGE_SIZE;
+  const issuePageSize = ISSUES_PAGE_SIZE;
 
   const {
     data: issuePages,

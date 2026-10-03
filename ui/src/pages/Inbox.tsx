@@ -36,6 +36,7 @@ import {
   normalizeIssueFilterState,
   type IssueFilterState,
 } from "../lib/issue-filters";
+import { getInboxQueryDemand } from "../lib/inbox-query-demand";
 import { collectLiveIssueIds, collectSubtreeLiveCounts } from "../lib/liveIssueIds";
 import { formatAssigneeUserLabel } from "../lib/assignees";
 import { buildCompanyUserLabelMap, buildCompanyUserProfileMap } from "../lib/company-members";
@@ -828,6 +829,7 @@ function StreamlinedInbox() {
     || pathSegment === "blocked"
       ? pathSegment
       : "mine";
+  const queryDemand = getInboxQueryDemand(tab, allCategoryFilter);
   const canArchiveFromTab = isMineInboxTab(tab);
   const issueLinkState = useMemo(
     () =>
@@ -899,7 +901,7 @@ function StreamlinedInbox() {
   } = useQuery({
     queryKey: queryKeys.approvals.list(selectedCompanyId!),
     queryFn: () => approvalsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.approvals,
   });
 
   const {
@@ -917,7 +919,7 @@ function StreamlinedInbox() {
         throw err;
       }
     },
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.joinRequests,
     retry: false,
   });
 
@@ -926,12 +928,12 @@ function StreamlinedInbox() {
     companyId: selectedCompanyId,
     resourceKey: "dashboard",
     queryKey: dashboardQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.dashboard,
   });
   const { data: dashboard, isLoading: isDashboardLoading, dataUpdatedAt: dashboardUpdatedAt } = useQuery({
     queryKey: dashboardQueryKey,
     queryFn: () => dashboardApi.summary(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.dashboard,
   });
   usePublishSharedQueryData(sharedDashboard, dashboard, dashboardUpdatedAt);
 
@@ -940,7 +942,7 @@ function StreamlinedInbox() {
     companyId: selectedCompanyId,
     resourceKey: "inbox:issues",
     queryKey: inboxIssuesQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.companyIssues,
   });
   const { data: issues, isLoading: isIssuesLoading, dataUpdatedAt: issuesUpdatedAt } = useQuery({
     queryKey: inboxIssuesQueryKey,
@@ -950,7 +952,7 @@ function StreamlinedInbox() {
         includeLiveDescendantSummary: true,
         limit: INBOX_ISSUE_LIST_LIMIT,
       }).then((rows) => rows as Issue[]),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.companyIssues,
     refetchOnWindowFocus: false,
     staleTime: INBOX_HOT_PATH_STALE_MS,
   });
@@ -970,7 +972,7 @@ function StreamlinedInbox() {
         includeLiveDescendantSummary: true,
         limit: INBOX_ISSUE_LIST_LIMIT,
       }).then((rows) => rows as Issue[]),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.mineIssues,
     refetchOnWindowFocus: false,
     staleTime: INBOX_HOT_PATH_STALE_MS,
   });
@@ -979,7 +981,7 @@ function StreamlinedInbox() {
     companyId: selectedCompanyId,
     resourceKey: "inbox:mine-issues",
     queryKey: mineIssuesQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.mineIssues,
   });
   usePublishSharedQueryData(sharedMineIssues, mineIssuesRaw, mineIssuesUpdatedAt);
   const {
@@ -996,7 +998,7 @@ function StreamlinedInbox() {
         includeLiveDescendantSummary: true,
         limit: INBOX_ISSUE_LIST_LIMIT,
       }).then((rows) => rows as Issue[]),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.touchedIssues,
     refetchOnWindowFocus: false,
     staleTime: INBOX_HOT_PATH_STALE_MS,
   });
@@ -1005,14 +1007,14 @@ function StreamlinedInbox() {
     companyId: selectedCompanyId,
     resourceKey: "inbox:touched-issues",
     queryKey: touchedIssuesQueryKey,
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.touchedIssues,
   });
   usePublishSharedQueryData(sharedTouchedIssues, touchedIssuesRaw, touchedIssuesUpdatedAt);
 
   const { data: heartbeatRuns, isLoading: isRunsLoading } = useQuery({
     queryKey: [...queryKeys.heartbeats(selectedCompanyId!), "limit", INBOX_HEARTBEAT_RUN_LIMIT],
     queryFn: () => heartbeatsApi.list(selectedCompanyId!, undefined, INBOX_HEARTBEAT_RUN_LIMIT, { summary: true }),
-    enabled: !!selectedCompanyId,
+    enabled: !!selectedCompanyId && queryDemand.runs,
     refetchOnWindowFocus: false,
     staleTime: INBOX_HOT_PATH_STALE_MS,
   });
@@ -1070,6 +1072,7 @@ function StreamlinedInbox() {
   );
   const shouldUseIssueSearchSupplement =
     !!selectedCompanyId
+    && queryDemand.companyIssues
     && normalizedSearchQuery.length > 0;
   const { data: remoteIssueSearchResults = [] } = useQuery({
     queryKey: [
@@ -1099,11 +1102,11 @@ function StreamlinedInbox() {
   );
   const inboxIssueIdsForExternalObjectSummaries = useMemo(() => {
     const issueIds = new Set<string>();
-    for (const issue of mineIssues) issueIds.add(issue.id);
-    for (const issue of touchedIssues) issueIds.add(issue.id);
+    if (queryDemand.mineIssues) for (const issue of mineIssues) issueIds.add(issue.id);
+    if (queryDemand.touchedIssues) for (const issue of touchedIssues) issueIds.add(issue.id);
     for (const issue of remoteIssueSearchResults) issueIds.add(issue.id);
     return [...issueIds];
-  }, [mineIssues, remoteIssueSearchResults, touchedIssues]);
+  }, [mineIssues, queryDemand.mineIssues, queryDemand.touchedIssues, remoteIssueSearchResults, touchedIssues]);
   const {
     summaries: externalObjectSummaryByIssueId,
     isLoading: externalObjectSummariesLoading,

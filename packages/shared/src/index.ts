@@ -2790,7 +2790,7 @@ export * from "./validators/email.js";
 export { configureRailwaySshSchema, type ConfigureRailwaySsh, type RailwaySshSetup } from "./railway-connection.js";
 export * from "./announcements.js";
 
-export { AGENT_TEMPLATES, DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, CUSTOM_AGENT_TEMPLATE, getAgentTemplate, updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema, agentTemplateSchema, agentTemplatePermissionsSchema } from "./agent-templates.js";
+export { AGENT_TEMPLATES, DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, SECRETARY_TEMPLATE, CUSTOM_AGENT_TEMPLATE, getAgentTemplate, updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema, agentTemplateSchema, agentTemplatePermissionsSchema } from "./agent-templates.js";
 export type { AgentTemplate, AgentTemplatePermissions, AgentTemplateRole, AgentTemplateMetadata } from "./agent-templates.js";
 export type { ProjectAgentMembership } from "./types/project.js";
 export { upsertProjectAgentMembershipSchema, type UpsertProjectAgentMembership } from "./validators/project.js";

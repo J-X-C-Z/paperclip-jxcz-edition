@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   agents,
@@ -411,6 +412,122 @@ describeEmbeddedPostgres("budgetService release gate enforcement", () => {
 
     return event!;
   }
+
+  it("batches overview reads while preserving scope, UTC boundaries, inactive totals and open incidents", async () => {
+    const { companyId, agentId, projectId } = await createBudgetFixture();
+    const foreign = await createBudgetFixture();
+    const secondAgentId = randomUUID();
+    const emptyProjectId = randomUUID();
+    await db.insert(agents).values({
+      id: secondAgentId, companyId, name: "Second agent", role: "engineer",
+      adapterType: "codex_local", status: "active",
+    });
+    await db.insert(projects).values({ id: emptyProjectId, companyId, name: "  ", status: "in_progress" });
+    const now = new Date("2026-08-15T12:00:00.000Z");
+    const start = new Date("2026-08-01T00:00:00.000Z");
+    const end = new Date("2026-09-01T00:00:00.000Z");
+    const pauseAt = now;
+    await db.update(companies).set({ status: "active", pausedAt: pauseAt, pauseReason: "manual" }).where(eq(companies.id, companyId));
+    await db.update(agents).set({ status: "paused", pauseReason: "budget", pausedAt: pauseAt }).where(eq(agents.id, agentId));
+    await db.update(projects).set({ pausedAt: pauseAt, pauseReason: "manual" }).where(eq(projects.id, projectId));
+    for (const [costCents, occurredAt] of [
+      [7, "1969-12-31T23:59:59.999Z"],
+      [11, "2026-07-31T23:59:59.999Z"],
+      [20, "2026-08-01T00:00:00.000Z"],
+      [30, "2026-08-31T23:59:59.999Z"],
+      [13, "2026-09-01T00:00:00.000Z"],
+    ] as const) {
+      await insertCostEvent({ companyId, agentId, projectId, costCents, occurredAt: new Date(occurredAt) });
+    }
+    await insertCostEvent({ companyId, agentId: secondAgentId, costCents: 40, occurredAt: now });
+    await insertCostEvent({ companyId: foreign.companyId, agentId: foreign.agentId, projectId: foreign.projectId, costCents: 999, occurredAt: now });
+    const [companyMonth, companyLifetime, agentMonth, projectLifetime, inactiveProject, otherMetric, emptyProject] = await db
+      .insert(budgetPolicies).values([
+        { companyId, scopeType: "company", scopeId: companyId, windowKind: "calendar_month_utc", amount: 100 },
+        { companyId, scopeType: "company", scopeId: companyId, windowKind: "lifetime", amount: 200 },
+        { companyId, scopeType: "agent", scopeId: agentId, windowKind: "calendar_month_utc", amount: 100 },
+        { companyId, scopeType: "project", scopeId: projectId, windowKind: "lifetime", amount: 70 },
+        { companyId, scopeType: "project", scopeId: projectId, windowKind: "calendar_month_utc", amount: 100, isActive: false },
+        { companyId, scopeType: "company", scopeId: companyId, metric: "unsupported_metric", windowKind: "calendar_month_utc", amount: 100 },
+        { companyId, scopeType: "project", scopeId: emptyProjectId, windowKind: "lifetime", amount: 70 },
+      ]).returning();
+    const [foreignPolicy] = await db.insert(budgetPolicies).values({
+      companyId: foreign.companyId, scopeType: "company", scopeId: foreign.companyId,
+      windowKind: "calendar_month_utc", amount: 100,
+    }).returning();
+    const [pendingApproval] = await db.insert(approvals).values({ companyId,
+      type: "budget_override_required", status: "pending", payload: {} }).returning();
+    const [agentIncident, incidentOnlyScope, resolvedIncident, foreignIncident] = await db.insert(budgetIncidents).values([
+      { companyId, policyId: agentMonth!.id, scopeType: "agent", scopeId: agentId,
+        metric: "billed_cents", windowKind: "calendar_month_utc", windowStart: start, windowEnd: end,
+        thresholdType: "hard", amountLimit: 100, amountObserved: 150, approvalId: pendingApproval!.id },
+      { companyId, policyId: companyLifetime!.id, scopeType: "agent", scopeId: secondAgentId,
+        metric: "billed_cents", windowKind: "calendar_month_utc", windowStart: start, windowEnd: end,
+        thresholdType: "soft", amountLimit: 200, amountObserved: 45 },
+      { companyId, policyId: inactiveProject!.id, scopeType: "project", scopeId: projectId,
+        metric: "billed_cents", windowKind: "calendar_month_utc", windowStart: start, windowEnd: end,
+        thresholdType: "soft", amountLimit: 100, amountObserved: 90, status: "resolved" },
+      { companyId: foreign.companyId, policyId: foreignPolicy!.id, scopeType: "company", scopeId: foreign.companyId,
+        metric: "billed_cents", windowKind: "calendar_month_utc", windowStart: start, windowEnd: end,
+        thresholdType: "hard", amountLimit: 100, amountObserved: 999 },
+    ]).returning();
+
+    const select = vi.spyOn(db, "select");
+    const execute = vi.spyOn(db, "execute");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
+    try {
+      const overview = await budgetService(db).overview(companyId);
+      const policies = new Map(overview.policies.map((policy) => [policy.policyId, policy]));
+      expect(select).toHaveBeenCalledTimes(6); // two lists, three scope batches, one approval batch
+      expect(execute).toHaveBeenCalledOnce(); // every policy total in one query
+      expect(overview.policies).toHaveLength(7);
+      expect(policies.get(companyMonth!.id)).toMatchObject({ observedAmount: 90, status: "warning",
+        paused: true, pauseReason: "manual", windowStart: start, windowEnd: end });
+      expect(policies.get(companyLifetime!.id)).toMatchObject({ observedAmount: 121 });
+      expect(policies.get(agentMonth!.id)).toMatchObject({ observedAmount: 50, paused: true, pauseReason: "budget" });
+      expect(policies.get(projectLifetime!.id)).toMatchObject({ observedAmount: 81, status: "hard_stop",
+        paused: true, pauseReason: "manual", remainingAmount: 0 });
+      expect(policies.get(inactiveProject!.id)).toMatchObject({ observedAmount: 50, amount: 0, remainingAmount: 0,
+        utilizationPercent: 0, isActive: false, status: "ok" });
+      expect(policies.get(otherMetric!.id)).toMatchObject({ observedAmount: 0, status: "ok" });
+      expect(policies.get(emptyProject!.id)).toMatchObject({ observedAmount: 0, scopeName: "project",
+        paused: false, pauseReason: null });
+      expect(overview.activeIncidents).toHaveLength(2);
+      expect(overview.activeIncidents).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: agentIncident!.id, companyId,
+          scopeName: "Budget Agent SECRET_TOKEN_SHOULD_NOT_LEAK", amountObserved: 150, approvalStatus: "pending" }),
+        expect.objectContaining({ id: incidentOnlyScope!.id, companyId,
+          scopeName: "Second agent", amountObserved: 45, approvalStatus: null }),
+      ]));
+      expect(overview.activeIncidents.map((incident) => incident.id)).not.toContain(resolvedIncident!.id);
+      expect(overview.activeIncidents.map((incident) => incident.id)).not.toContain(foreignIncident!.id);
+      expect(overview).toMatchObject({ pausedAgentCount: 1, pausedProjectCount: 2, pendingApprovalCount: 1 });
+      // A second request must observe current ledger/state, with no cached costs.
+      await insertCostEvent({ companyId, agentId, projectId, costCents: 5, occurredAt: now });
+      await db.update(agents).set({ status: "active", pauseReason: null }).where(eq(agents.id, agentId));
+      const refreshed = await budgetService(db).overview(companyId);
+      expect(refreshed.policies.find((policy) => policy.policyId === agentMonth!.id))
+        .toMatchObject({ observedAmount: 55, paused: false, pauseReason: null });
+    } finally {
+      vi.useRealTimers();
+      select.mockRestore();
+      execute.mockRestore();
+    }
+  });
+
+  it("returns an empty overview without extra scope or spend queries", async () => {
+    const { companyId } = await createBudgetFixture();
+    const select = vi.spyOn(db, "select");
+    const execute = vi.spyOn(db, "execute");
+    try {
+      await expect(budgetService(db).overview(companyId)).resolves.toEqual({
+        companyId, policies: [], activeIncidents: [], pausedAgentCount: 0, pausedProjectCount: 0, pendingApprovalCount: 0,
+      });
+      expect(select).toHaveBeenCalledTimes(2);
+      expect(execute).not.toHaveBeenCalled();
+    } finally { select.mockRestore(); execute.mockRestore(); }
+  });
 
   it("raises one soft incident per window before hard-stopping and safely logging agent telemetry", async () => {
     const { companyId, agentId } = await createBudgetFixture();

@@ -126,6 +126,9 @@ export interface PluginJobScheduler {
    */
   stop(): void;
 
+  /** Stop scheduling and await database work already started by the scheduler. */
+  drain(): Promise<void>;
+
   /**
    * Register a plugin with the scheduler.
    *
@@ -235,6 +238,16 @@ export function createPluginJobScheduler(
 
   /** Guard against concurrent tick execution. */
   let tickInProgress = false;
+  const pendingWork = new Set<Promise<unknown>>();
+  function trackWork<T>(work: Promise<T>): Promise<T> {
+    pendingWork.add(work);
+    void work.then(
+      () => pendingWork.delete(work),
+      () => pendingWork.delete(work),
+    );
+    return work;
+  }
+  const trackedTick = () => trackWork(tick());
 
   // -----------------------------------------------------------------------
   // Core: tick
@@ -490,7 +503,7 @@ export function createPluginJobScheduler(
     });
 
     // Dispatch in background — don't block the caller
-    void dispatchManualRun(job, run.id, trigger);
+    void trackWork(dispatchManualRun(job, run.id, trigger));
 
     return { runId: run.id, jobId };
   }
@@ -696,7 +709,7 @@ export function createPluginJobScheduler(
 
     running = true;
     tickTimer = setInterval(() => {
-      void tick();
+      void trackedTick();
     }, tickIntervalMs);
 
     log.info(
@@ -722,6 +735,13 @@ export function createPluginJobScheduler(
     );
   }
 
+  async function drain(): Promise<void> {
+    stop();
+    while (pendingWork.size > 0) {
+      await Promise.allSettled([...pendingWork]);
+    }
+  }
+
   // -----------------------------------------------------------------------
   // Diagnostics
   // -----------------------------------------------------------------------
@@ -743,10 +763,11 @@ export function createPluginJobScheduler(
   return {
     start,
     stop,
-    registerPlugin,
-    unregisterPlugin,
-    triggerJob,
-    tick,
+    drain,
+    registerPlugin: (pluginId) => trackWork(registerPlugin(pluginId)),
+    unregisterPlugin: (pluginId) => trackWork(unregisterPlugin(pluginId)),
+    triggerJob: (jobId, trigger) => trackWork(triggerJob(jobId, trigger)),
+    tick: trackedTick,
     diagnostics,
   };
 }

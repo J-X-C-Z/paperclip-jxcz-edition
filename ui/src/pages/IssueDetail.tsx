@@ -2872,6 +2872,11 @@ function IssueDetailActivityTab({
   );
 }
 
+function DemandLoadedTaskContent({ onOpen, children }: { onOpen: () => void; children: ReactNode }) {
+  useEffect(() => { onOpen(); }, [onOpen]);
+  return <>{children}</>;
+}
+
 export function IssueDetail({ tasksTab }: { tasksTab?: TaskSidePanelProps["tasksTab"] }) {
   return <TaskDetailSurface tasksTab={tasksTab} />; }
 
@@ -2941,6 +2946,8 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
   >(null);
   const [fileViewerPromptOpen, setFileViewerPromptOpen] = useState(false);
   const [detailTab, setDetailTab] = useState("chat");
+  const [requestedTasksIssueId, setRequestedTasksIssueId] = useState<string | null>(null);
+  const [requestedMentionCompanyId, setRequestedMentionCompanyId] = useState<string | null>(null);
   // Redesign: the center tab strip is hidden, so chat is the only surface —
   // deep links that would switch tabs (e.g. #document- hashes) stay on chat.
   const resolvedDetailTab = taskChatShellEnabled ? "chat" : detailTab;
@@ -3291,7 +3298,9 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
       createdFromIssueId: issue!.id,
       includeRoutineExecutions: true,
     }),
-    enabled: streamlinedTaskDetailEnabled && !!resolvedCompanyId && !!issue?.id && !tasksTab,
+    enabled:
+      streamlinedTaskDetailEnabled && !!resolvedCompanyId && !!issue?.id &&
+      !issue.id.startsWith("chat:") && !tasksTab && requestedTasksIssueId === issue.id,
   });
 
   const {
@@ -3361,7 +3370,7 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
         sortField: "updated",
         sortDir: "desc",
       }),
-    enabled: !!resolvedCompanyId,
+    enabled: !!resolvedCompanyId && requestedMentionCompanyId === resolvedCompanyId,
     staleTime: 60_000,
     placeholderData: keepPreviousDataForSameQueryTail<Issue[]>(
       resolvedCompanyId ?? "pending",
@@ -3543,32 +3552,40 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
   }, [issue?.id, rawChildIssues]);
+  const requestRelatedTasks = useCallback(() => {
+    if (issue?.id) setRequestedTasksIssueId(issue.id);
+  }, [issue?.id]);
   const resolvedTasksTab = useMemo(() => {
     if (tasksTab) return tasksTab;
-    if (!streamlinedTaskDetailEnabled) return undefined;
+    if (!streamlinedTaskDetailEnabled || !issue?.id || issue.id.startsWith("chat:")) return undefined;
     const createdTasks = createdTasksQuery.data ?? EMPTY_ISSUES;
     const hasError = createdTasksQuery.isError || childIssuesError;
     return {
       count: new Set([...(issue?.ancestors ?? []), ...childIssues, ...createdTasks].map((task) => task.id)).size,
       hasError,
+      pending: !createdTasksQuery.isFetched,
       content: (
-        <TaskDetailTasksPanel
-          ancestors={issue?.ancestors}
-          issueLinkState={resolvedIssueDetailState ?? location.state}
-          subtasks={childIssues}
-          createdTasks={createdTasks}
-          projects={projects ?? []}
-          isLoading={createdTasksQuery.isLoading || childIssuesLoading}
-          hasError={hasError}
-          onRetry={() => {
-            void createdTasksQuery.refetch();
-            void refetchChildIssues();
-          }}
-        />
+        <DemandLoadedTaskContent onOpen={requestRelatedTasks}>
+          <TaskDetailTasksPanel
+            ancestors={issue?.ancestors}
+            issueLinkState={resolvedIssueDetailState ?? location.state}
+            subtasks={childIssues}
+            createdTasks={createdTasks}
+            projects={projects ?? []}
+            isLoading={!createdTasksQuery.isFetched || createdTasksQuery.isLoading || childIssuesLoading}
+            hasError={hasError}
+            onRetry={() => {
+              void createdTasksQuery.refetch();
+              void refetchChildIssues();
+            }}
+          />
+        </DemandLoadedTaskContent>
       ),
     };
   }, [
+    requestRelatedTasks,
     tasksTab,
+    issue?.id,
     issue?.ancestors,
     resolvedIssueDetailState,
     location.state,
@@ -3581,6 +3598,7 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
     createdTasksQuery.data,
     createdTasksQuery.isError,
     createdTasksQuery.isLoading,
+    createdTasksQuery.isFetched,
     createdTasksQuery.refetch,
   ]);
   const liveIssueIds = useMemo(
@@ -7449,6 +7467,13 @@ export function TaskDetailSurface({ conversation, tasksTab }: { tasksTab?: TaskS
       <TextAttachmentContext.Provider value={taskChatShellEnabled ? handleOpenTextAttachment : null}><IssueGalleryContext.Provider value={openIssueGallery}>
         <div
           data-task-chat-shell={taskChatShellEnabled ? "" : undefined}
+          onFocusCapture={(event) => {
+            const target = event.target;
+            if (resolvedCompanyId && target instanceof HTMLElement &&
+                target.matches('input, textarea, [contenteditable="true"]')) {
+              setRequestedMentionCompanyId(resolvedCompanyId);
+            }
+          }}
           className={
             taskChatShellEnabled
               ? isMobile

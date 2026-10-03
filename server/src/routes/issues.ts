@@ -7860,6 +7860,7 @@ export function issueRoutes(
 
   router.get("/companies/:companyId/issues", async (req, res) => {
     const startedAt = Date.now();
+    const timing = createIssueReadTiming();
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (isTaskBridgeKeyActor(req)) {
@@ -8105,15 +8106,15 @@ export function issueRoutes(
       allowTtlCache: compactView,
       diagnostics: opts.issueListDiagnostics,
       compute: async () => {
-        const rawResult = await svc.list(companyId, listFilters);
-        const result = (await actorCanReadCompanyScope(req, companyId))
+        const rawResult = await timing.time("lookup", () => svc.list(companyId, listFilters));
+        const result = (await timing.time("authorization", () => actorCanReadCompanyScope(req, companyId)))
           ? rawResult
           : await filterIssuesForActor(req, rawResult);
         const issueIds = result.map((issue) => issue.id);
         if (compactView) {
           const [handoffStates, recoveryActionByIssue] = await Promise.all([
-            listSuccessfulRunHandoffStates(db, companyId, issueIds),
-            recoveryActionsSvc.listActiveForIssues(companyId, issueIds),
+            timing.time("handoff", () => listSuccessfulRunHandoffStates(db, companyId, issueIds)),
+            timing.time("recovery", () => recoveryActionsSvc.listActiveForIssues(companyId, issueIds)),
           ]);
           const actor = getActorInfo(req);
           await Promise.all(
@@ -8146,8 +8147,8 @@ export function issueRoutes(
           };
         }
         const [handoffStates, recoveryActionByIssue] = await Promise.all([
-          listSuccessfulRunHandoffStates(db, companyId, issueIds),
-          recoveryActionsSvc.listActiveForIssues(companyId, issueIds),
+          timing.time("handoff", () => listSuccessfulRunHandoffStates(db, companyId, issueIds)),
+          timing.time("recovery", () => recoveryActionsSvc.listActiveForIssues(companyId, issueIds)),
         ]);
         const actor = getActorInfo(req);
         await Promise.all(
@@ -8177,6 +8178,7 @@ export function issueRoutes(
     });
 
     res.setHeader("X-Paperclip-Request-Cache", coordinated.cacheStatus);
+    res.setHeader("Server-Timing", timing.header());
     if (!coordinated.response) {
       const body = {
         error: "Too many concurrent issue-list requests for this actor/client",

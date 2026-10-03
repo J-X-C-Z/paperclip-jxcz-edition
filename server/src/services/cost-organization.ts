@@ -89,10 +89,13 @@ export async function attributedCosts(db: Db, companyId: string, range?: CostDat
 }
 
 export async function organizationCosts(db: Db, companyId: string, range?: CostDateRange, projectId?: string) {
-  const costs = await attributedCosts(db, companyId, range, projectId);
   const namespace = derivePluginDatabaseNamespace("paperclip-improvement-teams", "improvement_teams");
   const table = (name: string) => sql.raw(`"${namespace}"."${name}"`);
-  const availability = Array.from(await db.execute(sql`SELECT to_regclass(${namespace + ".teams"}) IS NOT NULL AND to_regclass(${namespace + ".team_members"}) IS NOT NULL AND to_regclass(${namespace + ".departments"}) IS NOT NULL AS available`) as unknown as Iterable<{ available: boolean }>);
+  const [costs, availabilityRows] = await Promise.all([
+    attributedCosts(db, companyId, range, projectId),
+    db.execute(sql`SELECT to_regclass(${namespace + ".teams"}) IS NOT NULL AND to_regclass(${namespace + ".team_members"}) IS NOT NULL AND to_regclass(${namespace + ".departments"}) IS NOT NULL AS available`),
+  ]);
+  const availability = Array.from(availabilityRows as unknown as Iterable<{ available: boolean }>);
   if (!availability[0]?.available) return aggregateOrganizationCosts(costs, []);
   const result = await db.execute(sql`
     SELECT m.agent_id AS "agentId", t.id AS "teamId", t.name AS "teamName", t.project_id AS "projectId", p.name AS "projectName", d.id AS "departmentId", d.name AS "departmentName"
