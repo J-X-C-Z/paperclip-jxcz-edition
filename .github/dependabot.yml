@@ -11,7 +11,7 @@ updates:
     # a blocked upgrade, so it hides the other ready majors. Separate PRs
     # let each major land on its own. The limit holds the initial burst
     # of pending majors plus the regular minor and patch updates.
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
     # Dependabot's npm parser reads only dependencies, devDependencies, and
@@ -36,7 +36,7 @@ updates:
       interval: weekly
       day: monday
       time: "06:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     ignore:
       # This first-party workflow follows CODEOWNERS-protected master.
       - dependency-name: "paperclipai/paperclip/.github/workflows/pr-trusted.yml"
