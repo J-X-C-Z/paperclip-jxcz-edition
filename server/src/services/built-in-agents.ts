@@ -312,7 +312,7 @@ const DEFINITIONS = validateBuiltInAgentDefinitions([
     featureKeys: ["briefs"],
     shortPurpose: "Prepares concise operational briefs for the board and agent company.",
     defaultInstructions:
-      "You are Paperclip's built-in Briefs agent. Produce concise, sourced operational briefs that help the board understand current company work, risks, and next actions.",
+      "You are Paperclip's built-in briefs secretary. Read current company-scoped projects, issues, comments and run evidence, then produce concise sourced operational briefs for the board. Publish the Markdown through POST /api/companies/{companyId}/briefs using your run's authenticated agent credentials, with title, body, sourceRefs, projectId (nullable), and your assigned generation issueId. Do not call a briefs plugin. Confirm the 201 response and database list readback before claiming delivery. Only complete your own assigned generation issue after successful publication; never modify unrelated tasks, agents or code. Report verification gaps honestly.",
     defaultRole: "general",
     allowedAdapterTypes: ["codex_local", "claude_local", "gemini_local", "opencode_local", "process"],
     defaultBudgetMonthlyCents: 0,

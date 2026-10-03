@@ -41,6 +41,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { ProjectOrganization } from "../components/ProjectOrganization";
+import { BriefWorkspace } from "../components/BriefWorkspace";
 import { ProjectTeam } from "../components/ProjectTeam";
 import {
   isStarred,
@@ -52,7 +53,7 @@ import { useUiTranslator } from "@/i18n";
 
 /* ── Top-level tab types ── */
 
-type ProjectBaseTab = "list" | "plugin-operations" | "workspaces" | "configuration" | "budget" | "team";
+type ProjectBaseTab = "brief" | "list" | "plugin-operations" | "workspaces" | "configuration" | "budget" | "team";
 type ProjectPluginTab = `plugin:${string}`;
 type ProjectTab = ProjectBaseTab | ProjectPluginTab;
 
@@ -71,6 +72,7 @@ function resolveProjectTab(pathname: string, projectId: string): ProjectTab | nu
   if (tab === "issues") return "list";
   if (tab === "plugin-operations") return "plugin-operations";
   if (tab === "workspaces") return "workspaces";
+  if (tab === "brief") return "brief";
   if (tab === "team") return "team";
   return null;
 }
@@ -549,6 +551,10 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}/budget`, { replace: true });
       return;
     }
+    if (activeTab === "brief") {
+      navigate(`/projects/${canonicalProjectRef}/brief`, { replace: true });
+      return;
+    }
     if (activeTab === "plugin-operations") {
       navigate(`/projects/${canonicalProjectRef}/plugin-operations`, { replace: true });
       return;
@@ -673,6 +679,10 @@ export function ProjectDetail() {
     },
   });
 
+  if (pluginTabFromSearch === "plugin:orialis-brief:project-brief-tab" && project) {
+    return <Navigate to={`/projects/${canonicalProjectRef}/brief`} replace />;
+  }
+
   if (pluginTabFromSearch && !activePluginTab && !error) {
     if (!pluginTabDecisionLoaded) {
       return <PageSkeleton variant="detail" />;
@@ -698,6 +708,9 @@ export function ProjectDetail() {
     }
     if (cachedTab === "configuration") {
       return <Navigate to={`/projects/${canonicalProjectRef}/configuration`} replace />;
+    }
+    if (cachedTab === "brief" || cachedTab === "plugin:orialis-brief:project-brief-tab") {
+      return <Navigate to={`/projects/${canonicalProjectRef}/brief`} replace />;
     }
     if (cachedTab === "budget") {
       return <Navigate to={`/projects/${canonicalProjectRef}/budget`} replace />;
@@ -739,7 +752,9 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(tab)}`);
       return;
     }
-    if (tab === "workspaces") {
+    if (tab === "brief") {
+      navigate(`/projects/${canonicalProjectRef}/brief`);
+    } else if (tab === "workspaces") {
       navigate(`/projects/${canonicalProjectRef}/workspaces`);
     } else if (tab === "budget") {
       navigate(`/projects/${canonicalProjectRef}/budget`);
@@ -878,6 +893,7 @@ export function ProjectDetail() {
         <PageTabBar
           items={[
             { value: "list", label: tr("Tasks") },
+            { value: "brief", label: "简报" },
 
             ...(project.managedByPlugin ? [{ value: "plugin-operations", label: tr("Plugin operations") }] : []),
             ...(showWorkspacesTab ? [{ value: "workspaces", label: tr("Workspaces") }] : []),
@@ -896,6 +912,10 @@ export function ProjectDetail() {
       </Tabs>
 
 
+
+      {activeTab === "brief" && project?.id && resolvedCompanyId && (
+        <BriefWorkspace key={`${resolvedCompanyId}:${project.id}`} companyId={resolvedCompanyId} projectId={project.id} />
+      )}
 
       {activeTab === "list" && project?.id && resolvedCompanyId && (
         <ProjectIssuesList projectId={project.id} companyId={resolvedCompanyId} />

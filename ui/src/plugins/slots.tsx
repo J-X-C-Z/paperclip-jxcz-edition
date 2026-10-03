@@ -660,6 +660,8 @@ export function usePluginSlots(filters: SlotFilters): UsePluginSlotsResult {
     const allowedTypes = new Set(slotTypesKey.split("|").filter(Boolean) as PluginUiSlotType[]);
     const rows: ResolvedPluginSlot[] = [];
     for (const contribution of data ?? []) {
+      // Brief is now a native company capability; hide legacy UI contributions.
+      if (contribution.pluginKey === "orialis-brief") continue;
       for (const slot of contribution.slots) {
         if (!allowedTypes.has(slot.type)) continue;
         if (requiresEntityType(slot.type)) {

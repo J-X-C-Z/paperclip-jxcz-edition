@@ -7,6 +7,13 @@ import {
 } from "./company-routes";
 
 describe("company routes", () => {
+  it("keeps native brief navigation inside the active company", () => {
+    expect(isBoardPathWithoutPrefix("/brief")).toBe(true);
+    expect(extractCompanyPrefixFromPath("/brief")).toBeNull();
+    expect(applyCompanyPrefix("/brief", "ORI")).toBe("/ORI/brief");
+    expect(applyCompanyPrefix("/brief?project=p1", "PAP")).toBe("/PAP/brief?project=p1");
+    expect(toCompanyRelativePath("/ORI/brief")).toBe("/brief");
+  });
   it("treats the task-list alias as an unprefixed board route", () => {
     expect(isBoardPathWithoutPrefix("/tasks")).toBe(true);
     expect(extractCompanyPrefixFromPath("/tasks")).toBeNull();

@@ -23,6 +23,7 @@ import {
   MessagesSquare,
   GanttChartSquare,
   LayoutGrid,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -190,6 +191,7 @@ export function Sidebar() {
           {showCases ? (
             <SidebarNavItem to="/cases" label={t("ui.cases")} icon={Layers} textBadge="beta" />
           ) : null}
+          <SidebarNavItem to="/brief" label="简报" icon={FileText} />
           <SidebarNavItem to="/routines" label={t("ui.routines")} icon={Repeat} />
           {showPipelines ? (
             <SidebarNavItem to="/pipelines" label={t("ui.pipelines")} icon={GitBranch} />
