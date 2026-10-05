@@ -1,4 +1,4 @@
-import { assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "../services/agent-template-task-policy.js";
+import { isTaskReviewMember, isAvailableTaskReviewer, assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "../services/agent-template-task-policy.js";
 import { resolveProjectScope } from "../services/project-scope.js";
 import { setIssueTitle } from "../services/issue-title.js";
 import { setIssueTitleSchema } from "@paperclipai/shared";
@@ -11697,6 +11697,19 @@ export function issueRoutes(
       )
         return;
       const normalizedAssigneeAgentId =
+      if (
+        req.actor.type === "agent" &&
+        normalizedAssigneeAgentId &&
+        normalizedAssigneeAgentId !== req.actor.agentId &&
+        rawCreateBody.parentId === undefined &&
+        !watchdogProductBugFollowUp
+      ) {
+        res.status(422).json({
+          error: "Delegated work requires parentId. Set the coordinating issue as parentId so completion reaches its owner; use explicit parentId: null only for genuinely independent top-level work.",
+          details: { code: "delegation_parent_required" },
+        });
+        return;
+      }
         await normalizeIssueAssigneeAgentReference(
           companyId,
           rawCreateBody.assigneeAgentId as string | null | undefined,
@@ -13188,7 +13201,7 @@ export function issueRoutes(
       );
       const reviewMemberId = parseIssueExecutionState(existing.executionState)?.returnAssignee?.agentId ?? existing.assigneeAgentId;
       const nextExecutionPolicy = await templateMemberReviewPolicy(db, existing.companyId, reviewMemberId,
-        updateFields.executionPolicy !== undefined ? updateFields.executionPolicy : previousExecutionPolicy);
+        updateFields.executionPolicy !== undefined ? updateFields.executionPolicy : previousExecutionPolicy, existing);
       if (nextExecutionPolicy) updateFields.executionPolicy = nextExecutionPolicy;
       if (normalizedAssigneeAgentId !== undefined) {
         updateFields.assigneeAgentId = normalizedAssigneeAgentId;
@@ -13204,21 +13217,15 @@ export function issueRoutes(
         req.body.executionPolicy !== undefined && monitorChanged,
       );
 
-      const submittingReviewMember = updateFields.status === "in_review"
+      const submittingReviewMember = (updateFields.status === "in_review" || updateFields.status === "done")
         ? await loadTemplateTaskActor(db, existing.companyId, reviewMemberId)
         : null;
-      const memberReviewTemplate = submittingReviewMember?.metadata && typeof submittingReviewMember.metadata === "object"
-        ? (submittingReviewMember.metadata as Record<string, unknown>).agentTemplate as { role?: string } | undefined
-        : undefined;
       const submittingMemberManagerId = (submittingReviewMember as { reportsTo?: string | null } | null)?.reportsTo;
-      const submissionLeader = memberReviewTemplate?.role === "member" && submittingMemberManagerId
+      const submissionLeader = isTaskReviewMember(submittingReviewMember) && submittingMemberManagerId
         ? await loadTemplateTaskActor(db, existing.companyId, submittingMemberManagerId)
         : null;
-      const submissionLeaderTemplate = submissionLeader?.metadata && typeof submissionLeader.metadata === "object"
-        ? (submissionLeader.metadata as Record<string, unknown>).agentTemplate as { role?: string } | undefined
-        : undefined;
-      const unavailableTemplateLeader = memberReviewTemplate?.role === "member" &&
-        (!submissionLeader || submissionLeaderTemplate?.role !== "leader" || !["idle", "running", "error"].includes(String((submissionLeader as { status?: string }).status)));
+      const unavailableTemplateLeader = !existing.conversationAgentId && !existing.conversationUserId && isTaskReviewMember(submittingReviewMember) &&
+        !isAvailableTaskReviewer(submittingReviewMember!, submissionLeader);
       if (unavailableTemplateLeader) {
         const interactions = issueThreadInteractionService(db);
         const recoveryTitle = "恢复组长验收";

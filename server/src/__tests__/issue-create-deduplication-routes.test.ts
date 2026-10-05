@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
+  agentWakeupRequests,
   agents,
   companies,
   createDb,
@@ -49,6 +50,7 @@ describeEmbeddedPostgres("issue create deduplication routes", () => {
     await db.delete(issueCreateIdempotencyKeys);
     await db.delete(issues);
     await db.delete(heartbeatRuns);
+    await db.delete(agentWakeupRequests);
     await db.delete(agents);
     await db.delete(companies);
   });
@@ -57,10 +59,16 @@ describeEmbeddedPostgres("issue create deduplication routes", () => {
     await tempDb?.cleanup();
   });
 
-  function createApp() {
+  function createApp(agentId?: string, companyId?: string) {
     const app = express();
     app.use(express.json());
     app.use(actorMiddleware(db, { deploymentMode: "local_trusted" }));
+    if (agentId) {
+      app.use((req, _res, next) => {
+        req.actor = { type: "agent", agentId, companyId, source: "agent_jwt" };
+        next();
+      });
+    }
     app.use("/api", issueRoutes(db, {} as any));
     app.use(errorHandler);
     return app;
@@ -86,6 +94,36 @@ describeEmbeddedPostgres("issue create deduplication routes", () => {
     }).returning();
     return parent;
   }
+
+  it("requires an explicit parent choice for agent delegation while preserving independent and self work", async () => {
+    const companyId = await seedCompany();
+    const agentId = randomUUID();
+    const memberId = randomUUID();
+    await db.insert(agents).values([
+      { id: agentId, companyId, name: "Lead", role: "engineer", adapterType: "codex_local" },
+      { id: memberId, companyId, name: "Member", role: "engineer", adapterType: "codex_local" },
+    ]);
+    const parent = await seedParent(companyId);
+    await db.update(issues).set({ assigneeAgentId: agentId }).where(eq(issues.id, parent.id));
+    const app = createApp(agentId, companyId);
+    const endpoint = `/api/companies/${companyId}/issues`;
+
+    const omitted = await request(app).post(endpoint).send({ title: "Missing handoff", assigneeAgentId: memberId });
+    expect(omitted.status, JSON.stringify(omitted.body)).toBe(422);
+    expect(omitted.body.details.code).toBe("delegation_parent_required");
+    expect(await db.select().from(issues)).toHaveLength(1);
+
+    for (const [title, actorApp, payload] of [
+      ["Delegated child", app, { assigneeAgentId: memberId, parentId: parent.id }],
+      ["Independent delegation", app, { assigneeAgentId: memberId, parentId: null }],
+      ["Self work", app, { assigneeAgentId: agentId }],
+      ["Board root", createApp(), { assigneeAgentId: memberId }],
+    ] as const) {
+      const created = await request(actorApp).post(endpoint).send({ title, status: "backlog", ...payload });
+      expect(created.status, JSON.stringify(created.body)).toBe(201);
+      expect(created.body.parentId).toBe("parentId" in payload ? payload.parentId : null);
+    }
+  });
 
   it("replays the existing issue for the same company idempotency key", async () => {
     const companyId = await seedCompany();

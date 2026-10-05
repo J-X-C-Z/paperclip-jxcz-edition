@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Db } from "@paperclipai/db";
-import { assertTemplateTaskPatch, templateActionDenial, templateMemberReviewPolicy, TEMPLATE_MEMBER_REVIEW_STAGE_ID } from "../services/agent-template-task-policy.js";
+import { isTaskReviewMember, isAvailableTaskReviewer, assertTemplateTaskPatch, templateActionDenial, templateMemberReviewPolicy, TEMPLATE_MEMBER_REVIEW_STAGE_ID } from "../services/agent-template-task-policy.js";
 import { applyIssueExecutionPolicyTransition, normalizeIssueExecutionPolicy } from "../services/issue-execution-policy.js";
 
 const memberId = "11111111-1111-4111-8111-111111111111";
@@ -70,5 +70,49 @@ describe("template member review lifecycle", () => {
     expect(restored?.stages[0].participants[0].agentId).toBe(replacementId);
     const transition = applyIssueExecutionPolicyTransition({ issue: { status: "in_review", assigneeAgentId: memberId, executionState: null }, policy: restored, requestedStatus: "in_review", requestedAssigneePatch: {}, actor: { agentId: memberId }, commentBody: "Resubmitted after manager recovery" });
     expect(transition.patch).toMatchObject({ status: "in_review", assigneeAgentId: replacementId, executionState: { status: "pending" } });
+  });
+});
+
+
+describe("legacy AW member review", () => {
+  const legacyMember = { ...member, metadata: { awRoleId: "mobile-coder" } };
+  const legacyLeader = { ...leader, metadata: { awRoleId: "mobile-lead" } };
+  it("uses only explicit execution roles and honors explicit templates", () => {
+    for (const awRoleId of ["mobile-coder", "plugin-member", "plugin-member-2"]) expect(isTaskReviewMember({ metadata: { awRoleId } })).toBe(true);
+    for (const awRoleId of ["mobile-lead", "desktop-reviewer", "desktop-researcher"]) expect(isTaskReviewMember({ metadata: { awRoleId } })).toBe(false);
+    expect(isTaskReviewMember({ metadata: { awRoleId: "mobile-coder", agentTemplate: { id: "custom", version: 1, role: "custom" } } })).toBe(false);
+    expect(isAvailableTaskReviewer(legacyMember, { ...legacyLeader, companyId: "another-company" })).toBe(false);
+    expect(isAvailableTaskReviewer(legacyMember, { ...legacyLeader, id: memberId })).toBe(false);
+    expect(isAvailableTaskReviewer(legacyMember, { ...legacyLeader, status: "paused" })).toBe(false);
+  });
+  it("installs one review on dispatch and routes submission without self approval", async () => {
+    const policy = await templateMemberReviewPolicy(database([legacyMember, legacyLeader]), companyId, memberId, null);
+    expect(policy?.stages).toHaveLength(1);
+    expect(await templateMemberReviewPolicy(database([legacyMember, legacyLeader]), companyId, memberId, policy)).toEqual(policy);
+    const submission = applyIssueExecutionPolicyTransition({ issue: { status: "in_progress", assigneeAgentId: memberId, executionState: null }, policy, requestedStatus: "in_review", requestedAssigneePatch: {}, actor: { agentId: memberId }, commentBody: "Tests passed" });
+    expect(submission.patch).toMatchObject({ assigneeAgentId: leaderId, executionState: { returnAssignee: { agentId: memberId }, status: "pending" } });
+    expect(() => assertTemplateTaskPatch(legacyMember, { status: "in_review", assigneeAgentId: leaderId, executionState: submission.patch.executionState }, { status: "done" })).toThrow();
+  });
+  it("keeps existing leader stage identity, order and active state", async () => {
+    const policy = normalizeIssueExecutionPolicy({ stages: [{ id: "55555555-5555-4555-8555-555555555555", type: "review", participants: [{ id: "66666666-6666-4666-8666-666666666666", type: "agent", agentId: leaderId }] }] });
+    const installed = await templateMemberReviewPolicy(database([legacyMember, legacyLeader]), companyId, memberId, policy);
+    expect(installed).toEqual({ ...policy, commentRequired: true });
+    const submission = applyIssueExecutionPolicyTransition({ issue: { status: "in_progress", assigneeAgentId: memberId, executionState: null }, policy: installed, requestedStatus: "in_review", requestedAssigneePatch: {}, actor: { agentId: memberId }, commentBody: "Tests passed" });
+    const active = { status: "in_review", assigneeAgentId: leaderId, executionState: submission.patch.executionState };
+    const repeated = applyIssueExecutionPolicyTransition({ issue: active, policy: installed, requestedStatus: "in_review", requestedAssigneePatch: {}, actor: { agentId: leaderId }, commentBody: "Reviewing" });
+    expect(repeated.patch.executionState ?? active.executionState).toEqual(active.executionState);
+  });
+  it("leaves conversation termination to the existing conversation boundary", () => {
+    for (const conversation of [{ conversationAgentId: memberId }, { conversationUserId: "board" }]) {
+      for (const actor of [member, legacyMember]) {
+        for (const status of ["done", "cancelled"]) expect(() => assertTemplateTaskPatch(actor, { status: "in_progress", assigneeAgentId: memberId, ...conversation }, { status })).not.toThrow();
+      }
+    }
+    expect(templateActionDenial(member, "issue:mutate", { type: "issue", issueId: "chat", assigneeAgentId: leaderId })).toBeTruthy();
+  });
+  it("preserves missing reviewer gates and excludes conversations", async () => {
+    const policy = await templateMemberReviewPolicy(database([legacyMember, null]), companyId, memberId, null);
+    expect(policy?.stages[0].participants[0].agentId).toBe(leaderId);
+    expect(await templateMemberReviewPolicy(database([legacyMember]), companyId, memberId, null, { conversationAgentId: memberId })).toBeNull();
   });
 });

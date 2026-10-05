@@ -1,5 +1,5 @@
 import { readAgentTemplateMetadata } from "./agent-templates.js";
-import { TEMPLATE_MEMBER_REVIEW_STAGE_ID, assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "./agent-template-task-policy.js";
+import { isTaskReviewMember, isAvailableTaskReviewer, TEMPLATE_MEMBER_REVIEW_STAGE_ID, assertTemplateTaskPatch, loadTemplateTaskActor, templateMemberReviewPolicy } from "./agent-template-task-policy.js";
 import { recordChatHandoff, recordChatCompletion, existingChatCompletionReply, acknowledgeChatCompletionReply } from "./chat-completion-delivery.js";
 import { mirrorSlackBoardComment, slackBoardReplyBindings } from "./slack-board-messages.js";
 import { assertAgentRunWriteAllowed } from "../agent-run-cancellation.js";
@@ -9769,7 +9769,7 @@ export function issueService(db: Db) {
         }
       }
       if (issueData.assigneeAgentId) {
-        const reviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, companyId, issueData.assigneeAgentId, issueData.executionPolicy);
+        const reviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, companyId, issueData.assigneeAgentId, issueData.executionPolicy, issueData);
         if (reviewPolicy) issueData.executionPolicy = { ...reviewPolicy };
       }
       const explicitTitle = issueData.title?.trim();
@@ -10635,11 +10635,11 @@ export function issueService(db: Db) {
       if (templateActor) assertTemplateTaskPatch(templateActor, existing, data as Record<string, unknown>, false);
       const reviewMemberId = data.assigneeAgentId !== undefined ? data.assigneeAgentId : existing.assigneeAgentId;
       const returnMemberId = parseIssueExecutionState(existing.executionState)?.returnAssignee?.agentId;
-      const enforcedReviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId, data.executionPolicy !== undefined ? data.executionPolicy : existing.executionPolicy);
+      const enforcedReviewPolicy = await templateMemberReviewPolicy(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId, data.executionPolicy !== undefined ? data.executionPolicy : existing.executionPolicy, existing);
       if (enforcedReviewPolicy) data = { ...data, executionPolicy: { ...enforcedReviewPolicy } };
       const previousTemplateState = parseIssueExecutionState(existing.executionState);
-      const hasTemplateStage = enforcedReviewPolicy?.stages.some(stage => stage.id === TEMPLATE_MEMBER_REVIEW_STAGE_ID);
-      const submittingTemplateMember = data.status === "in_review"
+      const hasTemplateStage = enforcedReviewPolicy?.stages.some(stage => stage.type === "review") && isTaskReviewMember(await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId)) && !existing.conversationAgentId && !existing.conversationUserId;
+      const submittingTemplateMember = (data.status === "in_review" || data.status === "done")
         ? await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, returnMemberId ?? reviewMemberId)
         : null;
       const templateMemberManagerId = (submittingTemplateMember as { reportsTo?: string | null } | null)?.reportsTo;
@@ -10647,9 +10647,9 @@ export function issueService(db: Db) {
         ? await loadTemplateTaskActor(dbOrTx as Db, existing.companyId, templateMemberManagerId)
         : null;
       const templateMemberReviewerUnavailable = (existing.assigneeAgentId === submittingTemplateMember?.id || returnMemberId === submittingTemplateMember?.id) &&
-        readAgentTemplateMetadata(submittingTemplateMember?.metadata)?.role === "member" &&
-        (!templateMemberManager || readAgentTemplateMetadata(templateMemberManager.metadata)?.role !== "leader" || !["idle", "running", "error"].includes(String((templateMemberManager as { status?: string }).status)));
-      if (readAgentTemplateMetadata(templateActor?.metadata)?.role === "member") {
+        !existing.conversationAgentId && !existing.conversationUserId && isTaskReviewMember(submittingTemplateMember) &&
+        !isAvailableTaskReviewer(submittingTemplateMember!, templateMemberManager);
+      if (isTaskReviewMember(templateActor) && !existing.conversationAgentId && !existing.conversationUserId) {
         const ownsTask = existing.assigneeAgentId === templateActor!.id || returnMemberId === templateActor!.id;
         if (!ownsTask) throw forbidden("Template members may only update their assigned tasks");
         const nextAssignee = data.assigneeAgentId !== undefined ? data.assigneeAgentId : existing.assigneeAgentId;
@@ -10657,9 +10657,9 @@ export function issueService(db: Db) {
         const changingHumanAssignment = data.assigneeUserId !== undefined && data.assigneeUserId !== existing.assigneeUserId;
         if (changingAgentAssignment || changingHumanAssignment) {
           const submittedState = parseIssueExecutionState(data.executionState);
-          const mandatoryStage = enforcedReviewPolicy?.stages.find(stage => stage.id === TEMPLATE_MEMBER_REVIEW_STAGE_ID);
+          const mandatoryStage = enforcedReviewPolicy?.stages.find(stage => stage.id === TEMPLATE_MEMBER_REVIEW_STAGE_ID || stage.type === "review" && stage.participants.every(participant => participant.type === "agent" && participant.agentId === templateMemberManagerId));
           const typedLeaderHandoff = data.status === "in_review" && submittedState?.status === "pending" &&
-            submittedState.currentStageId === TEMPLATE_MEMBER_REVIEW_STAGE_ID && submittedState.returnAssignee?.agentId === templateActor!.id &&
+            submittedState.currentStageId === mandatoryStage?.id && submittedState.returnAssignee?.agentId === templateActor!.id &&
             submittedState.currentParticipant?.agentId === nextAssignee && mandatoryStage?.participants.some(participant => participant.type === "agent" && participant.agentId === nextAssignee) &&
             (data.assigneeUserId === undefined || data.assigneeUserId === null);
           const typedRecoveryHandoff = templateMemberReviewerUnavailable && data.status === "in_review" && data.executionState === null && nextAssignee === templateActor!.id && (data.assigneeUserId === undefined || data.assigneeUserId === null);

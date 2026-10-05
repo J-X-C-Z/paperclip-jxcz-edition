@@ -518,9 +518,10 @@ describeEmbeddedPostgres("issue watchdog routes", () => {
     expect(allowedChild.body.parentId).toBe(watchedChildId);
   });
 
-  it("routes watchdog-discovered product bugs outside the watched source tree with evidence links", async () => {
+  it.each(["omitted", "supplied"])("routes watchdog-discovered product bugs outside the watched source tree with evidence links (%s parent)", async (parentChoice) => {
     const companyId = await seedCompany();
     const watchdogAgentId = await seedAgent(companyId, { name: "Product Bug Watchdog" });
+    const workerAgentId = await seedAgent(companyId, { name: "Product Bug Worker" });
     const watchedRootId = await seedIssue(companyId, {
       title: "Watched root",
       identifier: "PAP-100",
@@ -560,7 +561,8 @@ describeEmbeddedPostgres("issue watchdog routes", () => {
       .send({
         title: "Fix watchdog source-tree pollution",
         description: "Watchdog found a Paperclip follow-up routing bug.",
-        parentId: watchedChildId,
+        assigneeAgentId: workerAgentId,
+        ...(parentChoice === "supplied" ? { parentId: watchedChildId } : {}),
         watchdogDiscovery: {
           kind: "product_bug",
           evidenceMarkdown: "The watchdog would otherwise create this under the watched child.",

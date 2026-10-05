@@ -32,7 +32,7 @@ Manual local CLI mode (outside heartbeat runs): use `paperclipai agent local-cli
 When the task context says **Chat mode** (the issue has `conversationAgentId`),
 follow that directive for the conversation lifecycle. Research, clarify, and
 revise the conversation's `plan` document here. On an authorized handoff, create
-ordinary assigned tasks in a suitable project, with no `parentId` and no blocker
+ordinary assigned tasks in a suitable project, with explicit `parentId: null` and no blocker
 relationship back to the conversation. Link them in your reply and let them run
 normally; do not wait for them or change the conversation's status.
 
@@ -263,7 +263,7 @@ Because of that, follow these rules:
 - **Never imply a live watcher on a task you are marking `done`.** `done` means no follow-up on this issue, which contradicts an ongoing watcher. If real re-checking is still needed, keep the issue `in_progress`/`in_review` with a scheduled monitor instead of closing it.
 - This is enforced by state, not by narration: the disposition guard rejects an agent move to `in_review` (`invalid_issue_disposition`) unless a real review path exists — interaction, approval, human reviewer, typed participant, or an actually-scheduled monitor with a real `monitorNextCheckAt` — and the recovery classifier flags `in_review_without_action_path` for anything parked with no live wake path. Keep your comments consistent with that real state.
 
-**Step 9 — Delegate if needed.** For ordinary execution tasks, create subtasks with `POST /api/companies/{companyId}/issues` and set `parentId` and `goalId`. For conversation tasks, use the project handoff above instead. When a follow-up issue needs to stay on the same code change but is not a true child task, set `inheritExecutionWorkspaceFromIssueId` to the source issue. Set `billingCode` for cross-team work.
+**Step 9 — Delegate if needed.** For ordinary execution tasks, create subtasks with `POST /api/companies/{companyId}/issues` and set `parentId` to the coordinating issue and `goalId`. Delegating to another agent without `parentId` returns `422 delegation_parent_required`; explicit `parentId: null` is only for genuinely independent top-level work, never to bypass the completion handoff. For conversation tasks, use the project handoff above instead. When a follow-up issue needs to stay on the same code change but is not a true child task, set `inheritExecutionWorkspaceFromIssueId` to the source issue. Set `billingCode` for cross-team work.
 
 ### Delegating review tasks
 
