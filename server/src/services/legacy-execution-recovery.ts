@@ -1,6 +1,6 @@
 import { hasWorkspaceRestoreFailure } from "@paperclipai/shared";
 import { normalizeMaxTurnStopReason } from "./heartbeat-stop-metadata.js";
-import { claimedAdapterType, hasConversationContinuationPolicy } from "./conversation-continuation.js";
+import { claimedAdapterType, conversationRecoveryActionPredicate, hasConversationContinuationPolicy } from "./conversation-continuation.js";
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { environmentLeases, heartbeatRuns, issueRecoveryActions, issues, nativeRunFinalizations, type Db } from "@paperclipai/db";
@@ -122,7 +122,8 @@ export async function terminalizeLegacyExecution(input: {
     ) {
       // Periodic stranded-work checks may revisit this terminal run before its
       // reconciled continuation is dispatched. Preserve the recorded decision
-      // and an existing unsafe-workspace hold instead of creating another one.
+      // or a settled conversation policy, and an existing unsafe-workspace
+      // hold instead of creating another one. Dispatch still checks ownership.
       const [reconciled] = await tx.select({ id: issueRecoveryActions.id })
         .from(issueRecoveryActions).where(and(
           eq(issueRecoveryActions.companyId, run.companyId),
@@ -130,6 +131,11 @@ export async function terminalizeLegacyExecution(input: {
           eq(issueRecoveryActions.status, "resolved"),
           or(
             sql`${issueRecoveryActions.evidence}->'executionReconciliation'->>'runId' = ${run.id}`,
+            and(
+              sql`${issueRecoveryActions.evidence}->>'runId' = ${run.id}`,
+              eq(issueRecoveryActions.outcome, "cancelled"),
+              conversationRecoveryActionPredicate(),
+            ),
             and(
               sql`${issueRecoveryActions.evidence}->>'runId' = ${run.id}`,
               sql`${issueRecoveryActions.evidence}->>'workspaceRestoreFailure' = 'restore_unsafe_archive'`,

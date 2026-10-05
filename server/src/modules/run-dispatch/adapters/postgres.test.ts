@@ -24,6 +24,7 @@ import {
 import { createPostgresRunDispatchAdapter } from "./postgres.js";
 import { settleUnrecoverableExecutions } from "../../../services/execution-recovery-resolution.js";
 import { getExecutionBlocker } from "../../../services/execution-blocker.js";
+import { terminalizeLegacyExecution } from "../../../services/legacy-execution-recovery.js";
 
 // Proves the DB-to-facts mapping this adapter owns for each state the two
 // run-dispatch gates decide on. `application/use-cases.test.ts` and
@@ -848,7 +849,12 @@ describeEmbeddedPostgres("run-dispatch postgres adapter", () => {
     const [resolved] = await db.select().from(issueRecoveryActions).where(eq(issueRecoveryActions.id, action!.id));
     expect(resolved).toMatchObject({ status: "resolved", outcome: "cancelled", evidence: { runId: previousRunId } });
     expect(resolved.evidence.automaticRecovery).toMatchObject({ replay: "conversation_continuation", actionOutcome: "unknown" });
+    const [stopped] = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, previousRunId));
+    // Stranded recovery revisits the same terminal run after the policy folds
+    // its hold. Preserve that decision instead of creating a new incident.
+    await terminalizeLegacyExecution({ db, run: stopped!, status: stopped!.status });
     await settleUnrecoverableExecutions(db);
+    expect(await db.select().from(issueRecoveryActions).where(eq(issueRecoveryActions.sourceIssueId, issueId))).toHaveLength(1);
     const audit = await db.select().from(activityLog).where(eq(activityLog.entityId, issueId));
     expect(audit).toHaveLength(1);
     expect(audit[0]).toMatchObject({ companyId, action: "issue.execution_recovery_settled" });
