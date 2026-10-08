@@ -59,6 +59,20 @@ const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
 function registerServiceMocks() {
   vi.doMock("../routes/authz.js", async () => vi.importActual("../routes/authz.js"));
 
+  vi.doMock("../services/instance-settings.js", () => ({
+    instanceSettingsService: () => ({
+      get: vi.fn(async () => ({
+        id: "instance-settings-1",
+        general: {
+          censorUsernameInLogs: false,
+          feedbackDataSharingPreference: "prompt",
+        },
+      })),
+      getExperimental: vi.fn(async () => ({ enableExternalObjects: false })),
+      listCompanyIds: vi.fn(async () => ["company-1"]),
+    }),
+  }));
+
   vi.doMock("@paperclipai/shared/telemetry", () => ({
     trackAgentTaskCompleted: vi.fn(),
     trackErrorHandlerCrash: vi.fn(),
@@ -130,6 +144,9 @@ function registerServiceMocks() {
           feedbackDataSharingPreference: "prompt",
         },
       })),
+      getExperimental: vi.fn(async () => ({
+        enableExternalObjects: false,
+      })),
       listCompanyIds: vi.fn(async () => ["company-1"]),
     }),
     issueApprovalService: () => ({}),
@@ -193,6 +210,17 @@ function makeClosedWorkspace() {
   };
 }
 
+function createReadOnlyDb() {
+  const query = {
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn(async () => []),
+    orderBy: vi.fn(async () => []),
+  };
+  return {
+    select: vi.fn().mockReturnValue(query),
+  };
+}
+
 // A fake-timer advance flushes the microtask queue and every pending timer up
 // to the given simulated duration in one deterministic step. A real-clock wait
 // (a single setImmediate, or a fixed setTimeout) races the response's
@@ -233,7 +261,7 @@ describe("closed isolated workspace issue routes", () => {
       };
       next();
     });
-    app.use("/api", issueRoutes({} as any, {} as any));
+    app.use("/api", issueRoutes(createReadOnlyDb() as any, {} as any));
     app.use(errorHandler);
     return app;
   }

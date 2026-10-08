@@ -205,10 +205,8 @@ describeEmbeddedPostgres("issue create onboarding first-task routes", () => {
     expect(payload.questions).toHaveLength(1);
     expect(payload.questions[0].selectionMode).toBe("single");
     expect(payload.questions[0].options.map((option) => option.id)).toEqual(["interview", "task"]);
-    expect(payload.questions[0].options[0].label).toBe(
-      "Interview me and propose a plan and an agent team to execute it.",
-    );
-    expect(payload.questions[0].options[1]).toMatchObject({ label: "I have a task in mind", freeText: true });
+    expect(payload.questions[0].options[0].label).toBe("采访我，并提出计划和执行计划的智能体团队。");
+    expect(payload.questions[0].options[1]).toMatchObject({ label: "我有一个任务想做", freeText: true });
 
     // The seeded card is read-only for the thread until the user answers: it
     // must not have queued a run by itself.
@@ -294,8 +292,8 @@ describeEmbeddedPostgres("issue create onboarding first-task routes", () => {
       })
       .expect(201);
 
-    expect(created.body.description).toContain("Use the `first-task` skill (/first-task)");
-    expect(created.body.description).toContain("Single-task proposal mode: `confirmation`.");
+    expect(created.body.description).toContain("请在此引导任务中使用 `first-task` 技能（/first-task）。回复前请阅读并遵循其 SKILL.md，包括此任务后续被唤醒时。");
+    expect(created.body.description).toContain("单任务提案模式：`confirmation`。");
     expect(created.body.description).not.toContain("Take the path the user picked.");
     expect(created.body.description).not.toContain("client supplied description");
   });
@@ -316,8 +314,8 @@ describeEmbeddedPostgres("issue create onboarding first-task routes", () => {
       .send({ title: "Get started", onboardingFirstTask: true })
       .expect(201);
 
-    expect(created.body.description).toContain("Use the `first-task` skill (/first-task)");
-    expect(created.body.description).toContain("Single-task proposal mode: `plan`.");
+    expect(created.body.description).toContain("请在此引导任务中使用 `first-task` 技能（/first-task）。回复前请阅读并遵循其 SKILL.md，包括此任务后续被唤醒时。");
+    expect(created.body.description).toContain("单任务提案模式：`plan`。");
     expect(created.body.description).not.toContain("request_checkbox_confirmation");
 
     await db.delete(instanceSettings);

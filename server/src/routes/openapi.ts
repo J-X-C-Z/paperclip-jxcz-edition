@@ -314,6 +314,17 @@ import {
   resolveChatPublicationSchema,
   replaceChatEndpointResourcesSchema,
   updateChatEndpointSchema,
+  bridgeQuerySchema,
+  bridgeUsageQuerySchema,
+  createBridgeBindingRevisionSchema,
+  createBridgeBindingSchema,
+  createBriefSchema,
+  generateBriefSchema,
+  updateBriefSettingsSchema,
+  upsertProjectAgentMembershipSchema,
+  saveModelSwitchProfileSchema,
+  updateAgentTemplateSkillsSchema,
+  updateAgentTemplateDefaultsSchema,
 } from "@paperclipai/shared";
 import { aggregatorAppsSyncSchema, aggregatorAppsRefreshSchema, arcadeDiscoverySetupSchema } from "@paperclipai/shared/aggregator-apps";
 import { composioAppsSyncSchema, composioAppsRefreshSchema, composioAppSetupSchema, composioAppAccountSchema } from "@paperclipai/shared/composio-app-setup";
@@ -1272,6 +1283,7 @@ function registerCurrentRoute(input: {
 
 type OpenApiAuthLevel =
   | "public"
+  | "agent"
   | "agent_run"
   | "agent_heartbeat"
   | "runtime_tools"
@@ -1601,6 +1613,18 @@ const BOARD_ONLY_OPERATIONS = new Set([
   "POST /api/chat-endpoints/{endpointId}/conversations/{conversationId}/publications",
   "GET /api/chat-endpoints/{endpointId}/conversations/{conversationId}/publications/{publicationId}/status",
   "GET /api/issues/{issueId}/chat-binding",
+  "POST /api/companies/{companyId}/bridge/bindings",
+  "POST /api/companies/{companyId}/bridge/bindings/{bindingId}/revisions",
+  "POST /api/companies/{companyId}/bridge/bindings/{bindingId}/snapshots",
+  "PATCH /api/companies/{companyId}/briefs/settings",
+  "POST /api/companies/{companyId}/briefs/generate",
+  "GET /api/companies/{companyId}/model-switch/profiles",
+  "POST /api/companies/{companyId}/model-switch/profiles",
+  "DELETE /api/companies/{companyId}/model-switch/profiles/{profileId}",
+  "PUT /api/projects/{id}/agent-memberships",
+  "DELETE /api/projects/{id}/agent-memberships/{agentId}",
+  "PUT /api/companies/{companyId}/agent-templates/{templateId}/skills",
+  "PUT /api/companies/{companyId}/agent-templates/{templateId}",
 ]);
 
 const INSTANCE_ADMIN_OPERATIONS = new Set([
@@ -1708,6 +1732,7 @@ function resolveOperationAuthLevel(
   if (path === "/api/mcp/setup" || path === "/api/mcp/device/consent" || path.startsWith("/api/mcp/requests/") || path.startsWith("/api/mcp/connections")) return "board";
   if (/^\/api\/companies\/\{companyId\}\/agents\/\{agentId\}\/dot-binding(?:\/event-test)?$/.test(path)) return "board";
   if (PUBLIC_OPERATIONS.has(key)) return "public";
+  if (key === "POST /api/companies/{companyId}/briefs") return "agent";
   if (key === "POST /api/companies/{companyId}/agent-commentary") return "agent_heartbeat";
   if (key === "POST /api/mcp/project-tools" || key === "POST /api/companies/{companyId}/slack/tasks/{issueId}/tools") return "agent_run";
   if (RUNTIME_TOOLS_OPERATIONS.has(key)) return "runtime_tools";
@@ -1778,6 +1803,8 @@ function applyDocumentFixups(document: any): any {
       const authLevel = resolveOperationAuthLevel(method, path);
       if (authLevel === "public") {
         operation.security = [];
+      } else if (authLevel === "agent") {
+        operation.security = [securityRequirement(AGENT_BEARER_AUTH_SCHEME)];
       } else if (authLevel === "agent_run") {
         operation.security = [securityRequirement(AGENT_RUN_AUTH_SCHEME)];
       } else if (authLevel === "agent_heartbeat") {
@@ -1797,13 +1824,15 @@ function applyDocumentFixups(document: any): any {
             ? { actor: "board" }
             : authLevel === "agent_run"
               ? { actor: "agent", heartbeatBound: true, taskBound: true }
-            : authLevel === "agent_heartbeat"
-              ? { actor: "agent", heartbeatBound: true }
-            : authLevel === "runtime_tools"
-              ? { actor: "runtime_tools", heartbeatBound: true }
-              : authLevel === "authenticated"
-                ? { actor: "board_or_agent" }
-                : { actor: "public" };
+              : authLevel === "agent"
+                ? { actor: "agent" }
+                : authLevel === "agent_heartbeat"
+                  ? { actor: "agent", heartbeatBound: true }
+                  : authLevel === "runtime_tools"
+                    ? { actor: "runtime_tools", heartbeatBound: true }
+                    : authLevel === "authenticated"
+                      ? { actor: "board_or_agent" }
+                      : { actor: "public" };
 
       const key = operationKey(method, path);
       if (authLevel !== "public") {
@@ -11987,6 +12016,60 @@ for (const [method, path, body] of experimentalApiPaths) {
     },
   });
 }
+
+const contractRecord = z.record(z.string(), z.unknown());
+const costRangeQuery = z.object({
+  period: z.enum(["all", "month"]).optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  projectId: z.string().optional(),
+});
+
+const bridgeRoutes: Array<{ method: string; path: string; summary: string; query?: z.ZodTypeAny; body?: z.ZodTypeAny; status?: number }> = [
+  { method: "get", path: "/api/companies/{companyId}/bridge/bindings", summary: "List bridge bindings", query: bridgeQuerySchema },
+  { method: "post", path: "/api/companies/{companyId}/bridge/bindings", summary: "Create a bridge binding", body: createBridgeBindingSchema, status: 201 },
+  { method: "post", path: "/api/companies/{companyId}/bridge/bindings/{bindingId}/revisions", summary: "Create a bridge binding revision", body: createBridgeBindingRevisionSchema, status: 201 },
+  { method: "get", path: "/api/companies/{companyId}/bridge/bindings/{bindingId}/revisions", summary: "List bridge binding revisions" },
+  { method: "get", path: "/api/companies/{companyId}/bridge/bindings/{bindingId}/revisions/{revision}", summary: "Read a bridge binding revision" },
+  { method: "get", path: "/api/companies/{companyId}/bridge/snapshots", summary: "List bridge snapshots", query: bridgeQuerySchema },
+  { method: "post", path: "/api/companies/{companyId}/bridge/bindings/{bindingId}/snapshots", summary: "Publish a bridge snapshot", body: z.object({ revision: z.number().int().positive(), key: z.string().min(1).max(128), payload: z.record(z.string(), z.unknown()), tombstone: z.boolean().optional() }).strict(), status: 201 },
+  { method: "get", path: "/api/companies/{companyId}/bridge/events", summary: "List bridge events", query: bridgeQuerySchema },
+  { method: "get", path: "/api/companies/{companyId}/bridge/events/{eventId}/receipts", summary: "List bridge event receipts" },
+  { method: "get", path: "/api/companies/{companyId}/bridge/conversations", summary: "List bridge conversations", query: bridgeQuerySchema },
+  { method: "get", path: "/api/companies/{companyId}/bridge/conversations/{conversationId}", summary: "Read a bridge conversation" },
+  { method: "get", path: "/api/companies/{companyId}/bridge/usage", summary: "Read bridge usage", query: bridgeUsageQuerySchema },
+];
+for (const route of bridgeRoutes) registerCurrentRoute({
+  ...route,
+  tags: ["bridge"],
+  responses: {
+    [route.status ?? 200]: r.ok(contractRecord),
+    400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound,
+  },
+});
+
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/briefs", tags: ["briefs"], summary: "List company briefs", query: z.object({ projectId: z.string().optional() }), responses: { 200: r.ok(z.array(contractRecord)), 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/briefs/settings", tags: ["briefs"], summary: "Read brief generation settings", responses: { 200: r.ok(contractRecord), 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "patch", path: "/api/companies/{companyId}/briefs/settings", tags: ["briefs"], summary: "Update brief generation settings", body: updateBriefSettingsSchema, responses: { 200: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "post", path: "/api/companies/{companyId}/briefs", tags: ["briefs"], summary: "Publish a brief as an agent", body: createBriefSchema, responses: { 201: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 422: r.unprocessable } });
+registerCurrentRoute({ method: "post", path: "/api/companies/{companyId}/briefs/generate", tags: ["briefs"], summary: "Queue brief generation", body: generateBriefSchema, responses: { 202: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/model-switch/profiles", tags: ["model-switch"], summary: "List model switch profiles", responses: { 200: r.ok(contractRecord), 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "post", path: "/api/companies/{companyId}/model-switch/profiles", tags: ["model-switch"], summary: "Save a model switch profile", body: saveModelSwitchProfileSchema, responses: { 201: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 422: r.unprocessable } });
+registerCurrentRoute({ method: "delete", path: "/api/companies/{companyId}/model-switch/profiles/{profileId}", tags: ["model-switch"], summary: "Delete a model switch profile", responses: { 204: { description: "Profile deleted" }, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+
+registerCurrentRoute({ method: "get", path: "/api/projects/{id}/agent-memberships", tags: ["projects"], summary: "List project agent memberships", responses: { 200: r.ok(z.array(contractRecord)), 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+registerCurrentRoute({ method: "put", path: "/api/projects/{id}/agent-memberships", tags: ["projects"], summary: "Create or update a project agent membership", body: upsertProjectAgentMembershipSchema, responses: { 200: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound, 422: r.unprocessable } });
+registerCurrentRoute({ method: "delete", path: "/api/projects/{id}/agent-memberships/{agentId}", tags: ["projects"], summary: "Remove a project agent membership", responses: { 200: r.ok(contractRecord), 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/agent-templates", tags: ["agents"], summary: "List company agent templates", responses: { 200: r.ok(z.array(contractRecord)), 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "put", path: "/api/companies/{companyId}/agent-templates/{templateId}/skills", tags: ["agents"], summary: "Update agent template skills", body: updateAgentTemplateSkillsSchema, responses: { 200: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+registerCurrentRoute({ method: "put", path: "/api/companies/{companyId}/agent-templates/{templateId}", tags: ["agents"], summary: "Update agent template defaults", body: updateAgentTemplateDefaultsSchema, responses: { 200: r.ok(contractRecord), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden, 404: r.notFound } });
+
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/costs/exchange-rate", tags: ["costs"], summary: "Read the current cost exchange rate", responses: { 200: r.ok(contractRecord), 401: r.unauthorized, 403: r.forbidden } });
+for (const path of ["by-team", "by-department"] as const) registerCurrentRoute({ method: "get", path: `/api/companies/{companyId}/costs/${path}`, tags: ["costs"], summary: `List costs ${path.replace("by-", "by ")}`, query: costRangeQuery, responses: { 200: r.ok(z.array(contractRecord)), 400: r.badRequest, 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/heartbeat-runs/stats", tags: ["heartbeat-runs"], summary: "Read heartbeat run statistics", query: z.object({ agentId: z.string().optional() }), responses: { 200: r.ok(z.array(z.object({ date: z.string(), status: z.string(), count: z.number().int() }))), 401: r.unauthorized, 403: r.forbidden } });
+registerCurrentRoute({ method: "get", path: "/api/companies/{companyId}/heartbeat-runs/latest-failed", tags: ["heartbeat-runs"], summary: "List recently failed heartbeat runs", responses: { 200: r.ok(z.array(contractRecord)), 401: r.unauthorized, 403: r.forbidden } });
 
 // ─── Spec builder ─────────────────────────────────────────────────────────────
 

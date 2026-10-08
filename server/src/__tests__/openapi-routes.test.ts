@@ -30,6 +30,8 @@ const apiPrefixes: Record<string, string> = {
   "auth.ts": "/api/auth",
   "board-chat.ts": "/api",
   "browser-use.ts": "/api",
+  "bridge.ts": "/api",
+  "briefs.ts": "/api",
   "built-in-agents.ts": "/api",
   "chat-channels.ts": "/api",
   "slack-tools.ts": "/api",
@@ -60,6 +62,7 @@ const apiPrefixes: Record<string, string> = {
   "issue-tree-control.ts": "/api",
   "llms.ts": "/api",
   "managed-agent-profiles.ts": "/api",
+  "model-switch.ts": "/api",
   "onboarding-seed.ts": "/api",
   "openapi.ts": "/api",
   "plugin-ui-static.ts": "/api",
@@ -206,6 +209,16 @@ function loadActualRoutes() {
     for (const match of source.matchAll(ROUTE_LITERAL_PATTERN)) {
       const method = match[1].toUpperCase();
       const routePath = match[2];
+      if (file === "costs.ts" && routePath.includes("${path}")) {
+        const dynamicPathList = /for\s*\(const\s+\[path,\s*aggregate\]\s+of\s+\[([\s\S]*?)\]\s+as const\)/.exec(source)?.[1];
+        if (!dynamicPathList) throw new Error("Cost aggregate route list is missing");
+        const segments = [...dynamicPathList.matchAll(/\["([^"]+)",\s*costs\.[A-Za-z_$][\w$]*\]/g)].map((entry) => entry[1]!);
+        if (segments.length === 0) throw new Error("Cost aggregate route list is empty");
+        for (const segment of segments) {
+          routes.add(`${method} ${normalizeExpressPath(resolveMountedPath(file, prefix, routePath.replace("${path}", segment)))}`);
+        }
+        continue;
+      }
       const operation = `${method} ${normalizeExpressPath(resolveMountedPath(file, prefix, routePath))}`;
       if (explicitOpenApiOperationCoverageExclusions.has(operation)) {
         excludedRoutes.add(operation);
@@ -838,6 +851,47 @@ describe("openapi routes", () => {
       extraInSpec: [],
       excludedRoutes: [...explicitOpenApiOperationCoverageExclusions].sort(),
     });
+  });
+
+  it("documents the newly covered bridge, briefs, model, membership, and telemetry contracts", () => {
+    const { spec } = loadSpecRoutes();
+    const boardSecurity = [{ BoardSessionAuth: [] }, { BoardApiKeyAuth: [] }];
+    const boardOnly = [
+      spec.paths["/api/companies/{companyId}/bridge/bindings"].post,
+      spec.paths["/api/companies/{companyId}/bridge/bindings/{bindingId}/revisions"].post,
+      spec.paths["/api/companies/{companyId}/bridge/bindings/{bindingId}/snapshots"].post,
+      spec.paths["/api/companies/{companyId}/briefs/settings"].patch,
+      spec.paths["/api/companies/{companyId}/briefs/generate"].post,
+      spec.paths["/api/companies/{companyId}/model-switch/profiles"].get,
+      spec.paths["/api/projects/{id}/agent-memberships"].put,
+      spec.paths["/api/companies/{companyId}/agent-templates/{templateId}/skills"].put,
+    ];
+    for (const operation of boardOnly) {
+      expect(operation.security).toEqual(boardSecurity);
+      expect(operation["x-paperclip-authorization"]).toEqual({ actor: "board" });
+      expect(operation.responses["403"]).toBeDefined();
+    }
+
+    const publishBrief = spec.paths["/api/companies/{companyId}/briefs"].post;
+    expect(publishBrief.security).toEqual([{ AgentBearerAuth: [] }]);
+    expect(publishBrief["x-paperclip-authorization"]).toEqual({ actor: "agent" });
+    expect(publishBrief.requestBody.content["application/json"].schema.required).toEqual(
+      expect.arrayContaining(["title", "body"]),
+    );
+    expect(publishBrief.responses["201"]).toBeDefined();
+
+    const projectMembership = spec.paths["/api/projects/{id}/agent-memberships"].put;
+    expect(projectMembership.requestBody.content["application/json"].schema.required).toContain("agentId");
+    expect(spec.paths["/api/companies/{companyId}/bridge/bindings"].get.parameters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "limit", in: "query" })]),
+    );
+    expect(spec.paths["/api/companies/{companyId}/costs/by-team"].get.responses["403"]).toBeDefined();
+    expect(spec.paths["/api/companies/{companyId}/costs/by-department"].get.responses["200"]).toBeDefined();
+    const heartbeatStats = spec.paths["/api/companies/{companyId}/heartbeat-runs/stats"].get;
+    expect(heartbeatStats.responses["403"]).toBeDefined();
+    expect(heartbeatStats.responses["200"].content["application/json"].schema.type).toBe("array");
+    expect(spec.paths["/api/companies/{companyId}/heartbeat-runs/latest-failed"].get.responses["200"]).toBeDefined();
+    expect(spec.paths["/api/companies/{companyId}/costs/${path}"]).toBeUndefined();
   });
 
   it("documents the authenticated personal primary-agent contract", () => {

@@ -307,12 +307,12 @@ describeEmbeddedPostgres("permissions upgrade visibility and route boundaries", 
 
     const openAssignment = await request(app)
       .post(`/api/companies/${company.id}/issues`)
-      .send({ title: "Assignable after upgrade", assigneeAgentId: openTargetAgent.id });
+      .send({ title: "Assignable after upgrade", assigneeAgentId: openTargetAgent.id, parentId: null });
     expect(openAssignment.status, JSON.stringify(openAssignment.body)).toBe(201);
 
     const deniedPrivateAssignment = await request(app)
       .post(`/api/companies/${company.id}/issues`)
-      .send({ title: "Private target needs scope", assigneeAgentId: privateTargetAgent.id });
+      .send({ title: "Private target needs scope", assigneeAgentId: privateTargetAgent.id, parentId: null });
     expect(deniedPrivateAssignment.status).toBe(403);
     expect(deniedPrivateAssignment.body.error).toContain("private");
 
@@ -334,7 +334,7 @@ describeEmbeddedPostgres("permissions upgrade visibility and route boundaries", 
 
     const allowedPrivateAssignment = await request(app)
       .post(`/api/companies/${company.id}/issues`)
-      .send({ title: "Private target has explicit scope", assigneeAgentId: privateTargetAgent.id });
+      .send({ title: "Private target has explicit scope", assigneeAgentId: privateTargetAgent.id, parentId: null });
     expect(allowedPrivateAssignment.status, JSON.stringify(allowedPrivateAssignment.body)).toBe(201);
 
     const otherPrivateTargetAgent = await seedAgent(db, company.id, {
@@ -342,7 +342,7 @@ describeEmbeddedPostgres("permissions upgrade visibility and route boundaries", 
     });
     const deniedOutsideScope = await request(app)
       .post(`/api/companies/${company.id}/issues`)
-      .send({ title: "Different private target stays denied", assigneeAgentId: otherPrivateTargetAgent.id });
+      .send({ title: "Different private target stays denied", assigneeAgentId: otherPrivateTargetAgent.id, parentId: null });
     expect(deniedOutsideScope.status).toBe(403);
     expect(deniedOutsideScope.body.error).toContain("private");
   });

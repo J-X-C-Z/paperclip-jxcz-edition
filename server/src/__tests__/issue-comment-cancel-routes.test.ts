@@ -272,6 +272,9 @@ describe("issue comment cancel routes", () => {
       companyId: "company-1",
       agentId: "22222222-2222-4222-8222-222222222222",
       status: "running",
+      contextSnapshot: {
+        issueId: "11111111-1111-4111-8111-111111111111",
+      },
       startedAt: new Date("2026-04-11T15:00:00.000Z"),
       createdAt: new Date("2026-04-11T14:59:00.000Z"),
     });
