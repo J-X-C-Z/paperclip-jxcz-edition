@@ -6,4 +6,4 @@ project: product-design
 recurring: true
 ---
 
-Sweep open design work: triage critique requests, surface UX regressions, and confirm the next deliverable. Post a short status with the top three design priorities for the upcoming week.
+检查未完成的设计工作：整理评审请求、发现 UX 回归，并确认下一个交付成果。发布简短状态，列出下周最重要的三项设计优先事项。

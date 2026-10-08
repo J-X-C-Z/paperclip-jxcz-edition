@@ -1,6 +1,6 @@
 ---
 name: github-pr-workflow
-description: Prepare a GitHub pull request from a feature branch — branch hygiene, commit shape, title/body, verification notes, screenshots for UI work, and replies to review comments.
+description: 从功能分支准备 GitHub pull request，包括分支管理、提交组织、标题/正文、验证说明、UI 工作截图和审查意见回复。
 key: paperclipai/bundled/software-development/github-pr-workflow
 recommendedForRoles:
   - engineer
@@ -11,38 +11,38 @@ tags:
   - release
 ---
 
-# GitHub Pull Request Workflow
+# GitHub Pull Request 工作流
 
-Ship a PR a reviewer can land without follow-up clarifying questions. The aim is high signal in the title and body, evidence the change works, and clean replies when feedback comes in.
+提交一份审查者无需追问即可合并的 PR。标题和正文应重点突出，提供变更有效的证据，并清楚回应审查意见。
 
-## When to use
+## 适用场景
 
-- You are about to open a PR for a change that is functionally complete.
-- A reviewer left comments and you need to respond and push fixes.
-- A PR has been open more than a day and needs to be brought back into shape (stale conflicts, missing description, missing verification).
+- 即将为功能已完成的变更创建 PR。
+- 审查者留下了评论，你需要回复并推送修复。
+- PR 已打开超过一天，需要重新整理（过期冲突、缺少说明或验证信息）。
 
-## When not to use
+## 不适用场景
 
-- The change is not yet functionally complete. Finish the work first; draft PRs that bounce on review are noise.
-- The repository uses a non-GitHub forge. Adjust to that forge's conventions; do not force GitHub-isms.
+- 变更尚未完成。先完成工作；因未完成而在审查中被退回的草稿 PR 只会造成干扰。
+- 仓库使用的不是 GitHub。请遵循对应代码托管平台的规范，不要强行套用 GitHub 规则。
 
-## Branch hygiene before opening
+## 创建 PR 前整理分支
 
-- Rebase or merge from the target base so the diff is current.
-- Squash WIP commits into reviewable units. Prefer one commit per logical change; do not force one-commit-per-PR if the work is genuinely multi-step.
-- Confirm tests, typecheck, and lint pass locally. Note any deliberate skips in the PR body.
-- Remove debug prints, commented-out code, and `TODO` markers that are not tracked.
+- 从目标基线进行 rebase 或 merge，确保 diff 是最新的。
+- 将未完成的 WIP commits 合并为便于审查的单元。优先为每项逻辑变更创建一个 commit；如果工作确实分多步，不要强制要求一个 PR 只包含一个 commit。
+- 确认测试、类型检查和 lint 在本地通过。在 PR 正文中说明有意跳过的检查。
+- 移除调试输出、注释掉的代码和未跟踪的 `TODO` 标记。
 
-## PR title
+## PR 标题
 
-- Imperative mood, under 70 characters.
-- Lead with the user-visible change, not the file touched. `Allow CSV export from reports table` beats `Update reports.tsx`.
-- If the repo uses an issue prefix convention (`PAP-1234:`, `[security]`), follow it.
-- No trailing period.
+- 使用祈使句，少于 70 个字符。
+- 先说明用户可见的变更，而不是修改了哪个文件。`允许从报告表格导出 CSV` 优于 `更新 reports.tsx`。
+- 如果仓库使用 issue 前缀规范（`PAP-1234:`、`[security]`），应遵循该规范。
+- 末尾不加句号。
 
-## PR body
+## PR 正文
 
-Use this structure:
+使用以下结构：
 
 ```md
 ## Summary
@@ -61,33 +61,33 @@ Use this structure:
 - What breaks if this is reverted, and how to revert cleanly.
 ```
 
-Skip the `Risk and rollback` section only for clearly trivial PRs (typos, docs).
+只有对于明确简单的 PR（拼写错误、文档），才可省略 `Risk and rollback` 部分。
 
-## Verification evidence
+## 验证证据
 
-- Tests passing in CI is necessary, not sufficient. Reviewers also need to know the change behaves correctly end to end.
-- For UI work, include screenshots of the golden path and one edge case. Tag dark and light mode if the project supports both.
-- For migrations, include a dry-run plan and reversal steps.
-- For performance changes, include a before/after measurement, not adjectives.
+- CI 测试通过是必要条件，但还不够。审查者也需要了解变更是否端到端正常工作。
+- UI 工作应包含主流程和一个边缘情况的截图。如果项目支持深色和浅色模式，两种模式都应提供。
+- 数据迁移应包含试运行计划和回滚步骤。
+- 性能变更应提供前后测量数据，不要只用形容词描述。
 
-## Replying to review comments
+## 回复审查意见
 
-- Reply on every comment, even with just "fixed in <commit-sha>" — silent fixes leave the reviewer guessing.
-- Push fixes as new commits while review is active; do not amend during review unless the reviewer agrees.
-- If you disagree with feedback, say so with one sentence of rationale and let the reviewer decide. Don't escalate over comments.
-- Re-request review explicitly after pushing changes.
+- 回复每条评论，即使只回复“已在 <commit-sha> 中修复”也可以；默默修复会让审查者不知所措。
+- 审查进行期间，将修复作为新 commit 推送；除非审查者同意，否则不要 amend。
+- 如果不同意反馈，用一句话说明理由并让审查者决定。不要因为评论升级冲突。
+- 推送变更后，明确重新请求审查。
 
-## Merge checklist
+## 合并清单
 
-- All required checks green.
-- All review comments resolved.
-- PR title/body still accurate (update if scope changed mid-review).
-- Linked issue moves to `in_review` or `done` per project convention.
-- Delete the branch after merge unless it is a long-lived integration branch.
+- 所有必需检查均已通过。
+- 所有审查意见均已处理。
+- PR 标题/正文仍准确（审查期间范围改变时应更新）。
+- 根据项目规范，将关联 issue 移至 `in_review` 或 `done`。
+- 合并后删除分支，除非它是长期集成分支。
 
-## Anti-patterns
+## 反模式
 
-- PR description that says "see commits". Reviewers should not need to read the log.
-- Mixing refactor and behavior change in the same PR with no separation in the body.
-- "Address feedback" commits that bundle unrelated edits. One commit per round of feedback is fine; one commit for everything in flight is not.
-- Force-pushing during active review without telling the reviewer.
+- PR 描述只写“参见 commits”。审查者不应被迫阅读提交日志。
+- 在同一个 PR 中混合重构和行为变更，却不在正文中分别说明。
+- 用“处理反馈”这样的 commit 打包无关编辑。每轮反馈一个 commit 可以接受；将所有进行中的工作塞进一个 commit 则不可接受。
+- 审查期间强制推送，却不通知审查者。

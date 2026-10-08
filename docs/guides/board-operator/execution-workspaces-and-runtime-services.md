@@ -3,6 +3,44 @@ title: Execution Workspaces And Runtime Services
 summary: How project runtime configuration, execution workspaces, and issue runs fit together
 ---
 
+## 简体中文
+
+Paperclip 使用工作区命令模型管理项目运行环境：`Services` 是受监督的长期运行命令，`Jobs` 是运行一次后退出的命令。高级配置仍可直接写 runtime JSON，但它不再是主要的操作模型。
+
+### 项目配置与命令控制
+
+项目 workspace 可定义该 checkout 可用的 services 和 jobs；这是 execution workspace 可继承的默认配置。仅定义配置不会启动命令。项目和 execution workspace 都可在各自 UI 中手动启动/停止 service、按需运行 job。Heartbeat 开始 issue run 时，会自动启动 desired state 解析为 `running` 的 services（默认状态）；匹配已有 reuse key 的 service 会复用而不重启。将 desired state 设为 `stopped` 或 `manual` 可让 service 只由 UI 控制。服务器启动时不会自动重启 workspace services。
+
+### Execution Workspace 与任务
+
+Execution workspace 隔离项目主 workspace 的代码和运行状态，拥有自己的 checkout、branch 和 runtime 实例；默认可继承项目 runtime 配置，也可单独覆盖。继承配置定义有哪些命令及其启动方式，但运行中的进程始终属于具体 execution workspace。Issue 可新建隔离 workspace，也可选择复用；多个 issue 也可共享一个 workspace，以共用 branch 和运行中的 services。任务 run 会启动 desired state 为 `running` 的 services；run 结束后不主动停止，除非 service 是 ephemeral 且没有其他 run 持有 lease。Execution workspace 会持续保留，直至人工关闭；关闭时会停止 services 并在允许时清理 workspace 文件。共享项目主 checkout 的清理会比隔离 workspace 更谨慎。
+
+Heartbeat 的 workspace 解析过程：解析基础 workspace；创建或复用 worktree；保存路径、ref 和配置；把代码 workspace 交给 agent；然后调用 `ensureRuntimeServicesForRun` 启动服务。如果配置了尚未运行的 lazy runtime provision 命令，会先运行一次。
+
+### 浏览器可访问的 OAuth 回调
+
+由 Paperclip 管理且自身运行 Paperclip 的 service，需要一个 canonical origin 用于 Better Auth 和工具 OAuth 回调。优先顺序为 service/runtime 配置（例如 `PAPERCLIP_PUBLIC_URL` 或 `BETTER_AUTH_URL`）、实例 auth 公网 base URL、最后才是 `expose.urlTemplate` 提供的低优先级 fallback。它必须是操作员浏览器实际使用的地址；非 loopback callback 必须使用 HTTPS。本机浏览器验收可用 `http://127.0.0.1:45439` 等 loopback HTTP。workspace 数据生成的 hostname 必须落在模板指定的稳定域名后缀中。Bind address、仅内网单标签名、保留/无法解析的域名以及非 loopback HTTP 都会使 service 启动失败并给出配置提示。
+
+若 proxy 或 tailnet 对外提供访问，请将 readiness 检查和浏览器 exposure 分开配置。每个隔离 worktree 使用不同可访问 hostname/origin，不能指向父实例 origin。启动后在验收所用浏览器中打开 service URL，并检查 `GET /api/tools/oauth/client-metadata` 的 `redirect_uris` 使用该 origin 和 `/api/tools/oauth/callback`。
+
+### Lazy runtime provisioning
+
+数据库 seed、缓存预热等重型一次性准备可延迟到第一次启动 runtime service。可在 Project properties → execution workspace 配置 runtime provision command，或在 workspace 的 Configuration 覆盖。设置后 workspace 准备阶段保持轻量，命令会在该 workspace 第一次启动 service 前准确运行一次；留空则沿用 workspace provisioning 阶段立即准备的旧流程。结果显示在 workspace 详情：Deferred、Provisioned at 时间或 Provisioning failed（附运行日志）。运行中 service 会先显示 Provisioning… 状态。
+
+### 私有仓库与仅仓库项目
+
+项目 workspace 可只设置 `Repo URL` 而无本地路径。服务端会按需 clone 到受管目录；隔离 `git_worktree` run 会在准备 worktree 前 `git fetch` 更新 base ref。以上操作发生在服务端，不运行于 agent 进程，因此不使用 agent 级凭证环境变量。私有 GitHub 仓库应在 Settings → Secrets 保存名为 `GITHUB_TOKEN`、`GH_TOKEN` 或 `PAPERCLIP_GITHUB_TOKEN` 的 company secret（按此顺序查找）。无匹配 secret 时，单租户自托管实例会回退至 server 环境变量，再尝试匿名访问。此凭证仅适用于 `https://github.com/...`；SSH、GitHub Enterprise 和其他 provider 仍使用服务端 git 凭证配置；URL 自带凭证不会被覆盖。Token 通过一次性 credential helper 传递，不会进入命令行、URL 或磁盘，每次读取都会记录 secret access event。
+
+该服务端 clone 凭证与 agent push 凭证分开。Agent 推送 branch 或 PR 时，仍需要在 agent/project 范围将 `GH_TOKEN` 或 `GITHUB_TOKEN` 绑定到 agent 进程。
+
+### 跨 run 持久化约定
+
+Run 之间只通过本地 execution workspace cwd 传递代码，不依赖 Git remote。准备阶段通过 SSH 将本地 worktree 打包到 run 的远端目录；适配器在结束时把远端新 commit restore 回本地 worktree。Runtime 不得执行 `git push`，也不得假设 remote 存在。Restore 失败会使整个 run 报错并记录 `workspace_finalize=failed`；依赖任务的唤醒会等待下一次成功 finalize。
+
+当前实现中，项目命令配置是 execution workspace UI 控件的 fallback；workspace override 单独保存。Heartbeat 自动启动 desired state 为 `running` 的服务，lazy provision 最多运行一次；服务器启动不恢复服务。
+
+---
+
 This guide documents the intended runtime model for projects, execution workspaces, and issue runs in Paperclip.
 
 Paperclip now presents this as a workspace-command model:

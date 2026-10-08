@@ -330,7 +330,7 @@ export function parseWorktreeMergeScopes(rawValue: string | undefined): Worktree
 
   if (parsed.length === 0) {
     throw new Error(
-      `Invalid scope "${rawValue}". Expected a comma-separated list of: ${WORKTREE_MERGE_SCOPES.join(", ")}.`,
+      `scope“${rawValue}”无效。请传入逗号分隔的以下值：${WORKTREE_MERGE_SCOPES.join(", ")}。`,
     );
   }
 

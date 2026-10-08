@@ -78,7 +78,7 @@ vi.mock("@/lib/router", () => ({
 }));
 
 vi.mock("../api/issues", () => ({
-  issuesApi: mockIssuesApi,
+  issuesApi: { ...mockIssuesApi, listCompact: mockIssuesApi.list },
 }));
 
 vi.mock("../api/agents", () => ({
@@ -224,6 +224,16 @@ describe("CommandPalette", () => {
     container.remove();
   });
 
+  it("defers task data until opening and limits the initial suggestions", async () => {
+    const { root } = renderWithQueryClient(<CommandPalette />, container);
+    expect(mockIssuesApi.list).not.toHaveBeenCalled();
+    act(() => { document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true })); });
+    await waitForAssertion(() => {
+      expect(mockIssuesApi.list).toHaveBeenCalledWith("company-1", { limit: 10, sortField: "updated", sortDir: "desc" });
+    });
+    act(() => { root.unmount(); });
+  });
+
   it("includes routine execution issues in search queries", async () => {
     const { root } = renderWithQueryClient(<CommandPalette />, container);
 
@@ -349,7 +359,7 @@ describe("CommandPalette", () => {
       // Seed the caches so the already-loaded data is available synchronously —
       // this harness's flush model doesn't reliably propagate fresh async fetches.
       queryClient.setQueryData(queryKeys.projects.list("company-1"), projects);
-      queryClient.setQueryData(queryKeys.issues.search("company-1", "mob", undefined, 10), [
+      queryClient.setQueryData([...queryKeys.issues.search("company-1", "mob", undefined, 10), "compact", "command-palette"], [
         { id: "i1", identifier: "ENG-9", title: "Fix login" },
       ]);
     });

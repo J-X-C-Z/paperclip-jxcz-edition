@@ -37,6 +37,7 @@ const localIcons = {
   secrets: ShieldCheck,
   tools: Wrench,
   channels: MessageSquare,
+  "external-conversations": MessageSquare,
   permissions: ShieldCheck,
   "api-keys": KeyRound,
   revisions: History,

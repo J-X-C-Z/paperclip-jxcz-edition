@@ -314,6 +314,10 @@ export interface ToolGatewaySession {
   actorId?: string | null;
   /** Human whose personal connection grant applies to this execution. */
   responsibleUserId?: string | null;
+  /** Owner-consented reference, resolved by the server, never supplied by tool callers. */
+  sharedAuthorization?: { connectionId: string; grantId: string; targetCompanyId: string; profileScopeHash?: string } | null;
+  /** Validated consent scope captured for this request, never taken from live entries during dispatch. */
+  sharedProfileScope?: { allowConnection: boolean; catalogEntryIds: string[] };
   /** Captured by the controller for this request, never accepted from tool arguments. */
   identityContextId?: string | null;
   /** Set only after verifying the signed approved action. */
@@ -1031,6 +1035,8 @@ const VIRTUAL_TOOLS = [VIRTUAL_SEARCH_TOOLS, VIRTUAL_RUN_TOOL];
 export function createToolGatewayService(
   db: Db,
   options: {
+    /** Maintenance scans may use a separate pool to the same database. */
+    backgroundDb?: Db;
     pluginToolDispatcher?: PluginToolDispatcher;
     deploymentMode?: DeploymentMode;
     deploymentExposure?: DeploymentExposure;
@@ -2060,8 +2066,8 @@ export function createToolGatewayService(
     errorCode?: string | null;
     errorMessage?: string | null;
     resultSummary?: string | null;
-  }): Promise<void> {
-    const [linked] = await db
+  }, lifecycleDb: Db = db): Promise<void> {
+    const [linked] = await lifecycleDb
       .select({
         companyId: toolActionRequests.companyId,
         interactionId: toolActionRequests.interactionId,
@@ -2073,7 +2079,7 @@ export function createToolGatewayService(
     if (!linked?.interactionId) return;
 
     const interactionId = linked.interactionId;
-    const changed = await db.transaction(async (tx) => {
+    const changed = await lifecycleDb.transaction(async (tx) => {
       const [interaction] = await tx
         .select({
           status: issueThreadInteractions.status,
@@ -2142,7 +2148,7 @@ export function createToolGatewayService(
       return true;
     });
     if (!changed) return;
-    await logActivity(db, {
+    await logActivity(lifecycleDb, {
       companyId: linked.companyId,
       actorType: "system",
       actorId: "tool-gateway",
@@ -2651,6 +2657,13 @@ export function createToolGatewayService(
     return tool;
   }
 
+  async function sharedProfileAllowsTool(session: ToolGatewaySession, tool: ToolGatewayDescriptor) {
+    if (!session.sharedAuthorization) return true;
+    if (tool.connectionId !== session.sharedAuthorization.connectionId) return false;
+    const scope = session.sharedProfileScope;
+    return Boolean(scope && (scope.allowConnection || (tool.catalogEntryId && scope.catalogEntryIds.includes(tool.catalogEntryId))));
+  }
+
   async function findToolForSession(
     session: ToolGatewaySession,
     toolName: string,
@@ -2676,6 +2689,8 @@ export function createToolGatewayService(
       );
     }
     const guestBotConnection = await githubGuestBotConnectionForSession(db, session);
+    if (!(await sharedProfileAllowsTool(session, tool)))
+      throw new ToolGatewayHttpError(403, "Tool is outside the shared authorization profile", "shared_authorization_connection_denied");
     if (guestBotConnection && tool.connectionId && (tool.connectionId !== guestBotConnection || tool.providerType !== "paperclip_github_chat"))
       throw new ToolGatewayHttpError(403, "Sponsored GitHub runs can only use their bot's governed connection; sponsorship does not grant personal credentials", "guest_connection_denied");
     if (session.identityContextId && session.agentId && tool.connectionId) {
@@ -2930,6 +2945,10 @@ export function createToolGatewayService(
       ) {
         visibleTools.push(...VIRTUAL_TOOLS);
       }
+    }
+    if (session.sharedAuthorization) {
+      const scoped = await Promise.all(visibleTools.map(async tool => ({tool, allowed: await sharedProfileAllowsTool(session, tool)})));
+      return scoped.filter(item => item.allowed).map(item => item.tool);
     }
     return visibleTools;
   }
@@ -4286,6 +4305,11 @@ export function createToolGatewayService(
     connection: typeof toolConnections.$inferSelect,
     allowInteraction = true,
   ): Promise<typeof connectionGrants.$inferSelect> {
+    if (session.sharedAuthorization) {
+      if (connection.id !== session.sharedAuthorization.connectionId)
+        throw new ToolGatewayHttpError(403, "This gateway delegates only its selected connection", "shared_authorization_connection_mismatch");
+      return resolveSharedAuthorization(session.companyId, session.sharedAuthorization);
+    }
     const [run] =
       session.runId && !session.identityContextId
         ? await db
@@ -5314,7 +5338,8 @@ export function createToolGatewayService(
       callerHeaders: input.callerHeaders,
     });
     await assertGatewayTokenAction(session, input.method);
-    const connections = await fullyAssignedMcpConnections(session);
+    const connections = (await fullyAssignedMcpConnections(session)).filter(connection =>
+      !session.sharedAuthorization || connection.id === session.sharedAuthorization.connectionId);
     if (input.method === "resources/list") {
       const resources = [] as Array<Record<string, unknown>>;
       for (const connection of connections) {
@@ -6490,6 +6515,85 @@ export function createToolGatewayService(
     };
   }
 
+  async function resolveSharedAuthorization(
+    companyId: string,
+    sharing: NonNullable<ToolGatewaySession["sharedAuthorization"]>,
+    consentingUserId?: string | null,
+  ) {
+    const [grant] = await db.select().from(connectionGrants).where(and(
+      eq(connectionGrants.id, sharing.grantId),
+      eq(connectionGrants.companyId, companyId),
+      eq(connectionGrants.connectionId, sharing.connectionId),
+      eq(connectionGrants.kind, "user"),
+      eq(connectionGrants.status, "active"),
+    )).limit(1);
+    if (!grant?.subjectUserId || grant.credentialSecretRefs.length === 0)
+      throw new ToolGatewayHttpError(403, "The shared personal authorization is unavailable", "shared_authorization_unavailable");
+    if (consentingUserId !== undefined && consentingUserId !== grant.subjectUserId)
+      throw new ToolGatewayHttpError(403, "Only the authorization owner can consent to sharing", "shared_authorization_owner_required");
+    const [connection] = await db.select({ id: toolConnections.id }).from(toolConnections).where(and(
+      eq(toolConnections.companyId, companyId), eq(toolConnections.id, sharing.connectionId),
+      eq(toolConnections.status, "active"), eq(toolConnections.enabled, true),
+    )).limit(1);
+    const [owner] = await db.select({ id: companyMemberships.id }).from(companyMemberships).where(and(
+      eq(companyMemberships.companyId, companyId), eq(companyMemberships.principalType, "user"),
+      eq(companyMemberships.principalId, grant.subjectUserId), eq(companyMemberships.status, "active"),
+      or(isNull(companyMemberships.membershipRole), ne(companyMemberships.membershipRole, "viewer")),
+    )).limit(1);
+    const [source] = await db.select({ id: companies.id }).from(companies).where(and(
+      eq(companies.id, companyId), eq(companies.status, "active"),
+    )).limit(1);
+    const [target] = await db.select({ id: companies.id }).from(companies).where(and(
+      eq(companies.id, sharing.targetCompanyId), eq(companies.status, "active"),
+    )).limit(1);
+    if (!connection || !owner || !source || !target || sharing.targetCompanyId === companyId)
+      throw new ToolGatewayHttpError(403, "The shared authorization connection, owner or target is unavailable", "shared_authorization_unavailable");
+    return grant;
+  }
+
+  async function sharedProfileScopeSnapshot(companyId: string, profileId: string) {
+    const entries = await db.select().from(toolProfileEntries).where(and(
+      eq(toolProfileEntries.companyId, companyId), eq(toolProfileEntries.profileId, profileId),
+    ));
+    const scope = entries.sort((a, b) => a.id.localeCompare(b.id)).map(({createdAt, updatedAt, ...entry}) => entry);
+    return {
+      hash: createHash("sha256").update(JSON.stringify(scope)).digest("hex"),
+      allowConnection: entries.some(entry => entry.effect === "include" && entry.selectorType === "connection"),
+      catalogEntryIds: entries.filter(entry => entry.effect === "include" && entry.selectorType === "catalog_entry").map(entry => entry.catalogEntryId!),
+    };
+  }
+
+  async function sharedProfileScopeHash(companyId: string, profileId: string) {
+    return (await sharedProfileScopeSnapshot(companyId, profileId)).hash;
+  }
+
+  async function assertSharedAuthorizationProfile(
+    companyId: string,
+    profileId: string,
+    connectionId: string,
+    profileMode: string,
+  ) {
+    const [profile] = await db.select().from(toolProfiles).where(and(
+      eq(toolProfiles.companyId, companyId), eq(toolProfiles.id, profileId),
+      eq(toolProfiles.status, "active"),
+    )).limit(1);
+    const entries = await db.select().from(toolProfileEntries).where(and(
+      eq(toolProfileEntries.companyId, companyId), eq(toolProfileEntries.profileId, profileId),
+      eq(toolProfileEntries.effect, "include"),
+    ));
+    if (!profile || profile.defaultAction !== "deny" || profileMode !== "gateway_only" || entries.length === 0
+      || entries.some((entry) => entry.connectionId !== connectionId
+        || !["catalog_entry", "connection"].includes(entry.selectorType)))
+      throw new ToolGatewayHttpError(403, "Shared gateways need a profile limited to the selected connection", "shared_authorization_profile_invalid");
+    for (const entry of entries.filter(entry => entry.selectorType === "catalog_entry")) {
+      const [catalogEntry] = await db.select({id: toolCatalogEntries.id}).from(toolCatalogEntries).where(and(
+        eq(toolCatalogEntries.companyId, companyId), eq(toolCatalogEntries.id, entry.catalogEntryId!),
+        eq(toolCatalogEntries.connectionId, connectionId),
+      )).limit(1);
+      if (!catalogEntry) throw new ToolGatewayHttpError(403, "Shared profile catalog entry does not belong to its connection", "shared_authorization_profile_invalid");
+    }
+  }
+
   async function assertGatewayContext(input: {
     companyId: string;
     profileId?: string | null;
@@ -6878,6 +6982,24 @@ export function createToolGatewayService(
         clientMetadata,
       });
     }
+    const sharing = row.gateway.authConfig?.sharedAuthorization;
+    let sharedProfileScope: ToolGatewaySession["sharedProfileScope"];
+    if (sharing && row.token.subjectType !== "gateway_client")
+      throw new ToolGatewayHttpError(403, "Shared authorization requires a dedicated gateway client", "shared_authorization_token_invalid");
+    if (sharing) await resolveSharedAuthorization(row.gateway.companyId, sharing);
+    if (sharing) await assertSharedAuthorizationProfile(row.gateway.companyId, row.gateway.profileId, sharing.connectionId, row.gateway.defaultProfileMode);
+    if (sharing) {
+      const scopeSnapshot = await sharedProfileScopeSnapshot(row.gateway.companyId, row.gateway.profileId);
+      if (!sharing.profileScopeHash || sharing.profileScopeHash !== scopeSnapshot.hash)
+        throw new ToolGatewayHttpError(403, "Shared profile scope changed and needs renewed owner consent", "shared_authorization_profile_invalid");
+      sharedProfileScope = { allowConnection: scopeSnapshot.allowConnection, catalogEntryIds: scopeSnapshot.catalogEntryIds };
+      const bindings = await db.select().from(toolProfileBindings).where(and(
+        eq(toolProfileBindings.companyId, row.gateway.companyId), eq(toolProfileBindings.targetType, "gateway"),
+        eq(toolProfileBindings.targetId, row.gateway.id),
+      ));
+      if (bindings.some(binding => binding.profileId !== row.gateway.profileId))
+        throw new ToolGatewayHttpError(403, "Shared gateway has additional profile bindings", "shared_authorization_profile_invalid");
+    }
     let agentId = row.gateway.agentId;
     let runId: string | null = null;
     let responsibleUserId: string | null = null;
@@ -6975,6 +7097,8 @@ export function createToolGatewayService(
       gatewayTokenAllowedActions: normalizeGatewayTokenActions(
         row.token.allowedActions,
       ),
+      sharedAuthorization: sharing,
+      sharedProfileScope,
       actorType: runId ? "agent" : "system",
       actorId: runId ? agentId : row.token.id,
       responsibleUserId,
@@ -8363,6 +8487,11 @@ export function createToolGatewayService(
       body: CreateToolMcpGateway;
       actor?: { agentId?: string | null; userId?: string | null };
     }): Promise<ToolMcpGatewayWithTokens> {
+      if (input.body.authConfig?.sharedAuthorization) {
+        await resolveSharedAuthorization(input.companyId, input.body.authConfig.sharedAuthorization, input.actor?.userId ?? null);
+        await assertSharedAuthorizationProfile(input.companyId, input.body.profileId, input.body.authConfig.sharedAuthorization.connectionId, input.body.defaultProfileMode ?? "gateway_only");
+        input.body.authConfig.sharedAuthorization.profileScopeHash = await sharedProfileScopeHash(input.companyId, input.body.profileId);
+      }
       await assertGatewayContext({
         companyId: input.companyId,
         profileId: input.body.profileId,
@@ -8469,6 +8598,7 @@ export function createToolGatewayService(
       companyId: string;
       gatewayId: string;
       body: UpdateToolMcpGateway;
+      actor?: { agentId?: string | null; userId?: string | null };
     }): Promise<ToolMcpGatewayWithTokens> {
       const [existing] = await db
         .select()
@@ -8486,6 +8616,19 @@ export function createToolGatewayService(
           "MCP gateway not found",
           "gateway_not_found",
         );
+      if (input.body.authConfig?.sharedAuthorization)
+        await resolveSharedAuthorization(input.companyId, input.body.authConfig.sharedAuthorization, input.actor?.userId ?? null);
+      const sharing = (input.body.authConfig ?? existing.authConfig)?.sharedAuthorization;
+      if (sharing && (input.body.profileId !== undefined || input.body.defaultProfileMode !== undefined))
+        await resolveSharedAuthorization(input.companyId, sharing, input.actor?.userId ?? null);
+      if (sharing) await assertSharedAuthorizationProfile(input.companyId, input.body.profileId ?? existing.profileId,
+        sharing.connectionId, input.body.defaultProfileMode ?? existing.defaultProfileMode);
+      if (sharing && (input.body.authConfig !== undefined || input.body.profileId !== undefined || input.body.defaultProfileMode !== undefined)) {
+        input.body.authConfig = {
+          ...(input.body.authConfig ?? existing.authConfig),
+          sharedAuthorization: {...sharing, profileScopeHash: await sharedProfileScopeHash(input.companyId, input.body.profileId ?? existing.profileId)},
+        };
+      }
       await assertGatewayContext({
         companyId: input.companyId,
         profileId: input.body.profileId ?? existing.profileId,
@@ -8568,6 +8711,12 @@ export function createToolGatewayService(
           ),
         )
         .returning();
+      if (sharing && input.body.profileId && input.body.profileId !== existing.profileId) {
+        await db.delete(toolProfileBindings).where(and(
+          eq(toolProfileBindings.companyId, input.companyId), eq(toolProfileBindings.targetType, "gateway"),
+          eq(toolProfileBindings.targetId, input.gatewayId),
+        ));
+      }
       if (input.body.profileId && input.body.profileId !== existing.profileId) {
         await db
           .insert(toolProfileBindings)
@@ -9242,9 +9391,10 @@ export function createToolGatewayService(
     },
 
     async sweepActionReviews() {
+      const sweepDb = options.backgroundDb ?? db;
       // A process may stop between persisting a provider outcome and updating the
       // feed projection. Reconcile from authoritative rows before delivering it.
-      const unreflected = await db
+      const unreflected = await sweepDb
         .select({ request: toolActionRequests, invocation: toolInvocations })
         .from(toolActionRequests)
         .innerJoin(
@@ -9275,13 +9425,13 @@ export function createToolGatewayService(
           errorCode: invocation.errorCode,
           errorMessage: invocation.errorMessage,
           resultSummary: invocation.resultSummary?.summary,
-        });
+        }, sweepDb);
       const now = new Date();
       const staleAt = new Date(now.getTime() - 10 * 60_000);
       let cursor: string | undefined;
       let scanned = 0;
       for (;;) {
-        const rows = await db
+        const rows = await sweepDb
           .select()
           .from(toolActionRequests)
           .where(
@@ -9325,7 +9475,7 @@ export function createToolGatewayService(
             status === "failed"
               ? "Execution was interrupted; the external outcome is unknown. Inspect the provider before retrying."
               : "The approval request expired before a decision.";
-          const [changed] = await db
+          const [changed] = await sweepDb
             .update(toolActionRequests)
             .set({ status, resolvedAt: now, updatedAt: now })
             .where(
@@ -9337,7 +9487,7 @@ export function createToolGatewayService(
             )
             .returning();
           if (!changed) continue;
-          await db
+          await sweepDb
             .update(toolInvocations)
             .set({
               status: "failed",
@@ -9347,13 +9497,13 @@ export function createToolGatewayService(
               updatedAt: now,
             })
             .where(eq(toolInvocations.id, row.invocationId));
-          void emitConnectionInvoked(db, row.invocationId);
+          void emitConnectionInvoked(sweepDb, row.invocationId);
           await reflectToolActionInteractionLifecycle({
             actionRequestId: row.id,
             status,
             errorCode,
             errorMessage,
-          });
+          }, sweepDb);
         }
         scanned += rows.length;
         if (rows.length < 100) break;

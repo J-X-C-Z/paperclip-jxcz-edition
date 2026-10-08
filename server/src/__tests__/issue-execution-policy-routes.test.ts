@@ -203,6 +203,8 @@ describe("issue execution policy routes", () => {
     vi.doUnmock("../middleware/index.js");
     registerModuleMocks();
     vi.clearAllMocks();
+    mockHeartbeatService.getRun.mockReset().mockResolvedValue(null);
+    mockHeartbeatService.cancelRun.mockReset().mockResolvedValue(null);
     mockIssueService.assertCheckoutOwner.mockResolvedValue({ adoptedFromRunId: null });
     mockIssueService.getByIdForUpdate.mockImplementation(async () => mockIssueService.getById());
     mockIssueService.findMentionedAgents.mockResolvedValue([]);
@@ -215,6 +217,7 @@ describe("issue execution policy routes", () => {
     mockDbSelect.mockImplementation(() => ({ from: mockDbSelectFrom }));
     mockDbSelectFrom.mockImplementation(() => ({ where: mockDbSelectWhere }));
     mockDbSelectWhere.mockImplementation(() => ({
+      orderBy: async () => [],
       for: () => ({
         then: (onFulfilled: (rows: unknown[]) => unknown, onRejected?: (reason: unknown) => unknown) =>
           Promise.resolve([{
@@ -655,6 +658,116 @@ describe("issue execution policy routes", () => {
       }),
       expect.anything(),
     );
+  });
+
+  it("starts a fresh review and wakes the configured reviewer for a revised candidate", async () => {
+    const memberId = "33333333-3333-4333-8333-333333333333";
+    const reviewerId = "44444444-4444-4444-8444-444444444444";
+    const policy = normalizeIssueExecutionPolicy({ stages: [{
+      id: "11111111-1111-4111-8111-111111111111",
+      type: "review",
+      participants: [{ type: "agent", agentId: reviewerId }],
+    }] })!;
+    const issue = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      companyId: "company-1",
+      status: "in_progress",
+      assigneeAgentId: memberId,
+      assigneeUserId: null,
+      createdByUserId: "local-board",
+      identifier: "PAP-1005",
+      title: "Revised candidate",
+      executionPolicy: policy,
+      executionState: {
+        status: "completed", currentStageId: null, currentStageIndex: null,
+        currentStageType: null, currentParticipant: null,
+        returnAssignee: { type: "agent", agentId: memberId },
+        completedStageIds: [policy.stages[0].id],
+        lastDecisionId: "22222222-2222-4222-8222-222222222222",
+        lastDecisionOutcome: "approved",
+      },
+    };
+    mockIssueService.getById.mockResolvedValue(issue);
+    mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
+      ...issue, ...patch, updatedAt: new Date(),
+    }));
+    const reviewRequest = { instructions: "Review candidate 21804742; the previous approval covers ace0ea9 only." };
+    const res = await request(await createApp({
+      type: "agent", agentId: memberId, companyId: "company-1",
+      runId: "55555555-5555-4555-8555-555555555555",
+    })).patch(`/api/issues/${issue.id}`).send({ status: "in_review", reviewRequest });
+
+    expect(res.status).toBe(200);
+    expect(res.body.executionState).toMatchObject({
+      status: "pending", currentStageId: policy.stages[0].id,
+      currentParticipant: { type: "agent", agentId: reviewerId },
+      completedStageIds: [], lastDecisionId: null, lastDecisionOutcome: null,
+      reviewRequest,
+    });
+    expect(mockHeartbeatService.wakeup).toHaveBeenCalledWith(reviewerId, expect.objectContaining({
+      reason: "execution_review_requested",
+    }));
+  });
+
+  it.each([
+    ["same issue", "company-1", "issueId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", true],
+    ["task-only context", "company-1", "taskId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", false],
+    ["native-only context", "company-1", "nativeIssueId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", false],
+    ["different issue", "company-1", "issueId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", false],
+    ["different company", "company-2", "issueId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", false],
+  ])("scopes review handoff interruption to the %s", async (_label, companyId, contextKey, runIssueId, shouldInterrupt) => {
+    const issue = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      companyId: "company-1",
+      status: "in_progress",
+      assigneeAgentId: "33333333-3333-4333-8333-333333333333",
+      assigneeUserId: null,
+      executionRunId: "55555555-5555-4555-8555-555555555555",
+      createdByUserId: "local-board",
+      identifier: "PAP-1005",
+      title: "Review handoff",
+      executionPolicy: null,
+      executionState: null,
+    };
+    const run = {
+      id: issue.executionRunId,
+      companyId,
+      agentId: issue.assigneeAgentId,
+      status: "running",
+      nativeIssueId: contextKey === "nativeIssueId" ? runIssueId : null,
+      contextSnapshot: contextKey === "nativeIssueId" ? {} : { [contextKey]: runIssueId },
+    };
+    mockHeartbeatService.getRun.mockResolvedValueOnce(run as never);
+    mockHeartbeatService.cancelRun.mockResolvedValue({ ...run, status: "cancelled" } as never);
+    mockIssueService.getById.mockResolvedValue(issue);
+    mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
+      ...issue,
+      ...patch,
+      updatedAt: new Date(),
+    }));
+
+    const reviewerId = "44444444-4444-4444-8444-444444444444";
+    const res = await request(await createApp())
+      .patch(`/api/issues/${issue.id}`)
+      .send({
+        status: "in_review",
+        executionPolicy: {
+          stages: [{
+            id: "11111111-1111-4111-8111-111111111111",
+            type: "review",
+            participants: [{ type: "agent", agentId: reviewerId }],
+          }],
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(mockHeartbeatService.cancelRun).toHaveBeenCalledTimes(shouldInterrupt ? 1 : 0);
+    const reviewWake = (mockHeartbeatService.wakeup.mock.calls as unknown as [string, any][]).find(
+      ([agentId, wake]) => agentId === reviewerId && wake.reason === "execution_review_requested",
+    )?.[1];
+    expect(reviewWake).toBeDefined();
+    expect(reviewWake.payload.interruptedRunId).toBe(shouldInterrupt ? run.id : undefined);
+    expect(reviewWake.contextSnapshot.interruptedRunId).toBe(shouldInterrupt ? run.id : undefined);
   });
 
   it("allows an agent-authored in_review transition with a scheduled monitor", async () => {

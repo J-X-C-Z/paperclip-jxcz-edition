@@ -232,12 +232,13 @@ export const heartbeatsApi = {
     api.get<ActiveRunForIssue | null>(`/issues/${issueId}/active-run`),
   liveRunsForCompany: (
     companyId: string,
-    options?: number | { minCount?: number; limit?: number; distinctTasks?: boolean; projectId?: string | null },
+    options?: number | { minCount?: number; limit?: number; distinctTasks?: boolean; projectId?: string | null; all?: boolean },
   ) => {
     const searchParams = new URLSearchParams();
     if (typeof options === "number") {
       searchParams.set("minCount", String(options));
     } else if (options) {
+      if (options.all) searchParams.set("all", "true");
       if (options.projectId) searchParams.set("projectId", options.projectId);
       if (options.minCount)
         searchParams.set("minCount", String(options.minCount));

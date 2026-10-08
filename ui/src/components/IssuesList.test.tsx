@@ -13,6 +13,7 @@ import {
   issueAgeBucketsCrossed,
   issueAgeSeparatorLabel,
 } from "./IssuesList";
+import { IssuesList as LegacyIssuesList } from "./LegacyIssuesList";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { taskCollectionPreferencesStorageKey } from "../lib/task-collection-preferences";
 
@@ -1727,6 +1728,140 @@ describe("IssuesList", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  it("lets an empty filtered list request another server page", async () => {
+    const onLoadMoreIssues = vi.fn();
+    const { root } = renderWithQueryClient(
+      <IssuesList
+        issues={[createIssue({ executionWorkspaceId: "workspace-other" })]}
+        agents={[]}
+        projects={[]}
+        viewStateKey="paperclip:test-empty-filter-load-more"
+        initialWorkspaces={["workspace-alpha"]}
+        hasMoreIssues
+        onLoadMoreIssues={onLoadMoreIssues}
+        onUpdateIssue={() => undefined}
+      />,
+      container,
+    );
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("No tasks match the current filters or search.");
+    });
+    const loadMoreButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Load more");
+    expect(loadMoreButton).toBeDefined();
+    expect(container.querySelector('[data-testid="issues-load-more-sentinel"]')).toBeNull();
+
+    act(() => {
+      loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(onLoadMoreIssues).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+  });
+
+  it("lets a short non-empty filtered list request another server page", async () => {
+    const onLoadMoreIssues = vi.fn();
+    const { root } = renderWithQueryClient(
+      <IssuesList
+        issues={[createIssue({ executionWorkspaceId: "workspace-alpha" })]}
+        agents={[]}
+        projects={[]}
+        viewStateKey="paperclip:test-short-filter-load-more"
+        initialWorkspaces={["workspace-alpha"]}
+        hasMoreIssues
+        onLoadMoreIssues={onLoadMoreIssues}
+        onUpdateIssue={() => undefined}
+      />,
+      container,
+    );
+
+    await waitForAssertion(() => {
+      expect(container.querySelectorAll('[data-testid="issue-row"]')).toHaveLength(1);
+    });
+    const loadMoreButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Load more");
+    expect(loadMoreButton).toBeDefined();
+    act(() => { loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(onLoadMoreIssues).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+  });
+
+  it("disables empty-list load more while fetching and hides it when there is no next page", async () => {
+    const issue = createIssue({ executionWorkspaceId: "workspace-other" });
+    const props = {
+      issues: [issue],
+      agents: [],
+      projects: [],
+      initialWorkspaces: ["workspace-alpha"],
+      onUpdateIssue: () => undefined,
+    };
+    const onLoadMoreIssues = vi.fn();
+    const { root } = renderWithQueryClient(
+      <IssuesList
+        {...props}
+        viewStateKey="paperclip:test-empty-filter-loading"
+        hasMoreIssues
+        isLoadingMoreIssues
+        onLoadMoreIssues={onLoadMoreIssues}
+      />,
+      container,
+    );
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("No tasks match the current filters or search.");
+    });
+    const loadingButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Loading...");
+    expect(loadingButton?.disabled).toBe(true);
+    act(() => { loadingButton?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(onLoadMoreIssues).not.toHaveBeenCalled();
+
+    act(() => {
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>
+            <IssuesList {...props} viewStateKey="paperclip:test-empty-filter-no-more" />
+          </TooltipProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("No tasks match the current filters or search.");
+      expect(Array.from(container.querySelectorAll("button"))
+        .some((button) => button.textContent === "Load more" || button.textContent === "Loading...")).toBe(false);
+    });
+    act(() => root.unmount());
+  });
+
+  it("offers empty-list load more in the legacy task list", async () => {
+    const onLoadMoreIssues = vi.fn();
+    const { root } = renderWithQueryClient(
+      <LegacyIssuesList
+        issues={[createIssue({ executionWorkspaceId: "workspace-other" })]}
+        agents={[]}
+        projects={[]}
+        viewStateKey="paperclip:test-legacy-empty-filter-load-more"
+        initialWorkspaces={["workspace-alpha"]}
+        hasMoreIssues
+        onLoadMoreIssues={onLoadMoreIssues}
+        onUpdateIssue={() => undefined}
+      />,
+      container,
+    );
+
+    await waitForAssertion(() => {
+      expect(container.textContent).toContain("No tasks match the current filters or search.");
+    });
+    const loadMoreButton = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Load more");
+    expect(loadMoreButton).toBeDefined();
+    act(() => { loadMoreButton?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(onLoadMoreIssues).toHaveBeenCalledTimes(1);
+    act(() => root.unmount());
   });
 
   it("skips deferred row sizing for expanded parent rows with visible children", async () => {

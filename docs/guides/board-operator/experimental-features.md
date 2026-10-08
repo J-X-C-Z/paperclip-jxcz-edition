@@ -3,6 +3,27 @@ title: Experimental Features
 summary: What Paperclip experimental features mean for board operators
 ---
 
+## 简体中文
+
+实验性功能需主动启用，不提供兼容性保证，可能随时更改、损坏或移除。它们尚未纳入稳定的 operator 契约；UI、API、CLI、行为和存储配置都可能变化，也不保证兼容、回滚、迁移或长期支持。重要的稳定生产流程不应依赖实验功能。
+
+### 启用与注意事项
+
+在 **Instance Settings > Experimental** 启用或关闭功能；CLI 也可用：
+
+```sh
+pnpm paperclipai instance settings:experimental
+npx paperclipai instance settings:experimental:update --payload-json '{...}'
+```
+
+部分由托管方管理的控件可能隐藏，但其配置值会保留。
+
+**Chat connectors** 默认关闭。启用后可将专用 Slack、GitHub、Microsoft Teams、Telegram 或 Discord bot 连接到一个 Paperclip agent，并显示聊天设置、连接管理、agent channel 和外部任务控制。关闭该显示设置不会断开现有 bot 或停止消息；要停止连接，请先在聊天连接设置中暂停。
+
+实验功能适合评估新能力、测试非关键流程且能接受版本间变化的场景。启用前确认流程可承受变化、缩小试用范围，并留意发布说明和文档。
+
+---
+
 Experimental features are opt-in and are provided without compatibility guarantees. They may break, change, or be removed at any time. Use them at your own risk.
 
 ## What "experimental" means

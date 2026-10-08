@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation, Navigate } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PROJECT_COLORS, PROJECT_ICON_NAMES, isUuidLike, type BudgetPolicySummary } from "@paperclipai/shared";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PROJECT_COLORS, PROJECT_ICON_NAMES, isUuidLike, type BudgetPolicySummary, type Issue } from "@paperclipai/shared";
 import { budgetsApi } from "../api/budgets";
 import { executionWorkspacesApi } from "../api/execution-workspaces";
 import { instanceSettingsApi } from "../api/instanceSettings";
@@ -15,6 +15,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useToastActions } from "../context/ToastContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
+import { mergeMyIssuePages, nextMyIssuesOffset, MY_ISSUES_PAGE_SIZE } from "../lib/my-issues-query";
 import { ProjectProperties, type ProjectConfigFieldKey, type ProjectFieldSaveState } from "../components/ProjectProperties";
 import { InlineEditor } from "../components/InlineEditor";
 import { StatusBadge } from "../components/StatusBadge";
@@ -40,6 +41,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { ProjectOrganization } from "../components/ProjectOrganization";
+import { BriefWorkspace } from "../components/BriefWorkspace";
 import { ProjectTeam } from "../components/ProjectTeam";
 import {
   isStarred,
@@ -51,7 +53,7 @@ import { useUiTranslator } from "@/i18n";
 
 /* ── Top-level tab types ── */
 
-type ProjectBaseTab = "list" | "plugin-operations" | "workspaces" | "configuration" | "budget" | "team";
+type ProjectBaseTab = "brief" | "list" | "plugin-operations" | "workspaces" | "configuration" | "budget" | "team";
 type ProjectPluginTab = `plugin:${string}`;
 type ProjectTab = ProjectBaseTab | ProjectPluginTab;
 
@@ -70,6 +72,7 @@ function resolveProjectTab(pathname: string, projectId: string): ProjectTab | nu
   if (tab === "issues") return "list";
   if (tab === "plugin-operations") return "plugin-operations";
   if (tab === "workspaces") return "workspaces";
+  if (tab === "brief") return "brief";
   if (tab === "team") return "team";
   return null;
 }
@@ -190,6 +193,34 @@ function ProjectTilePicker({
 
 /* ── List (issues) tab content ── */
 
+function useProjectIssuePages(companyId: string, projectId: string, originKindPrefix?: string) {
+  const nextPageInFlight = useRef(false);
+  const query = useInfiniteQuery({
+    queryKey: [
+      ...(originKindPrefix
+        ? queryKeys.issues.listPluginOperationsByProject(companyId, projectId, originKindPrefix)
+        : queryKeys.issues.listByProject(companyId, projectId)),
+      "compact", "infinite", MY_ISSUES_PAGE_SIZE,
+    ],
+    queryFn: ({ pageParam, signal }) => issuesApi.listCompact(companyId, {
+      projectId, originKindPrefix, limit: MY_ISSUES_PAGE_SIZE, offset: pageParam,
+      sortField: "updated", sortDir: "desc",
+    }, { signal }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, offset) => nextMyIssuesOffset(lastPage.length, offset),
+    enabled: !!companyId && !!projectId,
+  });
+  const issues = useMemo(() => mergeMyIssuePages(query.data?.pages ?? []) as Issue[], [query.data]);
+  const loadMore = useCallback(() => {
+    if (!query.hasNextPage || query.isFetchingNextPage || nextPageInFlight.current) return;
+    nextPageInFlight.current = true;
+    void query.fetchNextPage({ cancelRefetch: false }).catch(() => undefined).finally(() => {
+      nextPageInFlight.current = false;
+    });
+  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+  return { ...query, issues, loadMore };
+}
+
 function ProjectIssuesList({ projectId, companyId }: { projectId: string; companyId: string }) {
   const queryClient = useQueryClient();
 
@@ -222,11 +253,7 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
     enabled: !!companyId,
   });
 
-  const { data: issues, isLoading, error } = useQuery({
-    queryKey: queryKeys.issues.listByProject(companyId, projectId),
-    queryFn: () => issuesApi.list(companyId, { projectId }),
-    enabled: !!companyId,
-  });
+  const { issues, isLoading, error, hasNextPage, isFetchingNextPage, loadMore } = useProjectIssuePages(companyId, projectId);
   const liveIssueIds = useMemo(() => collectLiveIssueIds(liveRuns, issues), [issues, liveRuns]);
 
   const updateIssue = useMutation({
@@ -242,6 +269,9 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
     <IssuesList
       issues={issues ?? []}
       isLoading={isLoading}
+      hasMoreIssues={hasNextPage === true}
+      isLoadingMoreIssues={isFetchingNextPage}
+      onLoadMoreIssues={loadMore}
       error={error as Error | null}
       agents={agents}
       projects={projects}
@@ -292,11 +322,7 @@ function ProjectPluginOperationsList({
     refetchInterval: sharedLiveRuns.refetchInterval,
   });
   usePublishSharedQueryData(sharedLiveRuns, liveRuns, liveRunsUpdatedAt);
-  const { data: issues, isLoading, error } = useQuery({
-    queryKey: queryKeys.issues.listPluginOperationsByProject(companyId, projectId, originKindPrefix),
-    queryFn: () => issuesApi.list(companyId, { projectId, originKindPrefix }),
-    enabled: !!companyId && !!projectId,
-  });
+  const { issues, isLoading, error, hasNextPage, isFetchingNextPage, loadMore } = useProjectIssuePages(companyId, projectId, originKindPrefix);
   const liveIssueIds = useMemo(() => collectLiveIssueIds(liveRuns, issues), [issues, liveRuns]);
 
   const updateIssue = useMutation({
@@ -313,6 +339,10 @@ function ProjectPluginOperationsList({
     <IssuesList
       issues={issues ?? []}
       isLoading={isLoading}
+      hasMoreIssues={hasNextPage === true}
+      isLoadingMoreIssues={isFetchingNextPage}
+      onLoadMoreIssues={loadMore}
+      searchFilters={{ originKindPrefix }}
       error={error as Error | null}
       agents={agents}
       projects={projects}
@@ -412,7 +442,7 @@ export function ProjectDetail() {
       ? queryKeys.issues.listByProject(resolvedCompanyId, workspaceTabProjectId)
       : ["issues", "__workspace-tab__", "disabled"],
     queryFn: () => issuesApi.list(resolvedCompanyId!, { projectId: workspaceTabProjectId! }),
-    enabled: Boolean(resolvedCompanyId && workspaceTabProjectId && isolatedWorkspacesEnabled),
+    enabled: Boolean(activeTab === "workspaces" && resolvedCompanyId && workspaceTabProjectId && isolatedWorkspacesEnabled),
   });
   const {
     data: workspaceTabExecutionWorkspaces = [],
@@ -423,7 +453,7 @@ export function ProjectDetail() {
       ? queryKeys.executionWorkspaces.list(resolvedCompanyId, { projectId: workspaceTabProjectId })
       : ["execution-workspaces", "__workspace-tab__", "disabled"],
     queryFn: () => executionWorkspacesApi.list(resolvedCompanyId!, { projectId: workspaceTabProjectId! }),
-    enabled: Boolean(resolvedCompanyId && workspaceTabProjectId && isolatedWorkspacesEnabled),
+    enabled: Boolean(activeTab === "workspaces" && resolvedCompanyId && workspaceTabProjectId && isolatedWorkspacesEnabled),
   });
   const workspaceSummaries = useMemo(() => {
     if (!project || !isolatedWorkspacesEnabled) return [];
@@ -433,7 +463,8 @@ export function ProjectDetail() {
       executionWorkspaces: workspaceTabExecutionWorkspaces,
     });
   }, [project, isolatedWorkspacesEnabled, workspaceTabIssues, workspaceTabExecutionWorkspaces]);
-  const showWorkspacesTab = isolatedWorkspacesEnabled && workspaceSummaries.length > 0;
+  // Keep the entry discoverable without fetching its expensive collection.
+  const showWorkspacesTab = isolatedWorkspacesEnabled;
   const workspaceTabDecisionLoaded =
     experimentalSettingsQuery.isFetched &&
     (!isolatedWorkspacesEnabled || (!isWorkspaceTabIssuesLoading && !isWorkspaceTabExecutionWorkspacesLoading));
@@ -518,6 +549,10 @@ export function ProjectDetail() {
     }
     if (activeTab === "budget") {
       navigate(`/projects/${canonicalProjectRef}/budget`, { replace: true });
+      return;
+    }
+    if (activeTab === "brief") {
+      navigate(`/projects/${canonicalProjectRef}/brief`, { replace: true });
       return;
     }
     if (activeTab === "plugin-operations") {
@@ -644,6 +679,10 @@ export function ProjectDetail() {
     },
   });
 
+  if (pluginTabFromSearch === "plugin:orialis-brief:project-brief-tab" && project) {
+    return <Navigate to={`/projects/${canonicalProjectRef}/brief`} replace />;
+  }
+
   if (pluginTabFromSearch && !activePluginTab && !error) {
     if (!pluginTabDecisionLoaded) {
       return <PageSkeleton variant="detail" />;
@@ -669,6 +708,9 @@ export function ProjectDetail() {
     }
     if (cachedTab === "configuration") {
       return <Navigate to={`/projects/${canonicalProjectRef}/configuration`} replace />;
+    }
+    if (cachedTab === "brief" || cachedTab === "plugin:orialis-brief:project-brief-tab") {
+      return <Navigate to={`/projects/${canonicalProjectRef}/brief`} replace />;
     }
     if (cachedTab === "budget") {
       return <Navigate to={`/projects/${canonicalProjectRef}/budget`} replace />;
@@ -710,7 +752,9 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(tab)}`);
       return;
     }
-    if (tab === "workspaces") {
+    if (tab === "brief") {
+      navigate(`/projects/${canonicalProjectRef}/brief`);
+    } else if (tab === "workspaces") {
       navigate(`/projects/${canonicalProjectRef}/workspaces`);
     } else if (tab === "budget") {
       navigate(`/projects/${canonicalProjectRef}/budget`);
@@ -849,6 +893,7 @@ export function ProjectDetail() {
         <PageTabBar
           items={[
             { value: "list", label: tr("Tasks") },
+            { value: "brief", label: "简报" },
 
             ...(project.managedByPlugin ? [{ value: "plugin-operations", label: tr("Plugin operations") }] : []),
             ...(showWorkspacesTab ? [{ value: "workspaces", label: tr("Workspaces") }] : []),
@@ -867,6 +912,10 @@ export function ProjectDetail() {
       </Tabs>
 
 
+
+      {activeTab === "brief" && project?.id && resolvedCompanyId && (
+        <BriefWorkspace key={`${resolvedCompanyId}:${project.id}`} companyId={resolvedCompanyId} projectId={project.id} />
+      )}
 
       {activeTab === "list" && project?.id && resolvedCompanyId && (
         <ProjectIssuesList projectId={project.id} companyId={resolvedCompanyId} />

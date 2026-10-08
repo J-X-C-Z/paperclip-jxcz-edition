@@ -7,10 +7,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "../context/ToastContext";
+import { uiText } from "@/i18n";
 import { Projects } from "./Projects";
 
 const mockProjectsApi = vi.hoisted(() => ({
   list: vi.fn(),
+  update: vi.fn(),
 }));
 
 const mockResourceMembershipsApi = vi.hoisted(() => ({
@@ -113,6 +115,7 @@ describe("Projects", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot> | null;
   let queryClient: QueryClient;
+  let projectRows: Project[];
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -121,7 +124,7 @@ describe("Projects", () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    mockProjectsApi.list.mockResolvedValue([
+    projectRows = [
       makeProject({
         id: "project-c",
         urlKey: "charlie",
@@ -141,9 +144,21 @@ describe("Projects", () => {
         description: "First project",
         updatedAt: new Date("2026-01-01T00:00:00Z"),
       }),
-    ]);
+      makeProject({
+        id: "project-archived",
+        urlKey: "archived",
+        name: "Archived project",
+        archivedAt: new Date("2026-02-01T00:00:00Z"),
+      }),
+    ];
+    mockProjectsApi.list.mockImplementation(async () => projectRows);
+    mockProjectsApi.update.mockImplementation(async (projectId: string, patch: { archivedAt: Date | string | null }) => {
+      projectRows = projectRows.map((project) => project.id === projectId ? { ...project, archivedAt: patch.archivedAt ? new Date(patch.archivedAt) : null } : project);
+      return projectRows.find((project) => project.id === projectId);
+    });
     mockResourceMembershipsApi.listMine.mockResolvedValue({
       projectMemberships: { "project-b": "left" },
+      starredProjectIds: ["project-c"],
       agentMemberships: {},
       updatedAt: null,
     });
@@ -186,7 +201,7 @@ describe("Projects", () => {
   }
 
   async function openSortMenu() {
-    const trigger = container.querySelector<HTMLButtonElement>('button[title="Sort"]');
+    const trigger = container.querySelector<HTMLButtonElement>(`button[title="${uiText("Sort")}"]`);
     expect(trigger).not.toBeNull();
 
     await act(async () => {
@@ -211,23 +226,23 @@ describe("Projects", () => {
     await renderProjects();
 
     const content = container.textContent ?? "";
-    expect(container.querySelector('button[title="Sort"]')?.textContent).toContain("Sort: Name");
-    expect(content.indexOf("My Projects")).toBeLessThan(content.indexOf("Alpha"));
-    expect(content.indexOf("Alpha")).toBeLessThan(content.indexOf("Charlie"));
-    expect(content.indexOf("Charlie")).toBeLessThan(content.indexOf("Other Projects"));
-    expect(content.indexOf("Other Projects")).toBeLessThan(content.indexOf("Bravo"));
-    expect(content).toContain("in progress");
+    expect(container.querySelector(`button[title="${uiText("Sort")}"]`)?.textContent).toContain(`${uiText("Sort:")} ${uiText("Name")}`);
+    expect(content.indexOf(uiText("My Projects"))).toBeLessThan(content.indexOf("Alpha"));
+    expect(content.indexOf("Charlie")).toBeLessThan(content.indexOf("Alpha"));
+    expect(content.indexOf("Alpha")).toBeLessThan(content.indexOf(uiText("Other Projects")));
+    expect(content.indexOf(uiText("Other Projects"))).toBeLessThan(content.indexOf("Bravo"));
+    expect(content).toContain(uiText("In Progress"));
   });
 
   it("sorts grouped projects by the selected field", async () => {
     await renderProjects();
     await openSortMenu();
-    await chooseSortField("Updated");
+    await chooseSortField(uiText("Updated"));
 
     const content = container.textContent ?? "";
-    expect(content.indexOf("My Projects")).toBeLessThan(content.indexOf("Charlie"));
+    expect(content.indexOf(uiText("My Projects"))).toBeLessThan(content.indexOf("Charlie"));
     expect(content.indexOf("Charlie")).toBeLessThan(content.indexOf("Alpha"));
-    expect(content.indexOf("Alpha")).toBeLessThan(content.indexOf("Other Projects"));
+    expect(content.indexOf("Alpha")).toBeLessThan(content.indexOf(uiText("Other Projects")));
   });
 
   it("reserves description line height for projects without descriptions", async () => {
@@ -240,5 +255,30 @@ describe("Projects", () => {
 
     expect(hiddenDescriptionLine).not.toBeNull();
     expect(hiddenDescriptionLine?.className).toContain("min-h-4");
+  });
+
+  it("archives from the project list and restores from the archived view", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await renderProjects();
+    expect(container.textContent).not.toContain("Archived project");
+
+    const archiveButton = container.querySelector<HTMLButtonElement>(`button[aria-label="${uiText("Archive")} Alpha"]`);
+    expect(archiveButton).not.toBeNull();
+    await act(async () => archiveButton?.click());
+    await flushReact();
+    expect(mockProjectsApi.update).toHaveBeenCalledWith("project-a", expect.objectContaining({ archivedAt: expect.any(String) }), "company-1");
+    expect(container.textContent).not.toContain("Alpha");
+
+    const showArchivedButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.includes(uiText("Show archived projects")));
+    await act(async () => showArchivedButton?.click());
+    await flushReact();
+    expect(container.textContent).toContain("Archived project");
+    expect(container.textContent).toContain("Alpha");
+
+    const restoreButton = container.querySelector<HTMLButtonElement>(`button[aria-label="${uiText("Unarchive")} Alpha"]`);
+    await act(async () => restoreButton?.click());
+    await flushReact();
+    expect(mockProjectsApi.update).toHaveBeenLastCalledWith("project-a", { archivedAt: null }, "company-1");
+    expect(container.textContent).not.toContain("Alpha");
   });
 });

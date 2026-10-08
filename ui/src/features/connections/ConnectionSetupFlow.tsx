@@ -548,11 +548,11 @@ export function ConnectionSetupFlow(props: ConnectionSetupFlowProps = {}) {
   const existing = useQuery({ queryKey: ["tools", "connection", existingId], queryFn: () => toolsApi.getConnection(existingId!), enabled: lookup });
   const provider = source || existing.data?.config?.sourceTemplateKey;
   const method = searchParams.get("method") || existing.data?.config?.connectionMethodKey;
-  if (lookup && existing.isPending) return <p className="p-6 text-sm text-muted-foreground">Loading connection…</p>;
-  if (lookup && existing.isError) return <div role="alert" className="space-y-3 p-6"><p>Could not load this connection. Your saved access and credentials have not changed.</p><Button variant="outline" onClick={() => void existing.refetch()}>Try again</Button></div>;
+  if (lookup && existing.isPending) return <p className="p-6 text-sm text-muted-foreground">{uiText("Loading connection…")}</p>;
+  if (lookup && existing.isError) return <div role="alert" className="space-y-3 p-6"><p>{uiText("Could not load this connection. Your saved access and credentials have not changed.")}</p><Button variant="outline" onClick={() => void existing.refetch()}>{uiText("Try again")}</Button></div>;
   if (isMemoryConnectorId(provider) && !(existing.data && existing.data.status !== "draft" && existing.data.config?.sourceTemplateKey === provider)) {
-    if (!memory.loaded) return <p className="p-6 text-sm text-muted-foreground">Loading connection settings…</p>;
-    if (!memory.enabled) return <p role="status" className="p-6 text-sm text-muted-foreground">Enable memory connectors in Settings → Experimental to set up this connection.</p>;
+    if (!memory.loaded) return <p className="p-6 text-sm text-muted-foreground">{uiText("Loading connection settings…")}</p>;
+    if (!memory.enabled) return <p role="status" className="p-6 text-sm text-muted-foreground">{uiText("Enable memory connectors in Settings → Experimental to set up this connection.")}</p>;
   }
   if (!props.byoOnly && (props.credentialSource ?? "paperclip_vault") === "paperclip_vault"
     && isRemoteMcpConnectorId(provider) && (!method || isRemoteMcpConnectorMethod(provider, method))) {
@@ -2302,7 +2302,7 @@ function StandardConnectionSetupFlow({
           </p>
           {customOAuthMethod ? (
             <Button type="button" variant="link" className="mt-4 h-auto p-0 text-xs" onClick={() => setConnectionMethodKey(customOAuthMethod.key)}>
-              Use your own {entry.name} OAuth app
+              {uiText("Use your own")} {entry.name} {uiText("OAuth app")}
             </Button>
           ) : null}
           <div className="mt-6 flex items-center justify-between gap-3">
@@ -2330,7 +2330,7 @@ function StandardConnectionSetupFlow({
 
             {customOAuthMethod ? (
               <Button type="button" variant="link" className="mt-4 h-auto p-0 text-xs" onClick={() => setConnectionMethodKey(customOAuthMethod.key)}>
-                Use your own {entry.name} OAuth app
+                {uiText("Use your own")} {entry.name} {uiText("OAuth app")}
               </Button>
             ) : null}
 
@@ -2603,7 +2603,7 @@ export function StepHeader({
         // guessing at Tailwind classes. The dots are decoration — the label
         // line below already says the same thing, so announcing both would
         // read every step name twice.
-        <nav className="mt-4" aria-label="Setup progress" data-testid="wizard-stepper">
+        <nav className="mt-4" aria-label={uiText("Setup progress")}data-testid="wizard-stepper">
           <ol className="flex gap-2" aria-hidden="true">
             {labels.map((label, i) => (
               <li
@@ -3023,14 +3023,14 @@ function GalleryStep({
           {!zapierSource && (
             <p className="mt-1 text-xs text-muted-foreground">
               {uiText("Any remote tool URL works here — including a local MCP server like")}{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">http://127.0.0.1:8848/mcp</code>.
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">http://127.0.0.1:8848/mcp</code>{uiText(".")}
             </p>
           )}
           {matchedEntry && (
             <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <AppLogo name={matchedEntry.name} logoUrl={matchedEntry.branding.logoUrl} darkLogoUrl={matchedEntry.branding.darkLogoUrl} size={24} />
-                <span className="truncate">{uiText("This looks like")} {matchedEntry.name}.</span>
+                <span className="truncate">{uiText("This looks like")} {matchedEntry.name}{uiText(".")}</span>
               </div>
               <Button
                 type="button"
@@ -3224,7 +3224,7 @@ function LinkConnectStep({
                 className="mt-2 h-11 font-mono"
               />
               <p className="mt-2 text-xs text-muted-foreground">
-                Grant this key read and write access to the resources your agents need. Paperclip cannot increase its permissions.
+                {uiText("Grant this key read and write access to the resources your agents need. Paperclip cannot increase its permissions.")}
               </p>
             </div>
           </div>
@@ -3741,7 +3741,7 @@ function KeyStep({
 
       <div className="space-y-6">
         {managedAsana ? (
-          <p className="text-sm text-muted-foreground">Sign in with Asana to choose your workspace and connect it to Paperclip.</p>
+          <p className="text-sm text-muted-foreground">{uiText("Sign in with Asana to choose your workspace and connect it to Paperclip.")}</p>
         ) : null}
         {method?.capabilityProfile && (
           <p className="text-sm text-muted-foreground">
@@ -3927,7 +3927,7 @@ function OAuthClientFields({
             target="_blank"
             rel="noreferrer"
             className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-foreground underline underline-offset-2"
-          > {uiText("Open")} {entry.name} app settings
+          > {uiText("Open")} {entry.name} {uiText("app settings")}
             <ArrowUpRight className="h-3 w-3" />
           </a>
         ) : null}
@@ -3945,7 +3945,7 @@ function OAuthClientFields({
             <CopyValueButton value={callbackUrl} ariaLabel="Copy callback URL" />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Add this exact URL to {entry.name} before continuing. It must match the authorization request.
+            {uiText("Add this exact URL to")} {entry.name} {uiText("before continuing. It must match the authorization request.")}
           </p>
         </div>
       ) : null}
@@ -4421,7 +4421,7 @@ export function ConnectionAccessDefaults({
           disabled={disabled}
           onClick={() => setOpen((previous) => !previous)}
         >
-          Change
+          {uiText("Change")}
         </Button>
       </div>
       {(notice ?? []).map((reason) => (
@@ -4430,7 +4430,7 @@ export function ConnectionAccessDefaults({
       <Collapsible open={expanded} onOpenChange={setOpen}>
         <CollapsibleTrigger className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
           {expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
-          Advanced
+          {uiText("Advanced")}
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="mt-3 space-y-6">

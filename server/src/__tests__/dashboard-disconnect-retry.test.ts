@@ -21,6 +21,7 @@ function fixture(failures: Error[] = [], options: {
   laterError?: Error;
   missingCompany?: boolean;
   readFailures?: Record<string, Error[]>;
+  readWaits?: Record<string, Promise<void>>;
 } = {}) {
   const reads: string[] = [];
   const companyParameters: unknown[][] = [];
@@ -34,8 +35,9 @@ function fixture(failures: Error[] = [], options: {
         where(value: SQL) { condition = value; return query; },
         groupBy() { return query; },
         then(resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) {
-          return Promise.resolve().then(() => {
+          return Promise.resolve().then(async () => {
             reads.push(name);
+            await options.readWaits?.[name];
             const attempts = parameters.get(name) ?? [];
             const failure = options.readFailures?.[name]?.[attempts.length];
             attempts.push(dialect.sqlToQuery(condition!).params);
@@ -47,7 +49,7 @@ function fixture(failures: Error[] = [], options: {
               if (failure) throw failure;
               return options.missingCompany ? [] : [{ id: companyId, budgetMonthlyCents: 10_000 }];
             }
-            if (options.laterError) throw options.laterError;
+            if (options.laterError && name === "agents") throw options.laterError;
             if (name === "agents") return [{ status: "idle", count: 2 }];
             if (name === "issues") return [{ status: "in_progress", count: 1 }];
             if (name === "approvals") return [{ count: 3 }];
@@ -71,6 +73,26 @@ beforeEach(() => {
 });
 
 describe("dashboard read connection recovery", () => {
+  it("starts independent counts and run history while the agent count is pending", async () => {
+    const agentsRead = Promise.withResolvers<void>();
+    const test = fixture([], { readWaits: { agents: agentsRead.promise } });
+    const summary = test.service.summary(companyId);
+    await vi.waitFor(() => {
+      expect([...test.reads].sort()).toEqual(["companies", "agents", "issues", "approvals", "cost_events"].sort());
+      expect(test.execute).toHaveBeenCalledTimes(1);
+    });
+    expect(overview).not.toHaveBeenCalled();
+    agentsRead.resolve();
+    await expect(summary).resolves.toMatchObject({
+      companyId,
+      agents: { active: 2 },
+      tasks: { inProgress: 1 },
+      costs: { monthSpendCents: 125, monthBudgetCents: 10_000 },
+      pendingApprovals: 3,
+    });
+    expect(overview).toHaveBeenCalledExactlyOnceWith(companyId);
+  });
+
   it.each(["CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_ENDED", "CONNECTION_DESTROYED"])(
     "rebuilds the scoped company read after a nested %s cause", async (code) => {
       const test = fixture([disconnected(code)]);
@@ -82,7 +104,7 @@ describe("dashboard read connection recovery", () => {
         pendingApprovals: 3,
       });
       expect(test.companyParameters).toEqual([[companyId], [companyId]]);
-      expect(test.reads).toEqual(["companies", "companies", "agents", "issues", "approvals", "cost_events"]);
+      expect([...test.reads].sort()).toEqual(["companies", "companies", "agents", "issues", "approvals", "cost_events"].sort());
       expect(test.execute).toHaveBeenCalledTimes(1);
       expect(overview).toHaveBeenCalledExactlyOnceWith(companyId);
     },
@@ -125,7 +147,8 @@ describe("dashboard read connection recovery", () => {
     const error = disconnected();
     const test = fixture([], { laterError: error });
     await expect(test.service.summary(companyId)).rejects.toBe(error);
-    expect(test.reads).toEqual(["companies", "agents"]);
+    expect([...test.reads].sort()).toEqual(["companies", "agents", "issues", "approvals", "cost_events"].sort());
+    expect(test.execute).toHaveBeenCalledTimes(1);
     expect(overview).not.toHaveBeenCalled();
   });
 
@@ -142,9 +165,7 @@ describe("dashboard read connection recovery", () => {
   it.each(["issues", "approvals", "cost_events"])("retries only the failed %s read", async (table) => {
     const test = fixture([], { readFailures: { [table]: [disconnected()] } });
     await expect(test.service.summary(companyId)).resolves.toMatchObject({ companyId });
-    const prefix = tables.slice(0, tables.indexOf(table) + 1);
-    const suffix = tables.slice(tables.indexOf(table) + 1);
-    expect(test.reads).toEqual([...prefix, table, ...suffix]);
+    expect([...test.reads].sort()).toEqual([...tables, table].sort());
     const attempts = test.parameters.get(table)!;
     expect(attempts).toHaveLength(2);
     expect(attempts[0]).toContain(companyId);
@@ -157,9 +178,8 @@ describe("dashboard read connection recovery", () => {
     const failures = [disconnected(), disconnected(), disconnected()];
     const test = fixture([], { readFailures: { [table]: failures } });
     await expect(test.service.summary(companyId)).rejects.toBe(failures[2]);
-    const prefix = tables.slice(0, tables.indexOf(table));
-    expect(test.reads).toEqual([...prefix, table, table, table]);
-    expect(test.execute).not.toHaveBeenCalled();
+    expect([...test.reads].sort()).toEqual([...tables, table, table].sort());
+    expect(test.execute).toHaveBeenCalledTimes(1);
     expect(overview).not.toHaveBeenCalled();
   });
 });

@@ -22,7 +22,7 @@ export async function promptSecrets(current?: SecretsConfig): Promise<SecretsCon
   const base = current ?? defaultSecretsConfig();
 
   const provider = await p.select({
-    message: "Secrets provider",
+    message: "密钥提供方",
     options: [
       {
         value: "local_encrypted" as const,
@@ -49,17 +49,17 @@ export async function promptSecrets(current?: SecretsConfig): Promise<SecretsCon
   });
 
   if (p.isCancel(provider)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
   const strictMode = await p.confirm({
-    message: "Require secret refs for sensitive env vars?",
+    message: "敏感环境变量是否必须使用密钥引用？",
     initialValue: base.strictMode,
   });
 
   if (p.isCancel(strictMode)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
@@ -67,18 +67,18 @@ export async function promptSecrets(current?: SecretsConfig): Promise<SecretsCon
   let keyFilePath = base.localEncrypted.keyFilePath || fallbackDefault;
   if (provider === "local_encrypted") {
     const keyPath = await p.text({
-      message: "Local encrypted key file path",
+      message: "本地加密密钥文件路径",
       defaultValue: keyFilePath,
       placeholder: fallbackDefault,
       validate: (value) => {
         // Clack validates the raw input before applying defaultValue —
         // validate the value that will actually be submitted.
-        if ((value || keyFilePath).trim().length === 0) return "Key file path is required";
+        if ((value || keyFilePath).trim().length === 0) return "必须填写密钥文件路径";
       },
     });
 
     if (p.isCancel(keyPath)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       process.exit(0);
     }
     keyFilePath = keyPath.trim();

@@ -316,7 +316,7 @@ describe("issue dependency wakeups in issue routes", () => {
     });
   });
 
-  it("wakes the parent when all direct children become terminal", async () => {
+  it.each([false, true])("keeps post-commit parent wakes only for onboarding: %s", async (onboardingCompletion) => {
     mockIssueService.getById.mockResolvedValue({
       id: "child-1",
       companyId: "company-1",
@@ -353,6 +353,7 @@ describe("issue dependency wakeups in issue routes", () => {
     });
     mockIssueService.getWakeableParentAfterChildCompletion.mockResolvedValue({
       id: "parent-1",
+      onboardingCompletion,
       assigneeAgentId: "agent-9",
       childIssueIds: ["child-0", "child-1"],
       childIssueSummaries: [
@@ -384,6 +385,11 @@ describe("issue dependency wakeups in issue routes", () => {
 
     const res = await request(await createApp()).patch("/api/issues/child-1").send({ status: "done" });
     expect(res.status).toBe(200);
+    if (!onboardingCompletion) {
+      await vi.waitFor(() => expect(mockIssueService.getWakeableParentAfterChildCompletion).toHaveBeenCalled());
+      expect(mockWakeup).not.toHaveBeenCalled();
+      return;
+    }
     await vi.waitFor(() => {
       expect(mockWakeup).toHaveBeenCalledWith(
         "agent-9",

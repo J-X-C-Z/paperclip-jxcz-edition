@@ -1,5 +1,36 @@
 # Running OpenClaw in Docker (Local Development)
 
+
+## 简体中文
+
+本文介绍如何在 Docker 中运行 OpenClaw，以在本地开发和测试 Paperclip 的 OpenClaw adapter。
+
+### 推荐：自动加入冒烟测试
+
+在仓库执行：
+
+```bash
+pnpm smoke:openclaw-join
+```
+
+测试会自动创建 agent invite、提交 OpenClaw 加入请求、审批加入、领取一次性 API key（包含无效及重放检查），并向 Docker 化 webhook receiver 发送唤醒回调。默认使用预配置的 `docker/openclaw-smoke` receiver 镜像，无需手动修改 OpenClaw 配置。该流程会执行需要董事会权限的操作；authenticated 模式需提供 board/operator 身份，否则会明确报权限错误并提前退出。
+
+### 一条命令启动 Gateway UI
+
+```bash
+pnpm smoke:openclaw-docker-ui
+```
+
+默认无需配对相关环境变量。脚本会将仓库克隆/更新到 `/tmp/openclaw-docker`，按需构建 `openclaw:local`，在 `~/.openclaw-paperclip-smoke` 写入隔离配置和 Docker `.env`，默认使用 `openai/gpt-5.2` 与 OpenAI fallback，经 Compose 启动 `openclaw-gateway`，检测 Paperclip host 地址、等待健康检查，并打印 `http://127.0.0.1:18789/#token=...`。本机 smoke 默认关闭 Control UI 设备配对。
+
+可用环境变量包括：`OPENAI_API_KEY`（必须，可从环境或 `~/.secrets` 读取）、`OPENCLAW_DOCKER_DIR`、`OPENCLAW_GATEWAY_PORT`（默认 `18789`）、`OPENCLAW_GATEWAY_TOKEN`（默认随机）、`OPENCLAW_BUILD=0`（跳过重建）、`OPENCLAW_OPEN_BROWSER=1`（macOS 自动打开 URL）、`OPENCLAW_DISABLE_DEVICE_AUTH=0`（启用配对并用 `devices` CLI 批准）、`OPENCLAW_MODEL_PRIMARY`、`OPENCLAW_MODEL_FALLBACK`、`OPENCLAW_CONFIG_DIR`、`OPENCLAW_RESET_STATE=1`（默认每次重置 smoke agent 状态以避免旧认证/session 漂移）、`PAPERCLIP_HOST_PORT`（默认 `3100`）和 `PAPERCLIP_HOST_FROM_CONTAINER`（默认 `host.docker.internal`）。
+
+### Authenticated 与网络配置
+
+若 Paperclip 使用 `authenticated` 部署模式，可通过 `PAPERCLIP_AUTH_HEADER="Bearer <token>"` 或 `PAPERCLIP_COOKIE="your_session_cookie=..."` 提供身份。默认本机 callback 为 `http://127.0.0.1:<port>/webhook`；但在 OpenClaw 容器内，`127.0.0.1` 指向容器自身，并非宿主机上的 Paperclip 服务，因此容器访问 host 时应使用脚本检测出的 host 地址。
+
+---
+
 How to get OpenClaw running in a Docker container for local development and testing the Paperclip OpenClaw adapter integration.
 
 ## Automated Join Smoke Test (Recommended First)

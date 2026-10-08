@@ -651,6 +651,12 @@ export type UnbindToolProfileBinding = z.infer<typeof unbindToolProfileBindingSc
 const headerNameSchema = z.string().trim().min(1).max(120).regex(/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/);
 
 export const toolMcpGatewayAuthConfigSchema = z.object({
+  sharedAuthorization: z.object({
+    connectionId: z.string().guid(),
+    grantId: z.string().guid(),
+    targetCompanyId: z.string().guid(),
+    profileScopeHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  }).strict().nullable().optional(),
   version: z.literal(1).default(1),
   bearer: z.object({
     enabled: z.boolean().default(true),

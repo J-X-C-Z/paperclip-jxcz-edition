@@ -262,7 +262,7 @@ export function ActionsSection({
               ) : (
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
               )}
-              Refresh actions
+              {uiText("Refresh actions")}
             </Button>
           </div>
         ) : null}
@@ -298,12 +298,12 @@ export function ActionsSection({
           <FilterChip label={`Read ${readOnly.length}`} active={kindFilter === "read"} onClick={() => setKindFilter("read")} />
           <FilterChip label={`Write ${canChange.length}`} active={kindFilter === "write"} onClick={() => setKindFilter("write")} />
         </div>
-        <p className="text-xs text-muted-foreground">{visibleCount} matches · sorted A–Z</p>
+        <p className="text-xs text-muted-foreground">{visibleCount} {uiText("matches · sorted A–Z")}</p>
       </div>
 
       {visibleCount === 0 ? (
         <div className="py-6 text-center text-sm text-muted-foreground">
-          No actions match “{query}”. Clear the search to see them all.
+          {uiText("No actions match “")}{query}{uiText("”. Clear the search to see them all.")}
         </div>
       ) : (
         <div className="space-y-6">
@@ -413,7 +413,7 @@ function ActionGroup({
               }}
               className="h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
             >
-              {groupValue === "" ? <option value="">Mixed</option> : null}
+              {groupValue === "" ? <option value="">{uiText("Mixed")}</option> : null}
               {PERMISSION_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{`Set all: ${option.label}`}</option>
               ))}
@@ -537,7 +537,7 @@ function ActionRow({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <span className="font-medium">{option.label}</span> — {option.description}
+                      <span className="font-medium">{option.label}</span> {uiText("—")} {option.description}
                     </TooltipContent>
                   </Tooltip>
                 );

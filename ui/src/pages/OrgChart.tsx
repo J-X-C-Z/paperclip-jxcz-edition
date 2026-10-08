@@ -2,12 +2,16 @@ import { uiText } from "@/i18n";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { agentsApi, type OrgNode } from "../api/agents";
+import { heartbeatsApi, type LiveRunForIssue } from "../api/heartbeats";
+import { issuesApi } from "../api/issues";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompanyLiveEvent } from "../context/LiveUpdatesProvider";
 import { queryKeys } from "../lib/queryKeys";
-import { agentUrl } from "../lib/utils";
+import { agentUrl, issueUrl } from "../lib/utils";
+import { usePublishSharedQueryData, useSharedPollingQuery } from "../hooks/useSharedPolling";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
@@ -19,7 +23,7 @@ import { useHiddenSettings } from "@/hooks/useHiddenSettings";
 
 // Layout constants
 const CARD_W = 200;
-const CARD_H = 100;
+const CARD_H = 160;
 const GAP_X = 32;
 const GAP_Y = 80;
 const PADDING = 60;
@@ -186,12 +190,14 @@ function touchCenter(a: React.Touch, b: React.Touch, container: HTMLDivElement):
 import { getAdapterLabel } from "../adapters/adapter-display-registry";
 
 const statusDotColor: Record<string, string> = {
-  running: "var(--hex-22d3ee)",
-  active: "var(--hex-4ade80)",
-  paused: "var(--hex-facc15)",
-  idle: "var(--hex-facc15)",
-  error: "var(--hex-f87171)",
-  terminated: "var(--hex-a3a3a3)",
+  running: "var(--status-agent-running)",
+  queued: "var(--status-agent-paused)",
+  active: "var(--status-agent-idle)",
+  paused: "var(--status-agent-paused)",
+  pending_approval: "var(--status-agent-paused)",
+  idle: "var(--status-agent-idle)",
+  error: "var(--status-agent-error)",
+  terminated: "var(--status-agent-idle)",
 };
 const defaultDotColor = "var(--hex-a3a3a3)";
 
@@ -212,6 +218,19 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const moveAgent = useMutation({
+    mutationFn: ({ id, reportsTo }: { id: string; reportsTo: string }) => agentsApi.update(id, { reportsTo }),
+    onSuccess: async (agent) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.org(agent.companyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(agent.companyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.id) }),
+      ]);
+    },
+    onError: (error: Error) => setMoveError(`${uiText("Could not update reporting relationship.")} ${error.message}`),
+  });
   // Import is floored server-side on cloud-managed instances (403 cloud_managed), so the
   // button is hidden rather than dead-ending. Export stays available. Both
   // buttons also respect the operator-hidden settings registry.
@@ -233,6 +252,46 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   });
   const orgTree = providedOrgTree ?? queriedOrgTree;
   const agents = providedAgents ?? queriedAgents;
+
+  const runsQueryKey = [...queryKeys.liveRuns(selectedCompanyId!), "org-chart", { all: true }] as const;
+  const sharedRuns = useSharedPollingQuery<LiveRunForIssue[]>({
+    companyId: selectedCompanyId,
+    resourceKey: "live-runs:org-chart",
+    queryKey: runsQueryKey,
+    enabled: !!selectedCompanyId,
+    refetchInterval: 15_000,
+  });
+  const runsQuery = useQuery({
+    queryKey: runsQueryKey,
+    queryFn: () => heartbeatsApi.liveRunsForCompany(selectedCompanyId!, { all: true }),
+    enabled: sharedRuns.enabled,
+    refetchInterval: sharedRuns.refetchInterval,
+  });
+  usePublishSharedQueryData(sharedRuns, runsQuery.data, runsQuery.dataUpdatedAt);
+  useCompanyLiveEvent((event) => {
+    if (event.companyId !== selectedCompanyId) return;
+    if (event.type === "heartbeat.run.status" || event.type === "heartbeat.run.queued") {
+      void queryClient.invalidateQueries({ queryKey: runsQueryKey });
+    }
+  });
+  const visibleAgentIds = useMemo(() => new Set(flattenLayout(layoutForest(orgTree ?? [])).map((node) => node.id)), [orgTree]);
+  const runsByAgent = new Map<string, LiveRunForIssue[]>();
+  for (const run of runsQuery.data ?? []) {
+    if (!visibleAgentIds.has(run.agentId) || (run.status !== "running" && run.status !== "queued")) continue;
+    const current = runsByAgent.get(run.agentId) ?? [];
+    current.push(run);
+    runsByAgent.set(run.agentId, current);
+  }
+  const issueIds = [...new Set([...runsByAgent.values()].flat().flatMap((run) => run.issueId ? [run.issueId] : []))];
+  const issueQueries = useQueries({
+    queries: issueIds.map((id) => ({
+      queryKey: queryKeys.issues.detail(id),
+      queryFn: () => issuesApi.get(id),
+      staleTime: 30_000,
+      retry: false,
+    })),
+  });
+  const issueById = new Map(issueQueries.flatMap((query) => query.data?.companyId === selectedCompanyId ? [[query.data.id, query.data] as const] : []));
 
   const agentMap = useMemo(() => {
     const m = new Map<string, Agent>();
@@ -301,6 +360,109 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
     };
   }, []);
 
+  const holdRef = useRef<{
+    id: string; pointerId: number; start: Point; active: boolean;
+    timer: ReturnType<typeof setTimeout> | null; companyId: string;
+  } | null>(null);
+  const [agentDrag, setAgentDrag] = useState<{ id: string; dx: number; dy: number; targetId: string | null } | null>(null);
+  const movingIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!agentDrag) return ids;
+    // Use the full agent list so filtering cannot permit a cycle through a hidden report.
+    ids.add(agentDrag.id);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const agent of agents ?? []) {
+        if (agent.reportsTo && ids.has(agent.reportsTo) && !ids.has(agent.id)) {
+          ids.add(agent.id);
+          added = true;
+        }
+      }
+    }
+    const node = allNodes.find((item) => item.id === agentDrag.id);
+    if (node) flattenLayout([node]).forEach((item) => ids.add(item.id));
+    return ids;
+  }, [agentDrag?.id, agents, allNodes]);
+
+  function cancelAgentDrag() {
+    if (holdRef.current?.timer) clearTimeout(holdRef.current.timer);
+    holdRef.current = null;
+    setAgentDrag(null);
+  }
+  useEffect(() => {
+    cancelAgentDrag();
+    setMoveError(null);
+    return () => { if (holdRef.current?.timer) clearTimeout(holdRef.current.timer); };
+  }, [selectedCompanyId]);
+
+  function suppressCardClick() {
+    suppressNextCardClick.current = true;
+    if (suppressClickTimerRef.current !== null) window.clearTimeout(suppressClickTimerRef.current);
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressNextCardClick.current = false;
+      suppressClickTimerRef.current = null;
+    }, 400);
+  }
+
+  function startAgentHold(e: React.PointerEvent, id: string) {
+    if (holdRef.current || moveAgent.isPending || !selectedCompanyId || e.button !== 0) return;
+    const hold = { id, pointerId: e.pointerId, start: { x: e.clientX, y: e.clientY }, active: false,
+      timer: null as ReturnType<typeof setTimeout> | null, companyId: selectedCompanyId };
+    holdRef.current = hold;
+    // Capture immediately so releasing outside the viewport also clears a pending hold.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    hold.timer = setTimeout(() => {
+      if (holdRef.current !== hold) return;
+      hold.active = true;
+      touchGesture.current.mode = null;
+      setDragging(false);
+      setMoveError(null);
+      suppressNextCardClick.current = true;
+      setAgentDrag({ id, dx: 0, dy: 0, targetId: null });
+    }, 450);
+  }
+
+  function moveAgentPointer(e: React.PointerEvent) {
+    const hold = holdRef.current;
+    if (!hold || hold.pointerId !== e.pointerId) return;
+    const dx = e.clientX - hold.start.x;
+    const dy = e.clientY - hold.start.y;
+    if (!hold.active) {
+      if (Math.hypot(dx, dy) > TOUCH_MOVE_THRESHOLD) { cancelAgentDrag(); suppressCardClick(); }
+      return;
+    }
+    e.preventDefault();
+    const rect = containerRef.current!.getBoundingClientRect();
+    const x = (e.clientX - rect.left - pan.x) / zoom;
+    const y = (e.clientY - rect.top - pan.y) / zoom;
+    const target = allNodes.find((node) => !movingIds.has(node.id)
+      && node.id !== agentMap.get(hold.id)?.reportsTo
+      && x >= node.x && x <= node.x + CARD_W && y >= node.y && y <= node.y + CARD_H);
+    setAgentDrag({ id: hold.id, dx: dx / zoom, dy: dy / zoom, targetId: target?.id ?? null });
+  }
+
+  function finishAgentPointer(e: React.PointerEvent, cancelled = false) {
+    const hold = holdRef.current;
+    if (!hold || hold.pointerId !== e.pointerId) return;
+    const targetId = agentDrag?.targetId;
+    if (hold.active) suppressCardClick();
+    cancelAgentDrag();
+    if (!cancelled && hold.active && targetId && hold.companyId === selectedCompanyId) {
+      moveAgent.mutate({ id: hold.id, reportsTo: targetId });
+    }
+  }
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && holdRef.current) { suppressCardClick(); cancelAgentDrag(); }
+    }
+    function onBlur() { if (holdRef.current) { suppressCardClick(); cancelAgentDrag(); } }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("blur", onBlur);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("blur", onBlur); };
+  }, []);
+
   // Center the chart on first load
   const hasInitialized = useRef(false);
   useEffect(() => {
@@ -340,6 +502,7 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
+    if (holdRef.current?.active) return;
     const container = containerRef.current;
     if (!container) return;
 
@@ -383,6 +546,8 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   }, [bounds]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length >= 2) cancelAgentDrag();
+    if (holdRef.current?.active) return;
     if (e.touches.length >= 2 && containerRef.current) {
       const [first, second] = [e.touches[0]!, e.touches[1]!];
       touchGesture.current = {
@@ -411,6 +576,7 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
   }, [pan, zoom]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (holdRef.current?.active) return;
     const container = containerRef.current;
     if (!container || !touchGesture.current.mode) return;
 
@@ -516,6 +682,11 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
         ) : null}
         </div>
       ) : null}
+      <p role={moveError ? "alert" : "status"} className={moveError ? "mb-2 text-sm text-destructive" : "mb-2 text-xs text-muted-foreground"}>
+        {moveError ?? (moveAgent.isPending ? uiText("Saving reporting relationship…")
+          : agentDrag ? uiText("Release on the highlighted agent to set its manager. Escape cancels.")
+          : uiText("Long press an agent, then drag it onto its new manager. Its team moves with it."))}
+      </p>
       <div
         ref={containerRef}
         data-testid="org-chart-viewport"
@@ -525,6 +696,10 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
           touchAction: "none",
           overscrollBehavior: "contain",
         }}
+        onPointerMove={moveAgentPointer}
+        onPointerUp={(e) => finishAgentPointer(e)}
+        onPointerCancel={(e) => finishAgentPointer(e, true)}
+        onLostPointerCapture={(e) => finishAgentPointer(e, true)}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -589,10 +764,11 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
         >
           <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
             {edges.map(({ parent, child }) => {
-              const x1 = parent.x + CARD_W / 2;
-              const y1 = parent.y + CARD_H;
-              const x2 = child.x + CARD_W / 2;
-              const y2 = child.y;
+              if (agentDrag && child.id === agentDrag.id) return null;
+              const x1 = parent.x + CARD_W / 2 + (movingIds.has(parent.id) ? agentDrag!.dx : 0);
+              const y1 = parent.y + CARD_H + (movingIds.has(parent.id) ? agentDrag!.dy : 0);
+              const x2 = child.x + CARD_W / 2 + (movingIds.has(child.id) ? agentDrag!.dx : 0);
+              const y2 = child.y + (movingIds.has(child.id) ? agentDrag!.dy : 0);
               const midY = (y1 + y2) / 2;
 
               return (
@@ -637,18 +813,34 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
           ))}
           {allNodes.map((node) => {
             const agent = agentMap.get(node.id);
-            const dotColor = statusDotColor[node.status] ?? defaultDotColor;
+            const agentRuns = runsByAgent.get(node.id) ?? [];
+            const running = agentRuns.some((run) => run.status === "running");
+            const status = running ? "running" : agentRuns.length ? "queued" : (agent?.status ?? node.status);
+            const statusLabel = runsQuery.isError ? uiText("Work status unavailable")
+              : !runsQuery.data ? uiText("Loading work status…")
+              : status === "running" ? uiText("Working")
+              : status === "queued" ? uiText("Queued")
+              : status === "paused" ? uiText("Paused")
+              : status === "error" ? uiText("Error")
+              : status === "terminated" ? uiText("Terminated")
+              : status === "pending_approval" ? uiText("Pending approval") : uiText("Idle");
+            const dotColor = runsQuery.isError || !runsQuery.data ? defaultDotColor : statusDotColor[status] ?? defaultDotColor;
+            const taskIds = [...new Set(agentRuns.flatMap((run) => run.issueId ? [run.issueId] : []))];
 
             return (
               <Card
                 key={node.id}
-                data-org-card
-                className="block absolute py-0 hover:shadow-md hover:border-foreground/20 transition-(--tp-box-shadow-border-color) duration-150 cursor-pointer select-none"
+                data-org-card={node.id}
+                onPointerDown={(e) => startAgentHold(e, node.id)}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`block absolute py-0 hover:shadow-md hover:border-foreground/20 transition-(--tp-box-shadow-border-color) duration-150 select-none ${movingIds.has(node.id) ? "cursor-grabbing shadow-md" : "cursor-pointer"} ${agentDrag?.targetId === node.id ? "ring-2 ring-primary border-primary" : ""}`}
                 style={{
                   left: node.x,
                   top: node.y,
                   width: CARD_W,
                   minHeight: CARD_H,
+                  transform: movingIds.has(node.id) ? `translate(${agentDrag!.dx}px, ${agentDrag!.dy}px)` : undefined,
+                  zIndex: movingIds.has(node.id) ? 1 : undefined,
                 }}
                 onClick={() => navigate(agent ? agentUrl(agent) : `/agents/${node.id}`)}
                 onClickCapture={(e) => {
@@ -688,6 +880,30 @@ export function OrgChart({ orgTree: providedOrgTree, agents: providedAgents, emb
                       </span>
                     )}
                   </div>
+                </div>
+                <div className="px-4 pb-3 flex flex-col gap-1" data-testid={`org-work-${node.id}`}>
+                  <span className="text-xs font-medium" style={{ color: dotColor }}>{statusLabel}</span>
+                  {taskIds.length ? (
+                    <div className="flex flex-wrap gap-1">
+                      {taskIds.map((id) => {
+                        const issue = issueById.get(id);
+                        const query = issueQueries[issueIds.indexOf(id)];
+                        return (
+                          <Link key={id} to={issue ? issueUrl(issue) : `/issues/${id}`}
+                            className="text-xs font-mono text-primary hover:underline"
+                            title={issue?.title ?? uiText("Current task")}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}>
+                            {issue?.identifier ?? (query?.isError ? uiText("Task code unavailable") : uiText("Loading task code…"))}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {runsQuery.isError || !runsQuery.data ? uiText("Current task unknown") : status === "running" || status === "queued" ? uiText("No linked task") : uiText("No current task")}
+                    </span>
+                  )}
                 </div>
               </Card>
             );

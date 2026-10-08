@@ -1,11 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_DATABASE_APPLICATION_NAME,
   DEFAULT_DATABASE_IDLE_TIMEOUT_SECONDS,
   databaseClientOptionsFromEnv,
+  databaseClientOptionsWithEnv,
+  createDb,
+  closeRegisteredClients,
   postgresJsOptions,
   resolveDatabaseClientOptions,
+  withDedicatedDbConnection,
 } from "./client.js";
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("databaseClientOptionsFromEnv", () => {
   it("returns no options when nothing is set, preserving driver defaults", () => {
@@ -118,5 +124,58 @@ describe("resolveDatabaseClientOptions", () => {
     expect(postgresJsOptions(resolveDatabaseClientOptions({ idleTimeoutSeconds: 0 }))).toMatchObject({
       idle_timeout: 0,
     });
+  });
+});
+
+describe("shared database client configuration", () => {
+  it("inherits environment tuning when caller options omit or undefine a setting", () => {
+    expect(databaseClientOptionsWithEnv({ maxConnections: 1, connectTimeoutSeconds: 5, prepare: undefined }, {
+      DATABASE_POOL_MAX: "24",
+      DATABASE_PREPARED_STATEMENTS: "false",
+      DATABASE_CONNECT_TIMEOUT_SECONDS: "12",
+      DATABASE_IDLE_TIMEOUT_SECONDS: "0",
+      DATABASE_MAX_LIFETIME_SECONDS: "3600",
+      DATABASE_APPLICATION_NAME: "remote-paperclip",
+    })).toEqual({
+      maxConnections: 1, connectTimeoutSeconds: 5, prepare: false,
+      idleTimeoutSeconds: 0, maxLifetimeSeconds: 3600, applicationName: "remote-paperclip",
+    });
+  });
+
+  it("preserves caller prepare and idle settings over the environment", () => {
+    expect(databaseClientOptionsWithEnv({ prepare: true, idleTimeoutSeconds: 0 }, {
+      DATABASE_PREPARED_STATEMENTS: "false", DATABASE_IDLE_TIMEOUT_SECONDS: "90",
+    })).toMatchObject({ prepare: true, idleTimeoutSeconds: 0 });
+  });
+
+  it("applies inherited tuning to createDb with explicit caller options", async () => {
+    vi.stubEnv("DATABASE_POOL_MAX", "24");
+    vi.stubEnv("DATABASE_PREPARED_STATEMENTS", "false");
+    vi.stubEnv("DATABASE_MAX_LIFETIME_SECONDS", "3600");
+    const db = createDb("postgres://test:test@127.0.0.1:1/test", { maxConnections: 1 });
+    try {
+      expect(db.$client.options).toMatchObject({ max: 1, prepare: false, max_lifetime: 3600 });
+    } finally { await db.$client.end({ timeout: 0 }); }
+  });
+
+  it("keeps dedicated connections on their originating pool configuration and closes them", async () => {
+    vi.stubEnv("DATABASE_PREPARED_STATEMENTS", "false");
+    vi.stubEnv("DATABASE_MAX_LIFETIME_SECONDS", "3600");
+    const url = "postgres://test:test@127.0.0.1:1/test";
+    const db = createDb(url, { maxConnections: 24 });
+    vi.stubEnv("DATABASE_PREPARED_STATEMENTS", "true");
+    vi.stubEnv("DATABASE_MAX_LIFETIME_SECONDS", "60");
+    let end: ReturnType<typeof vi.spyOn> | undefined;
+    try {
+      await expect(withDedicatedDbConnection(db, async (dedicated) => {
+        expect(dedicated.$client.options).toMatchObject({ max: 1, prepare: false, max_lifetime: 3600 });
+        expect(dedicated.$client.options.connection.application_name).toBe("paperclip-workspace-finalization-lock");
+        end = vi.spyOn(dedicated.$client, "end");
+        throw new Error("action-failed");
+      })).rejects.toThrow("action-failed");
+      expect(end).toHaveBeenCalledOnce();
+      await closeRegisteredClients(url);
+      expect(end).toHaveBeenCalledOnce();
+    } finally { await db.$client.end({ timeout: 0 }); }
   });
 });

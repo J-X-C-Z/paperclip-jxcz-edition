@@ -57,7 +57,7 @@ function record(value: unknown): Record<string, unknown> {
 
 function required(value: string | undefined, label: string): string {
   const normalized = value?.trim() ?? "";
-  if (!normalized) throw new Error(`${label} is required`);
+  if (!normalized) throw new Error(`必须填写 ${label}`);
   return normalized;
 }
 
@@ -67,11 +67,11 @@ export function validateManagedAgentSetup(
 ): ValidatedSetup {
   const anthropicApiKey = env.ANTHROPIC_API_KEY?.trim();
   if (!anthropicApiKey) {
-    throw new Error("ANTHROPIC_API_KEY is required in the CLI process environment");
+    throw new Error("CLI 进程环境中必须设置 ANTHROPIC_API_KEY");
   }
   if (!options.acknowledgeRetention) {
     throw new Error(
-      "Pass --acknowledge-retention to enable the stateful beta Managed Agents service",
+      "启用有状态的 Managed Agents beta 服务时，请传入 --acknowledge-retention",
     );
   }
 
@@ -81,11 +81,11 @@ export function validateManagedAgentSetup(
   const model = required(options.model, "--model");
   if (model !== CLAUDE_MANAGED_QUALIFIED_MODEL) {
     throw new Error(
-      `--model must be the qualified Managed Agents model ${CLAUDE_MANAGED_QUALIFIED_MODEL}`,
+      `--model 必须使用完整的 Managed Agents 模型名称：${CLAUDE_MANAGED_QUALIFIED_MODEL}`,
     );
   }
   if (!UUID_RE.test(apiKeySecretId)) {
-    throw new Error("--api-key-secret-id must be a UUID");
+    throw new Error("--api-key-secret-id 必须是 UUID");
   }
 
   const defaultMaxListCostUsd = Number(options.maxSessionListCostUsd);
@@ -96,7 +96,7 @@ export function validateManagedAgentSetup(
     || !Number.isSafeInteger(cents)
     || cents <= 0
   ) {
-    throw new Error("--max-session-list-cost-usd must resolve to at least one cent");
+    throw new Error("--max-session-list-cost-usd 必须至少为 0.01 美元");
   }
 
   return {
@@ -130,7 +130,7 @@ async function anthropicRequest(
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
-    throw new Error(`Anthropic Managed Agents request failed with HTTP ${response.status}`);
+    throw new Error(`Anthropic Managed Agents 请求失败，HTTP 状态码为 ${response.status}`);
   }
   if (response.status === 204) return {};
   return record(await response.json());
@@ -238,7 +238,7 @@ async function resolveEnvironment(
     assertSafeManagedEnvironment(existing);
     return existing;
   }
-  if (options.probe) throw new Error("Probe found no matching Anthropic Environment");
+  if (options.probe) throw new Error("探测未找到匹配的 Anthropic Environment");
 
   const environment = await anthropicRequest(key, "POST", "/v1/environments", {
     name: `Paperclip · ${options.displayName}`,
@@ -291,7 +291,7 @@ async function resolveAgent(
     assertManagedAgentModel(existing, options.model);
     return existing;
   }
-  if (options.probe) throw new Error("Probe found no matching Anthropic Agent");
+  if (options.probe) throw new Error("探测未找到匹配的 Anthropic Agent");
 
   const agent = await anthropicRequest(key, "POST", "/v1/agents", {
     name: `Paperclip · ${options.displayName}`,
@@ -336,7 +336,7 @@ export async function setupManagedAgent(options: ManagedAgentSetupOptions): Prom
   const agentId = String(agent.id ?? "");
   const environmentId = String(environment.id ?? "");
   if (!agentId || !environmentId) {
-    throw new Error("Anthropic did not return usable Agent and Environment identities");
+    throw new Error("Anthropic 未返回可用的 Agent 和 Environment 标识");
   }
 
   const versions = await listAll(
@@ -349,10 +349,10 @@ export async function setupManagedAgent(options: ManagedAgentSetupOptions): Prom
     ? versions.find((entry) => String(entry.version) === version)
     : undefined;
   if (!version || !pinnedAgent) {
-    throw new Error("Anthropic did not return a usable pinned Agent version");
+    throw new Error("Anthropic 未返回可用的固定 Agent 版本");
   }
   if (String(pinnedAgent.id ?? "") !== agentId) {
-    throw new Error("Anthropic pinned Agent version identity does not match the selected Agent");
+    throw new Error("Anthropic 固定 Agent 版本的标识与所选 Agent 不匹配");
   }
   assertSafeManagedAgent(pinnedAgent);
   assertManagedAgentModel(pinnedAgent, normalizedOptions.model);
@@ -393,29 +393,29 @@ export async function setupManagedAgent(options: ManagedAgentSetupOptions): Prom
 export function registerManagedAgentCommands(program: Command): void {
   const command = program
     .command("managed-agent")
-    .description("Provision and qualify remote managed-agent providers");
+    .description("配置并验证远程托管智能体提供方");
   addCommonClientOptions(
     command
       .command("setup")
       .description(
         "Create or adopt a locked-down Anthropic Agent and Environment, then store a company profile",
       )
-      .requiredOption("--profile-key <key>", "Stable company profile key")
-      .requiredOption("--display-name <name>", "Profile display name")
+      .requiredOption("--profile-key <key>", "稳定的公司配置键")
+      .requiredOption("--display-name <name>", "配置显示名称")
       .requiredOption(
         "--api-key-secret-id <id>",
         "Existing company secret containing ANTHROPIC_API_KEY",
       )
-      .option("--model <id>", "Pinned Claude model", CLAUDE_MANAGED_QUALIFIED_MODEL)
+      .option("--model <id>", "固定的 Claude 模型", CLAUDE_MANAGED_QUALIFIED_MODEL)
       .option(
         "--max-session-list-cost-usd <usd>",
         "Default hard session ceiling",
         "1.00",
       )
-      .option("--agent-id <id>", "Adopt an existing Anthropic Agent")
-      .option("--agent-version <version>", "Pin an existing Agent version")
-      .option("--environment-id <id>", "Adopt an existing Anthropic Environment")
-      .option("--probe", "Read-only qualification; create or persist nothing", false)
+      .option("--agent-id <id>", "采用现有 Anthropic Agent")
+      .option("--agent-version <version>", "固定现有 Agent 版本")
+      .option("--environment-id <id>", "采用现有 Anthropic Environment")
+      .option("--probe", "仅执行只读验证；不创建或保存任何内容", false)
       .option(
         "--acknowledge-retention",
         "Acknowledge beta retention and non-ZDR/non-HIPAA status",

@@ -132,14 +132,14 @@ export function ActionTestDialog({
         <DialogHeader>
           <DialogTitle>{uiText("Test")} {title}</DialogTitle>
           <DialogDescription>
-            Run a real action with the same permissions and credentials an agent would use.
+            {uiText("Run a real action with the same permissions and credentials an agent would use.")}
           </DialogDescription>
         </DialogHeader>
 
         {testAgentsQuery.isLoading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground" role="status">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading agents…
+            {uiText("Loading agents…")}
           </div>
         ) : testAgentsQuery.isError ? (
           <TestLoadError
@@ -156,7 +156,7 @@ export function ActionTestDialog({
         ) : !selectedAgent ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground" role="status">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading agent permissions…
+            {uiText("Loading agent permissions…")}
           </div>
         ) : (
           <div className="space-y-5">
@@ -315,7 +315,7 @@ function AgentPicker({
         </div>
         <div className="border-t border-border px-3 py-2 text-(length:--text-micro) text-muted-foreground">
           <p>{uiText("Only agents you can assign tasks to are listed.")}</p>
-          <p>Pick one to preview what they'd see in {appName}.</p>
+          <p>{uiText("Pick one to preview what they'd see in")} {appName}{uiText(".")}</p>
         </div>
         <div className="border-t border-border p-3">
           <p className="text-xs font-semibold text-foreground">{uiText("What the badges mean")}</p>
@@ -323,12 +323,12 @@ function AgentPicker({
             <li><span className="font-medium text-foreground">{uiText("Allowed")}</span>{uiText(" — runs immediately when you press Run.")}</li>
             <li><span className="font-medium text-foreground">{uiText("Ask first")}</span>{uiText(" — Run is parked in Review for your OK.")}</li>
             <li>
-              <span className="font-medium text-foreground">{uiText("Off")}</span> — won't run. Change it in{" "}
-              <Link className="text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>.
+              <span className="font-medium text-foreground">{uiText("Off")}</span> {uiText("— won't run. Change it in")}{" "}
+              <Link className="text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>{uiText(".")}
             </li>
           </ul>
           <p className="mt-2 text-(length:--text-micro) text-muted-foreground">
-            Badges reflect this agent's current settings, not yours. Swap agents to see how an action would behave for each.
+            {uiText("Badges reflect this agent's current settings, not yours. Swap agents to see how an action would behave for each.")}
           </p>
         </div>
       </PopoverContent>
@@ -546,7 +546,7 @@ function ActionTester({
         <Button onClick={onRun} disabled={running || !!outcome?.result.upstreamPending?.resumeTool || outcome?.result.decision === "ask_first"} size="sm">
           {running ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Running…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {uiText("Running…")}
             </>
           ) : (
             <>
@@ -557,7 +557,7 @@ function ActionTester({
         <Button onClick={onReset} disabled={running} size="sm" variant="ghost"> {uiText("Reset")} </Button>
       </div>
 
-      {(outcome?.result.decision === "ask_first" || outcome?.result.upstreamPending?.resumeTool) && <p className="text-xs text-muted-foreground">Finish the existing request below. Use Reset only when you intend to start a new call.</p>}
+      {(outcome?.result.decision === "ask_first" || outcome?.result.upstreamPending?.resumeTool) && <p className="text-xs text-muted-foreground">{uiText("Finish the existing request below. Use Reset only when you intend to start a new call.")}</p>}
 
       {running && (
         <RunningCard entry={entry} appName={appName} agentName={agent.name} elapsedMs={elapsedMs} onCancel={onCancelRunning} />
@@ -565,7 +565,7 @@ function ActionTester({
 
       {run.isError && !running && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          Couldn't reach {agent.name}. {run.error instanceof Error ? run.error.message : uiText("Please try again.")}
+          {uiText("Couldn't reach")} {agent.name}{uiText(".")} {run.error instanceof Error ? run.error.message : uiText("Please try again.")}
         </div>
       )}
 
@@ -601,10 +601,10 @@ function RunningCard({
         <span className="text-sm font-medium text-foreground">{uiText("Running…")}</span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {verb} {appName} as {agentName}.
+        {verb} {appName} as {agentName}{uiText(".")}
       </p>
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Started {seconds(elapsedMs)} ago · Press cancel to stop</span>
+        <span className="text-xs text-muted-foreground">{uiText("Started")} {seconds(elapsedMs)} {uiText("ago · Press cancel to stop")}</span>
         <Button onClick={onCancel} size="sm" variant="outline"> {uiText("Cancel")} </Button>
       </div>
     </div>
@@ -659,23 +659,23 @@ function ProviderPendingResult({ pending, appName, connectionId, agent }: { pend
   if (stoppedByUser) return <div role="status" className="space-y-2 rounded-md border border-border bg-muted/40 p-4 text-sm">
     <p className="font-medium">{resumed.action === "decline" ? "Request declined" : "Request cancelled"}</p>
     <p>{resumeError.message}</p>
-    <p className="text-muted-foreground">The original call was not repeated.</p>
-    {pending.executionId && <p>Execution: <code className="break-all">{pending.executionId}</code></p>}
+    <p className="text-muted-foreground">{uiText("The original call was not repeated.")}</p>
+    {pending.executionId && <p>{uiText("Execution:")} <code className="break-all">{pending.executionId}</code></p>}
   </div>;
   if (resumed) return <ResultPanel outcome={resumed.outcome} entry={resumed.entry} appName={appName} connectionId={connectionId} agent={agent} />;
   return (
     <div role="status" className="space-y-3 rounded-md border border-border bg-muted/40 p-4 text-sm">
-      <p className="font-medium">{pending.kind === "approval" ? "Approval needed" : "Authorization needed"} in {appName}</p>
-      <p className="text-muted-foreground">Paperclip allowed this call. The provider needs your input before it can continue.</p>
+      <p className="font-medium">{pending.kind === "approval" ? "Approval needed" : "Authorization needed"} {uiText("in")} {appName}</p>
+      <p className="text-muted-foreground">{uiText("Paperclip allowed this call. The provider needs your input before it can continue.")}</p>
       {pending.links.map((link) => {
         const checked = checkOAuthEndpointUrl(link.url);
-        return checked.ok ? <Button key={checked.url} variant="outline" asChild><a href={checked.url} target="_blank" rel="noopener noreferrer">Continue at {checked.host}</a></Button> : null;
+        return checked.ok ? <Button key={checked.url} variant="outline" asChild><a href={checked.url} target="_blank" rel="noopener noreferrer">{uiText("Continue at")} {checked.host}</a></Button> : null;
       })}
       {pending.message && <p className="whitespace-pre-wrap break-words">{pending.message}</p>}
-      {pending.links.length === 0 && !pending.resumeTool && <p>Open the provider dashboard to complete this request.</p>}
-      {pending.executionId && <p>Execution: <code className="break-all">{pending.executionId}</code></p>}
-      {pending.elicitationId && <p>Request: <code className="break-all">{pending.elicitationId}</code></p>}
-      {pending.expiresAt && <p>Approval expires {new Date(pending.expiresAt).toLocaleTimeString()}.</p>}
+      {pending.links.length === 0 && !pending.resumeTool && <p>{uiText("Open the provider dashboard to complete this request.")}</p>}
+      {pending.executionId && <p>{uiText("Execution:")} <code className="break-all">{pending.executionId}</code></p>}
+      {pending.elicitationId && <p>{uiText("Request:")} <code className="break-all">{pending.elicitationId}</code></p>}
+      {pending.expiresAt && <p>{uiText("Approval expires")} {new Date(pending.expiresAt).toLocaleTimeString()}{uiText(".")}</p>}
       {pending.resumeTool && agent ? <ProviderResumeControls pending={pending} connectionId={connectionId} agent={agent} onResult={setResumed} /> :
       <p className="text-muted-foreground">{pending.resumeTool
         ? `After approval, test the ${pending.resumeTool} action with this execution ID. Do not start the original action again.`
@@ -709,17 +709,17 @@ function ProviderResumeControls({ pending, connectionId, agent, onResult }: {
     if (!Object.keys(validation).length) resume.mutate(action);
   };
   return <div className="space-y-3">
-    <p className="text-muted-foreground">Review the provider's request, then resume this execution as {agent.name}. The original action will not be started again.</p>
-    <div className="flex items-center gap-2"><span>Resume permission</span><DecisionBadge decision={permission} /></div>
+    <p className="text-muted-foreground">{uiText("Review the provider's request, then resume this execution as")} {agent.name}{uiText(". The original action will not be started again.")}</p>
+    <div className="flex items-center gap-2"><span>{uiText("Resume permission")}</span><DecisionBadge decision={permission} /></div>
     {Object.keys(schema.properties ?? {}).length > 0 && <JsonSchemaForm schema={schema} values={content} onChange={setContent} errors={errors} disabled={resume.isPending} />}
     <div className="flex flex-wrap gap-2">
       <Button disabled={!entry || expired || permission === "off" || resume.isPending} onClick={() => submit("accept")}>{resume.isPending ? "Resuming…" : "Approve and resume"}</Button>
-      <Button variant="outline" disabled={!entry || expired || permission === "off" || resume.isPending} onClick={() => submit("decline")}>Decline</Button>
-      <Button variant="ghost" disabled={!entry || expired || permission === "off" || resume.isPending} onClick={() => submit("cancel")}>Cancel request</Button>
+      <Button variant="outline" disabled={!entry || expired || permission === "off" || resume.isPending} onClick={() => submit("decline")}>{uiText("Decline")}</Button>
+      <Button variant="ghost" disabled={!entry || expired || permission === "off" || resume.isPending} onClick={() => submit("cancel")}>{uiText("Cancel request")}</Button>
     </div>
-    {expired && <p>This provider approval expired. Check the provider before starting a new action.</p>}
-    {permission === "off" && <p>Allow the resume action in Permissions before continuing.</p>}
-    {catalog.isError && <p role="alert">Could not load the resume action. Close this test and try again.</p>}
+    {expired && <p>{uiText("This provider approval expired. Check the provider before starting a new action.")}</p>}
+    {permission === "off" && <p>{uiText("Allow the resume action in Permissions before continuing.")}</p>}
+    {catalog.isError && <p role="alert">{uiText("Could not load the resume action. Close this test and try again.")}</p>}
     {resume.isError && <p role="alert">{resume.error instanceof Error ? resume.error.message : "Could not resume. Check the provider before trying again."}</p>}
   </div>;
 }
@@ -860,7 +860,7 @@ function AllowedResult({
       </div>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
-        Ran as {outcome.agentName} · {seconds(outcome.durationMs)} · {relTime(outcome.ranAt)}
+        {uiText("Ran as")} {outcome.agentName} · {seconds(outcome.durationMs)} · {relTime(outcome.ranAt)}
       </p>
 
       {preview.items.some((item) => !isEmptyResult(item.value)) && (
@@ -882,13 +882,13 @@ function AllowedResult({
       <RawResponseDisclosure value={value} initiallyOpen={preview.rawFallback} />
 
       <p className="mt-3 text-xs text-muted-foreground">
-        This call is in the{" "}
+        {uiText("This call is in the")}{" "}
         <Link className="text-primary hover:underline" to="/activity?mode=agents&action=tool_">
-          Audit log
+          {uiText("Audit log")}
         </Link>
-        .
+        {uiText(".")}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">Last run finished in {seconds(outcome.durationMs)}.</p>
+      <p className="mt-1 text-xs text-muted-foreground">{uiText("Last run finished in")} {seconds(outcome.durationMs)}{uiText(".")}</p>
     </div>
   );
 }
@@ -907,7 +907,7 @@ function PrettyPreview({ value }: { value: unknown }) {
         <div className="space-y-2">
           {shown.map((row, index) => <PreviewRowCard key={index} row={row} index={index} />)}
           {rows.length > shown.length && (
-            <p className="text-(length:--text-micro) text-muted-foreground">… {rows.length - shown.length} more rows in the raw response</p>
+            <p className="text-(length:--text-micro) text-muted-foreground">… {rows.length - shown.length} {uiText("more rows in the raw response")}</p>
           )}
         </div>
       );
@@ -933,7 +933,7 @@ function PrettyPreview({ value }: { value: unknown }) {
           </tbody>
         </table>
         {rows.length > shown.length && (
-          <p className="px-2.5 py-1.5 text-(length:--text-micro) text-muted-foreground">… {rows.length - shown.length} more rows</p>
+          <p className="px-2.5 py-1.5 text-(length:--text-micro) text-muted-foreground">… {rows.length - shown.length} {uiText("more rows")}</p>
         )}
       </div>
     );
@@ -978,7 +978,7 @@ function PreviewRowCard({ row, index }: { row: Record<string, unknown>; index: n
         <p className="min-w-0 break-words text-sm font-medium text-foreground">
           {titleKey ? cellText(row[titleKey]) : `Result ${index + 1}`}
         </p>
-        {url && <a className="shrink-0 text-primary hover:underline" href={url} target="_blank" rel="noopener noreferrer">Open link</a>}
+        {url && <a className="shrink-0 text-primary hover:underline" href={url} target="_blank" rel="noopener noreferrer">{uiText("Open link")}</a>}
       </div>
       {summaryKey && <p className="mt-1 line-clamp-2 break-words text-muted-foreground">{cellText(row[summaryKey]).replace(/\*\*(.*?)\*\*/g, "$1")}</p>}
       {details.length > 0 && (
@@ -991,7 +991,7 @@ function PreviewRowCard({ row, index }: { row: Record<string, unknown>; index: n
           ))}
         </dl>
       )}
-      {details.length > 3 && <p className="mt-2 text-muted-foreground">{details.length - 3} more {details.length === 4 ? "field" : "fields"} in the raw response</p>}
+      {details.length > 3 && <p className="mt-2 text-muted-foreground">{details.length - 3} {uiText("more")} {details.length === 4 ? "field" : "fields"} {uiText("in the raw response")}</p>}
     </div>
   );
 }
@@ -1058,12 +1058,12 @@ function ErrorResult({
       </div>
       <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock className="h-3 w-3" />
-        Tried as {outcome.agentName} · {seconds(outcome.durationMs)} · {relTime(outcome.ranAt)}
+        {uiText("Tried as")} {outcome.agentName} · {seconds(outcome.durationMs)} · {relTime(outcome.ranAt)}
       </p>
       <div className="mt-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What {appName} said</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("What")} {appName} {uiText("said")}</p>
         <p className="mt-1 break-words text-sm text-foreground">{error.message}</p>
-        {error.reasonCode && <p className="mt-0.5 text-xs text-muted-foreground">code: {error.reasonCode}</p>}
+        {error.reasonCode && <p className="mt-0.5 text-xs text-muted-foreground">{uiText("code:")} {error.reasonCode}</p>}
       </div>
       <div className="mt-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{uiText("What to try")}</p>
@@ -1078,11 +1078,11 @@ function ErrorResult({
         {needsReconnect ? "After reconnecting, run this action again." : uiText("Adjust the input above and try again.")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Also visible in the{" "}
+        {uiText("Also visible in the")}{" "}
         <Link className="text-primary hover:underline" to="/activity?mode=agents&action=tool_">
-          Audit log
+          {uiText("Audit log")}
         </Link>
-        .
+        {uiText(".")}
       </p>
     </div>
   );
@@ -1197,7 +1197,7 @@ function AskFirstResult({
         <ShieldQuestion className="h-4 w-4 text-amber-600 dark:text-amber-400" />
         <span className="text-sm font-medium text-foreground">{uiText("Sent for your OK.")}</span>
       </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">{outcome.agentName} needs your approval before this runs.</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{outcome.agentName} {uiText("needs your approval before this runs.")}</p>
 
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex gap-3">
@@ -1221,11 +1221,11 @@ function AskFirstResult({
 
       {!settled && (
         <p className="mt-3 text-sm text-foreground">
-          Approve it in the{" "}
+          {uiText("Approve it in the")}{" "}
           <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "review")}>
-            Review tab
+            {uiText("Review tab")}
           </Link>{" "}
-          to finish the test. You can also cancel the request.
+          {uiText("to finish the test. You can also cancel the request.")}
         </p>
       )}
 
@@ -1286,19 +1286,19 @@ function OffExplanation({
         <div className="flex items-start gap-2">
           <Ban className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">{title} is off for {agent.name}.</p>
+            <p className="font-medium text-foreground">{title} {uiText("is off for")} {agent.name}{uiText(".")}</p>
             <p className="mt-0.5">{uiText("It won't run here, and it won't run from a task either.")}</p>
             <p className="mt-2">
-              Want to test it? Turn it on for {agent.name} {uiText("in")}{" "}
+              {uiText("Want to test it? Turn it on for")} {agent.name} {uiText("in")}{" "}
               <Link className="font-medium text-primary hover:underline" to={appTabHref(connectionId, "permissions")}> {uiText("Permissions")} </Link>{" "}
-              — set it to Allowed or Ask first.
+              {uiText("— set it to Allowed or Ask first.")}
             </p>
           </div>
         </div>
         <Button asChild size="sm">
           <Link to={permHref}>{uiText("Open Permissions →")}</Link>
         </Button>
-        <p className="text-xs text-muted-foreground">No call will be made — this action is off for {agent.name}.</p>
+        <p className="text-xs text-muted-foreground">{uiText("No call will be made — this action is off for")} {agent.name}{uiText(".")}</p>
       </div>
 
       <aside>

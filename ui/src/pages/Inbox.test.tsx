@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Approval, HeartbeatRun, Issue } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/i18n";
 import type { CompanyJoinRequest } from "../api/access";
 import {
   clearLocalInboxArchive,
@@ -39,6 +40,15 @@ const apiMocks = vi.hoisted(() => ({
   liveRunsForCompany: vi.fn(),
   experimentalSettings: vi.fn(),
   projectsList: vi.fn(),
+}));
+
+beforeEach(async () => { await i18n.changeLanguage("en"); });
+
+vi.mock("@/hooks/useSharedPolling", () => ({
+  useSharedPollingQuery: ({ enabled = true, refetchInterval = false }: { enabled?: boolean; refetchInterval?: number | false }) => ({
+    enabled, refetchInterval, isLeader: true, publish: vi.fn(),
+  }),
+  usePublishSharedQueryData: () => undefined,
 }));
 
 vi.mock("../api/approvals", () => ({
@@ -895,6 +905,29 @@ describe("Inbox toolbar", () => {
     });
   });
 
+  it.each([true, false])("defers hidden feeds on an approvals-only view (streamlined=%s)", async (streamlined) => {
+    routerMock.location.pathname = "/inbox/all";
+    apiMocks.experimentalSettings.mockResolvedValue({ enableStreamlinedUi: streamlined });
+    localStorage.setItem(taskCollectionPreferencesStorageKey({ companyId: "company-1", collectionKey: "inbox" }), JSON.stringify({
+      version: 1, companyId: "company-1", collectionKey: "inbox",
+      viewState: { allCategoryFilter: "approvals" }, columns: [],
+    }));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const root = createRoot(container);
+    await act(async () => { root.render(<QueryClientProvider client={client}><Inbox /></QueryClientProvider>); });
+    await vi.waitFor(() => expect(apiMocks.approvalsList).toHaveBeenCalled());
+    expect(apiMocks.issuesList).not.toHaveBeenCalled();
+    expect(apiMocks.heartbeatRunsList).not.toHaveBeenCalled();
+    expect(apiMocks.dashboardSummary).not.toHaveBeenCalled();
+    expect(apiMocks.joinRequestsList).not.toHaveBeenCalled();
+    routerMock.location.pathname = "/inbox/recent";
+    await act(async () => { root.render(<QueryClientProvider client={client}><Inbox /></QueryClientProvider>); });
+    await vi.waitFor(() => expect(apiMocks.issuesList).toHaveBeenCalledWith("company-1", expect.objectContaining({ touchedByUserId: "me" })));
+    expect(apiMocks.issuesList.mock.calls.some((call) => call[1]?.inboxArchivedByUserId === "me")).toBe(false);
+    await act(async () => { root.unmount(); });
+    client.clear();
+  });
+
   it("requests live descendant summaries for issue rows", async () => {
     routerMock.location.pathname = "/inbox/mine";
 
@@ -912,19 +945,20 @@ describe("Inbox toolbar", () => {
     });
 
     await vi.waitFor(() => {
-      expect(apiMocks.issuesList).toHaveBeenCalledTimes(3);
+      expect(apiMocks.issuesList).toHaveBeenCalledTimes(2);
     });
 
     expect(apiMocks.issuesList.mock.calls.map((call) => call[1]?.includeLiveDescendantSummary)).toEqual([
-      true,
       true,
       true,
     ]);
     expect(apiMocks.issuesList.mock.calls.map((call) => call[1]?.limit)).toEqual([
       500,
       500,
-      500,
     ]);
+
+    expect(apiMocks.dashboardSummary).not.toHaveBeenCalled();
+    expect(apiMocks.issuesList.mock.calls.some((call) => call[1]?.touchedByUserId === "me" && !call[1]?.inboxArchivedByUserId)).toBe(false);
 
     act(() => {
       root.unmount();
@@ -1451,7 +1485,7 @@ describe("InboxIssueMetaLeading", () => {
     const liveBadgeLabel = Array.from(container.querySelectorAll("span")).find(
       // The pill chassis is a Badge (itself a span with textContent "Live");
       // the label is the inner span without the rounded-full chassis class.
-      (node) => node.textContent === "Live" && node.className.includes("text-") && !node.className.includes("rounded-full"),
+      (node) => node.textContent?.trim() === "Live" && node.className.includes("text-") && !node.className.includes("rounded-full"),
     );
     const liveDot = container.querySelector('span[class*="bg-blue-500"]');
     const pulseRing = container.querySelector('span[class*="animate-pulse"]');

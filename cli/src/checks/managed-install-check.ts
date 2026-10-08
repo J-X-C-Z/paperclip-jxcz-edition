@@ -35,12 +35,12 @@ function hasManagedArtifacts(paths: InstallStorePaths): boolean {
 
 export function nodeRuntimeCheck(): CheckResult {
   return isSupportedNodeVersion(process.versions.node)
-    ? { name: "Node.js runtime", status: "pass", message: `Node.js ${process.versions.node}` }
+    ? { name: "Node.js 运行时", status: "pass", message: `Node.js ${process.versions.node}` }
     : {
-        name: "Node.js runtime",
+        name: "Node.js 运行时",
         status: "fail",
-        message: `Node.js ${process.versions.node} is unsupported`,
-        repairHint: `Install Node.js ${MINIMUM_NODE_VERSION} or newer before installing or running Paperclip`,
+        message: `不支持 Node.js ${process.versions.node}`,
+        repairHint: `安装或运行 Paperclip 前，请安装 Node.js ${MINIMUM_NODE_VERSION} 或更高版本`,
       };
 }
 
@@ -50,9 +50,9 @@ export function managedInstallChecks(
   if (!hasManagedArtifacts(paths)) {
     return [
       {
-        name: "Managed install",
+        name: "托管安装",
         status: "pass",
-        message: "Not present (optional for npx, global npm, and source-checkout usage)",
+        message: "不存在（npx、全局 npm 和源码检出方式可不配置）",
       },
     ];
   }
@@ -63,10 +63,10 @@ export function managedInstallChecks(
   } catch (error) {
     return [
       {
-        name: "Managed install manifest",
+        name: "托管安装清单",
         status: "fail",
         message: error instanceof Error ? error.message : String(error),
-        repairHint: "Re-run `paperclipai install` to rebuild the managed install metadata",
+        repairHint: "重新运行 `paperclipai install` 重建托管安装元数据",
       },
     ];
   }
@@ -74,10 +74,10 @@ export function managedInstallChecks(
   if (!manifest) {
     return [
       {
-        name: "Managed install manifest",
+        name: "托管安装清单",
         status: "fail",
-        message: `Managed install artifacts exist but ${paths.manifestPath} is missing`,
-        repairHint: "Re-run `paperclipai install`",
+        message: `托管安装文件已存在，但缺少 ${paths.manifestPath}`,
+        repairHint: "重新运行 `paperclipai install`",
       },
     ];
   }
@@ -98,17 +98,17 @@ export function managedInstallChecks(
   results.push(
     payloadExists && currentMatches
       ? {
-          name: "Managed install store",
+          name: "托管安装目录",
           status: "pass",
-          message: `${manifest.source} ${manifest.version} is active`,
+          message: `当前使用 ${manifest.source} ${manifest.version}`,
         }
       : {
-          name: "Managed install store",
+          name: "托管安装目录",
           status: "fail",
           message: !payloadExists
-            ? `Manifest payload is missing or outside the install store: ${manifest.payloadPath}`
-            : `Current link does not point to ${manifest.payloadPath}`,
-          repairHint: "Re-run `paperclipai install` or roll back to a retained payload",
+            ? `安装清单中的程序包缺失或位于安装目录之外：${manifest.payloadPath}`
+            : `当前链接未指向 ${manifest.payloadPath}`,
+          repairHint: "重新运行 `paperclipai install`，或回滚到保留的程序包",
         },
   );
 
@@ -120,24 +120,24 @@ export function managedInstallChecks(
   }
   results.push(
     shimValid
-      ? { name: "Managed install shim", status: "pass", message: paths.shimPath }
+      ? { name: "托管安装启动器", status: "pass", message: paths.shimPath }
       : {
-          name: "Managed install shim",
+          name: "托管安装启动器",
           status: "fail",
-          message: `Missing or unrecognized shim at ${paths.shimPath}`,
-          repairHint: "Re-run `paperclipai install`",
+          message: `启动器缺失或无法识别：${paths.shimPath}`,
+          repairHint: "重新运行 `paperclipai install`",
         },
   );
 
   const shimDirectory = path.dirname(paths.shimPath);
   results.push(
     pathContains(shimDirectory)
-      ? { name: "Managed install PATH", status: "pass", message: `${shimDirectory} is on PATH` }
+      ? { name: "托管安装 PATH", status: "pass", message: `${shimDirectory} 已加入 PATH` }
       : {
-          name: "Managed install PATH",
+          name: "托管安装 PATH",
           status: "warn",
-          message: `${shimDirectory} is not on PATH`,
-          repairHint: 'Run `export PATH="$HOME/.local/bin:$PATH"` and add it to your shell startup file',
+          message: `${shimDirectory} 未加入 PATH`,
+          repairHint: '运行 `export PATH="$HOME/.local/bin:$PATH"` 并将其添加到 shell 启动文件',
         },
   );
 
@@ -155,12 +155,12 @@ export function managedInstallChecks(
   }
   results.push(
     orphaned.length === 0
-      ? { name: "Managed install retention", status: "pass", message: "No orphaned payloads" }
+      ? { name: "托管安装清理", status: "pass", message: "没有孤立的安装包" }
       : {
-          name: "Managed install retention",
+          name: "托管安装清理",
           status: "warn",
-          message: `${orphaned.length} orphaned payload${orphaned.length === 1 ? "" : "s"} found`,
-          repairHint: "A successful `paperclipai update` prunes unretained payloads",
+          message: `发现 ${orphaned.length} 个孤立程序包`,
+          repairHint: "成功运行 `paperclipai update` 后会清理未保留的程序包",
         },
   );
 

@@ -1,43 +1,31 @@
-# Example: Research and Gate a Notion MCP Connection
+# 示例：研究并审批 Notion MCP 连接
 
-## Input
+## 输入
 
-> Research Notion's hosted MCP server and prepare it for Paperclip. Start from
-> the vendor documentation URL. Do not build the connector until I approve the
-> research.
+> 研究 Notion 托管的 MCP server，并为 Paperclip 准备集成。从供应商文档 URL 开始。在我批准研究前，不要构建 connector。
 
-## Application
+## 执行步骤
 
-1. Read the current `paperclip-content/integrations/README.md` and integration
-   harness from the content target commit.
-2. Research the official Notion MCP, OAuth, scopes, tools, limits, and admin
-   setup. Record URLs and access dates, and mark unknowns rather than guessing.
-3. Reconcile existing Notion integration artifacts and open PRs before adding
-   or changing catalog content.
-4. Open a research-only `paperclip-content` PR containing the planning package
-   required by the integrations playbook.
-5. Record the research PR head SHA and proposed connection set in an issue
-   document, then request confirmation against that exact revision.
-6. Stop with the issue in review. No Paperclip App branch exists yet.
+1. 从内容目标 commit 中阅读当前的 `paperclip-content/integrations/README.md` 和 integration harness。
+2. 研究 Notion 官方 MCP、OAuth、scopes、工具、限制和管理员设置。记录 URL 和访问日期；对未知项明确标记，不要猜测。
+3. 添加或修改 catalog 内容前，先协调已有 Notion 集成 artifacts 和开放 PR。
+4. 在 `paperclip-content` 中创建一份仅包含研究内容的 PR，并附上集成操作手册要求的规划材料。
+5. 在 issue 文档中记录研究 PR head SHA 和拟议的连接清单，然后针对该确切版本请求确认。
+6. 停止处理，并将 issue 保持为审查状态。此时尚未创建 Paperclip App 分支。
 
-## Gate Output
+## 审批材料
 
 ```text
-Research PR: https://github.com/paperclipai/paperclip-content/pull/123
-Research head: 0123456789abcdef0123456789abcdef01234567
-Content source: 89abcdef0123456789abcdef0123456789abcdef
-App source: fedcba9876543210fedcba9876543210fedcba98
-Proposed connection set:
-- notion-mcp: one OAuth credential owner, hosted MCP endpoint, and independently
-  reviewable Notion action catalog
-Known limitations:
-- Production OAuth consent still requires credentialed QA after approval.
-Next action:
-- Human confirms or rejects this exact research revision.
+研究 PR：https://github.com/paperclipai/paperclip-content/pull/123
+研究 head：0123456789abcdef0123456789abcdef01234567
+Content 源码：89abcdef0123456789abcdef0123456789abcdef
+App 源码：fedcba9876543210fedcba9876543210fedcba98
+拟议的连接清单：
+- notion-mcp：一个 OAuth 凭据负责人、托管 MCP endpoint，以及可独立审查的 Notion 操作 catalog
+已知限制：
+- 获批后，生产环境 OAuth 授权仍需 QA 使用凭据进行验证。
+下一步操作：
+- 由人工确认或拒绝此确切的研究版本。
 ```
 
-After acceptance, create one isolated Paperclip App worktree and PR for
-`notion-mcp`, reread the current Connector Playbook, and follow its current
-implementation and validation requirements. If research reveals a reusable
-OAuth or documentation rule, update the owning upstream playbook in the
-appropriate PR before declaring the connector merge-ready.
+获批后，为 `notion-mcp` 创建一个隔离的 Paperclip App worktree 和 PR，重读当前 Connector Playbook，并遵循其实施和验证要求。如果研究发现可复用的 OAuth 或文档规则，应先通过适当的 PR 更新对应的上游操作手册，再将 connector 标记为可合并。

@@ -7,6 +7,7 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectDetail } from "./ProjectDetail";
+import { i18n } from "@/i18n";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -17,6 +18,7 @@ const mockProjectsApi = vi.hoisted(() => ({
 }));
 const mockIssuesApi = vi.hoisted(() => ({
   list: vi.fn(),
+  listCompact: vi.fn(),
   update: vi.fn(),
 }));
 const mockAgentsApi = vi.hoisted(() => ({ list: vi.fn() }));
@@ -178,6 +180,7 @@ describe("ProjectDetail", () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
+    void i18n.changeLanguage("en");
     container = document.createElement("div");
     document.body.appendChild(container);
     mockLocation.pathname = "/projects/project-1/plugin-operations";
@@ -189,6 +192,7 @@ describe("ProjectDetail", () => {
     mockProjectsApi.get.mockResolvedValue(project());
     mockProjectsApi.list.mockResolvedValue([project()]);
     mockIssuesApi.list.mockResolvedValue([]);
+    mockIssuesApi.listCompact.mockResolvedValue([]);
     mockAgentsApi.list.mockResolvedValue([]);
     mockHeartbeatsApi.liveRunsForCompany.mockResolvedValue([]);
     mockBudgetsApi.overview.mockResolvedValue({ policies: [] });
@@ -269,10 +273,64 @@ describe("ProjectDetail", () => {
     const summaryCard = container.querySelector('[data-testid="summary-slot-card"]');
     expect(titleEditor && summaryCard ? Boolean(titleEditor.compareDocumentPosition(summaryCard) & Node.DOCUMENT_POSITION_FOLLOWING) : false).toBe(true);
     expect(container.textContent).toContain("Plugin operations");
-    expect(mockIssuesApi.list).toHaveBeenCalledWith("company-1", {
+    expect(mockIssuesApi.listCompact).toHaveBeenCalledWith("company-1", {
       projectId: "project-1",
       originKindPrefix: "plugin:paperclip.missions",
+      limit: 30, offset: 0, sortField: "updated", sortDir: "desc",
+    }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(mockIssuesList).toHaveBeenLastCalledWith(expect.objectContaining({
+      searchFilters: { originKindPrefix: "plugin:paperclip.missions" },
+    }));
+  });
+
+  it.each(["issues", "plugin-operations"])("loads project %s pages on demand and keeps later results reachable", async (tab) => {
+    mockLocation.pathname = `/projects/project-1/${tab}`;
+    mockIssuesApi.listCompact
+      .mockResolvedValueOnce(Array.from({ length: 30 }, (_, index) => ({ id: `issue-${index}` })))
+      .mockResolvedValueOnce([{ id: "issue-29" }, { id: "later" }]);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(() => {
+      root = createRoot(container);
+      root.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>);
     });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 15)); });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 15)); });
+    expect(mockIssuesApi.listCompact).toHaveBeenCalledTimes(1);
+    const props = mockIssuesList.mock.lastCall![0] as { hasMoreIssues: boolean; onLoadMoreIssues: () => void };
+    expect(props.hasMoreIssues).toBe(true);
+    await act(async () => {
+      props.onLoadMoreIssues();
+      await new Promise(resolve => setTimeout(resolve, 15));
+    });
+    expect(mockIssuesApi.listCompact.mock.calls[1][1]).toEqual(expect.objectContaining({
+      projectId: "project-1", limit: 30, offset: 30,
+      originKindPrefix: tab === "plugin-operations" ? "plugin:paperclip.missions" : undefined,
+    }));
+    expect(mockIssuesList).toHaveBeenLastCalledWith(expect.objectContaining({
+      hasMoreIssues: false,
+      issues: expect.arrayContaining([{ id: "later" }]),
+    }));
+    const final = mockIssuesList.mock.lastCall![0] as { issues: { id: string }[] };
+    expect(final.issues).toHaveLength(31);
+  });
+
+  it("defers workspace collections until their tab is opened and keeps the entry available", async () => {
+    mockLocation.pathname = "/projects/project-1/configuration";
+    mockInstanceSettingsApi.getExperimental.mockResolvedValue({ enableIsolatedWorkspaces: true });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const render = () => root!.render(<QueryClientProvider client={queryClient}><ProjectDetail /></QueryClientProvider>);
+    root = createRoot(container);
+    await act(render);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 15)); });
+    expect(container.textContent).toContain("Workspaces");
+    expect(mockIssuesApi.list).not.toHaveBeenCalled();
+    expect(mockExecutionWorkspacesApi.list).not.toHaveBeenCalled();
+    mockLocation.pathname = "/projects/project-1/workspaces";
+    await act(render);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 15)); });
+    expect(mockIssuesApi.list).toHaveBeenCalledWith("company-1", { projectId: "project-1" });
+    expect(mockExecutionWorkspacesApi.list).toHaveBeenCalledWith("company-1", { projectId: "project-1" });
+    expect(container.querySelector('[data-testid="project-workspaces"]')).not.toBeNull();
   });
 
   it("keeps Timeline out of the project task-list controls", async () => {

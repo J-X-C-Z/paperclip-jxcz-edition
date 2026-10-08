@@ -55,7 +55,7 @@ export async function serviceHealthChecks(
   const instanceId = resolvePaperclipInstanceId();
   const detection = await deps.detect(instanceId);
   if (!detection.supported) {
-    return [{ name: "Background service", status: "pass", message: detection.reason }];
+    return [{ name: "后台服务", status: "pass", message: detection.reason }];
   }
 
   const manager = detection.manager;
@@ -63,9 +63,9 @@ export async function serviceHealthChecks(
   if (!status.installed) {
     return [
       {
-        name: "Background service",
+        name: "后台服务",
         status: "pass",
-        message: `Not installed for instance ${instanceId} (optional)`,
+        message: `实例 ${instanceId} 未安装（可选）`,
       },
     ];
   }
@@ -79,12 +79,12 @@ export async function serviceHealthChecks(
   }
   results.push(
     definitionCurrent
-      ? { name: "Service definition", status: "pass", message: manager.definitionPath }
+      ? { name: "服务定义", status: "pass", message: manager.definitionPath }
       : {
-          name: "Service definition",
+          name: "服务定义",
           status: "fail",
-          message: `Missing or drifted definition at ${manager.definitionPath}`,
-          repairHint: "Run `paperclipai service install` to regenerate the service definition",
+          message: `服务定义缺失或已变更：${manager.definitionPath}`,
+          repairHint: "运行 `paperclipai service install` 重新生成服务定义",
         },
   );
 
@@ -95,12 +95,12 @@ export async function serviceHealthChecks(
   const shimPresent = status.active ? true : await deps.shimPresent(serviceExecutable);
   results.push(
     status.active
-      ? { name: "Service runtime", status: "pass", message: `${status.serviceName} is active` }
+      ? { name: "服务运行状态", status: "pass", message: `${status.serviceName} 正在运行` }
       : !shimPresent
         ? {
-            name: "Service runtime",
+            name: "服务运行状态",
             status: "fail",
-            message: `${status.serviceName} cannot start: no executable exists at ${serviceExecutable}`,
+            message: `${status.serviceName} 无法启动：可执行文件不存在于 ${serviceExecutable}`,
             repairHint:
               path.resolve(serviceExecutable) === path.resolve(resolveInstallStorePaths().shimPath)
                 ? "Run `paperclipai install` to restore the managed payload and shim, then `paperclipai service start`"
@@ -108,16 +108,16 @@ export async function serviceHealthChecks(
           }
         : health.ok
           ? {
-              name: "Service runtime",
+              name: "服务运行状态",
               status: "fail",
-              message: `${status.serviceName} is inactive but the configured port is serving another Paperclip process`,
-              repairHint: "Run `paperclipai service start`, or stop the conflicting foreground process first",
+              message: `${status.serviceName} 未运行，但配置的端口正由另一个 Paperclip 进程提供服务`,
+              repairHint: "运行 `paperclipai service start`，或先停止冲突的前台进程",
             }
           : {
-              name: "Service runtime",
+              name: "服务运行状态",
               status: "fail",
-              message: `${status.serviceName} is ${status.detail ?? "inactive"}`,
-              repairHint: "Run `paperclipai service start`; inspect `paperclipai service logs` if it does not stay up",
+              message: `${status.serviceName} 状态为 ${status.detail ?? "inactive"}`,
+              repairHint: "运行 `paperclipai service start`；如果服务未能持续运行，请查看 `paperclipai service logs`",
             },
   );
 
@@ -128,28 +128,28 @@ export async function serviceHealthChecks(
   results.push(
     !health.ok
       ? {
-          name: "Service health",
+          name: "服务健康状态",
           status: "fail",
-          message: health.error ?? "Health endpoint did not report ok",
-          repairHint: "Inspect `paperclipai service status` and `paperclipai service logs`",
+          message: health.error ?? "健康检查端点未返回正常状态",
+          repairHint: "检查 `paperclipai service status` 和 `paperclipai service logs`",
         }
       : expectedVersion && health.version !== expectedVersion
         ? {
-            name: "Service version",
+            name: "服务版本",
             status: "fail",
-            message: `Running ${health.version ?? "unknown"}; managed install is ${expectedVersion}`,
-            repairHint: "Run `paperclipai service restart --expected-version " + expectedVersion + "`",
+            message: `当前运行版本为 ${health.version ?? "unknown"}；托管安装版本为 ${expectedVersion}`,
+            repairHint: "运行 `paperclipai service restart --expected-version " + expectedVersion + "`",
           }
         : status.active
           ? {
-              name: "Service health",
+              name: "服务健康状态",
               status: "pass",
-              message: `Healthy${health.version ? ` at version ${health.version}` : ""}`,
+              message: `运行正常${health.version ? `，版本 ${health.version}` : ""}`,
             }
           : {
-              name: "Service health",
+              name: "服务健康状态",
               status: "warn",
-              message: `The configured port answers healthy${health.version ? ` (version ${health.version})` : ""}, but not from ${status.serviceName} — the service is inactive`,
+              message: `配置的端口返回正常${health.version ? `（版本 ${health.version}）` : ""}，但响应进程不是 ${status.serviceName}，该服务当前未运行`,
             },
   );
 
@@ -157,8 +157,8 @@ export async function serviceHealthChecks(
     results.push({
       name: "Service linger",
       status: "warn",
-      message: "Start-on-login is enabled but systemd user lingering is off",
-      repairHint: "Re-run `paperclipai service install --enable-linger` if the service must survive logout",
+      message: "已启用登录时启动，但 systemd 用户 linger 未开启",
+      repairHint: "如需在退出登录后继续运行服务，请重新运行 `paperclipai service install --enable-linger`",
     });
   }
 

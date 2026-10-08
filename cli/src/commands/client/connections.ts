@@ -17,7 +17,7 @@ async function callRuntimeConnectionTool(
   const endpoint = process.env[endpointEnv]?.trim();
   const token = process.env.PAPERCLIP_RUNTIME_TOOLS_TOKEN?.trim();
   if (!endpoint || !token) {
-    throw new Error("This command requires the runtime connection environment from an active heartbeat run");
+    throw new Error("此命令需要活动心跳运行提供的运行时连接环境");
   }
   const response = await fetch(endpoint, {
     method: "POST",
@@ -46,14 +46,14 @@ function writeResult(value: unknown, options: RuntimeConnectionOptions) {
 export function registerConnectionIntentCommands(program: Command) {
   const connections = program
     .command("connections")
-    .description("Search or request connections from an active heartbeat run")
+    .description("从活动心跳运行中搜索连接或请求连接")
     .addHelpText("after", `\n${CONNECTION_INTENT_AGENT_GUIDANCE}\n`);
 
   connections
     .command("search")
-    .argument("[query]", "Service name or capability")
-    .option("--retry-provider-choice", "Reconsider a provider choice only at the user’s explicit request")
-    .option("--json", "Print formatted JSON")
+    .argument("[query]", "服务名称或能力")
+    .option("--retry-provider-choice", "仅在用户明确要求时重新考虑提供方选择")
+    .option("--json", "输出格式化的 JSON")
     .action(async (query: string | undefined, options: RuntimeConnectionOptions) => {
       const input = connectionsSearchInputSchema.parse({ query: query ?? "", retryProviderChoice: options.retryProviderChoice });
       writeResult(await callRuntimeConnectionTool(
@@ -64,10 +64,10 @@ export function registerConnectionIntentCommands(program: Command) {
 
   connections
     .command("request")
-    .argument("<service>", "Connectable service slug")
-    .option("--target-service <slug>", "Requested app when the user explicitly names an external provider")
-    .option("--selection-interaction-id <id>", "Answered external-provider question ID")
-    .option("--json", "Print formatted JSON")
+    .argument("<service>", "可连接服务标识")
+    .option("--target-service <slug>", "用户明确指定外部提供方时使用的应用")
+    .option("--selection-interaction-id <id>", "已回答的外部提供方问题 ID")
+    .option("--json", "输出格式化的 JSON")
     .action(async (service: string, options: RuntimeConnectionOptions & { targetService?: string }) => {
       const input = connectionRequestInputSchema.parse({ service, targetService: options.targetService, selectionInteractionId: (options as RuntimeConnectionOptions & { selectionInteractionId?: string }).selectionInteractionId });
       writeResult(await callRuntimeConnectionTool(

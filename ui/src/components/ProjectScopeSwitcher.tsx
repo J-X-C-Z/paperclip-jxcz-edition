@@ -7,6 +7,7 @@ import { useOptionalProjectScope } from "@/context/ProjectScopeContext";
 import { useCompany } from "@/context/CompanyContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { useResourceMemberships } from "@/hooks/useResourceMemberships";
 
 export function ProjectScopeSwitcher() {
   const scope = useOptionalProjectScope();
@@ -14,15 +15,26 @@ export function ProjectScopeSwitcher() {
     enabled: false, projectId: null, projects: [], loading: false, error: null, setProjectId: () => undefined,
   };
   const { selectedCompanyId, selectedCompany } = useCompany();
+  const memberships = useResourceMemberships(selectedCompanyId);
   const dialogActions = useOptionalDialogActions();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const options = useMemo(() => [
-    { id: null as string | null, name: uiText("All Company") },
-    ...projects.map((project) => ({ id: project.id, name: project.name ?? project.id })),
-  ].filter((option) => option.name.toLowerCase().includes(search.trim().toLowerCase())), [projects, search]);
+  const options = useMemo(() => {
+    const activeProjects = projects
+      .filter((project) => !project.archivedAt)
+      .sort((left, right) => {
+        const priority = (project: (typeof projects)[number]) =>
+          memberships.data?.projectMemberships[project.id] === "left" ? 2
+            : memberships.data?.starredProjectIds?.includes(project.id) ? 0 : 1;
+        return priority(left) - priority(right);
+      });
+    return [
+      { id: null as string | null, name: uiText("All Company") },
+      ...activeProjects.map((project) => ({ id: project.id, name: project.name ?? project.id })),
+    ].filter((option) => option.name.toLowerCase().includes(search.trim().toLowerCase()));
+  }, [memberships.data, projects, search]);
   if (!enabled) return null;
   const active = projects.find((project) => project.id === projectId);
 

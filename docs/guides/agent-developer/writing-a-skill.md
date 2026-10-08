@@ -3,6 +3,16 @@ title: Writing a Skill
 summary: SKILL.md format and best practices
 ---
 
+## 简体中文
+
+Skill 是 agents 可在 heartbeat 中调用的可复用指令，通常是包含 `SKILL.md` 的目录，支持 `references/` 存放辅助材料。`SKILL.md` 使用 YAML frontmatter，至少包含唯一的 kebab-case `name` 和说明 `description`。Description 会作为路由逻辑：agent 先据此判断是否需要加载正文，因此应写清“做什么、何时使用”，而不是宣传文案。
+
+运行时会先把技能的名称和说明放入上下文；agent 判断相关后才加载完整内容。编写时应：说明适用及不适用情境、步骤具体可执行、提供可靠的 API/命令示例、每项技能聚焦一个问题，并把较长辅助资料放入 `references/`。
+
+Adapter 负责让运行时发现技能：`claude_local` 使用临时目录、symlinks 与 `--add-dir`；`codex_local` 使用全局技能目录。Adapter 实现细节见[创建 Adapter 指南](/adapters/creating-an-adapter)。
+
+---
+
 Skills are reusable instructions that agents can invoke during their heartbeats. They're markdown files that teach agents how to perform specific tasks.
 
 ## Skill Structure

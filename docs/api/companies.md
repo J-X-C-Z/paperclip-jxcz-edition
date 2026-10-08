@@ -1,38 +1,30 @@
 ---
-title: Companies
-summary: Company CRUD endpoints
+title: 公司
+summary: 公司增删改查端点
 ---
 
-Manage companies within your Paperclip instance.
+管理 Paperclip 实例中的公司。
 
-## List Companies
+## 列出公司
 
 ```
 GET /api/companies
 ```
 
-Requires a board user. Returns companies where the user has active membership.
-Instance administrators and the local trusted board can list all companies.
+需要看板用户身份。返回当前用户具有有效成员资格的公司。实例管理员和本地可信看板可以列出所有公司。
 
-For navigation and company selectors, use `GET /api/companies?scope=accessible`.
-This returns only companies the caller can enter through company-scoped routes,
-including for instance administrators. Instance administrator status alone does
-not grant access to a company's contents. The local trusted board can still
-enter all companies. The board UI uses this scope for its company list, so it
-does not select companies the user cannot open.
-The Instance Access screen uses the unscoped directory so administrators can
-manage membership for all companies. A supplied `scope` must be a single
-`accessible` value; empty, unknown, or repeated values return `400`.
+用于导航和公司选择器时，请使用 `GET /api/companies?scope=accessible`。此端点只返回调用方可通过公司范围路由进入的公司，实例管理员也遵循此限制。仅有实例管理员身份并不代表可以访问公司的内容。本地可信看板仍可进入所有公司。看板界面使用此范围获取公司列表，因此不会选择用户无法打开的公司。
+“实例访问权限”页面使用不带范围限制的目录，以便管理员管理所有公司的成员资格。提供的 `scope` 必须且只能是单个 `accessible` 值；空值、未知值或重复值都会返回 `400`。
 
-## Get Company
+## 获取公司
 
 ```
 GET /api/companies/{companyId}
 ```
 
-Returns company details including name, description, budget, and status.
+返回公司详情，包括名称、描述、预算和状态。
 
-## Create Company
+## 创建公司
 
 ```
 POST /api/companies
@@ -42,7 +34,7 @@ POST /api/companies
 }
 ```
 
-## Update Company
+## 更新公司
 
 ```
 PATCH /api/companies/{companyId}
@@ -54,16 +46,16 @@ PATCH /api/companies/{companyId}
 }
 ```
 
-## Upload Company Logo
+## 上传公司徽标
 
-Upload an image for a company icon and store it as that company’s logo.
+上传公司图标图片，并将其保存为该公司的徽标。
 
 ```
 POST /api/companies/{companyId}/logo
 Content-Type: multipart/form-data
 ```
 
-Valid image content types:
+支持的图片内容类型：
 
 - `image/png`
 - `image/jpeg`
@@ -72,28 +64,28 @@ Valid image content types:
 - `image/gif`
 - `image/svg+xml`
 
-Company logo uploads use the normal Paperclip attachment size limit.
+公司徽标上传使用 Paperclip 的常规附件大小限制。
 
-Then set the company logo by PATCHing the returned `assetId` into `logoAssetId`.
+随后通过 PATCH 将返回的 `assetId` 写入 `logoAssetId`，设置公司徽标。
 
-## Archive Company
+## 归档公司
 
 ```
 POST /api/companies/{companyId}/archive
 ```
 
-Archives a company. Archived companies are hidden from default listings.
+归档公司。归档后的公司不会显示在默认列表中。
 
-## Company Fields
+## 公司字段
 
-| Field | Type | Description |
+| 字段 | 类型 | 说明 |
 |-------|------|-------------|
-| `id` | string | Unique identifier |
-| `name` | string | Company name |
-| `description` | string | Company description |
-| `status` | string | `active`, `paused`, `archived` |
-| `logoAssetId` | string | Optional asset id for the stored logo image |
-| `logoUrl` | string | Optional Paperclip asset content path for the stored logo image |
-| `budgetMonthlyCents` | number | Monthly budget limit |
-| `createdAt` | string | ISO timestamp |
-| `updatedAt` | string | ISO timestamp |
+| `id` | string | 唯一标识符 |
+| `name` | string | 公司名称 |
+| `description` | string | 公司描述 |
+| `status` | string | `active`、`paused`、`archived` |
+| `logoAssetId` | string | 已存储徽标图片的可选资源 ID |
+| `logoUrl` | string | 已存储徽标图片的可选 Paperclip 资源内容路径 |
+| `budgetMonthlyCents` | number | 月度预算上限 |
+| `createdAt` | string | ISO 时间戳 |
+| `updatedAt` | string | ISO 时间戳 |

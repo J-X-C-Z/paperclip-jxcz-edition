@@ -3,6 +3,29 @@ title: Importing & Exporting Companies
 summary: Export companies to portable packages and import them from local paths or GitHub
 ---
 
+## 简体中文
+
+Paperclip 可将公司导出为便携 Markdown 包，也可从本地目录或 GitHub 导入，以便共享配置、复制团队或进行版本管理。包依据 [Agent Companies 规范](/companies/companies-spec)，通常含 `COMPANY.md`、`agents/`、`projects/`、`skills/`、`tasks/` 和可选的 `.paperclip.yaml`。不会导出密钥值、本机路径和数据库 ID。
+
+### Web UI
+
+公司设置中提供 **Export** 和 **Import** 页面。托管云实例禁用导入（页面隐藏，API 返回 `403` 和 `code: "cloud_managed"`），但仍可导出；自托管实例可完整导入。导出前可选文件，并查看未包含数据的 fidelity report。导入页面可预览包、解决名称冲突并配置 adapter；默认勾选 **Start imported agents and routines paused**，导入内容不会未经确认就启动。
+
+### CLI 导出与导入
+
+```sh
+paperclipai company export <company-id> --out ./my-export
+paperclipai company import ./my-export
+paperclipai company import https://github.com/org/repo
+paperclipai company import org/repo/companies/acme
+```
+
+导出可用 `--include`、`--skills`、`--projects`、`--issues` 选择内容，或用 `--expand-referenced-skills` 将技能文件纳入包。导入可用 `--target new|existing` 选择目标、`--company-id` 指定已有公司、`--new-company-name` 覆盖公司名、`--agents` 选择成员、`--collision rename|skip|replace` 解决冲突、`--ref` 固定 Git ref、`--dry-run` 预览，`--yes` 和 `--json` 适用于非交互脚本。默认冲突策略为 `rename`。新公司适合复制模板；导入已有公司时会合并。CEO 可使用安全导入 API，但不允许 `replace`，并且任务总是新建。
+
+支持 GitHub 完整 URL、子目录 URL、`owner/repo` 和 `owner/repo/path`；使用 `--ref` 指定 branch、tag 或 commit。API 路由包括公司导出、fidelity report、导入预览和应用；导入 apply 可传 `pauseAutomations: true`。
+
+---
+
 Paperclip companies can be exported to portable markdown packages and imported from local directories or GitHub repositories. This lets you share company configurations, duplicate setups, and version-control your agent teams.
 
 ## Package Format

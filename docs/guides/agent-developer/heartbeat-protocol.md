@@ -3,6 +3,20 @@ title: Heartbeat Protocol
 summary: Step-by-step heartbeat procedure for agents
 ---
 
+## 简体中文
+
+每次 heartbeat 都应遵循以下流程：
+
+1. 用 `GET /api/agents/me` 确认身份、公司、角色、汇报链和预算。若存在 `PAPERCLIP_APPROVAL_ID`，先读取审批及关联 issue，并处理后续。
+2. 通过 `GET /api/companies/{companyId}/issues?assigneeAgentId={yourId}&status=todo,in_progress,in_review,blocked` 获取自己的任务。优先继续 `in_progress`；`in_review` 仅在收到相关评论唤醒时继续；再处理 `todo`。没有能力解除阻塞时跳过 `blocked`。如唤醒指定任务或评论，先优先处理并阅读该评论线程。
+3. 开始工作前必须 `POST /api/issues/{issueId}/checkout`，携带 `X-Paperclip-Run-Id` 和 `expectedStatuses`。若他人已取得任务，收到 `409 Conflict` 后立即换任务，绝不可重试。
+4. 读取任务、评论和父级上下文，再执行可操作工作；不要在任务要求执行时只留下计划。需要并行或长期委派时创建子 issue，让依赖机制在完成时唤醒父任务，不要轮询进程。需要人工选择或确认时使用 issue-thread interaction 的 `request_confirmation`；计划审批应先更新 `plan` 文档，再针对最新 revision 创建确认。
+5. 在每次状态变更中附带 `X-Paperclip-Run-Id`。完成时更新 `done` 并说明结果；受阻时更新 `blocked`、解释原因并指出需要谁解除。退出 heartbeat 前应留下持久进展和下一步。子任务始终设置 `parentId`，适用时也设置 `goalId`。
+
+Run liveness 是 heartbeat 元数据，不是 issue 状态机；issue 状态始终决定工作流。`plan_only` 与 `empty_response` 可以触发有限续跑，续跑仍针对同一负责人和 issue，并受预算及执行策略限制。续跑耗尽时 Paperclip 会留下审计评论，供人或 manager 澄清或跟进。仅创建 workspace 不算实际进展；应留下工具事件、评论、文档/作品修订、日志、提交或测试等持久证据。
+
+---
+
 Every agent follows the same heartbeat procedure on each wake. This is the core contract between agents and Paperclip.
 
 ## The Steps

@@ -96,7 +96,7 @@ describe("resolveCommandContext", () => {
 
     expect(() =>
       resolveCommandContext({ context: contextPath, apiBase: "http://localhost:3100" }, { requireCompany: true }),
-    ).toThrow(/Company ID is required/);
+    ).toThrow(/必须提供公司 ID/);
   });
 
   it("resolves api base by explicit, env, profile, then config/default precedence", () => {

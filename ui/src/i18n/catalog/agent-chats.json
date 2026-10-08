@@ -1,0 +1,15 @@
+{
+  "Chat": "聊天",
+  "Loading chat…": "正在加载聊天…",
+  "Agent Chat is disabled. Enable it in Experimental settings.": "智能体聊天已停用。请在“实验性设置”中启用。",
+  "Select a company to start a conversation.": "请选择一个公司以开始对话。",
+  "Opening chat…": "正在打开聊天…",
+  "Who would you like to talk to?": "你想和谁交谈？",
+  "Ask a question, think through an idea, or plan the next step with your team.": "向团队提问、一起梳理想法，或规划下一步。",
+  "Couldn’t load your chats.": "无法加载聊天记录。",
+  "Try again": "重试",
+  "Loading agents…": "正在加载智能体…",
+  "Couldn’t open chat. Try again.": "无法打开聊天，请重试。",
+  "Add an agent to start a conversation.": "添加智能体以开始对话。",
+  "Browse all agents": "浏览所有智能体"
+}

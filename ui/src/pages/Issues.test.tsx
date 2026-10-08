@@ -48,13 +48,14 @@ describe("issues page pagination helpers", () => {
   });
 
   it("advances to the next offset when the current page is full", () => {
-    expect(getNextIssuesPageOffset(100, 0)).toBe(100);
-    expect(getNextIssuesPageOffset(100, 100)).toBe(200);
+    expect(getNextIssuesPageOffset(30, 0)).toBe(30);
+    expect(getNextIssuesPageOffset(30, 30)).toBe(60);
+    expect(getNextIssuesPageOffset(30, 60)).toBe(90);
     expect(getNextIssuesPageOffset(1000, 2000, 1000)).toBe(3000);
   });
 
   it("stops requesting issue pages when the current page is partial", () => {
-    expect(getNextIssuesPageOffset(99, 0)).toBeUndefined();
+    expect(getNextIssuesPageOffset(29, 0)).toBeUndefined();
     expect(getNextIssuesPageOffset(999, 2000, 1000)).toBeUndefined();
   });
 

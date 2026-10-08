@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { uiText } from "@/i18n";
 
 export function ChatCommunicationInstructions({ value, onSave }: {
   value: string;
@@ -31,9 +32,9 @@ export function ChatCommunicationInstructions({ value, onSave }: {
       }
     }}>
       <div className="space-y-1">
-        <label id={`${id}-label`} htmlFor={id} className="text-sm font-semibold">Additional communication instructions</label>
+        <label id={`${id}-label`} htmlFor={id} className="text-sm font-semibold">{uiText("Additional communication instructions")}</label>
         <p id={`${id}-help`} className="text-sm text-muted-foreground">
-          Guide how this agent communicates in Slack. Optional; applies when new tasks start.
+          {uiText("Guide how this agent communicates in Slack. Optional; applies when new tasks start.")}
         </p>
       </div>
       <Textarea
@@ -43,14 +44,13 @@ export function ChatCommunicationInstructions({ value, onSave }: {
         disabled={pending}
         maxLength={4000}
         rows={4}
-        placeholder="For example: Use our product names and explain technical terms for a nontechnical audience."
-        onChange={(event) => { setDraft(event.target.value); setSaved(false); setError(null); }}
+        placeholder={uiText("For example: Use our product names and explain technical terms for a nontechnical audience.")}        onChange={(event) => { setDraft(event.target.value); setSaved(false); setError(null); }}
       />
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex items-center justify-between gap-3">
         <div>
-          {dirty ? <Button type="button" variant="ghost" disabled={pending} onClick={() => { setDraft(null); setError(null); setSaved(false); }}>Cancel</Button>
-            : saved ? <span role="status" className="text-sm text-muted-foreground">Saved. Applies to new tasks.</span> : null}
+          {dirty ? <Button type="button" variant="ghost" disabled={pending} onClick={() => { setDraft(null); setError(null); setSaved(false); }}>{uiText("Cancel")}</Button>
+            : saved ? <span role="status" className="text-sm text-muted-foreground">{uiText("Saved. Applies to new tasks.")}</span> : null}
         </div>
         <Button type="submit" disabled={!dirty || pending}>{pending ? "Saving…" : "Save instructions"}</Button>
       </div>

@@ -1,8 +1,8 @@
-# Hero Capsule Bank
+# Hero 胶囊素材库
 
-The hero capsule bank is the one approved decorative exception to the rule that capsules represent individual agents. It is a canonical Paperclip brand surface. Do not improvise a different capsule bank.
+Hero 胶囊素材库是“胶囊代表单个 agent”这一规则唯一获准的装饰性例外，也是 Paperclip 官方品牌界面。不要自行设计另一套胶囊素材库。
 
-## Source Precedence
+## 来源优先级
 
 1. `paperclip-content/td/capsules.md` - byte-accurate technical source for geometry, gradients, grain, crop, and wave.
 2. Paperclip feature-video HyperFrames skill:
@@ -11,9 +11,9 @@ The hero capsule bank is the one approved decorative exception to the rule that 
    - `references/composition-recipes.md`
 3. `paperclip-content/videos/wireframe-skill-launch/src/HeroCapsuleBank.tsx` - working Remotion implementation.
 
-## Coordinate System
+## 坐标系
 
-| Property | Value |
+| 属性 | 值 |
 | --- | --- |
 | ViewBox | `0 0 1200 675` |
 | Background | `#141413` |
@@ -22,9 +22,9 @@ The hero capsule bank is the one approved decorative exception to the rule that 
 | Capsules per column | 12 |
 | Total capsules | 96 |
 
-## Capsule Shape
+## 胶囊形状
 
-| Property | Value |
+| 属性 | 值 |
 | --- | --- |
 | Width | 70 |
 | Height | 170 |
@@ -32,11 +32,11 @@ The hero capsule bank is the one approved decorative exception to the rule that 
 | Rect anchor | `x=-35`, `y=-85` |
 | Positioning | translate each rect to center `(cx, cy)` |
 
-The capsule body is rigid. Never deform the capsule shape for wave motion.
+胶囊主体保持刚性。波浪动效中绝不能拉伸或变形胶囊。
 
-## Layout
+## 布局
 
-| Column | `tx` | `ty0` |
+| 列 | `tx` | `ty0` |
 | --- | --- | --- |
 | 0 | 355 | 154.464 |
 | 1 | 425 | 161.240 |
@@ -55,13 +55,13 @@ cx = tx[column]
 cy = ty0[column] + slot * STRIDE_Y
 ```
 
-Drawing order is column order 0..7, and within each column slot order 0..11. Higher slot indices draw later and cover lower ones.
+绘制顺序按列从 0..7 排列，每列内按槽位从 0..11 排列。槽位索引越大，绘制越靠后，会覆盖较小索引的胶囊。
 
-## Gradient Palette
+## 渐变调色板
 
-Each gradient is a two-stop linear gradient with a rotation angle in degrees.
+每组渐变都是包含两个色标的线性渐变，角度以度为单位。
 
-| id | angle | top | bottom |
+| ID | 角度 | 顶部 | 底部 |
 | --- | --- | --- | --- |
 | g0 | 90.000 | `#3c23fb` | `#fb8b24` |
 | g1 | 90.000 | `#6721fa` | `#f85f1c` |
@@ -120,11 +120,11 @@ SVG template:
 </linearGradient>
 ```
 
-## Per-Column Gradient Sequences
+## 各列渐变序列
 
-Each sequence lists slots 0..11.
+每个序列依次列出槽位 0..11。
 
-| Column | Sequence |
+| 列 | 序列 |
 | --- | --- |
 | 0 | `g0 g1 g2 g3 g4 g5 g6 g7 g8 g9 g10 g11` |
 | 1 | `g12 g13 g14 g15 g16 g17 g18 g19 g20 g21 g22 g23` |
@@ -135,11 +135,11 @@ Each sequence lists slots 0..11.
 | 6 | `g11 g35 g36 g37 g38 g39 g40 g41 g42 g43 g44 g23` |
 | 7 | `g0 g1 g2 g3 g4 g5 g6 g7 g8 g9 g10 g11` |
 
-## Grain Overlay
+## 颗粒叠层
 
-Grain is part of the motif. Do not omit it for canonical hero-bank renders unless the output medium cannot support it.
+颗粒纹理是图案的一部分。除非输出媒介不支持，否则官方 hero 素材库渲染不得省略。
 
-| Property | Value |
+| 属性 | 值 |
 | --- | --- |
 | SVG primitive | `feTurbulence type="fractalNoise"` |
 | Base frequency | `2.95` |
@@ -157,13 +157,13 @@ overlay(b, o) = 1 - 2 * (1 - b) * (1 - o)     otherwise
 final = mix(b, overlay(b, o), 0.86)
 ```
 
-Background pixels stay clean `#141413`; grain is masked inside capsules.
+背景像素保持纯净的 `#141413`；颗粒纹理通过蒙版限制在胶囊内部。
 
-## Optional Wave Motion
+## 可选波浪动效
 
-For motion, translate each capsule rigidly on y. Do not scale, bend, or morph the capsule.
+制作动效时，仅沿 y 轴平移每个胶囊，并保持刚性。不要缩放、弯曲或变形胶囊。
 
-| Property | Value |
+| 属性 | 值 |
 | --- | --- |
 | Wave amplitude | 9 |
 | Per-capsule phase step | `PI / 3` |
@@ -177,13 +177,13 @@ dy(column, slot, t) =
   9 * sin((2 * PI * t / 4) - (2 * PI / 280) * tx[column] - slot * (PI / 3))
 ```
 
-For a static still that matches the captured spec, set amplitude to 0 and use the `ty0` values verbatim.
+若要生成与记录规范一致的静态图，将振幅设为 0，并原样使用 `ty0` 数值。
 
-## Rendering Checklist
+## 渲染检查清单
 
-1. Paint background `#141413`.
-2. Draw 8 columns x 12 capsules using the layout and gradient sequence tables.
-3. Apply the grain overlay, masked to capsule shapes.
-4. For square exports, crop to `250 -19 700 700`.
-5. If animated, loop the wave over exactly 4 seconds and provide reduced-motion/static output.
-6. Do not add strokes, shadows, glow, extra gradients, or additional capsule rows.
+1. 绘制背景 `#141413`。
+2. 按布局表和渐变序列表绘制 8 列、每列 12 个胶囊。
+3. 应用颗粒叠层，并将蒙版限制在胶囊形状内。
+4. 导出正方形图时，裁切范围设为 `250 -19 700 700`。
+5. 如果添加动画，波浪周期必须精确为 4 秒，并提供减少动态效果/静态输出。
+6. 不要添加描边、阴影、光晕、额外渐变或额外胶囊行。

@@ -41,7 +41,7 @@ function withStrictModeNote(
   return {
     ...base,
     status: "warn",
-    message: `${base.message}; strict secret mode is disabled for postgres deployment`,
+    message: `${base.message}；PostgreSQL 部署未启用严格密钥模式`,
     repairHint: base.repairHint
       ? `${base.repairHint}. Consider enabling secrets.strictMode`
       : "Consider enabling secrets.strictMode",
@@ -55,11 +55,11 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   }
   if (provider !== "local_encrypted") {
     return {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: "fail",
-      message: `${provider} is configured, but this build only supports local_encrypted and aws_secrets_manager`,
+      message: `已配置 ${provider}，但此构建仅支持 local_encrypted 和 aws_secrets_manager`,
       canRepair: false,
-      repairHint: "Run `paperclipai configure --section secrets` and choose local_encrypted or aws_secrets_manager",
+      repairHint: "运行 `paperclipai configure --section secrets`，选择 local_encrypted 或 aws_secrets_manager",
     };
   }
 
@@ -67,20 +67,20 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   if (envMasterKey && envMasterKey.trim().length > 0) {
     if (!decodeMasterKey(envMasterKey)) {
       return {
-        name: "Secrets adapter",
+        name: "密钥适配器",
         status: "fail",
         message:
           "PAPERCLIP_SECRETS_MASTER_KEY is invalid (expected 32-byte base64, 64-char hex, or raw 32-char string)",
         canRepair: false,
-        repairHint: "Set PAPERCLIP_SECRETS_MASTER_KEY to a valid key or unset it to use a key file",
+        repairHint: "将 PAPERCLIP_SECRETS_MASTER_KEY 设为有效密钥，或取消设置以使用密钥文件",
       };
     }
 
     return withStrictModeNote(
       {
-        name: "Secrets adapter",
+        name: "密钥适配器",
         status: "pass",
-        message: "Local encrypted provider configured via PAPERCLIP_SECRETS_MASTER_KEY",
+        message: "已通过 PAPERCLIP_SECRETS_MASTER_KEY 配置本地加密提供方",
       },
       config,
     );
@@ -96,9 +96,9 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
   if (!fs.existsSync(keyFilePath)) {
     return withStrictModeNote(
       {
-        name: "Secrets adapter",
+        name: "密钥适配器",
         status: "warn",
-        message: `Secrets key file does not exist yet: ${keyFilePath}`,
+        message: `密钥文件尚不存在：${keyFilePath}`,
         canRepair: true,
         repair: () => {
           fs.mkdirSync(path.dirname(keyFilePath), { recursive: true });
@@ -112,7 +112,7 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
             // best effort
           }
         },
-        repairHint: "Run with --repair to create a local encrypted secrets key file",
+        repairHint: "使用 --repair 创建本地加密密钥文件",
       },
       config,
     );
@@ -123,21 +123,21 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
     raw = fs.readFileSync(keyFilePath, "utf8");
   } catch (err) {
     return {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: "fail",
-      message: `Could not read secrets key file: ${err instanceof Error ? err.message : String(err)}`,
+      message: `无法读取密钥文件：${err instanceof Error ? err.message : String(err)}`,
       canRepair: false,
-      repairHint: "Check file permissions or set PAPERCLIP_SECRETS_MASTER_KEY",
+      repairHint: "检查文件权限，或设置 PAPERCLIP_SECRETS_MASTER_KEY",
     };
   }
 
   if (!decodeMasterKey(raw)) {
     return {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: "fail",
-      message: `Invalid key material in ${keyFilePath}`,
+      message: `${keyFilePath} 中的密钥材料无效`,
       canRepair: false,
-      repairHint: "Replace with valid key material or delete it and run doctor --repair",
+      repairHint: "替换为有效密钥材料，或删除该文件后运行 doctor --repair",
     };
   }
 
@@ -149,9 +149,9 @@ export function secretsCheck(config: PaperclipConfig, configPath?: string): Chec
 
   return withStrictModeNote(
     {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: permissionWarning ? "warn" : "pass",
-      message: `Local encrypted provider configured with key file ${keyFilePath}${permissionWarning}`,
+      message: `已通过密钥文件 ${keyFilePath} 配置本地加密提供方${permissionWarning}`,
       repairHint: permissionWarning
         ? "Restrict the local encrypted secrets key file to owner read/write permissions"
         : undefined,
@@ -164,9 +164,9 @@ function awsSecretsManagerCheck(): CheckResult {
   const missingConfig = missingAwsSecretsManagerConfig();
   if (missingConfig.length > 0) {
     return {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: "fail",
-      message: `AWS Secrets Manager provider is missing non-secret config: ${missingConfig.join(", ")}`,
+      message: `AWS Secrets Manager 提供方缺少非敏感配置：${missingConfig.join(", ")}`,
       canRepair: false,
       repairHint:
         `Set ${missingConfig.join(", ")} in the Paperclip server runtime. ${AWS_CREDENTIAL_SOURCE_HINT}. Do not store AWS root credentials or long-lived IAM user keys in Paperclip secrets.`,
@@ -182,7 +182,7 @@ function awsSecretsManagerCheck(): CheckResult {
 
   if (staticEnvCredentials) {
     return {
-      name: "Secrets adapter",
+      name: "密钥适配器",
       status: "warn",
       message,
       canRepair: false,
@@ -192,7 +192,7 @@ function awsSecretsManagerCheck(): CheckResult {
   }
 
   return {
-    name: "Secrets adapter",
+    name: "密钥适配器",
     status: "pass",
     message,
   };

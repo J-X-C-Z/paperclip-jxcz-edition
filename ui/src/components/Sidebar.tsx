@@ -24,6 +24,7 @@ import {
   LayoutGrid,
   Users,
   Building2,
+  FileText,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -207,6 +208,7 @@ export function Sidebar({ children }: { children?: ReactNode }) {
               <SidebarStarredProjects />
             </>
           ) : null}
+          <SidebarNavItem to="/brief" label="简报" icon={FileText} />
           <SidebarNavItem to="/routines" label={t("ui.routines")} icon={Repeat} />
           <SidebarNavItem to="/artifacts" label={t("ui.artifacts")} icon={Package} />
           {showCases ? (

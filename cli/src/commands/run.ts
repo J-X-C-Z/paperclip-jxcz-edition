@@ -65,18 +65,18 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   await printUpdateNotice(configPath);
 
   p.intro(pc.bgCyan(pc.black(` ${opts.introLabel ?? "paperclipai run"} `)));
-  p.log.message(pc.dim(`Home: ${paths.homeDir}`));
-  p.log.message(pc.dim(`Instance: ${paths.instanceId}`));
-  p.log.message(pc.dim(`Config: ${configPath}`));
+  p.log.message(pc.dim(`主目录：${paths.homeDir}`));
+  p.log.message(pc.dim(`实例：${paths.instanceId}`));
+  p.log.message(pc.dim(`配置：${configPath}`));
 
   if (!configExists(configPath)) {
     if ((!process.stdin.isTTY || !process.stdout.isTTY) && !opts.yes) {
-      p.log.error("No config found and terminal is non-interactive.");
-      p.log.message(`Run ${pc.cyan("paperclipai onboard")} once, then retry ${pc.cyan("paperclipai run")}.`);
+      p.log.error("未找到配置文件，且当前终端不支持交互操作。");
+      p.log.message(`请先运行一次 ${pc.cyan("paperclipai onboard")}，再重试 ${pc.cyan("paperclipai run")}。`);
       process.exit(1);
     }
 
-    p.log.step("No config found. Starting onboarding...");
+    p.log.step("未找到配置文件。正在启动初始化流程……");
     await onboard({
       config: configPath,
       invokedByRun: true,
@@ -88,10 +88,10 @@ export async function runCommand(opts: RunOptions): Promise<void> {
 
   const seedResult = await ensureWorktreeSeeded({ config: configPath });
   if (seedResult.seeded) {
-    p.log.success("Completed deferred worktree database seed.");
+    p.log.success("已完成延后的 worktree 数据库初始化。");
   }
 
-  p.log.step("Running doctor checks...");
+  p.log.step("正在运行 doctor 检查……");
   const summary = await doctor({
     config: configPath,
     repair: opts.repair ?? true,
@@ -99,17 +99,17 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   });
 
   if (summary.failed > 0) {
-    p.log.error("Doctor found blocking issues. Not starting server.");
+    p.log.error("doctor 检查发现阻断问题，未启动服务器。");
     process.exit(1);
   }
 
   const config = readConfig(configPath);
   if (!config) {
-    p.log.error(`No config found at ${configPath}.`);
+    p.log.error(`未找到配置文件：${configPath}。`);
     process.exit(1);
   }
 
-  p.log.step("Starting Paperclip server...");
+  p.log.step("正在启动 Paperclip 服务器……");
   const startedServer = await importServerEntry();
   writeRuntimeInfo({
     schemaVersion: 1,
@@ -123,7 +123,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   process.once("exit", () => removeRuntimeInfoForPid(process.pid, instanceId));
 
   if (shouldGenerateBootstrapInviteAfterStart(config)) {
-    p.log.step("Generating bootstrap CEO invite");
+    p.log.step("正在生成 CEO 初始邀请");
     await bootstrapCeoInvite({
       config: configPath,
       dbUrl: startedServer.databaseUrl,
@@ -208,13 +208,13 @@ function ensureDevWorkspaceBuildDeps(projectRoot: string): void {
 
   if (result.error) {
     throw new Error(
-      `Failed to prepare workspace build artifacts before starting the Paperclip dev server.\n${formatError(result.error)}`,
+      `启动 Paperclip 开发服务器前准备工作区构建产物失败。\n${formatError(result.error)}`,
     );
   }
 
   if ((result.status ?? 1) !== 0) {
     throw new Error(
-      "Failed to prepare workspace build artifacts before starting the Paperclip dev server.",
+      "启动 Paperclip 开发服务器前准备工作区构建产物失败。",
     );
   }
 }
@@ -239,13 +239,13 @@ async function importServerEntry(): Promise<StartedServer> {
     const missingServerEntrypoint = !missingSpecifier || missingSpecifier === "@paperclipai/server";
     if (isModuleNotFoundError(err) && missingServerEntrypoint) {
       throw new Error(
-        `Could not locate a Paperclip server entrypoint.\n` +
-          `Tried: ${devEntry}, @paperclipai/server\n` +
+        `找不到 Paperclip 服务器入口。\n` +
+          `尝试过：${devEntry}, @paperclipai/server\n` +
           `${formatError(err)}`,
       );
     }
     throw new Error(
-      `Paperclip server failed to start.\n` +
+      `Paperclip 服务器启动失败。\n` +
         `${formatError(err)}`,
     );
   }
@@ -258,7 +258,7 @@ function shouldGenerateBootstrapInviteAfterStart(config: PaperclipConfig): boole
 async function startServerFromModule(mod: unknown, label: string): Promise<StartedServer> {
   const startServer = (mod as { startServer?: () => Promise<StartedServer> }).startServer;
   if (typeof startServer !== "function") {
-    throw new Error(`Paperclip server entrypoint did not export startServer(): ${label}`);
+    throw new Error(`Paperclip 服务器入口未导出 startServer()：${label}`);
   }
   return await startServer();
 }

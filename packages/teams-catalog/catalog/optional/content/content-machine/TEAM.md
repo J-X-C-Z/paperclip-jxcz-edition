@@ -19,12 +19,12 @@ tags:
   - routines
 ---
 
-# Content Machine
+# 内容运营团队
 
-This optional fixture proves local skill resolution and recurring task inventory without introducing external source risk.
+此可选模板用于验证本地技能解析和周期性任务清单，不引入外部来源风险。
 
-## Contents
+## 团队成员
 
-- `ContentLead` — content operations lead responsible for calendar planning and publication workflow triage.
-- `content-operations` project — rolling backlog for editorial planning and content production review.
-- `weekly-content-review` routine — recurring content lead check-in to choose next posts and surface blocked publication work.
+- `ContentLead` — 内容运营负责人，负责日历规划和发布流程整理。
+- `content-operations` 项目 — 持续管理编辑计划和内容制作审查的待办事项。
+- `weekly-content-review` 例行任务 — 内容负责人定期检查，确定下一批文章并发现发布阻塞项。

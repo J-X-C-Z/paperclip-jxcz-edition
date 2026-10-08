@@ -5,7 +5,7 @@ import { resolveDefaultLogsDir, resolvePaperclipInstanceId } from "../config/hom
 export async function promptLogging(): Promise<LoggingConfig> {
   const defaultLogDir = resolveDefaultLogsDir(resolvePaperclipInstanceId());
   const mode = await p.select({
-    message: "Logging mode",
+    message: "日志模式",
     options: [
       { value: "file" as const, label: "File-based logging", hint: "recommended" },
       { value: "cloud" as const, label: "Cloud logging", hint: "coming soon" },
@@ -13,19 +13,19 @@ export async function promptLogging(): Promise<LoggingConfig> {
   });
 
   if (p.isCancel(mode)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
   if (mode === "file") {
     const logDir = await p.text({
-      message: "Log directory",
+      message: "日志目录",
       defaultValue: defaultLogDir,
       placeholder: defaultLogDir,
     });
 
     if (p.isCancel(logDir)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       process.exit(0);
     }
 

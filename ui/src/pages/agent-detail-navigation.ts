@@ -8,6 +8,7 @@ export type AgentDetailView =
   | "secrets"
   | "tools"
   | "channels"
+  | "external-conversations"
   | "permissions"
   | "api-keys"
   | "revisions"
@@ -23,6 +24,7 @@ export const AGENT_DETAIL_NAVIGATION: ReadonlyArray<{
     label: "Agent",
     items: [
       { value: "overview", label: "Overview" },
+      { value: "external-conversations", label: "外部会话" },
       { value: "instructions", label: "Instructions" },
       { value: "skills", label: "Skills" },
     ],
@@ -53,6 +55,7 @@ export function parseAgentDetailView(value: string | null): AgentLocalDetailView
   if (value === "secrets") return "secrets";
   if (value === "tools") return "tools";
   if (value === "channels") return "channels";
+  if (value === "external-conversations") return "external-conversations";
   if (value === "permissions" || value === "trust") return "permissions";
   if (value === "api-keys" || value === "keys") return "api-keys";
   if (value === "revisions" || value === "history") return "revisions";

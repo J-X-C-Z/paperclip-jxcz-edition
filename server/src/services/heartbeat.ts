@@ -1,3 +1,4 @@
+import { isPendingIssueThreadInteractionAttentionWake } from "./issue-thread-interaction-resolution.js";
 import { externalObjectService } from "./external-objects.js";
 import { isAiAuthenticationBlocked } from "./ai-auth-failure.js";
 import { CHAT_COMPLETION_WAKE_REASON, prepareChatCompletionTurn, chatCompletionInstruction, isCompletedOnboardingHandoffWake } from "./chat-completion-delivery.js";
@@ -429,7 +430,7 @@ import {
 import { createToolGatewayService } from "./tool-gateway.js";
 import { toolAccessService } from "./tool-access.js";
 import { visibleIssueCondition } from "./issue-visibility.js";
-import { ISSUE_BLOCKERS_RESOLVED_WAKE_REASON } from "./issue-dependency-wakeups.js";
+import { ISSUE_BLOCKERS_RESOLVED_WAKE_REASON, isChildCompletionAttentionWake } from "./issue-dependency-wakeups.js";
 import {
   buildIssueMonitorClearedPatch,
   buildIssueMonitorTriggeredPatch,
@@ -1257,6 +1258,7 @@ function mergeAdapterRecoveryMetadata(input: {
 }
 const RUNNING_ISSUE_WAKE_REASONS_REQUIRING_FOLLOWUP = new Set([
   CHAT_COMPLETION_WAKE_REASON,
+  "issue_children_completed",
   "approval_approved",
   ISSUE_BLOCKERS_RESOLVED_WAKE_REASON,
   "issue_recovery_action_restored",
@@ -14495,6 +14497,7 @@ export function heartbeatService(
     signal: "SIGINT" | "SIGTERM",
     now = new Date(),
   ) {
+    startTaskDrain();
     shutdownInProgress = true;
     const idleSessions = await closeIdleWarmNativeSessionsForRestart();
     if (idleSessions.failed > 0) {
@@ -17376,7 +17379,13 @@ export function heartbeatService(
         !allowsIssueInteractionWake(
           context,
           ISSUE_TREE_CONTROL_INTERACTION_WAKE_REASONS,
-        )
+        ) &&
+        !await isPendingIssueThreadInteractionAttentionWake(db, {
+          companyId: run.companyId, issueId, agentId: run.agentId, contextSnapshot: context,
+        }) &&
+        !await isChildCompletionAttentionWake(db, {
+          companyId: run.companyId, issueId, agentId: run.agentId, contextSnapshot: context,
+        })
       ) {
         await cancelQueuedRunForBlockedDependencies(
           run,
@@ -20213,6 +20222,7 @@ export function heartbeatService(
     }
 
     let legacyAdapterEntered = false;
+    let legacyDispatchHeldForDrain = false;
     let run = await getRun(runId);
     if (!run) return;
     if (run.status !== "queued" && run.status !== "running") return;
@@ -22602,69 +22612,86 @@ export function heartbeatService(
       }
       const dispatchResolvedInteractionContinuationWithAtomicGate = async <T>(
         dispatch: (markDispatchStarted: () => void) => Promise<T>,
+        legacyDispatch = false,
       ): Promise<
         { dispatched: true; resultPromise: Promise<T> } | { dispatched: false }
       > => {
-        await controllerLease.assertOwned("dispatching");
-        // Recheck after workspace/credential preparation, immediately before the
-        // provider handoff. Never hold validation locks while adapter code runs.
-        await authorizeFailedChatRetryExecution();
-        if (
-          !(await withChatControlRecoveryGate(
-            run,
-            "dispatch",
-            async () => run,
-            Boolean(
-              runOptions.nativeLeaseOwner || runOptions.nativeRestartRecovery,
-            ),
-          ))
-        )
-          return { dispatched: false };
-        const repairBlock = await recovery.legacyRepairDispatchBlock(run.id);
-        if (repairBlock) {
-          const cancelled = await setRunStatusIfRunning(run.id, "cancelled", {
-            finishedAt: new Date(), errorCode: "legacy_disposition_repair_suppressed",
-            error: `Disposition repair suppressed: ${repairBlock}`,
+        const drainHold = new Error("Undispatched legacy run held for server shutdown");
+        const dispatchUnlessDraining = (markDispatchStarted: () => void) => {
+          if (legacyDispatch && !legacyAdapterEntered && readTaskDrain(new Date())) throw drainHold;
+          return dispatch(markDispatchStarted);
+        };
+        try {
+          await controllerLease.assertOwned("dispatching");
+          // Recheck after workspace/credential preparation, immediately before the
+          // provider handoff. Never hold validation locks while adapter code runs.
+          await authorizeFailedChatRetryExecution();
+          if (
+            !(await withChatControlRecoveryGate(
+              run,
+              "dispatch",
+              async () => run,
+              Boolean(
+                runOptions.nativeLeaseOwner || runOptions.nativeRestartRecovery,
+              ),
+            ))
+          )
+            return { dispatched: false };
+          const repairBlock = await recovery.legacyRepairDispatchBlock(run.id);
+          if (repairBlock) {
+            const cancelled = await setRunStatusIfRunning(run.id, "cancelled", {
+              finishedAt: new Date(), errorCode: "legacy_disposition_repair_suppressed",
+              error: `Disposition repair suppressed: ${repairBlock}`,
+              resultJson: {
+                ...run.resultJson,
+                executionRecovery: { kind: "bootstrap", providerWorkStarted: false },
+              },
+            });
+            if (cancelled.updated) {
+              await setWakeupStatus(run.wakeupRequestId, "skipped", { finishedAt: new Date(), error: repairBlock });
+              await releaseIssueExecutionAndPromote(cancelled.run!, { suppressImmediateRecovery: true });
+              await finalizeAgentStatus(run.agentId, "cancelled");
+            }
+            return { dispatched: false };
+          }
+          if (
+            !issueId ||
+            (!isResolvedInteractionContinuationWakeContext(context) &&
+              run.scheduledRetryReason !== "native_safe_replacement")
+          ) {
+            return { dispatched: true, resultPromise: dispatchUnlessDraining(() => {}) };
+          }
+          await options.beforeResolvedInteractionContinuationDispatchCheck?.({
+            runId: run.id,
+            issueId,
           });
-          if (cancelled.updated) {
-            await setWakeupStatus(run.wakeupRequestId, "skipped", { finishedAt: new Date(), error: repairBlock });
-            await releaseIssueExecutionAndPromote(cancelled.run!, { suppressImmediateRecovery: true });
-            await finalizeAgentStatus(run.agentId, "cancelled");
+
+          await options.afterResolvedInteractionContinuationDispatchCheck?.({
+            runId: run.id,
+            issueId,
+          });
+          const gate = await runDispatch.dispatchResolvedInteractionIfCurrent({
+            runId: run.id,
+            companyId: run.companyId,
+            expectedStatus: "running",
+            // Synchronous handoff under the ownership lock; the gate commits
+            // without awaiting the adapter's asynchronous bootstrap or finalizer.
+            dispatch: dispatchUnlessDraining,
+          });
+
+          if (gate.dispatched) return gate;
+          if (gate.cancellation.outcome === "cancelled") {
+            applyRunDispatchPostCommitEffects(
+              gate.cancellation.postCommitEffects,
+            );
           }
           return { dispatched: false };
+        } catch (error) {
+          if (error !== drainHold) throw error;
+          await releaseRunClaimedJustBeforeSuppression(run.id);
+          legacyDispatchHeldForDrain = true;
+          return { dispatched: false };
         }
-        if (
-          !issueId ||
-          (!isResolvedInteractionContinuationWakeContext(context) &&
-            run.scheduledRetryReason !== "native_safe_replacement")
-        ) {
-          return { dispatched: true, resultPromise: dispatch(() => {}) };
-        }
-        await options.beforeResolvedInteractionContinuationDispatchCheck?.({
-          runId: run.id,
-          issueId,
-        });
-
-        await options.afterResolvedInteractionContinuationDispatchCheck?.({
-          runId: run.id,
-          issueId,
-        });
-        const gate = await runDispatch.dispatchResolvedInteractionIfCurrent({
-          runId: run.id,
-          companyId: run.companyId,
-          expectedStatus: "running",
-          // Synchronous handoff under the ownership lock; the gate commits
-          // without awaiting the adapter's asynchronous bootstrap or finalizer.
-          dispatch,
-        });
-
-        if (gate.dispatched) return gate;
-        if (gate.cancellation.outcome === "cancelled") {
-          applyRunDispatchPostCommitEffects(
-            gate.cancellation.postCommitEffects,
-          );
-        }
-        return { dispatched: false };
       };
       if (!executionTarget || executionTarget.kind === "local") {
         try {
@@ -24859,6 +24886,7 @@ export function heartbeatService(
                     authToken: authToken ?? undefined,
                   });
                 },
+                true,
               );
             if (!guardedDispatch.dispatched) return;
             adapterResult = await guardedDispatch.resultPromise;
@@ -26451,9 +26479,11 @@ export function heartbeatService(
         // Close the invariant "environment lease released implies the run is
         // terminal". When the teardown reaches this point with the run still
         // running or queued, force a terminal status before the lease is
-        // released, so the UI never shows a finished task as "Live".
+        // released, except an undispatched run safely returned to the durable queue.
+        // The UI must never show a finished task as "Live".
         if (
           latestRun &&
+          !(legacyDispatchHeldForDrain && latestRun.status === "queued") &&
           !nativeSessionResumeScheduled &&
           !nativeWorkspaceFinalizeScheduled &&
           !nativeOwnershipHeld
@@ -28013,10 +28043,16 @@ export function heartbeatService(
           const blockedInteractionWake =
             dependencyReadiness &&
             !dependencyReadiness.isDependencyReady &&
-            allowsIssueInteractionWake(
+            (allowsIssueInteractionWake(
               enrichedContextSnapshot,
               ISSUE_TREE_CONTROL_INTERACTION_WAKE_REASONS,
-            );
+            ) || await isPendingIssueThreadInteractionAttentionWake(tx, {
+              companyId: issue.companyId, issueId: issue.id, agentId: agent.id,
+              contextSnapshot: enrichedContextSnapshot,
+            }) || await isChildCompletionAttentionWake(tx, {
+              companyId: issue.companyId, issueId: issue.id, agentId: agent.id,
+              contextSnapshot: enrichedContextSnapshot,
+            }));
 
           if (blockedInteractionWake) {
             enrichedContextSnapshot.dependencyBlockedInteraction = true;
@@ -28867,7 +28903,7 @@ export function heartbeatService(
   }
 
   /**
-   * Native status commitment deliberately persists dependency/parent wake
+   * Native status commitment and child completion persist dependency/parent wake
    * intents in the same transaction as the authoritative status projection.
    * Those rows are not runnable until the heartbeat scheduler has applied its
    * normal policy, workspace, concurrency, and responsible-user checks. Bridge
@@ -28897,7 +28933,7 @@ export function heartbeatService(
             ? eq(agentWakeupRequests.companyId, input.companyId)
             : undefined,
           eq(agentWakeupRequests.requestedByActorType, "system"),
-          eq(agentWakeupRequests.requestedByActorId, "native-status-committer"),
+          inArray(agentWakeupRequests.requestedByActorId, ["native-status-committer", "issue-child-completion"]),
           inArray(agentWakeupRequests.status, ["queued", "claimed"]),
           isNull(agentWakeupRequests.runId),
         ),
@@ -28914,20 +28950,29 @@ export function heartbeatService(
     >();
 
     for (const candidate of candidates) {
-      const dispatchActorId = `native-status-wake-dispatch:${candidate.id}`;
-      const existingDispatch = await db
+      const dispatchActorId = candidate.requestedByActorId === "issue-child-completion"
+        ? `issue-child-wake-dispatch:${candidate.id}`
+        : `native-status-wake-dispatch:${candidate.id}`;
+      const findDispatchReceipt = () => db
         .select()
         .from(agentWakeupRequests)
         .where(
           and(
             eq(agentWakeupRequests.companyId, candidate.companyId),
-            eq(agentWakeupRequests.requestedByActorType, "system"),
-            eq(agentWakeupRequests.requestedByActorId, dispatchActorId),
+            eq(agentWakeupRequests.agentId, candidate.agentId),
+            or(
+              and(eq(agentWakeupRequests.requestedByActorType, "system"),
+                eq(agentWakeupRequests.requestedByActorId, dispatchActorId)),
+              // Admission can merge into an existing deferred receipt rather
+              // than create a receipt with this dispatch actor.
+              sql`${agentWakeupRequests.payload}->'_paperclipWakeContext'->>'nativeStatusWakeIntentId' = ${candidate.id}`,
+            ),
           ),
         )
         .orderBy(desc(agentWakeupRequests.requestedAt))
         .limit(1)
         .then((rows) => rows[0] ?? null);
+      const existingDispatch = await findDispatchReceipt();
 
       if (existingDispatch) {
         const recoveredStatus = existingDispatch.runId
@@ -29081,25 +29126,15 @@ export function heartbeatService(
             ...wakeContext,
             ...(issueId ? { issueId, taskId: issueId } : {}),
             wakeReason: candidate.reason,
-            source: "native_status_decision",
-            statusDecisionSource: "native_status_decision",
+            source: candidate.requestedByActorId === "issue-child-completion"
+              ? "issue.child_completed" : "native_status_decision",
+            ...(candidate.requestedByActorId === "native-status-committer"
+              ? { statusDecisionSource: "native_status_decision" } : {}),
             nativeStatusWakeIntentId: candidate.id,
           },
         });
 
-        const delivered = await db
-          .select()
-          .from(agentWakeupRequests)
-          .where(
-            and(
-              eq(agentWakeupRequests.companyId, candidate.companyId),
-              eq(agentWakeupRequests.requestedByActorType, "system"),
-              eq(agentWakeupRequests.requestedByActorId, dispatchActorId),
-            ),
-          )
-          .orderBy(desc(agentWakeupRequests.requestedAt))
-          .limit(1)
-          .then((rows) => rows[0] ?? null);
+        const delivered = await findDispatchReceipt();
 
         // The committer intent is the durable outbox entry. When admission is
         // blocked, enqueueWakeup creates a separate deferred dispatch receipt;

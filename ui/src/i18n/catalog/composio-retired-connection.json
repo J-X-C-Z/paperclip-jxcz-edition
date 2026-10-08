@@ -1,0 +1,7 @@
+{
+  "Connection retired": "连接已停用",
+  "This legacy Composio connection is no longer supported. Add a new Composio MCP connection from Connectors, then remove this connection. Existing credentials and permissions are not migrated.": "此旧版 Composio 连接已不再受支持。请从“连接器”添加新的 Composio MCP 连接，然后移除此连接。现有凭据和权限不会迁移。",
+  "Remove each obsolete connection separately. Removing this one does not remove other connections.": "请分别移除每个已过时的连接。移除此连接不会影响其他连接。",
+  "Add Composio MCP connection": "添加 Composio MCP 连接",
+  "Choose a repository to import your skills.": "选择要导入技能的仓库。"
+}

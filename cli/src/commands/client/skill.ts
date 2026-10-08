@@ -15,16 +15,16 @@ interface SkillOptions extends BaseClientOptions {
 }
 
 export function registerSkillCommands(program: Command): void {
-  const skill = program.command("skill").description("Company skill operations");
+  const skill = program.command("skill").description("公司技能操作");
 
-  addCompanyGet(skill, "list", "List company skills", "skills");
+  addCompanyGet(skill, "list", "列出公司技能", "skills");
 
   addCommonClientOptions(
     skill
       .command("get")
-      .description("Get company skill details")
-      .argument("<skillId>", "Skill ID")
-      .option("-C, --company-id <id>", "Company ID")
+      .description("获取公司技能详情")
+      .argument("<skillId>", "技能 ID")
+      .option("-C, --company-id <id>", "公司 ID")
       .action(async (skillId: string, opts: SkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -39,10 +39,10 @@ export function registerSkillCommands(program: Command): void {
   addCommonClientOptions(
     skill
       .command("file")
-      .description("Read a company skill file")
-      .argument("<skillId>", "Skill ID")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--path <path>", "Skill-relative file path", "SKILL.md")
+      .description("读取公司技能文件")
+      .argument("<skillId>", "技能 ID")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--path <path>", "相对于技能目录的文件路径", "SKILL.md")
       .action(async (skillId: string, opts: SkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -62,10 +62,10 @@ export function registerSkillCommands(program: Command): void {
   addCommonClientOptions(
     skill
       .command("file:update")
-      .description("Update a company skill file")
-      .argument("<skillId>", "Skill ID")
-      .option("-C, --company-id <id>", "Company ID")
-      .requiredOption("--payload-json <json>", "CompanySkillFileUpdate JSON payload")
+      .description("更新公司技能文件")
+      .argument("<skillId>", "技能 ID")
+      .option("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--payload-json <json>", "CompanySkillFileUpdate JSON 请求数据")
       .action(async (skillId: string, opts: SkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -87,7 +87,7 @@ export function registerSkillCommands(program: Command): void {
 
 function addCompanyGet(parent: Command, name: string, description: string, path: string): void {
   addCommonClientOptions(
-    parent.command(name).description(description).option("-C, --company-id <id>", "Company ID").action(async (opts: SkillOptions) => {
+    parent.command(name).description(description).option("-C, --company-id <id>", "公司 ID").action(async (opts: SkillOptions) => {
       try {
         const ctx = resolveCommandContext(opts, { requireCompany: true });
         printOutput(await ctx.api.get(`${apiPath`/api/companies/${ctx.companyId}`}/${path}`), { json: ctx.json });
@@ -100,11 +100,11 @@ function addCompanyGet(parent: Command, name: string, description: string, path:
 }
 
 function addCompanyPost(parent: Command, name: string, description: string, path: string, requirePayload = false): void {
-  const command = parent.command(name).description(description).option("-C, --company-id <id>", "Company ID");
+  const command = parent.command(name).description(description).option("-C, --company-id <id>", "公司 ID");
   if (requirePayload) {
-    command.requiredOption("--payload-json <json>", "JSON payload");
+    command.requiredOption("--payload-json <json>", "JSON 请求数据");
   } else {
-    command.option("--payload-json <json>", "JSON payload", "{}");
+    command.option("--payload-json <json>", "JSON 请求数据", "{}");
   }
   addCommonClientOptions(
     command.action(async (opts: SkillOptions) => {
@@ -124,8 +124,8 @@ function addSkillAction(parent: Command, name: string, description: string, suff
     parent
       .command(name)
       .description(description)
-      .argument("<skillId>", "Skill ID")
-      .option("-C, --company-id <id>", "Company ID")
+      .argument("<skillId>", "技能 ID")
+      .option("-C, --company-id <id>", "公司 ID")
       .action(async (skillId: string, opts: SkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });

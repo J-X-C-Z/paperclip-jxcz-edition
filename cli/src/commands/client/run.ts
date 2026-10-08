@@ -47,10 +47,10 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("list")
-      .description("List heartbeat runs for a company")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--agent-id <id>", "Filter by agent ID")
-      .option("--limit <n>", "Maximum runs to return")
+      .description("列出公司的心跳运行记录")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--agent-id <id>", "按智能体 ID 筛选")
+      .option("--limit <n>", "返回的最大运行数")
       .action(async (opts: RunListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -72,10 +72,10 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("live")
-      .description("List queued and running heartbeat runs for a company")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--limit <n>", "Maximum runs to return")
-      .option("--min-count <n>", "Pad with recent completed runs up to this count")
+      .description("列出公司的排队中和运行中的心跳记录")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--limit <n>", "返回的最大运行数")
+      .option("--min-count <n>", "补入最近已完成的运行记录，直到达到此数量")
       .action(async (opts: RunLiveOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -97,8 +97,8 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("get")
-      .description("Get a heartbeat run")
-      .argument("<runId>", "Heartbeat run ID")
+      .description("获取心跳运行记录")
+      .argument("<runId>", "心跳运行 ID")
       .action(async (runId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -113,8 +113,8 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("cancel")
-      .description("Cancel a queued or running heartbeat run")
-      .argument("<runId>", "Heartbeat run ID")
+      .description("取消排队中或运行中的心跳任务")
+      .argument("<runId>", "心跳运行 ID")
       .action(async (runId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -129,10 +129,10 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("events")
-      .description("List heartbeat run events")
-      .argument("<runId>", "Heartbeat run ID")
-      .option("--after-seq <n>", "Only return events after this sequence", "0")
-      .option("--limit <n>", "Maximum events to return", "200")
+      .description("列出心跳运行事件")
+      .argument("<runId>", "心跳运行 ID")
+      .option("--after-seq <n>", "仅返回此序号之后的事件", "0")
+      .option("--limit <n>", "返回的最大事件数", "200")
       .action(async (runId: string, opts: RunEventsOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -165,11 +165,11 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("log")
-      .description("Read heartbeat run log bytes")
-      .argument("<runId>", "Heartbeat run ID")
-      .option("--offset <bytes>", "Byte offset", "0")
-      .option("--limit-bytes <bytes>", "Maximum bytes to read")
-      .option("--text", "Print only the log text when the API returns a text field")
+      .description("读取心跳运行日志字节")
+      .argument("<runId>", "心跳运行 ID")
+      .option("--offset <bytes>", "字节偏移量", "0")
+      .option("--limit-bytes <bytes>", "读取的最大字节数")
+      .option("--text", "API 返回 text 字段时仅输出日志文本")
       .action(async (runId: string, opts: RunLogOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -184,8 +184,8 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("issues")
-      .description("List issues associated with a heartbeat run")
-      .argument("<runId>", "Heartbeat run ID")
+      .description("列出关联到心跳运行记录的任务")
+      .argument("<runId>", "心跳运行 ID")
       .action(async (runId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -207,8 +207,8 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("workspace-operations")
-      .description("List workspace operations for a heartbeat run")
-      .argument("<runId>", "Heartbeat run ID")
+      .description("列出心跳运行记录的工作区操作")
+      .argument("<runId>", "心跳运行 ID")
       .action(async (runId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -232,11 +232,11 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("workspace-log")
-      .description("Read a workspace operation log")
-      .argument("<operationId>", "Workspace operation ID")
-      .option("--offset <bytes>", "Byte offset", "0")
-      .option("--limit-bytes <bytes>", "Maximum bytes to read")
-      .option("--text", "Print only the log text when the API returns a text field")
+      .description("读取工作区操作日志")
+      .argument("<operationId>", "工作区操作 ID")
+      .option("--offset <bytes>", "字节偏移量", "0")
+      .option("--limit-bytes <bytes>", "读取的最大字节数")
+      .option("--text", "API 返回 text 字段时仅输出日志文本")
       .action(async (operationId: string, opts: RunLogOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -251,12 +251,12 @@ export function registerRunCommands(command: Command): void {
   addCommonClientOptions(
     command
       .command("watchdog-decision")
-      .description("Record a watchdog decision for a heartbeat run")
-      .argument("<runId>", "Heartbeat run ID")
-      .requiredOption("--decision <decision>", "snooze, continue, or dismissed_false_positive")
-      .option("--reason <text>", "Decision reason")
-      .option("--snoozed-until <iso8601>", "Required for snooze decisions")
-      .option("--evaluation-issue-id <id>", "Related watchdog evaluation issue ID")
+      .description("记录心跳运行的看护决策")
+      .argument("<runId>", "心跳运行 ID")
+      .requiredOption("--decision <decision>", "snooze、continue 或 dismissed_false_positive")
+      .option("--reason <text>", "决策原因")
+      .option("--snoozed-until <iso8601>", "snooze 决策时必填")
+      .option("--evaluation-issue-id <id>", "相关看护评估任务 ID")
       .action(async (runId: string, opts: RunWatchdogOptions) => {
         try {
           const ctx = resolveCommandContext(opts);

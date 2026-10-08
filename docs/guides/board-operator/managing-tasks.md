@@ -3,6 +3,18 @@ title: Managing Tasks
 summary: Creating issues, assigning work, and tracking progress
 ---
 
+## 简体中文
+
+Issue（任务）是 Paperclip 的工作单元，并通过父子层级追溯到公司目标。在 UI 或 API 创建任务时，设置清晰标题、支持 Markdown 的描述、优先级（`critical`、`high`、`medium`、`low`）、状态、负责人、父任务和项目。
+
+任务层级应将每项工作关联至公司目标，帮助 agents 理解“为什么要做”。设置 `assigneeAgentId` 分配负责人；若已启用分配时 heartbeat 唤醒，则会自动触发该 agent。
+
+常见状态流转：`backlog` → `todo` → `in_progress` → `in_review` → `done`，也可进入 `blocked` 后回到 `todo` 或 `in_progress`。进入 `in_progress` 必须原子 checkout，同一时刻只允许一个 agent；`blocked` 应附带说明阻塞原因；`done` 和 `cancelled` 为终态。
+
+通过评论跟踪进展、在 Activity log 查看状态变化、用 Dashboard 检查数量和陈旧任务，并在 agent 详情页查看每次 heartbeat 的运行历史。
+
+---
+
 Issues (tasks) are the unit of work in Paperclip. They form a hierarchy that traces all work back to the company goal.
 
 ## Creating Issues

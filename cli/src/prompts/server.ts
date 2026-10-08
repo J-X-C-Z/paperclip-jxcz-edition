@@ -8,7 +8,7 @@ const TAILNET_BIND_WARNING =
   "No Tailscale address was detected during setup. The saved config will stay on loopback until Tailscale is available or PAPERCLIP_TAILNET_BIND_HOST is set.";
 
 function cancelled(): never {
-  p.cancel("Setup cancelled.");
+  p.cancel("设置已取消。");
   process.exit(0);
 }
 
@@ -21,7 +21,7 @@ export async function promptServer(opts?: {
   const currentBind = inferConfiguredBind(currentServer);
 
   const bindSelection = await p.select({
-    message: "Reachability",
+    message: "可访问性",
     options: [
       {
         value: "loopback" as const,
@@ -52,7 +52,7 @@ export async function promptServer(opts?: {
 
   const portDefault = String(currentServer?.port ?? 3100);
   const portStr = await p.text({
-    message: "Server port",
+    message: "服务端口",
     defaultValue: portDefault,
     placeholder: "3100",
     validate: (val) => {
@@ -61,7 +61,7 @@ export async function promptServer(opts?: {
       // that will actually be submitted — the typed input, or the default.
       const n = Number(val || portDefault);
       if (isNaN(n) || n < 1 || n > 65535 || !Number.isInteger(n)) {
-        return "Must be an integer between 1 and 65535";
+        return "必须是 1 到 65535 之间的整数";
       }
     },
   });
@@ -80,7 +80,7 @@ export async function promptServer(opts?: {
 
   if (bind === "lan" || bind === "tailnet") {
     const allowedHostnamesInput = await p.text({
-      message: "Allowed private hostnames (comma-separated, optional)",
+      message: "允许的私有主机名（以逗号分隔，可选）",
       defaultValue: (currentServer?.allowedHostnames ?? []).join(", "),
       placeholder:
         bind === "tailnet"
@@ -110,7 +110,7 @@ export async function promptServer(opts?: {
   }
 
   const deploymentModeSelection = await p.select({
-    message: "Auth mode",
+    message: "身份验证模式",
     options: [
       {
         value: "local_trusted",
@@ -132,7 +132,7 @@ export async function promptServer(opts?: {
   let exposure: ServerConfig["exposure"] = "private";
   if (deploymentMode === "authenticated") {
     const exposureSelection = await p.select({
-      message: "Exposure profile",
+      message: "暴露配置",
       options: [
         {
           value: "private",
@@ -156,14 +156,14 @@ export async function promptServer(opts?: {
     currentServer?.host ??
     (deploymentMode === "local_trusted" ? "127.0.0.1" : "0.0.0.0");
   const host = await p.text({
-    message: "Bind host",
+    message: "绑定主机",
     defaultValue: defaultHost,
     placeholder: defaultHost,
     validate: (val) => {
       const candidate = (val || defaultHost).trim();
-      if (!candidate) return "Host is required";
+      if (!candidate) return "必须填写主机名";
       if (deploymentMode === "local_trusted" && !isLoopbackHost(candidate)) {
-        return "Local trusted mode requires a loopback host such as 127.0.0.1";
+        return "local_trusted 模式要求使用 loopback 主机，例如 127.0.0.1";
       }
     },
   });
@@ -173,7 +173,7 @@ export async function promptServer(opts?: {
   let allowedHostnames: string[] = [];
   if (deploymentMode === "authenticated" && exposure === "private") {
     const allowedHostnamesInput = await p.text({
-      message: "Allowed private hostnames (comma-separated, optional)",
+      message: "允许的私有主机名（以逗号分隔，可选）",
       defaultValue: (currentServer?.allowedHostnames ?? []).join(", "),
       placeholder: "dotta-macbook-pro, your-host.tailnet.ts.net",
       validate: (val) => {
@@ -194,20 +194,20 @@ export async function promptServer(opts?: {
   if (deploymentMode === "authenticated" && exposure === "public") {
     const publicBaseUrlDefault = currentAuth?.publicBaseUrl ?? "";
     const urlInput = await p.text({
-      message: "Public base URL",
+      message: "公开基础 URL",
       defaultValue: publicBaseUrlDefault,
       placeholder: "https://paperclip.example.com",
       validate: (val) => {
         const candidate = (val || publicBaseUrlDefault).trim();
-        if (!candidate) return "Public base URL is required for public exposure";
+        if (!candidate) return "公开访问时必须填写基础 URL";
         try {
           const url = new URL(candidate);
           if (url.protocol !== "http:" && url.protocol !== "https:") {
-            return "URL must start with http:// or https://";
+            return "URL 必须以 http:// 或 https:// 开头";
           }
           return;
         } catch {
-          return "Enter a valid URL";
+          return "请输入有效 URL";
         }
       },
     });

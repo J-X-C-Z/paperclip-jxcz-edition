@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { projectExecution } from "./execution-projection.js";
+import { describe, expect, it, vi } from "vitest";
+import { getTableName, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { Db } from "@paperclipai/db";
+import { executionProjectionsForRuns, projectExecution } from "./execution-projection.js";
 
 type Run = Parameters<typeof projectExecution>[0];
 type Coordinator = NonNullable<Parameters<typeof projectExecution>[1]>;
@@ -236,5 +239,58 @@ describe("execution truth projection", () => {
         }),
       ).phase,
     ).toBe("recovery_needed");
+  });
+});
+
+
+function deferredRows() {
+  let resolve!: (rows: unknown[]) => void;
+  const promise = new Promise<unknown[]>((resolvePromise) => { resolve = resolvePromise; });
+  return { promise, resolve };
+}
+
+describe("execution projection read overlap", () => {
+  it("overlaps run/coordinator reads and then interaction/recovery reads with company scope", async () => {
+    const companyId = "company-a";
+    const runId = "run-a";
+    const issueId = "issue-a";
+    const runsGate = deferredRows();
+    const interactionGate = deferredRows();
+    const started: string[] = [];
+    const conditions = new Map<string, unknown[]>();
+    const db = {
+      select() {
+        let table: string;
+        const query = {
+          from(value: Parameters<typeof getTableName>[0]) { table = getTableName(value); return query; },
+          where(condition: SQL) { conditions.set(table, new PgDialect().sqlToQuery(condition).params); return query; },
+          orderBy() { return query; },
+          then(resolve: (rows: unknown[]) => unknown, reject?: (error: unknown) => unknown) {
+            started.push(table);
+            const rows = table === "heartbeat_runs" ? runsGate.promise
+              : table === "native_run_finalizations" ? Promise.resolve([coordinator({ runId })])
+              : table === "issue_thread_interactions" ? interactionGate.promise
+              : Promise.resolve([]);
+            return rows.then(resolve, reject);
+          },
+        };
+        return query;
+      },
+    } as unknown as Db;
+    const reading = executionProjectionsForRuns(db, companyId, [runId], now);
+    await vi.waitFor(() => expect(started).toEqual(["heartbeat_runs", "native_run_finalizations"]));
+    runsGate.resolve([run({ id: runId, nativeIssueId: issueId, status: "succeeded" })]);
+    await vi.waitFor(() => {
+      expect(started).toContain("issue_thread_interactions");
+      expect(started).toContain("issue_recovery_actions");
+    });
+    interactionGate.resolve([{ issueId, kind: "request_confirmation" }]);
+    const result = await reading;
+    expect(result.get(runId)).toMatchObject({ phase: "waiting_for_answer", label: "Waiting for answer" });
+    expect([...result.keys()]).toEqual([runId]);
+    for (const params of conditions.values()) expect(params).toContain(companyId);
+    for (const table of ["heartbeat_runs", "native_run_finalizations"]) expect(conditions.get(table)).toContain(runId);
+    for (const table of ["issue_thread_interactions", "issue_recovery_actions"]) expect(conditions.get(table)).toContain(issueId);
+    expect(started).toHaveLength(4);
   });
 });

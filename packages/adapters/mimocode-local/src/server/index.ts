@@ -24,7 +24,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           baseURL: "https://api.xiaomimimo.com/v1",
           headers: { "api-key": "{env:MIMO_API_KEY}" },
         },
-        models: { "mimo-v2.5-pro": { name: "MiMo V2.5 Pro" } },
+        models: {
+          "mimo-v2.6-pro": { name: "MiMo V2.6 Pro" },
+          "mimo-v2.6-flash": { name: "MiMo V2.6 Flash" },
+        },
       },
     },
     model,

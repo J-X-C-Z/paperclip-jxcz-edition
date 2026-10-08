@@ -1,6 +1,6 @@
 ---
 name: task-review
-description: Review a member's submitted Paperclip task against its acceptance criteria and verification evidence, then approve or return it through the task review stage.
+description: 根据验收标准和验证证据审查成员提交的 Paperclip 任务，并通过任务审查阶段批准或退回。
 key: paperclipai/bundled/paperclip-operations/task-review
 recommendedForRoles:
   - manager
@@ -11,15 +11,15 @@ tags:
   - acceptance
 ---
 
-# Task Review
+# 任务审查
 
-Use this skill when you are the designated reviewer of a submitted task. Read the Paperclip runtime skill for authentication, checkout, run audit headers and the available review API; never invent an endpoint or bypass a review stage with a direct status edit.
+当你被指定为已提交任务的审查者时，使用此技能。阅读 Paperclip runtime 技能，了解身份验证、checkout、运行审计标头和可用的审查 API；不要虚构 endpoint，也不要通过直接修改状态绕过审查阶段。
 
-1. Read the task, plan, acceptance criteria, submitted artifacts, work products and prior review feedback.
-2. Confirm you are authorized to review this task and it is in your review stage. Preserve company and project boundaries. Acquire checkout when the runtime requires it; stop on a checkout conflict.
-3. Check the actual artifacts against each acceptance criterion. Run proportionate verification where needed. A progress claim is not validation evidence.
-4. If every criterion is satisfied, submit the approval decision through the task's review workflow. Explain what was checked and link the deliverables. The server advances the task to completion.
-5. If any criterion fails, return the task through the review workflow to the original execution member. State the failed criterion, concrete evidence and exact correction needed. Do not silently change scope or assign unrelated work.
-6. If evidence, access or dependencies are missing, record the blocking condition and keep the task awaiting review. Never approve merely because the worker or reviewer is unavailable.
+1. 阅读任务、计划、验收标准、已提交的成果、工作产品和之前的审查反馈。
+2. 确认你有权审查此任务，且任务正处于审查阶段。遵守公司和项目边界。运行环境要求时先获取 checkout；遇到 checkout 冲突则停止。
+3. 根据每项验收标准检查实际成果。必要时执行适当的验证。进度说明不能作为验证证据。
+4. 如果所有标准都满足，通过任务审查工作流提交批准决定。说明检查内容并链接交付成果。服务器会将任务推进到完成状态。
+5. 如果有任一标准未满足，通过审查工作流将任务退回原执行成员。说明未满足的标准、具体证据和确切的修正要求。不要悄悄更改范围或指派无关工作。
+6. 如果缺少证据、访问权限或依赖项，记录阻塞原因并让任务继续等待审查。不要仅因执行者或审查者不可用就批准任务。
 
-All task mutations follow the Paperclip run audit convention. Do not review your own submission, remove a required review stage, or elevate your own authority. Summarize useful lessons after the review cycle without exposing credentials or private company data.
+所有任务变更都必须遵循 Paperclip 运行审计规范。不要审查自己提交的工作、移除必需的审查阶段或提升自己的权限。审查周期结束后，总结有用经验，但不要暴露凭据或公司私有数据。

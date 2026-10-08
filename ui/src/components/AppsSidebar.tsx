@@ -2,7 +2,7 @@ import { uiText } from "@/i18n";
 import { useLocation } from "@/lib/router";
 import { ChatDetailSidebar } from "./chat/ChatDetailSidebar";
 import { ChatSetupSidebar } from "./chat/ChatSetupNavigation";
-import { Store, ShieldQuestion } from "lucide-react";
+import { Store, ShieldQuestion, SlidersHorizontal } from "lucide-react";
 import { DEVELOPER_TABS, advancedTabHref, isExperimentalToolTab } from "@/pages/tools/tool-tabs";
 import { useSmokeLabEnabled } from "@/hooks/useSmokeLabEnabled";
 import { useReviewCount } from "@/pages/apps/useReviewCount";
@@ -50,6 +50,7 @@ export function AppsSidebar() {
             badgeTone="warning"
             badgeLabel="waiting for your OK"
           />
+          <SidebarNavItem to="/apps/models" label={uiText("Models")} icon={SlidersHorizontal} end />
         </div>
         {developerTabs.length > 0 ? (
           <div data-slot="contextual-sidebar-section" className={contextualSidebarStyles.section}>

@@ -747,7 +747,7 @@ describe("AgentConfigForm environment selector", () => {
     roots.push(result.root);
     const select = result.container.querySelector<HTMLSelectElement>('select[aria-label="标准头衔"]');
     expect(select?.value).toBe("__custom__");
-    expect(Array.from(select?.options ?? []).map((option) => option.textContent)).toEqual(["组员", "组长", "部长", "总管", "自定义头衔"]);
+    expect(Array.from(select?.options ?? []).map((option) => option.textContent)).toEqual(["组员", "组长", "部长", "经理", "自定义头衔"]);
     expect((result.container.querySelector('[aria-label="自定义头衔"]') as HTMLInputElement).value).toBe("旧岗位");
 
     await act(async () => {

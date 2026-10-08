@@ -2736,6 +2736,7 @@ describe.sequential("issue comment reopen routes", () => {
       companyId: "company-1",
       agentId: "22222222-2222-4222-8222-222222222222",
       status: "running",
+      contextSnapshot: { issueId: issue.id },
     });
     mockHeartbeatService.cancelRun.mockResolvedValue({
       id: "run-1",
@@ -2802,6 +2803,7 @@ describe.sequential("issue comment reopen routes", () => {
       companyId: "company-1",
       agentId: "22222222-2222-4222-8222-222222222222",
       status: "running",
+      contextSnapshot: { issueId: issue.id },
     });
     mockHeartbeatService.cancelRun.mockResolvedValue({
       id: "run-1",
@@ -2846,6 +2848,7 @@ describe.sequential("issue comment reopen routes", () => {
       companyId: "company-1",
       agentId: "22222222-2222-4222-8222-222222222222",
       status: "running",
+      contextSnapshot: { issueId: issue.id },
     });
 
     const res = await request(await installActor(createApp()))

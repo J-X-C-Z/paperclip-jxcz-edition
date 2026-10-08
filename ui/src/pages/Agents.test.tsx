@@ -578,7 +578,7 @@ describe("Agents", () => {
 
     mockCompanyState.selectedCompanyId = "company-2";
     mockAgentsApi.list.mockImplementation(async (companyId: string) => [
-      makeAgent({ id: "company-2-agent", companyId, name: "Company two agent", title: "总管", status: "active" }),
+      makeAgent({ id: "company-2-agent", companyId, name: "Company two agent", title: "经理", status: "active" }),
     ]);
     mockProjectsApi.listAgentMemberships.mockResolvedValue([{ agentId: "company-2-agent" }]);
     await act(async () => {
@@ -596,7 +596,7 @@ describe("Agents", () => {
 
     const scopedTitleSelect = container.querySelector<HTMLSelectElement>('select[aria-label="按头衔筛选"]');
     await act(async () => {
-      scopedTitleSelect!.value = "总管";
+      scopedTitleSelect!.value = "经理";
       scopedTitleSelect!.dispatchEvent(new Event("change", { bubbles: true }));
     });
     mockProjectScopeState.projectId = "project-2";
@@ -1051,7 +1051,7 @@ describe("Agents", () => {
     await flushReact();
 
     expect(mockBuiltInAgentsApi.list).toHaveBeenCalledWith("company-1");
-    expect(container.textContent).toContain("Built-in");
+    expect(container.textContent).toMatch(/Built-in|内置/);
     expect(container.textContent).toContain("Briefs Agent");
     expect(container.textContent).not.toContain("Regular Agent");
     expect(container.querySelector('[title="Ships with Paperclip"]')).toBeNull();

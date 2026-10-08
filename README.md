@@ -30,6 +30,8 @@
 
 <br/>
 
+[简体中文](README.zh-CN.md)
+
 # Paperclip is the app people use to manage AI agents for work.
 
 Open-source orchestration for teams of AI agents.

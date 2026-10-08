@@ -1,0 +1,11 @@
+{
+  "Working": "工作中",
+  "Loading work status…": "正在读取工作状态…",
+  "Work status unavailable": "工作状态读取失败",
+  "Current task unknown": "当前任务未知",
+  "Current task": "当前任务",
+  "No current task": "暂无当前任务",
+  "No linked task": "未关联任务",
+  "Task code unavailable": "任务代号读取失败",
+  "Loading task code…": "正在读取任务代号…"
+}

@@ -48,6 +48,7 @@ import {
   activityLog,
   chatConversations,
   companies,
+  environmentLeases,
   heartbeatRunWatchdogDecisions,
   heartbeatRuns,
   issueAttachments,
@@ -70,7 +71,7 @@ import {
   nativeRunnerOwnershipNotHeldCondition,
 } from "../native-runtime/native-runner-ownership.js";
 import { visibleIssueCondition } from "../issue-visibility.js";
-import { forbidden, notFound } from "../../errors.js";
+import { forbidden, HttpError, notFound } from "../../errors.js";
 import { logger } from "../../middleware/logger.js";
 import {
   isPidAlive,
@@ -86,6 +87,7 @@ import {
 import { appendHeartbeatRunEvent } from "../heartbeat-run-events.js";
 import { emitAgentTaskRun } from "../agent-task-run-telemetry.js";
 import { budgetService } from "../budgets.js";
+import { environmentService } from "../environments.js";
 import { unadmittedChatWakeupCondition } from "../durable-chat-wakeup.js";
 import { issueRecoveryActionService } from "../issue-recovery-actions.js";
 import {
@@ -1931,7 +1933,26 @@ export function recoveryService(
           return null;
         }
         if (deps.scheduleRecoveryRetry) {
-          const retry = await deps.scheduleRecoveryRetry(predecessor.id);
+          let retry;
+          try {
+            retry = await deps.scheduleRecoveryRetry(predecessor.id);
+          } catch (error) {
+            if (
+              error instanceof HttpError &&
+              error.status === 403 &&
+              error.message === "Queued-message interrupt authority is unavailable"
+            ) {
+              // A historical queued-message receipt cannot authorize a new
+              // run. Leave this issue for intervention without aborting the
+              // startup recovery of every other issue.
+              logger.warn(
+                { issueId: input.issueId, runId: predecessor.id },
+                "skipping recovery retry with unavailable queued-message authority",
+              );
+              return null;
+            }
+            throw error;
+          }
           if (retry) return retry;
           // A spent budget is the one "no retry" the sweeper must not wait
           // out: nothing else will ever queue a successor for this run, so
@@ -5564,6 +5585,7 @@ export function recoveryService(
       const filters = [
         eq(issues.status, "blocked"),
         isNull(issues.conversationAgentId),
+        isNull(issues.unblockDescriptor),
         visibleIssueCondition(),
         sql`${issues.assigneeAgentId} is not null`,
       ];
@@ -5870,6 +5892,12 @@ export function recoveryService(
 
     const pid = run.processPid ?? null;
     const processGroupId = run.processGroupId ?? null;
+    const leases = await db.select().from(environmentLeases).where(and(
+      eq(environmentLeases.heartbeatRunId, run.id),
+      eq(environmentLeases.companyId, run.companyId),
+    ));
+    const localLeases = leases.filter(lease => lease.provider === "local" &&
+      lease.providerLeaseId === null && parseObject(lease.metadata).driver === "local");
 
     // Issue-terminal authority. When the run's issue is terminal, the run row is
     // orphaned regardless of process or handle state. Prefer the referencing
@@ -5911,7 +5939,7 @@ export function recoveryService(
     let processGone = false;
     const hasLiveExecution =
       deps.liveRunExecutions?.has(run.id) ?? runningProcesses.has(run.id);
-    if (!hasLiveExecution) {
+    if (!hasLiveExecution && localLeases.length === leases.length) {
       if (typeof pid === "number" || typeof processGroupId === "number") {
         const processAlive =
           (typeof pid === "number" && isPidAlive(pid)) ||
@@ -6016,6 +6044,15 @@ export function recoveryService(
     // the stale lock below, so fire it and do not await it.
     void emitAgentTaskRun(db, updated);
     runningProcesses.delete(run.id);
+    // A dead local process needs no provider teardown. Remote/unknown leases
+    // retain their cleanup authority; host PID observations cannot release them.
+    if (processGone) {
+      for (const lease of localLeases) {
+        if (lease.status === "active") {
+          await environmentService(db).releaseLease(lease.id, "released");
+        }
+      }
+    }
     // The run update above already committed the terminal status. The audit
     // event is best-effort: if the insert fails, the caller must still treat
     // the run as terminalized and clear the lock in the same sweep. So catch

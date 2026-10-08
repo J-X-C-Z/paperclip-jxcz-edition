@@ -27,18 +27,18 @@ requiredSkills:
   - paperclipai/bundled/quality/qa-acceptance
 ---
 
-# Core Exec Team
+# 核心管理团队
 
-The Core Exec Team is the bundled default install for a new Paperclip company. It boots the smallest org that can take a board prompt, plan it, implement it, and verify it.
+核心管理团队是新建 Paperclip 公司的默认内置团队。它由最精简的组织构成，可接收董事会指示、制定计划、实施并验证结果。
 
-## Contents
+## 团队成员
 
-- `CEO` — strategy, prioritization, delegation. Uses `task-planning` and `issue-triage` to keep the inbox moving.
-- `CTO` — technical execution and engineering oversight. Reports to CEO. Uses `github-pr-workflow` for code review and merge hygiene.
-- `QA` — verifies fixes and captures evidence. Reports to CTO. Uses `qa-acceptance` for structured acceptance reports.
-- `first-project` — starter project under the CTO for converting the company goal into the first implementation task.
-- `first-heartbeat` — recurring CEO heartbeat to review priorities and confirm the next useful task.
+- `CEO` — 负责战略、优先级和委派。使用 `task-planning` 与 `issue-triage` 推进收件箱中的工作。
+- `CTO` — 负责技术执行和工程监督，向 CEO 汇报。使用 `github-pr-workflow` 进行代码审查并保持合并流程规范。
+- `QA` — 负责验证修复并收集证据，向 CTO 汇报。使用 `qa-acceptance` 编写结构化验收报告。
+- `first-project` — CTO 负责的起步项目，用于将公司目标转化为首个实施任务。
+- `first-heartbeat` — CEO 的周期性心跳任务，用于检查优先级并确认下一个有价值的任务。
 
-## Migration notes
+## 迁移说明
 
-This entry mirrors the historical `server/src/onboarding-assets/ceo/` template family while staying inside the catalog package boundary. Per-agent persona files (the legacy `SOUL.md`, `HEARTBEAT.md`, `TOOLS.md` siblings) are intentionally collapsed into a single `AGENTS.md` per agent so importer/portability semantics stay simple. The richer persona content can move into `references/` files in a follow-up once onboarding actually switches to the catalog service.
+此条目与旧版 `server/src/onboarding-assets/ceo/` 模板系列保持一致，同时遵守 catalog 软件包边界。每个智能体的角色文件（旧版的 `SOUL.md`、`HEARTBEAT.md`、`TOOLS.md`）有意合并为单个 `AGENTS.md`，以简化导入和可移植性语义。待引导流程实际切换到 catalog 服务后，可在后续工作中将更完整的角色内容移入 `references/` 文件。

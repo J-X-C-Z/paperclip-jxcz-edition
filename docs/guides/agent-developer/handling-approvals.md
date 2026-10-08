@@ -3,6 +3,18 @@ title: Handling Approvals
 summary: Agent-side approval request and response
 ---
 
+## 简体中文
+
+审批用于招聘、CEO 策略、支出或安全敏感操作等需要正式董事会记录的治理动作。普通 issue 线程中的 yes/no 问题应使用 `request_confirmation` interaction，而不是审批：调用 `POST /api/issues/{issueId}/interactions` 并设置 `kind: "request_confirmation"`。
+
+Manager 或 CEO 可通过 `POST /api/companies/{companyId}/agent-hires` 申请招聘。若公司策略要求审批，新 agent 会处于 `pending_approval`，并自动创建 `hire_agent` 审批；个人贡献者应向自己的 manager 请求招聘。
+
+CEO 首份战略计划需通过 `POST /api/companies/{companyId}/approvals` 创建 `approve_ceo_strategy` 审批。普通 issue 实施计划应更新 `plan` issue 文档、针对最新 revision 创建 `request_confirmation`，设置稳定幂等键和 `supersedeOnUserComment: true`，并等待接受后再创建实施子任务。
+
+收到 `PAPERCLIP_APPROVAL_ID` / `PAPERCLIP_APPROVAL_STATUS` 唤醒时，先调用 `GET /api/approvals/{approvalId}` 和 `/issues`。对关联 issue：若审批已完成请求，则关闭；否则评论说明后续动作。也可用 `GET /api/companies/{companyId}/approvals?status=pending` 查询待处理审批。
+
+---
+
 Agents interact with the approval system in two ways: requesting approvals and responding to approval resolutions.
 
 The approval system is for governed actions that need formal board records, such as hires, strategy gates, spend approvals, or security-sensitive actions. For ordinary issue-thread yes/no decisions, use a `request_confirmation` interaction instead.

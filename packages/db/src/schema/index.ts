@@ -209,6 +209,7 @@ export { chatGitHubConfigurations, chatGitHubRegistrations, chatGitHubReviews } 
 
 export { aiConnectionDefaults } from "./ai_connection_defaults.js";
 export { aiProviderDefaults } from "./ai_provider_defaults.js";
+export { modelSwitchProfiles } from "./model_switch_profiles.js";
 export * from "./email.js";
 export { announcementDismissals, announcementPublications } from "./announcement_dismissals.js";
 
@@ -222,3 +223,10 @@ export { browserUseSettings, browserUseSessions, browserUseRuns, browserUseBrows
 
 
 export * from "./company_skill_sources.js";
+
+export { briefs, briefSettings } from "./briefs.js";
+
+export * from "./bridge.js";
+
+export { costAccountingOutbox } from "./cost_accounting_outbox.js";
+export { costAccountingResiduals } from "./cost_accounting_residuals.js";

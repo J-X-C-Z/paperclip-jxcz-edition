@@ -1,8 +1,8 @@
-# Individual and Status Capsules
+# 单体胶囊与状态胶囊
 
-Use this reference for product UI, onboarding, org surfaces, and heartbeat status indicators.
+本参考适用于产品 UI、引导流程、组织界面和心跳状态指示器。
 
-## Source Precedence
+## 来源优先级
 
 1. `ui/src/components/AgentCapsule.tsx` - React API, states, sizes, accessibility, gradient wrapping.
 2. `ui/src/index.css` - animation timings, reduced-motion behavior, agent gradient token values.
@@ -10,13 +10,13 @@ Use this reference for product UI, onboarding, org surfaces, and heartbeat statu
 4. `ui/src/components/OnboardingWizard.tsx` and `ui/src/pages/DesignGuide.tsx` - accepted usage examples.
 5. Website brand guide files under `paperclip-website/src/components/brand/sections/*` - marketing rules and the 12-preset website palette.
 
-## Individual Agent Capsule
+## 单个 Agent 胶囊
 
-One tall capsule represents one agent. Do not use this component for decoration or generic status chips.
+一个纵向胶囊代表一个 agent。不要将此组件用于装饰或通用状态标签。
 
-States:
+状态：
 
-| State | Meaning | Rendering |
+| 状态 | 含义 | 渲染方式 |
 | --- | --- | --- |
 | `slot` | Empty agent slot | Dashed outline, gentle pulse |
 | `configured` | Agent named/model picked, not live | Solid stroke, no fill |
@@ -24,33 +24,33 @@ States:
 
 Implementation rules:
 
-- Keep the same DOM node through lifecycle flows when the story is "this agent comes to life".
-- Use stacked layers with opacity transitions for dashed-to-solid; CSS cannot animate `border-style`.
-- Online default pulse is green. The blue pulse is a specific onboarding wizard variant, not the default app-wide live state.
-- Product sizes are `sm` 24x60, `md` 34x84, `lg` 46x116. Custom sizes should keep height at least twice width.
-- The capsule radius is full stadium/pill radius.
-- Accessibility label should describe the represented agent or state.
+- 当生命周期表达“这个 agent 正在启动”时，整个流程应复用同一个 DOM 节点。
+- 虚线变实线时使用叠层和透明度过渡；CSS 无法对 `border-style` 做动画。
+- 在线状态默认使用绿色脉冲。蓝色脉冲仅用于特定引导向导，不是全应用的默认在线状态。
+- 产品尺寸为 `sm` 24x60、`md` 34x84、`lg` 46x116。自定义尺寸应保持高度至少为宽度的两倍。
+- 胶囊使用完整的药丸形圆角。
+- 无障碍标签应说明所代表的 agent 或状态。
 
-Motion:
+动效：
 
-| Motion | Timing |
+| 动效 | 时长 |
 | --- | --- |
 | Slot pulse | `1.6s ease-in-out infinite` |
 | Liquid rise | `1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards` |
 | Online pulse | `1.8s ease-in-out infinite` |
 | Layer transition | `opacity 0.5s ease` |
 
-Reduced motion:
+减少动态效果：
 
-- Remove slot pulse and online pulse.
-- Remove layer transition.
-- Render the online liquid at full height without rise animation.
+- 移除空位脉冲和在线脉冲。
+- 移除图层过渡。
+- 在线液面直接以完整高度显示，不播放上升动画。
 
-## App Agent Gradient Tokens
+## App Agent 渐变令牌
 
-The app component currently exposes 10 gradient pairs. `AgentCapsule` wraps out-of-range gradient indexes back into `1..10`.
+应用组件当前提供 10 组渐变。`AgentCapsule` 会将超出范围的渐变索引循环映射回 `1..10`。
 
-| Index | Top token | Top | Bottom token | Bottom |
+| 索引 | 顶部令牌 | 顶部颜色 | 底部令牌 | 底部颜色 |
 | --- | --- | --- | --- | --- |
 | 1 | `--agent-1a` | `#f7cfdc` | `--agent-1b` | `#1f7a3a` |
 | 2 | `--agent-2a` | `#c9a9e8` | `--agent-2b` | `#ee79a1` |
@@ -63,32 +63,32 @@ The app component currently exposes 10 gradient pairs. `AgentCapsule` wraps out-
 | 9 | `--agent-9a` | `#f3b49e` | `--agent-9b` | `#1f4ed4` |
 | 10 | `--agent-10a` | `#f2d95f` | `--agent-10b` | `#4fbcba` |
 
-Do not treat these as the universal Paperclip capsule palette. The website brand guide exposes 12 presets, the video references have a separate 12-gradient palette, and the hero bank has 45 gradients.
+不要把这些当作 Paperclip 通用胶囊调色板。网站品牌指南提供 12 种预设，视频参考另有 12 组渐变，hero 素材库则有 45 组渐变。
 
-## Website Marketing Capsule Palette
+## 网站营销胶囊调色板
 
-The website palette extends the app's first 10 gradients with two more presets:
+网站调色板在应用前 10 组渐变的基础上增加了两种预设：
 
-| Index | Top | Bottom | Description |
+| 索引 | 顶部 | 底部 | 描述 |
 | --- | --- | --- | --- |
 | 11 | `#C2C2E8` | `#5E3450` | peri -> mauve |
 | 12 | `#4DB9B7` | `#3AA35C` | teal -> green |
 
 Marketing capsule rules:
 
-- Capsule visuals are reserved for agent representation: capsule fields, org-chart nodes, status indicators, avatars.
-- Never use capsules on chrome, buttons, or generic pills.
-- Use a `1 : >= 2` proportion and a top-to-bottom gradient for gradient capsules.
-- Flat single-color capsules are allowed only where a solid mark is needed.
-- The guide names a semantic `--r-capsule`, but current `brand.css` does not export a concrete `--r-capsule` variable. Do not cite it as a live CSS token without checking.
+- 胶囊视觉仅用于表示 agent，例如胶囊字段、组织架构节点、状态指示器和头像。
+- 不要把胶囊用于界面框架、按钮或通用药丸标签。
+- 渐变胶囊使用 `1 : >= 2` 的宽高比例，并采用从上到下的渐变。
+- 只有需要纯色标记时才使用单色胶囊。
+- 指南中提到语义变量 `--r-capsule`，但当前 `brand.css` 并未导出具体的 `--r-capsule` 变量。核实前不要将其称为现有 CSS 令牌。
 
-## Heartbeat Status Capsule
+## 心跳状态胶囊
 
-Heartbeat status capsules are small solid pills. They are a different surface from individual gradient capsules.
+心跳状态胶囊是小型实心药丸形标记，与单体渐变胶囊属于不同界面元素。
 
 Status mapping:
 
-| Agent status | Color | Fill | Motion |
+| Agent 状态 | 颜色 | 填充色 | 动效 |
 | --- | --- | --- | --- |
 | `idle` | gray | `#A8AEB2` light, `#6E6960` dark | none |
 | `active` | gray | same as idle | none |
@@ -96,18 +96,18 @@ Status mapping:
 | `paused` | amber | `#F59E0B` | none |
 | `error` | red | `#DC2626` | `hb-blink` |
 
-Motion timings:
+动效时长：
 
 - `hb-pulse`: `1.6s ease-in-out infinite`
 - `hb-blink`: `1.2s step-end infinite`
-- Reduced motion removes both.
+- 减少动态效果时移除这两种动效。
 
-Website guide geometry for the heartbeat pill is 8x16 with radius 4. Larger brand-page display examples may use 14x28.
+网站指南中心跳药丸的尺寸为 8x16、圆角半径为 4。品牌页面中的较大展示示例可以使用 14x28。
 
-## Common Mistakes
+## 常见错误
 
-- Using capsule gradients for generic badges or buttons.
-- Using a full gradient agent capsule where a small status capsule is required.
-- Treating the onboarding blue glow as the default online state.
-- Merging the 10 app gradients, 12 website gradients, 12 video gradients, and 45 hero-bank gradients into one palette.
-- Animating status or lifecycle motion without reduced-motion fallbacks.
+- 将胶囊渐变用于通用徽标或按钮。
+- 需要小型状态胶囊时却使用完整的渐变 agent 胶囊。
+- 把引导流程中的蓝色光效当作默认在线状态。
+- 将应用的 10 组、网站的 12 组、视频的 12 组和 hero 素材库的 45 组渐变混成同一个调色板。
+- 为状态或生命周期添加动画，却没有提供减少动态效果时的替代方案。

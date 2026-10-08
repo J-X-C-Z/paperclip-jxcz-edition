@@ -1,5 +1,18 @@
 # Pipelines Tutorial: Release to Published Content
 
+
+## 简体中文
+
+本教程用 CLI/API 演示从发布到内容上线的 12 步流程，并串联三条 pipeline：`release-coverage` 判断一个发布是否已有覆盖；`feature-content` 为每个获批功能建一个 case 并汇总内容覆盖率；`content-production` 管理单篇内容，从起草、素材、组装、最终审核、发布到终态。文中会区分 Paperclip 原生能力与约定性配置，便于判断哪些是平台 primitive、哪些只是示例流程。
+
+### 准备环境
+
+请在开发 Paperclip 实例运行，并使用可管理 pipelines、routines 和 issues 的 board token 或 agent token。设置 `PAPERCLIP_API_URL`、`PAPERCLIP_COMPANY_ID` 和 `PAPERCLIP_API_KEY`；可选设置 `DRAFTING_AGENT_ID` 将 routine 创建的起草任务分配给指定 agent。`RUN_KEY` 用于生成本轮唯一 pipeline 名称。以下示例会创建三个 pipeline，演示从输入、审核、并行编辑、素材处理、最终审核，到父级汇总和反思 feed 的完整闭环；可按 Step 1–12 逐步执行，每步均提供 CLI/API 操作与可观察结果。
+
+脚本化 smoke 可重跑完整示例。运行后检查 issue、状态流转、审核决定和子任务汇总，以确认使用的 Paperclip 实例和公司正确。
+
+---
+
 This walkthrough is the CLI/API version of the 12-step release-to-content worked example. It uses three linked pipelines:
 
 - `release-coverage`: one release case answers "is this release covered?"

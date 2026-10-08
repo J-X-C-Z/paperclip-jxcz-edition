@@ -1,9 +1,40 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import type { Db } from "@paperclipai/db";
-import { agentWakeupRequests } from "@paperclipai/db";
+import { agentWakeupRequests, issues } from "@paperclipai/db";
+import { isUuidLike } from "@paperclipai/shared";
 
 export const ISSUE_BLOCKERS_RESOLVED_WAKE_REASON = "issue_blockers_resolved";
+
+/** A completed child can notify its lead while integration remains blocked. */
+export async function isChildCompletionAttentionWake(
+  db: Pick<Db, "select">,
+  input: { companyId: string; issueId: string; agentId: string; contextSnapshot: Record<string, unknown> },
+): Promise<boolean> {
+  const context = input.contextSnapshot;
+  if (context.wakeReason !== "issue_children_completed" ||
+      typeof context.nativeStatusWakeIntentId !== "string" || !isUuidLike(context.nativeStatusWakeIntentId) ||
+      typeof context.completedChildIssueId !== "string" || !isUuidLike(context.completedChildIssueId)) return false;
+  const [intent] = await db.select().from(agentWakeupRequests).where(and(
+    eq(agentWakeupRequests.id, context.nativeStatusWakeIntentId),
+    eq(agentWakeupRequests.companyId, input.companyId), eq(agentWakeupRequests.agentId, input.agentId),
+    eq(agentWakeupRequests.requestedByActorType, "system"),
+    eq(agentWakeupRequests.requestedByActorId, "issue-child-completion"),
+    eq(agentWakeupRequests.reason, "issue_children_completed"),
+    inArray(agentWakeupRequests.status, ["queued", "claimed", "coalesced"]),
+  )).limit(1);
+  if (!intent || intent.payload?.issueId !== input.issueId ||
+      intent.payload?.completedChildIssueId !== context.completedChildIssueId) return false;
+  const rows = await db.select().from(issues).where(and(
+    eq(issues.companyId, input.companyId), inArray(issues.id, [input.issueId, context.completedChildIssueId]),
+  ));
+  const parent = rows.find(row => row.id === input.issueId);
+  const child = rows.find(row => row.id === context.completedChildIssueId);
+  return Boolean(parent?.assigneeAgentId === input.agentId &&
+    ["todo", "in_progress", "blocked", "in_review"].includes(parent.status) &&
+    child?.parentId === parent.id && child.status === "done" &&
+    intent.idempotencyKey === `issue-child-completion:${child.id}:${child.statusVersion}`);
+}
 
 // A wake counts as "already delivered or in flight for the current ready state"
 // for these statuses. The level-triggered state key uses this full set so that

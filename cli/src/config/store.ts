@@ -41,7 +41,7 @@ function parseJson(filePath: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch (err) {
-    throw new Error(`Failed to parse JSON at ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`无法解析 ${filePath} 中的 JSON：${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
@@ -95,7 +95,7 @@ export function readConfig(configPath?: string): PaperclipConfig | null {
   const migrated = migrateLegacyConfig(raw);
   const parsed = paperclipConfigSchema.safeParse(migrated);
   if (!parsed.success) {
-    throw new Error(`Invalid config at ${filePath}: ${formatValidationError(parsed.error)}`);
+    throw new Error(`配置文件 ${filePath} 无效：${formatValidationError(parsed.error)}`);
   }
   return parsed.data;
 }
@@ -167,7 +167,7 @@ function atomicWriteFile(filePath: string, contents: string): void {
 export function backupInvalidConfig(configPath?: string): string {
   const filePath = resolveConfigPath(configPath);
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Cannot back up missing config at ${filePath}`);
+  throw new Error(`无法备份不存在的配置文件：${filePath}`);
   }
 
   for (let suffix = 1; ; suffix += 1) {
@@ -204,7 +204,7 @@ export function writeConfig(
       const invalidBackupPath = options.invalidBackupPath;
       if (!invalidBackupPath) {
         throw new Error(
-          `Refusing to overwrite invalid config at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+          `拒绝覆盖无效配置文件 ${filePath}：${error instanceof Error ? error.message : String(error)}`,
         );
       }
       if (
@@ -212,7 +212,7 @@ export function writeConfig(
         !fs.readFileSync(filePath).equals(fs.readFileSync(invalidBackupPath))
       ) {
         throw new Error(
-          `Refusing to overwrite ${filePath} because it changed after the invalid backup was created`,
+          `拒绝覆盖 ${filePath}：自创建无效配置备份后，该文件已发生变化`,
         );
       }
     }

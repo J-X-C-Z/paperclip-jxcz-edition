@@ -42,7 +42,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, AppErro
           </p>
         </div>
         <pre className="overflow-auto rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive whitespace-pre-wrap">
-          {error.message}
+          {uiText(error.message)}
         </pre>
         <div>
           <button

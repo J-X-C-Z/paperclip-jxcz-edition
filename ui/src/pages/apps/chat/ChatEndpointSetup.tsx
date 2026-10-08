@@ -120,7 +120,7 @@ function ChatConnectionPurpose({ provider, onChat, onTools }: {
       <div className="max-w-2xl space-y-6">
         <ChatSetupNavigation labels={provider === "slack" ? ["Choose agent", "Create Slack app", "Add credentials", "Verify Slack connection", "Add avatar", "Connect your Slack account", "Try it"] : undefined} step={0} availableStep={0} onSelect={onChat} />
         <div>
-          <h1 className="text-xl font-bold">Choose how to connect</h1>
+          <h1 className="text-xl font-bold">{uiText("Choose how to connect")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             What should this {providerNames[provider]} connection do?
           </p>
@@ -558,8 +558,8 @@ function ChatSdkEndpointSetup() {
         )}
         {endpoint && isSlack && step === 4 && (
           <div className="space-y-4">
-            {avatarAgent.isPending ? <p role="status" className="text-sm text-muted-foreground">Loading agent avatar…</p>
-              : avatarAgent.isError ? <p role="alert" className="text-sm text-destructive">Couldn’t load the agent’s avatar. <button className="underline" onClick={() => void avatarAgent.refetch()}>Try again</button></p>
+            {avatarAgent.isPending ? <p role="status" className="text-sm text-muted-foreground">{uiText("Loading agent avatar…")}</p>
+              : avatarAgent.isError ? <p role="alert" className="text-sm text-destructive">{uiText("Couldn’t load the agent’s avatar.")} <button className="underline" onClick={() => void avatarAgent.refetch()}>{uiText("Try again")}</button></p>
               : <SlackAvatarStep
                   agentName={avatarAgent.data?.name ?? endpoint.assignedAgentName}
                   appName={endpoint.setup?.slackApp?.appName ?? defaultSlackAppName(avatarAgent.data?.name ?? endpoint.assignedAgentName)}
@@ -569,7 +569,7 @@ function ChatSdkEndpointSetup() {
                   onSkip={() => { if (!avatarProgress.progress) avatarProgress.save("skipped"); setViewedStep(5); }}
                   onSaveExit={() => navigate("/apps")}
                 />}
-            {(avatarAgent.isPending || avatarAgent.isError) && <SetupWizardFooter onSaveExit={() => navigate("/apps")}><Button onClick={() => { avatarProgress.save("skipped"); setViewedStep(5); }}>Skip for now</Button></SetupWizardFooter>}
+            {(avatarAgent.isPending || avatarAgent.isError) && <SetupWizardFooter onSaveExit={() => navigate("/apps")}><Button onClick={() => { avatarProgress.save("skipped"); setViewedStep(5); }}>{uiText("Skip for now")}</Button></SetupWizardFooter>}
           </div>
         )}
         {endpoint && isSlack && step === 5 && (
@@ -1458,15 +1458,15 @@ settings:
     return (
       <div className="space-y-5">
         <div>
-          <h1 className="text-xl font-bold">Verify Slack connection</h1>
+          <h1 className="text-xl font-bold">{uiText("Verify Slack connection")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Slack needs to confirm that it can reach your Paperclip instance.
           </p>
         </div>
         <ol className="list-decimal space-y-2 pl-5 text-sm">
-          <li><a className="underline underline-offset-4" href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer">Open Slack app Settings <ExternalLink className="inline size-3" /></a> and choose <strong>{slackApp.appName}</strong>.</li>
-          <li>Choose <strong>Event Subscriptions</strong>.</li>
-          <li>Beside the prefilled <strong>Request URL</strong>, click <strong>Retry</strong> if it isn&apos;t verified. Save changes if Slack asks.</li>
+          <li><a className="underline underline-offset-4" href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer">{uiText("Open Slack app Settings")} <ExternalLink className="inline size-3" /></a> {uiText("and choose")} <strong>{slackApp.appName}</strong>.</li>
+          <li>{uiText("Choose")} <strong>Event Subscriptions</strong>.</li>
+          <li>{uiText("Beside the prefilled")} <strong>Request URL</strong>, {uiText("click")} <strong>Retry</strong> {uiText("if it isn’t verified. Save changes if Slack asks.")}</li>
         </ol>
         {endpoint.setup?.webhookVerifiedAt ? (
           <p role="status" className="flex items-center gap-2 text-sm">
@@ -1474,21 +1474,21 @@ settings:
             Slack verified your connection.{pending ? " Opening the message test…" : ""}
           </p>
         ) : slackVerificationError ? (
-          <p role="alert" className="text-sm text-destructive">Couldn&apos;t check verification. We&apos;ll keep trying; check your connection if this continues.</p>
+          <p role="alert" className="text-sm text-destructive">{uiText("Couldn’t check verification. We’ll keep trying; check your connection if this continues.")}</p>
         ) : (
           <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Waiting for Slack to verify. We&apos;ll continue automatically.
           </p>
         )}
         <details className="text-sm">
-          <summary className="cursor-pointer text-muted-foreground">Troubleshooting</summary>
+          <summary className="cursor-pointer text-muted-foreground">{uiText("Troubleshooting")}</summary>
           <div className="mt-3 space-y-3">
-            <p className="text-muted-foreground">If the Request URL is missing or different, paste this URL into Event Subscriptions. If verification fails, check that your public HTTPS server is reachable and your Signing Secret is correct.</p>
+            <p className="text-muted-foreground">{uiText("If the Request URL is missing or different, paste this URL into Event Subscriptions. If verification fails, check that your public HTTPS server is reachable and your Signing Secret is correct.")}</p>
             {endpointValue("Paperclip webhook URL", endpoint.setup?.webhookUrl)}
           </div>
         </details>
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/apps")}>Save &amp; exit</Button>
+          <Button variant="ghost" className="text-muted-foreground" onClick={() => navigate("/apps")}>{uiText("Save & exit")}</Button>
           <Button disabled={pending || !endpoint.setup?.webhookVerifiedAt} onClick={() =>
             endpoint.setup?.step === "provider_setup" ? onAction("verify") : onSlackVerificationContinue()
           }>
@@ -1505,7 +1505,7 @@ settings:
         <div role="alert" className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
           <AlertTriangle className="size-5 shrink-0 text-destructive" />
           <div className="space-y-1">
-            <p className="text-sm font-semibold">Public HTTPS URL required</p>
+            <p className="text-sm font-semibold">{uiText("Public HTTPS URL required")}</p>
             <p className="text-sm">
               Slack needs a public HTTPS URL to send messages to Paperclip.
               Configure one for this instance before creating or connecting your Slack app.
@@ -1569,8 +1569,8 @@ settings:
           )}
           {saveSlackApp.isError && (
             <div role="alert" className="space-y-2 text-sm text-destructive">
-              <p>Couldn&apos;t save the Slack app details. Try again before connecting.</p>
-              <Button variant="outline" size="sm" onClick={persistSlackApp}>Retry saving</Button>
+              <p>{uiText("Couldn’t save the Slack app details. Try again before connecting.")}</p>
+              <Button variant="outline" size="sm" onClick={persistSlackApp}>{uiText("Retry saving")}</Button>
             </div>
           )}
           <div className="flex justify-end">
@@ -1644,7 +1644,7 @@ settings:
           Now you need to find two secrets. They are in two different screens on Slack.
         </p>
         {slackCredentialsSaved && !repairing && (
-          <p className="text-sm text-muted-foreground">Your credentials are saved. Leave the fields blank to keep them, or enter replacements.</p>
+          <p className="text-sm text-muted-foreground">{uiText("Your credentials are saved. Leave the fields blank to keep them, or enter replacements.")}</p>
         )}
         <section className="space-y-3">
           <h2 className="text-sm font-semibold"><label htmlFor="slack-bot-token">Bot User OAuth Token</label></h2>
@@ -1652,10 +1652,10 @@ settings:
             <li>
               <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
                 Open Slack app Settings <ExternalLink className="inline size-3" />
-              </a> and choose <strong>{slackApp.appName}</strong>.
+              </a> {uiText("and choose")} <strong>{slackApp.appName}</strong>.
             </li>
-            <li>Choose <strong>OAuth &amp; Permissions</strong></li>
-            <li>Copy and paste your <strong>Bot OAuth Token</strong></li>
+            <li>{uiText("Choose")} <strong>OAuth &amp; Permissions</strong></li>
+            <li>{uiText("Copy and paste your")} <strong>Bot OAuth Token</strong></li>
           </ul>
           <Input
             id="slack-bot-token"
@@ -1668,7 +1668,7 @@ settings:
           />
           {slackBotTokenInvalid && (
             <p id="slack-bot-token-warning" role="alert" className="text-sm text-destructive">
-              Your Bot User OAuth Token must start with <code>xoxb-</code>. Copy it from <strong>OAuth &amp; Permissions</strong>.
+              {uiText("Your Bot User OAuth Token must start with")} <code>xoxb-</code>. {uiText("Copy it from")} <strong>OAuth &amp; Permissions</strong>.
             </p>
           )}
         </section>
@@ -1678,10 +1678,10 @@ settings:
             <li>
               <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
                 Open Slack app Settings <ExternalLink className="inline size-3" />
-              </a> and choose <strong>{slackApp.appName}</strong>.
+              </a> {uiText("and choose")} <strong>{slackApp.appName}</strong>.
             </li>
-            <li>Choose <strong>{uiText("Basic Information")}</strong></li>
-            <li>Copy and paste your <strong>Signing Secret</strong></li>
+            <li>{uiText("Choose")} <strong>{uiText("Basic Information")}</strong></li>
+            <li>{uiText("Copy and paste your")} <strong>Signing Secret</strong></li>
           </ul>
           <Input
             id="slack-signing-secret"
@@ -1694,7 +1694,7 @@ settings:
           />
           {slackSigningSecretHasTokenPrefix && (
             <p id="slack-signing-secret-warning" role="alert" className="text-sm text-destructive">
-              Use the <strong>Signing Secret</strong>, NOT an app or bot token. The Signing Secret has no token prefix.
+              {uiText("Use the")} <strong>Signing Secret</strong>, {uiText("NOT an app or bot token. The Signing Secret has no token prefix.")}
             </p>
           )}
         </section>
@@ -1909,17 +1909,17 @@ function TryStep({
                   void copyTextToClipboard(slackTestMessage).then(() => { setCommandCopied(true); setCommandCopyError(false); }, () => setCommandCopyError(true));
                 }}><Copy className="size-4" />{commandCopied ? "Copied" : "Copy message"}</Button>
               </div>
-              <p className="mt-2 text-muted-foreground">Select the bot from Slack’s @mention suggestions.</p>
+              <p className="mt-2 text-muted-foreground">{uiText("Select the bot from Slack’s @mention suggestions.")}</p>
             </li>
-            <li>Continue the conversation in the thread.</li>
+            <li>{uiText("Continue the conversation in the thread.")}</li>
           </ol>
-          {commandCopyError && <p role="alert" className="text-sm text-destructive">Couldn&apos;t copy. Select and copy the command above.</p>}
-          {messageStatus.data?.messageReceivedAt ? <p role="status" className="flex items-center gap-2 text-sm"><CheckCircle2 className="size-4 text-(--status-task-done)" />Received your Slack message.</p>
+          {commandCopyError && <p role="alert" className="text-sm text-destructive">{uiText("Couldn’t copy. Select and copy the command above.")}</p>}
+          {messageStatus.data?.messageReceivedAt ? <p role="status" className="flex items-center gap-2 text-sm"><CheckCircle2 className="size-4 text-(--status-task-done)" />{uiText("Received your Slack message.")}</p>
             : <p role={messageStatus.isError ? "alert" : "status"} className="text-sm text-muted-foreground">{messageStatus.isError ? "Couldn’t check for your message. You can still finish setup." : "We’ll check for your message automatically. This test is optional."}</p>}
           <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" className="text-muted-foreground" onClick={onSaveExit}>Save &amp; exit</Button>
+            <Button variant="ghost" className="text-muted-foreground" onClick={onSaveExit}>{uiText("Save & exit")}</Button>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button variant="ghost" disabled={pending} onClick={onTest}>Skip test and finish</Button>
+              <Button variant="ghost" disabled={pending} onClick={onTest}>{uiText("Skip test and finish")}</Button>
               <Button disabled={pending} onClick={onTest}>{pending && <Loader2 className="size-4 animate-spin" />}I&apos;ve sent the test message</Button>
             </div>
           </div>

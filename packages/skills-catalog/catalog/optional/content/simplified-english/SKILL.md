@@ -1,6 +1,6 @@
 ---
 name: simplified-english
-description: Write user-facing comments, plans, and documents in ASD-STE100 Simplified Technical English — short, unambiguous sentences with approved words and one meaning each — so readers understand them the first time.
+description: 使用 ASD-STE100 简明技术英语撰写面向用户的评论、计划和文档，以简短、明确且词义单一的句子帮助读者快速理解。
 key: paperclipai/optional/content/simplified-english
 recommendedForRoles:
   - engineer
@@ -14,27 +14,27 @@ tags:
   - style
 ---
 
-# Simplified English
+# 简明英语
 
-For user-facing comments, plans, and documents, write using only ASD-STE100 Simplified Technical English.
+撰写面向用户的评论、计划和文档时，只能使用 ASD-STE100 简明技术英语。
 
-## Core rules
+## 核心规则
 
-- Use short sentences (procedures ≤ 20 words, descriptions ≤ 25 words).
-- Give one instruction per sentence.
-- Use approved words with one meaning each; avoid synonyms and jargon.
-- Use the active voice and the present tense.
-- Use articles ("the", "a") and do not drop words to save space.
-- Write positive instructions; avoid negative or vague qualifiers.
-- Keep paragraphs to one topic.
+- 使用简短句子（步骤不超过 20 个词，描述不超过 25 个词）。
+- 每句话只写一条指令。
+- 使用词义单一的批准词汇；避免同义词和行话。
+- 使用主动语态和现在时。
+- 使用冠词（"the"、"a"），不要为了省字而省略词语。
+- 使用肯定式指令；避免否定或含糊的限定词。
+- 每个段落只讨论一个主题。
 
-## Approved words
+## 批准词汇
 
-The approved words are the ASD-STE100 controlled vocabulary — the Dictionary in the current ASD-STE100 specification, plus the technical names and technical verbs that your subject needs. When a word is not approved, use the simplest common word that has one meaning. Prefer these house choices:
+批准词汇指 ASD-STE100 受控词表，即当前 ASD-STE100 规范中的词典，以及主题所需的技术名称和技术动词。如果某个词未经批准，请使用词义单一且最简单的常用词。优先采用以下约定：
 
-- "start" / "stop" (not "initiate", "commence", "terminate", "kill")
-- "make" (not "implement", "leverage", "utilize")
-- "before" / "after" (not "prior to", "subsequent to")
-- "about" (not "regarding", "in relation to")
-- "help" (not "facilitate")
-- "use" (not "utilize", "employ")
+- "start" / "stop"（不要用 "initiate"、"commence"、"terminate"、"kill"）
+- "make"（不要用 "implement"、"leverage"、"utilize"）
+- "before" / "after"（不要用 "prior to"、"subsequent to"）
+- "about"（不要用 "regarding"、"in relation to"）
+- "help"（不要用 "facilitate"）
+- "use"（不要用 "utilize"、"employ"）

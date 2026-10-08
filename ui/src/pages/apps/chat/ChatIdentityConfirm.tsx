@@ -45,7 +45,7 @@ export function ChatIdentityConfirm() {
   const requestAccess = useMutation({
     mutationFn: () => chatEndpointsApi.requestIdentityAccess(token),
   });
-  if (health.isError || (!local && session.isError)) return <main className="mx-auto max-w-lg px-6 py-12 text-sm text-destructive">Couldn&apos;t load your account. Refresh to try again.</main>;
+  if (health.isError || (!local && session.isError)) return <main className="mx-auto max-w-lg px-6 py-12 text-sm text-destructive">{uiText("Couldn't load your account. Refresh to try again.")}</main>;
   if (health.isSuccess && !local && session.isSuccess && !session.data) {
     return <Navigate to={`/auth?next=${encodeURIComponent(`/chat-identity/confirm?token=${token}`)}`} replace />;
   }
@@ -80,7 +80,7 @@ export function ChatIdentityConfirm() {
         <div>
           <h1 className="text-xl font-bold">{uiText("Identity linked")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {uiText("Future messages from")} {identity.externalLabel} {uiText("use your current Paperclip permissions in")} {identity.companyName}.
+            {uiText("Future messages from")} {identity.externalLabel} {uiText("use your current Paperclip permissions in")} {identity.companyName}{uiText(".")}
           </p>
         </div>
         <Button asChild>
@@ -90,7 +90,7 @@ export function ChatIdentityConfirm() {
             {uiText("Return to connection")}
           </Link>
         </Button>
-        {identity.provider === "slack" && <Button asChild><a href="https://app.slack.com/" target="_blank" rel="noopener noreferrer">Return to Slack</a></Button>}
+        {identity.provider === "slack" && <Button asChild><a href="https://app.slack.com/" target="_blank" rel="noopener noreferrer">{uiText("Return to Slack")}</a></Button>}
       </main>
     );
   }
@@ -135,14 +135,14 @@ export function ChatIdentityConfirm() {
       )}
       {identity.canConfirm === false ? (
         <div className="space-y-3">
-          <p className="text-sm">You need membership in {identity.companyName} before linking this account.</p>
-          {requestAccess.isSuccess ? <p role="status" className="text-sm">Access requested. An admin can approve it in Paperclip. After approval, return here to confirm; if this link expires, send the connect command in Slack again.</p>
-            : <Button disabled={requestAccess.isPending || !identity.selfService} onClick={() => requestAccess.mutate()}>Request access</Button>}
-          {requestAccess.isError && <p role="alert" className="text-sm text-destructive">Couldn&apos;t request access. The link may have expired. Send the connect command again and retry.</p>}
+          <p className="text-sm">{uiText("You need membership in")} {identity.companyName} {uiText("before linking this account.")}</p>
+          {requestAccess.isSuccess ? <p role="status" className="text-sm">{uiText("Access requested. An admin can approve it in Paperclip. After approval, return here to confirm; if this link expires, send the connect command in Slack again.")}</p>
+            : <Button disabled={requestAccess.isPending || !identity.selfService} onClick={() => requestAccess.mutate()}>{uiText("Request access")}</Button>}
+          {requestAccess.isError && <p role="alert" className="text-sm text-destructive">{uiText("Couldn't request access. The link may have expired. Send the connect command again and retry.")}</p>}
         </div>
       ) : <Button disabled={confirm.isPending} onClick={() => confirm.mutate()}>
         {confirm.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-        Confirm identity
+        {uiText("Confirm identity")}
       </Button>}
     </main>
   );

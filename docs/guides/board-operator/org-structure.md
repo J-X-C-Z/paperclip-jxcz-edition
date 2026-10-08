@@ -17,6 +17,21 @@ Paperclip enforces a strict organizational hierarchy. Every agent reports to exa
 
 The org chart is available in the web UI under the Agents section. It shows the full reporting tree with agent status indicators.
 
+Each card also shows current work status (working, queued, idle, paused, error,
+terminated, or pending approval) and linked task identifiers. Task identifiers open
+the task. All current runs are included, including multiple tasks per agent;
+completed runs and merely assigned tasks are not presented as active work. A run
+without a linked task says “No linked task”. Status is updated by live run events
+and a 15-second polling fallback. Failed status reads are shown explicitly.
+
+To change reporting relationships in the chart, hold an agent card for about half a
+second, drag it onto the new manager's highlighted card, and release. The entire
+reporting subtree moves with a manager; only the dragged agent's `reportsTo`
+changes. A quick tap still opens agent details, and dragging the background pans
+the chart. Escape, a cancelled gesture, or releasing away from a valid manager
+leaves the hierarchy unchanged. Self, descendant, and existing-manager drops are
+ignored. Save failures appear above the chart, and the original hierarchy remains.
+
 Via the API:
 
 ```

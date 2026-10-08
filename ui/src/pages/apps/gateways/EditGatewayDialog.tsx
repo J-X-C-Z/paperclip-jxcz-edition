@@ -77,7 +77,7 @@ export function EditGatewayDialog({
         <DialogHeader>
           <DialogTitle>{uiText("Edit gateway")}</DialogTitle>
           <DialogDescription>
-            Change the label or the access profile that controls which tools this endpoint exposes.
+            {uiText("Change the label or the access profile that controls which tools this endpoint exposes.")}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
@@ -95,7 +95,7 @@ export function EditGatewayDialog({
             >
               {activeProfiles.map((profile) => (
                 <option key={profile.id} value={profile.id}>
-                  {profile.name} — {allowedToolsLabel(profile)}
+                  {profile.name} {uiText("—")} {allowedToolsLabel(profile)}
                 </option>
               ))}
             </select>

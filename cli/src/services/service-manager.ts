@@ -56,7 +56,7 @@ export const defaultCommandRunner: CommandRunner = async (command, args, options
 
 function escapeSystemd(value: string): string {
   if (/\r|\n/.test(value)) {
-    throw new Error("Systemd service values must not contain line breaks");
+    throw new Error("Systemd 服务值不能包含换行符");
   }
   return value
     .replaceAll("\\", "\\\\")
@@ -180,13 +180,13 @@ async function writeIfChanged(filePath: string, contents: string): Promise<boole
   const directoryPath = path.dirname(filePath);
   await fs.mkdir(directoryPath, { recursive: true, mode: 0o700 });
   const directoryStat = await fs.lstat(directoryPath);
-  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) throw new Error(`Refusing to write service definition through unsafe directory ${directoryPath}.`);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) throw new Error(`拒绝通过不安全的目录写入服务定义：${directoryPath}。`);
   const currentUid = process.getuid?.();
-  if (currentUid !== undefined && directoryStat.uid !== currentUid) throw new Error(`Refusing to write service definition in directory not owned by the current user: ${directoryPath}.`);
+  if (currentUid !== undefined && directoryStat.uid !== currentUid) throw new Error(`拒绝在当前用户不拥有的目录中写入服务定义：${directoryPath}。`);
   try {
     const stat = await fs.lstat(filePath);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink > 1) throw new Error(`Refusing to replace unsafe service definition ${filePath}.`);
-    if (currentUid !== undefined && stat.uid !== currentUid) throw new Error(`Refusing to replace service definition not owned by the current user: ${filePath}.`);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink > 1) throw new Error(`拒绝替换不安全的服务定义文件：${filePath}。`);
+    if (currentUid !== undefined && stat.uid !== currentUid) throw new Error(`拒绝替换当前用户不拥有的服务定义文件：${filePath}。`);
     if (await fs.readFile(filePath, "utf8") === contents) return false;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -364,5 +364,5 @@ export async function assertForegroundRunAllowed(instanceId: string, force = fal
   const detection = await detector({ instanceId });
   if (!detection.supported) return;
   const status = await detection.manager.status();
-  if (status.active) throw new Error(`Paperclip instance '${instanceId}' is already running as ${status.serviceName}. Use 'paperclipai service status --instance ${instanceId}' or pass --force to bypass this safety check.`);
+  if (status.active) throw new Error(`Paperclip 实例 '${instanceId}' 已作为 ${status.serviceName} 运行。请使用 'paperclipai service status --instance ${instanceId}' 检查状态，或传入 --force 跳过此安全检查。`);
 }

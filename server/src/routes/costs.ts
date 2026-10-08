@@ -122,24 +122,13 @@ export function costRoutes(
       return;
     }
 
+    const actor = getActorInfo(req);
     const event = await costs.createEvent(companyId, {
       ...req.body,
       occurredAt: new Date(req.body.occurredAt),
-    });
+    }, { actor: { actorType: actor.actorType, actorId: actor.actorId, agentId: actor.agentId } });
+    res.status(201).json({ ...event, billedUsdMicros: String(event.billedUsdMicros) });
 
-    const actor = getActorInfo(req);
-    await logActivity(db, {
-      companyId,
-      actorType: actor.actorType,
-      actorId: actor.actorId,
-      agentId: actor.agentId,
-      action: "cost.reported",
-      entityType: "cost_event",
-      entityId: event.id,
-      details: { costCents: event.costCents, model: event.model },
-    });
-
-    res.status(201).json(event);
   });
 
   router.post("/companies/:companyId/finance-events", validate(createFinanceEventSchema), async (req, res) => {

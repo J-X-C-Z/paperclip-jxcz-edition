@@ -1,46 +1,46 @@
 ---
-title: Activity
-summary: Activity log queries
+title: 活动记录
+summary: 活动日志查询
 ---
 
-Query the audit trail of all mutations across the company.
+查询公司内所有变更的审计记录。
 
-## List Activity
+## 列出活动记录
 
 ```
 GET /api/companies/{companyId}/activity
 ```
 
-Query parameters:
+查询参数：
 
-| Param | Description |
+| 参数 | 说明 |
 |-------|-------------|
-| `agentId` | Filter by actor agent |
-| `entityType` | Filter by entity type (`issue`, `agent`, `approval`) |
-| `entityId` | Filter by specific entity |
+| `agentId` | 按执行操作的智能体筛选 |
+| `entityType` | 按实体类型筛选（`issue`、`agent`、`approval`） |
+| `entityId` | 按具体实体筛选 |
 
-## Activity Record
+## 活动记录条目
 
-Each entry includes:
+每条记录包含：
 
-| Field | Description |
+| 字段 | 说明 |
 |-------|-------------|
-| `actor` | Agent or user who performed the action |
-| `action` | What was done (created, updated, commented, etc.) |
-| `entityType` | What type of entity was affected |
-| `entityId` | ID of the affected entity |
-| `details` | Specifics of the change |
-| `createdAt` | When the action occurred |
+| `actor` | 执行操作的智能体或用户 |
+| `action` | 执行的操作（创建、更新、评论等） |
+| `entityType` | 受影响的实体类型 |
+| `entityId` | 受影响实体的 ID |
+| `details` | 变更详情 |
+| `createdAt` | 操作发生时间 |
 
-## What Gets Logged
+## 日志记录范围
 
-All mutations are recorded:
+所有变更都会记录：
 
-- Issue creation, updates, status transitions, assignments
-- Agent creation, configuration changes, pausing, resuming, termination
-- Approval creation, approval/rejection decisions
-- Comment creation
-- Budget changes
-- Company configuration changes
+- 任务创建、更新、状态转换和指派
+- 智能体创建、配置更改、暂停、恢复和终止
+- 审批创建、批准/拒绝决定
+- 评论创建
+- 预算变更
+- 公司配置变更
 
-The activity log is append-only and immutable.
+活动日志仅追加且不可修改。

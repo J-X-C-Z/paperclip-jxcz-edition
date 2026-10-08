@@ -31,9 +31,9 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("login")
-      .description("Authenticate the CLI for board-user access")
-      .option("--instance-admin", "Request instance-admin approval instead of plain board access", false)
-      .option("--no-browser", "Don't try to open a browser; just print the approval URL")
+      .description("验证 CLI 身份以访问看板用户功能")
+      .option("--instance-admin", "申请实例管理员审批，而非普通看板访问权限", false)
+      .option("--no-browser", "不尝试打开浏览器，仅输出审批 URL")
       .action(async (opts: AuthLoginOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -63,7 +63,7 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("logout")
-      .description("Remove the stored board-user credential for this API base")
+      .description("移除此 API 地址对应的已存看板用户凭据")
       .action(async (opts: AuthLogoutOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -101,7 +101,7 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("revoke-current")
-      .description("Revoke the current board API token")
+      .description("撤销当前看板 API 令牌")
       .action(async (opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -115,7 +115,7 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     auth
       .command("whoami")
-      .description("Show the current board-user identity for this API base")
+      .description("显示此 API 地址对应的当前看板用户身份")
       .action(async (opts: AuthWhoamiOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -134,12 +134,12 @@ export function registerClientAuthCommands(auth: Command): void {
       }),
   );
 
-  const challenge = auth.command("challenge").description("CLI auth challenge operations");
+  const challenge = auth.command("challenge").description("CLI 身份验证挑战操作");
   addCommonClientOptions(
     challenge
       .command("create")
-      .description("Create a CLI auth challenge")
-      .requiredOption("--payload-json <json>", "CreateCliAuthChallenge JSON payload")
+      .description("创建 CLI 身份验证挑战")
+      .requiredOption("--payload-json <json>", "CreateCliAuthChallenge JSON 请求数据")
       .action(async (opts: AuthChallengeOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -152,10 +152,10 @@ export function registerClientAuthCommands(auth: Command): void {
   addCommonClientOptions(
     challenge
       .command("get")
-      .description("Get a CLI auth challenge")
-      .argument("<id>", "Challenge ID")
-      .option("--token <token>", "Challenge secret")
-      .option("--token-env <name>", "Read the challenge secret from an environment variable")
+      .description("获取 CLI 身份验证挑战")
+      .argument("<id>", "验证挑战 ID")
+      .option("--token <token>", "验证挑战密钥")
+      .option("--token-env <name>", "从环境变量读取挑战密钥")
       .action(async (id: string, opts: AuthChallengeOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -170,10 +170,10 @@ export function registerClientAuthCommands(auth: Command): void {
     addCommonClientOptions(
       challenge
         .command(action)
-        .description(`${action} a CLI auth challenge`)
-        .argument("<id>", "Challenge ID")
-        .option("--token <token>", "Challenge secret")
-        .option("--token-env <name>", "Read the challenge secret from an environment variable")
+        .description(`${action === "approve" ? "批准" : "取消"} CLI 身份验证挑战`)
+        .argument("<id>", "验证挑战 ID")
+        .option("--token <token>", "验证挑战密钥")
+        .option("--token-env <name>", "从环境变量读取挑战密钥")
         .action(async (id: string, opts: AuthChallengeOptions) => {
           try {
             const ctx = resolveCommandContext(opts);
@@ -197,7 +197,7 @@ function resolveChallengeToken(opts: AuthChallengeOptions): string {
   if (envName) {
     const envValue = process.env[envName]?.trim();
     if (envValue) return envValue;
-    throw new Error(`Environment variable ${envName} is empty or not set.`);
+    throw new Error(`环境变量 ${envName} 未设置或为空。`);
   }
-  throw new Error("Challenge secret is required. Pass --token or --token-env.");
+  throw new Error("必须提供挑战密钥。请传入 --token 或 --token-env。");
 }

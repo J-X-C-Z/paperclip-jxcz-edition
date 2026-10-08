@@ -1,39 +1,39 @@
 ---
-title: HTTP Adapter
-summary: HTTP webhook adapter
+title: HTTP 适配器
+summary: HTTP Webhook 适配器
 ---
 
-The `http` adapter sends a webhook request to an external agent service. The agent runs externally and Paperclip just triggers it.
+`http` 适配器会向外部智能体服务发送 Webhook 请求。智能体在外部运行，Paperclip 只负责触发调用。
 
-## When to Use
+## 适用场景
 
-- Agent runs as an external service (cloud function, dedicated server)
-- Fire-and-forget invocation model
-- Integration with third-party agent platforms
+- 智能体作为外部服务运行（云函数、专用服务器）
+- 采用触发后即返回的调用方式
+- 集成第三方智能体平台
 
-## When Not to Use
+## 不适用场景
 
-- If the agent runs locally on the same machine (use `process`, `claude_local`, or `codex_local`)
-- If you need stdout capture and real-time run viewing
+- 智能体在同一台机器上运行时（请使用 `process`、`claude_local` 或 `codex_local`）
+- 需要捕获 stdout 并实时查看运行过程时
 
-## Configuration
+## 配置
 
-| Field | Type | Required | Description |
+| 字段 | 类型 | 必填 | 说明 |
 |-------|------|----------|-------------|
-| `url` | string | Yes | Webhook URL to POST to |
-| `headers` | object | No | Additional HTTP headers |
-| `timeoutSec` | number | No | Request timeout |
+| `url` | string | 是 | 要向其发送 POST 请求的 Webhook URL |
+| `headers` | object | 否 | 附加 HTTP 请求头 |
+| `timeoutSec` | number | 否 | 请求超时时间 |
 
-## How It Works
+## 工作方式
 
-1. Paperclip sends a POST request to the configured URL
-2. The request body includes the execution context (agent ID, task info, wake reason)
-3. The external agent processes the request and calls back to the Paperclip API
-4. Response from the webhook is captured as the run result
+1. Paperclip 向配置的 URL 发送 POST 请求
+2. 请求正文包含执行上下文（智能体 ID、任务信息、唤醒原因）
+3. 外部智能体处理请求，并回调 Paperclip API
+4. Webhook 响应会被记录为本次运行结果
 
-## Request Body
+## 请求正文
 
-The webhook receives a JSON payload with:
+Webhook 会收到以下 JSON 数据：
 
 ```json
 {
@@ -48,4 +48,4 @@ The webhook receives a JSON payload with:
 }
 ```
 
-The external agent uses `PAPERCLIP_API_URL` and an API key to call back to Paperclip.
+外部智能体使用 `PAPERCLIP_API_URL` 和 API 密钥回调 Paperclip。

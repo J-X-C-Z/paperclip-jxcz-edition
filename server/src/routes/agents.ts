@@ -6047,10 +6047,39 @@ export function agentRoutes(
     const agent = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
     if (!agent) return;
 
+    let scopedWakePayload: Record<string, unknown> | null = null;
     if (req.actor.type === "agent") {
       if (req.actor.agentId !== id) {
-        res.status(403).json({ error: "Agent can only invoke itself" });
-        return;
+        const issueId = req.body.payload?.issueId ?? req.body.payload?.taskId;
+        if (
+          agent.reportsTo !== req.actor.agentId ||
+          typeof issueId !== "string" || !issueId.trim() ||
+          req.body.failedRunId || req.body.forceFreshSession || req.body.debug ||
+          (opts.source ?? "on_demand") !== "on_demand"
+        ) {
+          throw forbidden("Agent may only wake a direct report for an assigned task.");
+        }
+        const issue = await issueService(db).getById(issueId);
+        if (!issue || issue.companyId !== agent.companyId) throw notFound("Task not found");
+        if (issue.conversationAgentId || issue.assigneeAgentId !== id) {
+          throw forbidden("Task must be assigned to the direct report.");
+        }
+        const wakeDecision = await access.decide({
+          actor: req.actor, action: "agent:wake",
+          resource: { type: "agent", companyId: agent.companyId, agentId: id },
+        });
+        if (!wakeDecision.allowed) throw forbidden(wakeDecision.explanation, authorizationDeniedDetails(wakeDecision));
+        const taskDecision = await access.decide({
+          actor: req.actor, action: "issue:comment",
+          resource: {
+            type: "issue", companyId: issue.companyId, issueId: issue.id,
+            projectId: issue.projectId, parentIssueId: issue.parentId,
+            assigneeAgentId: issue.assigneeAgentId, assigneeUserId: issue.assigneeUserId, status: issue.status,
+          },
+        });
+        if (!taskDecision.allowed) throw forbidden(taskDecision.explanation, authorizationDeniedDetails(taskDecision));
+        // Coordination wakes select a persisted task, never caller execution context.
+        scopedWakePayload = { issueId: issue.id, taskId: issue.id, taskKey: issue.identifier ?? issue.id };
       }
     } else {
       await assertBoardCanWakeAgent(req, agent);
@@ -6065,7 +6094,7 @@ export function agentRoutes(
       return;
     }
 
-    let wakePayload = req.body.payload ?? null;
+    let wakePayload = scopedWakePayload ?? req.body.payload ?? null;
     let retryConversationContext: Record<string, unknown> = {};
     if (req.body.failedRunId) {
       assertBoard(req);
@@ -6210,8 +6239,8 @@ export function agentRoutes(
       failedRunId: req.body.failedRunId ?? null,
       ...(req.actor.type === "board" && !req.body.failedRunId ? { manualUserWake: true } : {}),
       source: opts.source,
-      triggerDetail: req.body.triggerDetail ?? "manual",
-      reason: req.body.reason ?? null,
+      triggerDetail: scopedWakePayload ? "ping" : req.body.triggerDetail ?? "manual",
+      reason: scopedWakePayload ? "manager_task_wake" : req.body.reason ?? null,
       payload: req.actor.type === "agent" && wakePayload
         ? { ...wakePayload, commentId: undefined, wakeCommentId: undefined, wakeCommentIds: undefined }
         : wakePayload,
@@ -6979,6 +7008,7 @@ export function agentRoutes(
     const minCount = readLiveRunsQueryInt(req.query.minCount, 50, 0);
     const limit = readLiveRunsQueryInt(req.query.limit, 50, 50);
     const distinctTasks = req.query.distinctTasks === "true";
+    const allLiveRuns = req.query.all === "true" && !distinctTasks;
 
     const columns = {
       id: heartbeatRuns.id,
@@ -7023,9 +7053,13 @@ export function agentRoutes(
       )
       .orderBy(desc(heartbeatRuns.createdAt));
 
-    const liveRuns = distinctTasks ? [] : await liveRunsQuery.limit(limit);
+    const liveRuns = distinctTasks
+      ? []
+      : allLiveRuns
+        ? await liveRunsQuery
+        : await liveRunsQuery.limit(limit);
     let rows = liveRuns;
-    const targetRunCount = Math.min(minCount, limit);
+    const targetRunCount = allLiveRuns ? 0 : Math.min(minCount, limit);
 
     if (distinctTasks) {
       // Return enough representatives for the dashboard to count cards beyond

@@ -474,6 +474,7 @@ describeEmbeddedPostgres("issue list routes assigneeAgentId filter", () => {
       .query({ view: "compact", limit: "20" });
     expect(first.status, JSON.stringify(first.body)).toBe(200);
     expect(first.headers.etag).toBeTruthy();
+    expect(first.headers["server-timing"]).toMatch(/paperclip_issue;dur=\d/);
 
     const second = await request(app)
       .get(`/api/companies/${companyId}/issues`)
@@ -482,6 +483,7 @@ describeEmbeddedPostgres("issue list routes assigneeAgentId filter", () => {
 
     expect(second.status).toBe(304);
     expect(second.text).toBe("");
+    expect(second.headers["server-timing"]).toMatch(/paperclip_issue;dur=\d/);
   });
 
   it("coalesces simultaneous identical compact issue-list requests into one service computation", async () => {

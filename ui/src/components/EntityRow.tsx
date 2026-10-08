@@ -15,6 +15,7 @@ interface EntityRowProps {
   meta?: ReactNode;
   metaSpacerClassName?: string;
   trailing?: ReactNode;
+  actions?: ReactNode;
   selected?: boolean;
   to?: string;
   onClick?: () => void;
@@ -48,6 +49,7 @@ export function EntityRow({
   meta,
   metaSpacerClassName,
   trailing,
+  actions,
   selected,
   to,
   onClick,
@@ -136,6 +138,16 @@ export function EntityRow({
   );
 
   if (to) {
+    if (actions) {
+      return (
+        <div className={cn("flex items-center gap-3 px-4 py-2 text-sm border-b border-border last:border-b-0 transition-colors", isClickable && "hover:bg-accent/50", selected && "bg-accent/30", className)}>
+          <Link to={to} className="flex min-w-0 flex-1 items-center gap-3 no-underline text-inherit" onClick={onClick}>
+            {body}
+          </Link>
+          <div className="shrink-0">{actions}</div>
+        </div>
+      );
+    }
     return (
       <Link to={to} className={cn("no-underline text-inherit", shellClasses)} onClick={onClick}>
         {body}

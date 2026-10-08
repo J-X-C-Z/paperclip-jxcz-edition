@@ -5,4 +5,4 @@ description: Starter project that turns the company goal into the first useful p
 owner: cto
 ---
 
-Use this project to convert the company goal into a concrete first deliverable. The CEO seeds priorities, the CTO breaks them into engineering tasks, and QA verifies the result before close-out.
+使用此项目将公司目标转化为具体的首个交付成果。CEO 确定优先级，CTO 将工作拆分为工程任务，QA 在结项前验证结果。

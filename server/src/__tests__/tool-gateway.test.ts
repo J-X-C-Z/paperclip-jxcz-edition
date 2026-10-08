@@ -57,6 +57,7 @@ import {
 import { createToolGatewayService, ToolGatewayHttpError } from "../services/tool-gateway.js";
 import { resolveConnectionGrantSecret } from "../services/connection-credentials.js";
 import { secretService } from "../services/secrets.js";
+import { toolMcpGatewayAuthConfigSchema } from "@paperclipai/shared";
 import * as cogneeBridge from "../services/cognee-connection.js";
 import { createKvDemoHttpServer, type KvDemoHttpServer } from "../../../packages/kv-demo-mcp-server/src/http.js";
 import {
@@ -584,6 +585,327 @@ describeEmbeddedPostgres("tool gateway acceptance", () => {
 
   afterAll(async () => {
     await tempDb?.cleanup();
+  });
+
+  async function createSharedAuthorizationFixture() {
+    const source = await createCompany(db);
+    const target = await createCompany(db);
+    const owner = `shared-owner-${randomUUID()}`;
+    const otherUser = `shared-other-${randomUUID()}`;
+    await createActiveMember(db, source.id, owner);
+    await createActiveMember(db, source.id, otherUser);
+    const identityValue = `shared-identity-${randomUUID()}`;
+    const secrets = secretService(db);
+    const definition = await secrets.createUserSecretDefinition(source.id, {
+      name: `Shared identity ${randomUUID()}`,
+      key: `shared_identity_${randomUUID().replace(/-/g, "")}`,
+      provider: "local_encrypted",
+    });
+    const ownerSecret = await secrets.createCurrentUserSecretValue(source.id, owner, {
+      definitionId: definition.id,
+      value: identityValue,
+    });
+    const otherSecret = await secrets.createCurrentUserSecretValue(source.id, otherUser, {
+      definitionId: definition.id,
+      value: `other-identity-${randomUUID()}`,
+    });
+    const remote = await startFakeRemoteMcpServer(({ body, headers }) => ({
+      body: {
+        jsonrpc: "2.0", id: body?.id,
+        result: {
+          content: [{ type: "text", text: headers.authorization === `Bearer ${identityValue}` ? "source-owner" : "wrong-identity" }],
+        },
+      },
+    }));
+    const shared = await createRemoteMcpTool(db, source.id, {
+      url: remote.url, toolName: "whoami", riskLevel: "read",
+    });
+    await db.update(toolConnections).set({
+      credentialPolicy: "per_user",
+      credentialRefs: [{
+        name: "credentials.authorization", secretId: ownerSecret.id, version: "latest",
+        placement: "header", key: "Authorization", prefix: "Bearer ",
+      }],
+    }).where(eq(toolConnections.id, shared.connection.id));
+    await secrets.syncUserSecretDeclarationsForTarget(source.id,
+      { targetType: "tool_connection", targetId: shared.connection.id },
+      [{ definitionKey: definition.key, configPath: "credentials.authorization", envKey: "AUTHORIZATION", versionSelector: "latest", required: true }],
+      { replaceAll: true });
+    await db.delete(connectionGrants).where(eq(connectionGrants.connectionId, shared.connection.id));
+    const grantRows = await db.insert(connectionGrants).values([
+      { subjectUserId: owner, secretId: ownerSecret.id },
+      { subjectUserId: otherUser, secretId: otherSecret.id },
+    ].map(({ subjectUserId, secretId }) => ({
+      companyId: source.id, connectionId: shared.connection.id, kind: "user" as const,
+      subjectUserId, status: "active", isDefault: false,
+      credentialSecretRefs: [{ secretId, versionSelector: "latest" as const, configPath: "credentials.authorization", required: true }],
+    }))).returning();
+    const grant = grantRows.find((row) => row.subjectUserId === owner)!;
+    const unrelated = await createRemoteMcpTool(db, source.id, {
+      url: remote.url, toolName: "other_connection", riskLevel: "read",
+    });
+    const [profile] = await db.insert(toolProfiles).values({
+      companyId: source.id, profileKey: `shared-${randomUUID()}`, name: "Shared connection test", defaultAction: "deny",
+    }).returning();
+    await db.insert(toolProfileEntries).values({
+      companyId: source.id, profileId: profile.id, selectorType: "connection", effect: "include", connectionId: shared.connection.id,
+    });
+    const gateway = createTestToolGatewayService(db);
+    const authConfig = toolMcpGatewayAuthConfigSchema.parse({
+      sharedAuthorization: { connectionId: shared.connection.id, grantId: grant.id, targetCompanyId: target.id },
+    });
+    const body = { name: "Shared source identity", profileId: profile.id, authConfig };
+    const create = () => gateway.createNamedGateway({ companyId: source.id, body, actor: { userId: owner } });
+    return { source, target, owner, otherUser, remote, shared, unrelated, grant, gateway, body, create };
+  }
+
+  it("requires the personal grant owner to create or update shared authorization", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      await expect(fixture.gateway.createNamedGateway({
+        companyId: fixture.source.id, body: fixture.body, actor: { userId: fixture.otherUser },
+      })).rejects.toMatchObject({ status: 403 });
+      await expect(fixture.gateway.createNamedGateway({
+        companyId: fixture.source.id, body: fixture.body,
+      })).rejects.toMatchObject({ status: 403 });
+      const ordinary = await fixture.gateway.createNamedGateway({
+        companyId: fixture.source.id, body: { name: "Ordinary gateway", profileId: fixture.body.profileId },
+      });
+      await expect(fixture.gateway.updateNamedGateway({
+        companyId: fixture.source.id, gatewayId: ordinary.id,
+        body: { authConfig: fixture.body.authConfig }, actor: { userId: fixture.otherUser },
+      })).rejects.toMatchObject({ status: 403 });
+      await expect(fixture.gateway.updateNamedGateway({
+        companyId: fixture.source.id, gatewayId: ordinary.id,
+        body: { authConfig: fixture.body.authConfig }, actor: { userId: fixture.owner },
+      })).resolves.toMatchObject({ authConfig: fixture.body.authConfig });
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it("uses the source personal grant for shared authorization and excludes other connections", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      const named = await fixture.create();
+      const token = await fixture.gateway.createNamedGatewayToken({
+        companyId: fixture.source.id, gatewayId: named.id, body: { name: "Target company client" },
+      });
+      await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+        .resolves.toMatchObject({ companyId: fixture.source.id });
+      const app = createGatewayRouteApp(db, fixture.gateway);
+      const sharedName = expectedConnectedToolName({ applicationKey: fixture.shared.application.applicationKey,
+        connectionId: fixture.shared.connection.id, toolName: fixture.shared.catalogEntry.toolName });
+      const unrelatedName = expectedConnectedToolName({ applicationKey: fixture.unrelated.application.applicationKey,
+        connectionId: fixture.unrelated.connection.id, toolName: fixture.unrelated.catalogEntry.toolName });
+      const listed = await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+        .send({ jsonrpc: "2.0", id: 1, method: "tools/list" }).expect(200);
+      expect(listed.body.result.tools.map((tool: { name: string }) => tool.name).filter((name: string) => name.startsWith("mcp.")))
+        .toEqual([sharedName]);
+      const called = await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+        .send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: sharedName, arguments: {} } }).expect(200);
+      expect(called.body.result.content).toEqual([{ type: "text", text: "source-owner" }]);
+      expect(fixture.remote.requests).toHaveLength(1);
+      await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+        .send({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: unrelatedName, arguments: {} } }).expect(403);
+      expect(fixture.remote.requests).toHaveLength(1);
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it.each(["grant", "membership", "connection", "target"] as const)(
+    "rechecks shared authorization after %s revocation even for an initialized client", async (revoked) => {
+      const fixture = await createSharedAuthorizationFixture();
+      try {
+        const named = await fixture.create();
+        const token = await fixture.gateway.createNamedGatewayToken({
+          companyId: fixture.source.id, gatewayId: named.id, body: { name: "Revocation test" },
+        });
+        await fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token });
+        if (revoked === "grant") await db.update(connectionGrants).set({ status: "revoked" }).where(eq(connectionGrants.id, fixture.grant.id));
+        if (revoked === "membership") await db.update(companyMemberships).set({ status: "inactive" })
+          .where(and(eq(companyMemberships.companyId, fixture.source.id), eq(companyMemberships.principalId, fixture.owner)));
+        if (revoked === "connection") await db.update(toolConnections).set({ enabled: false }).where(eq(toolConnections.id, fixture.shared.connection.id));
+        if (revoked === "target") await db.update(companies).set({ status: "paused" }).where(eq(companies.id, fixture.target.id));
+        await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+          .rejects.toMatchObject({ status: 403 });
+        const sharedName = expectedConnectedToolName({ applicationKey: fixture.shared.application.applicationKey,
+          connectionId: fixture.shared.connection.id, toolName: fixture.shared.catalogEntry.toolName });
+        const app = createGatewayRouteApp(db, fixture.gateway);
+        await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+          .send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: sharedName, arguments: {} } }).expect(403);
+        expect(fixture.remote.requests).toHaveLength(0);
+      } finally {
+        await fixture.remote.close();
+      }
+    },
+  );
+
+  it("rejects shared authorization creation when the target company is inactive", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      await db.update(companies).set({ status: "paused" }).where(eq(companies.id, fixture.target.id));
+      await expect(fixture.create()).rejects.toMatchObject({ status: 403 });
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it.each(["other_connection", "allow_default"] as const)(
+    "rejects shared authorization after its profile changes to %s", async (change) => {
+      const fixture = await createSharedAuthorizationFixture();
+      try {
+        const named = await fixture.create();
+        const token = await fixture.gateway.createNamedGatewayToken({
+          companyId: fixture.source.id, gatewayId: named.id, body: { name: "Profile mutation test" },
+        });
+        await fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token });
+        if (change === "other_connection") await db.insert(toolProfileEntries).values({
+          companyId: fixture.source.id, profileId: fixture.body.profileId,
+          selectorType: "connection", effect: "include", connectionId: fixture.unrelated.connection.id,
+        });
+        else await db.update(toolProfiles).set({ defaultAction: "allow" }).where(eq(toolProfiles.id, fixture.body.profileId));
+        await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+          .rejects.toMatchObject({ status: 403, reasonCode: "shared_authorization_profile_invalid" });
+      } finally {
+        await fixture.remote.close();
+      }
+    },
+  );
+
+  it.each(["wrong_company_grant", "mismatched_connection"] as const)(
+    "rejects shared authorization creation with %s", async (mismatch) => {
+      const fixture = await createSharedAuthorizationFixture();
+      try {
+        let grantId = fixture.grant.id;
+        let connectionId = fixture.shared.connection.id;
+        if (mismatch === "wrong_company_grant") {
+          const foreignConnection = await createRemoteMcpTool(db, fixture.target.id);
+          const [foreignGrant] = await db.insert(connectionGrants).values({
+            companyId: fixture.target.id, connectionId: foreignConnection.connection.id,
+            kind: "user", subjectUserId: fixture.owner, status: "active", isDefault: false,
+            credentialSecretRefs: fixture.grant.credentialSecretRefs,
+          }).returning();
+          grantId = foreignGrant.id;
+        } else connectionId = fixture.unrelated.connection.id;
+        const authConfig = toolMcpGatewayAuthConfigSchema.parse({
+          sharedAuthorization: { grantId, connectionId, targetCompanyId: fixture.target.id },
+        });
+        await expect(fixture.gateway.createNamedGateway({
+          companyId: fixture.source.id, body: { ...fixture.body, authConfig }, actor: { userId: fixture.owner },
+        })).rejects.toMatchObject({ status: 403, reasonCode: "shared_authorization_unavailable" });
+      } finally {
+        await fixture.remote.close();
+      }
+    },
+  );
+
+  it("keeps shared authorization within catalog scope despite company-wide allow rules", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      await db.update(toolProfileEntries).set({ selectorType: "catalog_entry", catalogEntryId: fixture.shared.catalogEntry.id })
+        .where(eq(toolProfileEntries.profileId, fixture.body.profileId));
+      const [unselected] = await db.insert(toolCatalogEntries).values({
+        ...fixture.shared.catalogEntry, id: randomUUID(), name: `unselected-${randomUUID()}`, toolName: "unselected_tool",
+      }).returning();
+      const [globalProfile] = await db.insert(toolProfiles).values({
+        companyId: fixture.source.id, profileKey: `global-allow-${randomUUID()}`, name: "Company-wide allow", defaultAction: "allow",
+      }).returning();
+      await db.insert(toolProfileBindings).values({
+        companyId: fixture.source.id, profileId: globalProfile.id, targetType: "company", targetId: fixture.source.id,
+      });
+      const named = await fixture.create();
+      const token = await fixture.gateway.createNamedGatewayToken({
+        companyId: fixture.source.id, gatewayId: named.id, body: { name: "Catalog scope test" },
+      });
+      const app = createGatewayRouteApp(db, fixture.gateway);
+      const unselectedName = expectedConnectedToolName({ applicationKey: fixture.shared.application.applicationKey,
+        connectionId: fixture.shared.connection.id, toolName: unselected.toolName });
+      const listed = await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+        .send({ jsonrpc: "2.0", id: 1, method: "tools/list" }).expect(200);
+      const visibleNames = listed.body.result.tools.map((tool: { name: string }) => tool.name);
+      expect(visibleNames).not.toContain(unselectedName);
+      expect(visibleNames).not.toContain("mcp-remote-fixture:echo");
+      for (const name of [unselectedName, "mcp-remote-fixture:echo"]) {
+        const denied = await request(app).post(named.endpointPath).set("authorization", `Bearer ${token.token}`)
+          .send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name, arguments: {} } }).expect(403);
+        expect(denied.body.error.data.reasonCode).toBe("shared_authorization_connection_denied");
+      }
+      expect(fixture.remote.requests).toHaveLength(0);
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it("rejects additional gateway bindings on shared authorization", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      const named = await fixture.create();
+      const token = await fixture.gateway.createNamedGatewayToken({
+        companyId: fixture.source.id, gatewayId: named.id, body: { name: "Extra binding test" },
+      });
+      await fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token });
+      const [extraProfile] = await db.insert(toolProfiles).values({
+        companyId: fixture.source.id, profileKey: `extra-${randomUUID()}`, name: "Extra profile", defaultAction: "allow",
+      }).returning();
+      await db.insert(toolProfileBindings).values({
+        companyId: fixture.source.id, profileId: extraProfile.id, targetType: "gateway", targetId: named.id,
+      });
+      await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+        .rejects.toMatchObject({ status: 403, reasonCode: "shared_authorization_profile_invalid" });
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it("requires the grant owner to change a shared authorization gateway profile", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      const named = await fixture.create();
+      const [replacement] = await db.insert(toolProfiles).values({
+        companyId: fixture.source.id, profileKey: `replacement-${randomUUID()}`, name: "Replacement profile", defaultAction: "deny",
+      }).returning();
+      await db.insert(toolProfileEntries).values({
+        companyId: fixture.source.id, profileId: replacement.id,
+        selectorType: "connection", effect: "include", connectionId: fixture.shared.connection.id,
+      });
+      await expect(fixture.gateway.updateNamedGateway({
+        companyId: fixture.source.id, gatewayId: named.id, body: { profileId: replacement.id }, actor: { userId: fixture.otherUser },
+      })).rejects.toMatchObject({ status: 403, reasonCode: "shared_authorization_owner_required" });
+      const [unchanged] = await db.select().from(toolMcpGateways).where(eq(toolMcpGateways.id, named.id));
+      expect(unchanged.profileId).toBe(fixture.body.profileId);
+      await expect(fixture.gateway.updateNamedGateway({
+        companyId: fixture.source.id, gatewayId: named.id, body: { profileId: replacement.id }, actor: { userId: fixture.owner },
+      })).resolves.toMatchObject({ profileId: replacement.id });
+    } finally {
+      await fixture.remote.close();
+    }
+  });
+
+  it("requires renewed owner consent after shared authorization profile entries change independently", async () => {
+    const fixture = await createSharedAuthorizationFixture();
+    try {
+      const named = await fixture.create();
+      const token = await fixture.gateway.createNamedGatewayToken({
+        companyId: fixture.source.id, gatewayId: named.id, body: { name: "Consent scope test" },
+      });
+      await fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token });
+      await db.insert(toolProfileEntries).values({
+        companyId: fixture.source.id, profileId: fixture.body.profileId, selectorType: "catalog_entry", effect: "include",
+        connectionId: fixture.shared.connection.id, catalogEntryId: fixture.shared.catalogEntry.id,
+      });
+      await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+        .rejects.toMatchObject({ status: 403, reasonCode: "shared_authorization_profile_invalid" });
+      await fixture.gateway.updateNamedGateway({
+        companyId: fixture.source.id, gatewayId: named.id,
+        body: { authConfig: fixture.body.authConfig }, actor: { userId: fixture.owner },
+      });
+      await expect(fixture.gateway.initializeNamedGatewayProtocol({ gatewayId: named.id, bearerToken: token.token }))
+        .resolves.toMatchObject({ companyId: fixture.source.id });
+    } finally {
+      await fixture.remote.close();
+    }
   });
 
   it("preserves provider tool errors in MCP responses and failed invocation audits", async () => {

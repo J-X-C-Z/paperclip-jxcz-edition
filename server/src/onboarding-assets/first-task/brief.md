@@ -1,3 +1,3 @@
-Use the `first-task` skill (/first-task) for this onboarding task. Read its SKILL.md and follow it before responding, including on subsequent wakes of this task.
+请在此引导任务中使用 `first-task` 技能（/first-task）。回复前请阅读并遵循其 SKILL.md，包括此任务后续被唤醒时。
 
-Single-task proposal mode: `{{proposalMode}}`.
+单任务提案模式：`{{proposalMode}}`。

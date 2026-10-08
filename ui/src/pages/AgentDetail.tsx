@@ -96,6 +96,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { RunTranscriptView, type TranscriptMode } from "../components/transcript/RunTranscriptView";
 import { AgentToolsTab } from "./AgentToolsTab";
+import { AgentExternalConversations } from "./AgentExternalConversations";
 import { AgentChannelsPanel } from "../components/chat/AgentChannelsPanel";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
 import { useUiTranslator } from "@/i18n";
@@ -921,14 +922,14 @@ export function AgentDetail() {
   });
 
   const { data: heartbeats } = useQuery({
-    queryKey: queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined),
-    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined),
+    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), needsOverviewData ? "summary" : "detail-list"],
+    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined, undefined, { summary: needsOverviewData }),
     enabled: !!resolvedCompanyId && !!agent?.id && shouldLoadHeartbeats,
   });
 
   const { data: allIssues } = useQuery({
-    queryKey: [...queryKeys.issues.list(resolvedCompanyId!), "participant-agent", resolvedAgentId ?? "__none__"],
-    queryFn: () => issuesApi.list(resolvedCompanyId!, { participantAgentId: resolvedAgentId! }),
+    queryKey: [...queryKeys.issues.list(resolvedCompanyId!), "participant-agent", resolvedAgentId ?? "__none__", "compact"],
+    queryFn: () => issuesApi.listCompact(resolvedCompanyId!, { participantAgentId: resolvedAgentId! }).then((rows) => rows as Issue[]),
     enabled: !!resolvedCompanyId && !!resolvedAgentId && needsOverviewData,
   });
 
@@ -938,17 +939,7 @@ export function AgentDetail() {
     enabled: !!resolvedCompanyId && needsOverviewData,
   });
 
-  const { data: skillSnapshot } = useQuery({
-    queryKey: queryKeys.agents.skills(resolvedAgentId ?? "__none__"),
-    queryFn: () => agentsApi.skills(resolvedAgentId!, resolvedCompanyId ?? undefined),
-    enabled: Boolean(resolvedCompanyId && resolvedAgentId && needsOverviewData),
-  });
-
-  const { data: overviewCompanySkills } = useQuery({
-    queryKey: queryKeys.companySkills.list(resolvedCompanyId ?? "__none__"),
-    queryFn: () => companySkillsApi.list(resolvedCompanyId!),
-    enabled: Boolean(resolvedCompanyId && needsOverviewData),
-  });
+  const overviewSkills = useAgentOverviewSkills(resolvedCompanyId, resolvedAgentId, needsOverviewData);
 
   const assignedIssues = useMemo(
     () => [...(allIssues ?? [])].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
@@ -956,10 +947,6 @@ export function AgentDetail() {
   );
   const reportsToAgent = (allAgents ?? []).find((a) => a.id === agent?.reportsTo);
   const directReports = (allAgents ?? []).filter((a) => a.reportsTo === agent?.id && a.status !== "terminated");
-  const overviewSkillNames = useMemo(() => {
-    const namesByKey = new Map((overviewCompanySkills ?? []).map((skill) => [skill.key, skill.name]));
-    return (skillSnapshot?.desiredSkills ?? []).map((key) => namesByKey.get(key) ?? key);
-  }, [overviewCompanySkills, skillSnapshot?.desiredSkills]);
   const mobileLiveRun = useMemo(
     () => (heartbeats ?? []).find((r) => r.status === "running" || r.status === "queued") ?? null,
     [heartbeats],
@@ -1401,9 +1388,18 @@ export function AgentDetail() {
           runtimeState={runtimeState}
           reportsToAgent={reportsToAgent}
           directReportCount={directReports.length}
-          skillNames={overviewSkillNames}
+          skillNames={overviewSkills.names}
+          skillsExpanded={overviewSkills.expanded}
+          skillsLoading={overviewSkills.loading}
+          skillsError={overviewSkills.error?.message}
+          onRetrySkills={overviewSkills.retry}
+          onExpandSkills={overviewSkills.expand}
           agentRouteId={canonicalAgentRef}
         />
+      )}
+
+      {activeView === "external-conversations" && resolvedCompanyId && (
+        <AgentExternalConversations companyId={resolvedCompanyId} agentId={agent.id} />
       )}
 
       {activeView === "instructions" && (
@@ -1562,7 +1558,7 @@ export function resolveLatestRunNavigation(
   return { task, runHref, rowHref };
 }
 
-function LatestRunCard({
+export function LatestRunCard({
   runs,
   agentId,
   issuesById,
@@ -1581,7 +1577,15 @@ function LatestRunCard({
   );
 
   const liveRun = sorted.find((r) => r.status === "running" || r.status === "queued");
-  const run = liveRun ?? sorted[0];
+  const selectedRun = liveRun ?? sorted[0];
+  // The overview list carries only metadata; hydrate the one displayed run.
+  const { data: displayedRun } = useQuery({
+    queryKey: queryKeys.runDetail(selectedRun?.id ?? "__none__"),
+    queryFn: () => heartbeatsApi.get(selectedRun!.id),
+    enabled: Boolean(selectedRun?.id),
+    refetchInterval: (query) => runDetailRefetchIntervalMs((query.state.data ?? selectedRun)?.status ?? "succeeded"),
+  });
+  const run = displayedRun ?? selectedRun;
 
   // The assigned-issues list this card resolves against is bounded (server page
   // limit), so a live run can reference a valid issue that isn't on the loaded
@@ -1706,6 +1710,36 @@ function LatestRunCard({
   );
 }
 
+/** Load the overview's skill catalog only when its card is expanded. */
+export function useAgentOverviewSkills(companyId: string | null | undefined, agentId: string | null, visible: boolean) {
+  const scope = `${companyId ?? ""}:${agentId ?? ""}`;
+  const [expandedScope, setExpandedScope] = useState<string | null>(null);
+  const expanded = expandedScope === scope;
+  const enabled = Boolean(companyId && agentId && visible && expanded);
+  const snapshot = useQuery({
+    queryKey: queryKeys.agents.skills(agentId ?? "__none__"),
+    queryFn: () => agentsApi.skills(agentId!, companyId ?? undefined),
+    enabled,
+  });
+  const catalog = useQuery({
+    queryKey: queryKeys.companySkills.list(companyId ?? "__none__"),
+    queryFn: () => companySkillsApi.list(companyId!),
+    enabled,
+  });
+  const names = useMemo(() => {
+    const namesByKey = new Map((catalog.data ?? []).map((skill) => [skill.key, skill.name]));
+    return (snapshot.data?.desiredSkills ?? []).map((key) => namesByKey.get(key) ?? key);
+  }, [catalog.data, snapshot.data?.desiredSkills]);
+  return {
+    names,
+    expanded,
+    loading: snapshot.isFetching || catalog.isFetching,
+    error: snapshot.error ?? catalog.error,
+    expand: () => setExpandedScope(scope),
+    retry: () => { void snapshot.refetch(); void catalog.refetch(); },
+  };
+}
+
 /* ---- Agent Overview ---- */
 
 export function AgentOverview({
@@ -1716,6 +1750,11 @@ export function AgentOverview({
   reportsToAgent,
   directReportCount,
   skillNames,
+  skillsExpanded = true,
+  skillsLoading = false,
+  skillsError,
+  onRetrySkills,
+  onExpandSkills,
   agentRouteId,
 }: {
   agent: AgentDetailRecord;
@@ -1725,6 +1764,11 @@ export function AgentOverview({
   reportsToAgent?: Agent;
   directReportCount: number;
   skillNames: string[];
+  skillsExpanded?: boolean;
+  skillsLoading?: boolean;
+  skillsError?: string;
+  onRetrySkills?: () => void;
+  onExpandSkills?: () => void;
   agentRouteId: string;
 }) {
   const tr = useUiTranslator();
@@ -1792,7 +1836,16 @@ export function AgentOverview({
             <h3 id="agent-skills-heading" className="text-sm font-medium">{tr("Skills")}</h3>
             <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "skills")}>{tr("Manage")}</Link>
           </div>
-          {skillNames.length > 0 ? (
+          {!skillsExpanded ? (
+            <Button variant="outline" size="sm" onClick={onExpandSkills}>{tr("View")}</Button>
+          ) : skillsError ? (
+            <div className="space-y-2">
+              <p role="alert" className="text-sm text-destructive">{skillsError}</p>
+              <Button variant="outline" size="sm" onClick={onRetrySkills} disabled={skillsLoading}>{tr("Retry")}</Button>
+            </div>
+          ) : skillsLoading ? (
+            <p role="status" className="text-sm text-muted-foreground">{tr("Loading…")}</p>
+          ) : skillNames.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {skillNames.slice(0, 8).map((skill) => <Badge key={skill} variant="secondary">{skill}</Badge>)}
               {skillNames.length > 8 ? <Badge variant="outline">+{skillNames.length - 8} {uiText("more")}</Badge> : null}
@@ -3066,8 +3119,8 @@ export function PromptsTab({
 
           {currentMode === "managed" && preservedCandidates.length > 0 && (
             <div className="space-y-3">
-              <p className="text-sm font-medium">Preserved instruction edits</p>
-              <p className="text-sm text-muted-foreground">Older instruction-only sessions have edits to review.</p>
+              <p className="text-sm font-medium">{uiText("Preserved instruction edits")}</p>
+              <p className="text-sm text-muted-foreground">{uiText("Older instruction-only sessions have edits to review.")}</p>
               {preservedCandidates.map((candidate) => (
                 <div key={candidate.runId} className="flex flex-wrap items-center gap-3">
                   <span className="font-mono text-xs text-muted-foreground">{candidate.runId.slice(0, 8)}</span>
@@ -3081,15 +3134,15 @@ export function PromptsTab({
                       } else {
                         loadCandidate.mutate(candidate);
                       }
-                    }}>Review preserved edits</Button>
+                    }}>{uiText("Review preserved edits")}</Button>
                   {candidate.errorMessage && <p className="text-sm text-muted-foreground">{candidate.errorMessage}</p>}
-                  {candidate.entryFile !== currentEntryFile && <p className="text-sm text-muted-foreground">The instruction entry changed. These edits remain preserved for the original file.</p>}
+                  {candidate.entryFile !== currentEntryFile && <p className="text-sm text-muted-foreground">{uiText("The instruction entry changed. These edits remain preserved for the original file.")}</p>}
                   {candidate.entryFile !== currentEntryFile && candidate.content !== null && readOnlyCandidateRunId === candidate.runId && (
-                    <div role="region" aria-label={`Preserved edits for ${candidate.entryFile}`} className="w-full space-y-3">
-                      <p className="text-sm text-muted-foreground">Read only: {candidate.entryFile}. To keep any of these edits in {currentEntryFile}, copy them and edit the current entry explicitly.</p>
-                      <CopyText text={candidate.content} ariaLabel={`Copy preserved edits for ${candidate.entryFile}`}
+                    <div role="region" aria-label={uiText("Preserved edits for {file}", { file: candidate.entryFile })} className="w-full space-y-3">
+                      <p className="text-sm text-muted-foreground">{uiText("Read only: {file}. To keep any of these edits in {current}, copy them and edit the current entry explicitly.", { file: candidate.entryFile, current: currentEntryFile })}</p>
+                      <CopyText text={candidate.content} ariaLabel={uiText("Copy preserved edits for {file}", { file: candidate.entryFile })}
                         className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
-                        <Copy className="h-3.5 w-3.5" />Copy preserved edits
+                        <Copy className="h-3.5 w-3.5" />{uiText("Copy preserved edits")}
                       </CopyText>
                       <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted p-3 font-mono text-sm">{candidate.content}</pre>
                     </div>
@@ -3099,16 +3152,16 @@ export function PromptsTab({
             </div>
           )}
           {candidateRunId && <div role="status" className="space-y-3">
-            <p className="text-sm text-muted-foreground">Reviewing preserved edits. Save to apply your resolved draft and close this preserved edit.</p>
-            <details><summary className="cursor-pointer text-sm text-muted-foreground">Compare current instructions</summary>
+            <p className="text-sm text-muted-foreground">{uiText("Reviewing preserved edits. Save to apply your resolved draft and close this preserved edit.")}</p>
+            <details><summary className="cursor-pointer text-sm text-muted-foreground">{uiText("Compare current instructions")}</summary>
               <pre className="whitespace-pre-wrap break-words rounded-md border border-border p-3 font-mono text-sm">{currentContent}</pre>
             </details>
-            {draftBaseRevisionRef.current !== (selectedFileDetail?.revision?.id ?? null) && <p className="text-sm text-destructive">The current instructions changed after this draft was loaded. Refresh the current revision, compare the instructions, and save your resolved draft again.</p>}
-            {(resolveCandidate.error || draftBaseRevisionRef.current !== (selectedFileDetail?.revision?.id ?? null)) && <Button type="button" variant="outline" size="sm" disabled={isSaving} onClick={() => refreshCandidateBase.mutate()}>Refresh current revision</Button>}
+            {draftBaseRevisionRef.current !== (selectedFileDetail?.revision?.id ?? null) && <p className="text-sm text-destructive">{uiText("The current instructions changed after this draft was loaded. Refresh the current revision, compare the instructions, and save your resolved draft again.")}</p>}
+            {(resolveCandidate.error || draftBaseRevisionRef.current !== (selectedFileDetail?.revision?.id ?? null)) && <Button type="button" variant="outline" size="sm" disabled={isSaving} onClick={() => refreshCandidateBase.mutate()}>{uiText("Refresh current revision")}</Button>}
           </div>}
-          {(candidates.error || loadCandidate.error || resolveCandidate.error || refreshCandidateBase.error) && <p role="alert" className="text-sm text-destructive">{(candidates.error ?? loadCandidate.error ?? resolveCandidate.error ?? refreshCandidateBase.error)?.message} Your preserved edits remain available.</p>}
-          {(saveFile.error || fileError || updateBundle.error) && <p role="alert" className="text-sm text-destructive">{(saveFile.error ?? fileError ?? updateBundle.error)?.message} Your unsaved edits are retained.</p>}
-          {selectedFileDetail?.receipt?.materialization === "pending" && <p role="status" className="text-sm text-muted-foreground">Revision saved. The instruction file still needs to be rebuilt from the saved revision.</p>}
+          {(candidates.error || loadCandidate.error || resolveCandidate.error || refreshCandidateBase.error) && <p role="alert" className="text-sm text-destructive">{uiText((candidates.error ?? loadCandidate.error ?? resolveCandidate.error ?? refreshCandidateBase.error)?.message ?? "")} {uiText("Your preserved edits remain available.")}</p>}
+          {(saveFile.error || fileError || updateBundle.error) && <p role="alert" className="text-sm text-destructive">{uiText((saveFile.error ?? fileError ?? updateBundle.error)?.message ?? "")} {uiText("Your unsaved edits are retained.")}</p>}
+          {selectedFileDetail?.receipt?.materialization === "pending" && <p role="status" className="text-sm text-muted-foreground">{uiText("Revision saved. The instruction file still needs to be rebuilt from the saved revision.")}</p>}
           {selectedFileDetail?.revision && currentMode === "managed" && bundle?.persistence !== "agent_files" && <InstructionHistory
             key={selectedOrEntryFile} agentId={agent.id} companyId={companyId} path={selectedOrEntryFile}
             currentRevisionId={selectedFileDetail.revision.id} disabled={isDirty || isSaving}
@@ -3122,8 +3175,8 @@ export function PromptsTab({
           />}
           {selectedFileDetail?.binary ? (
             <div className="space-y-3 rounded-md border border-border p-4">
-              <p className="text-sm text-muted-foreground">This file is preserved with the agent directory. Download it to view its contents.</p>
-              <a className="text-sm text-primary underline" href={agentsApi.downloadInstructionsFile(agent.id, selectedOrEntryFile, companyId)} download>Download {selectedOrEntryFile}</a>
+              <p className="text-sm text-muted-foreground">{uiText("This file is preserved with the agent directory. Download it to view its contents.")}</p>
+              <a className="text-sm text-primary underline" href={agentsApi.downloadInstructionsFile(agent.id, selectedOrEntryFile, companyId)} download>{uiText("Download {file}", { file: selectedOrEntryFile })}</a>
             </div>
           ) : selectedFileExists && fileLoading && !selectedFileDetail ? (
             <PromptEditorSkeleton />

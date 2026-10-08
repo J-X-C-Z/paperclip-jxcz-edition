@@ -6,4 +6,4 @@ project: first-project
 recurring: true
 ---
 
-Review current priorities, confirm the next useful task, and report what changed. Use this heartbeat as the rhythm for keeping the company moving when no human prompt is waiting.
+检查当前优先级，确认下一个有价值的任务，并汇报变化。没有等待人工指示时，通过此心跳保持公司工作持续推进。

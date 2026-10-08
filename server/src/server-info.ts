@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
 import type { ServerGitInfo, ServerGitLocalChanges, ServerInfoSnapshot } from "@paperclipai/shared";
 import { parseBuildCommit, readBuildCommit } from "./build-commit.js";
 
@@ -171,6 +172,36 @@ export function createServerInfoSnapshot(
 const GIT_INFO_CACHE_TTL_MS = 3000;
 const processStartedAt = new Date().toISOString();
 let gitInfoCache: { value: ServerGitInfo; expiresAt: number } | null = null;
+let gitInfoRefresh: Promise<ServerGitInfo> | null = null;
+const execFileAsync = promisify(execFile);
+
+/** Health requests must not block every API request while git scans the tree. */
+export async function getServerInfoSnapshotAsync(
+  runGit: (args: string[]) => Promise<string> = async (args) =>
+    (await execFileAsync("git", args, { encoding: "utf8", timeout: 1500 })).stdout,
+): Promise<ServerInfoSnapshot> {
+  if (gitInfoCache && Date.now() < gitInfoCache.expiresAt) {
+    return { processStartedAt, git: gitInfoCache.value };
+  }
+  if (!gitInfoRefresh) {
+    gitInfoRefresh = (async () => {
+      const results = await Promise.allSettled([
+        runGit(["show", "-s", "--format=%H%n%h%n%s%n%cI", "HEAD"]),
+        runGit(["status", "--porcelain=v1", "--untracked-files=normal"]),
+        runGit(["symbolic-ref", "--quiet", "--short", "HEAD"]),
+      ]);
+      const read = (index: number) => () => {
+        const result = results[index];
+        if (result.status === "rejected") throw result.reason;
+        return result.value;
+      };
+      const value = readGitInfo(read(0), read(1), read(2));
+      gitInfoCache = { value, expiresAt: Date.now() + GIT_INFO_CACHE_TTL_MS };
+      return value;
+    })().finally(() => { gitInfoRefresh = null; });
+  }
+  return { processStartedAt, git: await gitInfoRefresh };
+}
 
 export function getServerInfoSnapshot(
   opts: {

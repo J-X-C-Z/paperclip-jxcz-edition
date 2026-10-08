@@ -1,16 +1,16 @@
 {
-  "prompt": "What would you like to do?",
-  "submitLabel": "Continue",
+  "prompt": "你想从哪里开始？",
+  "submitLabel": "继续",
   "options": [
     {
       "id": "interview",
-      "label": "Interview me and propose a plan and an agent team to execute it.",
-      "description": "A few questions about what you're building, then a short plan and the team to carry it out, for you to approve."
+      "label": "采访我，并提出计划和执行计划的智能体团队。",
+      "description": "先问我几个关于目标的问题，再拟定简短计划和执行团队，供我审批。"
     },
     {
       "id": "task",
-      "label": "I have a task in mind",
-      "description": "Describe it and I'll propose how to get it done.",
+      "label": "我有一个任务想做",
+      "description": "描述任务，我会提出完成它的方案。",
       "freeText": true
     }
   ]

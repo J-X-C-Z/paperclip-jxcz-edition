@@ -61,15 +61,15 @@ interface TeamInstallApprovalFallbackResult {
 }
 
 export function registerTeamCommands(program: Command): void {
-  const teams = program.command("teams").description("App-shipped team catalog operations");
+  const teams = program.command("teams").description("应用内团队目录操作");
 
   addCommonClientOptions(
     teams
       .command("browse")
-      .description("Browse app-shipped catalog teams without installing them")
-      .option("--kind <kind>", "Catalog kind filter (bundled or optional)")
-      .option("--category <slug>", "Catalog category filter")
-      .option("--query <text>", "Search catalog text")
+      .description("浏览应用内团队目录，不安装团队")
+      .option("--kind <kind>", "按目录类型筛选（bundled 或 optional）")
+      .option("--category <slug>", "按目录类别筛选")
+      .option("--query <text>", "搜索目录内容")
       .action(async (opts: TeamBrowseOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -88,10 +88,10 @@ export function registerTeamCommands(program: Command): void {
   addCommonClientOptions(
     teams
       .command("list")
-      .description("List app-shipped catalog teams with installed status for a company")
-      .option("--kind <kind>", "Catalog kind filter (bundled or optional)")
-      .option("--category <slug>", "Catalog category filter")
-      .option("--query <text>", "Search catalog text")
+      .description("列出应用内团队目录及其在公司的安装状态")
+      .option("--kind <kind>", "按目录类型筛选（bundled 或 optional）")
+      .option("--category <slug>", "按目录类别筛选")
+      .option("--query <text>", "搜索目录内容")
       .action(async (opts: TeamListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -111,10 +111,10 @@ export function registerTeamCommands(program: Command): void {
   addCommonClientOptions(
     teams
       .command("search")
-      .description("Search app-shipped catalog teams without installing them")
-      .argument("<query>", "Search text")
-      .option("--kind <kind>", "Catalog kind filter (bundled or optional)")
-      .option("--category <slug>", "Catalog category filter")
+      .description("搜索应用内团队目录，不安装团队")
+      .argument("<query>", "搜索文本")
+      .option("--kind <kind>", "按目录类型筛选（bundled 或 optional）")
+      .option("--category <slug>", "按目录类别筛选")
       .action(async (query: string, opts: TeamBrowseOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -133,9 +133,9 @@ export function registerTeamCommands(program: Command): void {
   addCommonClientOptions(
     teams
       .command("inspect")
-      .description("Inspect an app-shipped catalog team before installing it")
-      .argument("<catalogRef>", "Catalog team ID, key, or unique slug")
-      .option("--file <path>", "Print a specific catalog team file instead of the manifest detail")
+      .description("安装前查看应用内团队目录详情")
+      .argument("<catalogRef>", "目录团队 ID、键或唯一标识")
+      .option("--file <path>", "输出指定目录团队文件，而不是清单详情")
       .action(async (catalogRef: string, opts: BaseClientOptions & { file?: string }) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -167,17 +167,17 @@ export function registerTeamCommands(program: Command): void {
   addCommonClientOptions(
     teams
       .command("preview")
-      .description("Preview importing a catalog team into a company")
-      .argument("<catalogRef>", "Catalog team ID, key, or unique slug")
-      .option("--target-manager-agent-id <id>", "Existing agent ID that catalog root agents should report to")
-      .option("--target-manager-slug <slug>", "Portable manager slug that catalog root agents should report to")
-      .option("--agent <slug>", "Only preview selected agent slug; may be repeated", collectOptionValue, [] as string[])
-      .option("--collision-strategy <strategy>", "Import collision strategy (rename, skip, replace)")
-      .option("--name-override <slug=name>", "Override an imported entity name; may be repeated", collectOptionValue, [] as string[])
-      .option("--selected-file <path>", "Restrict import preview to selected portable file; may be repeated", collectOptionValue, [] as string[])
-      .option("--allow-external-sources", "Allow GitHub, URL, or skills.sh skill sources declared by the catalog team", false)
-      .option("--allow-unpinned-optional-sources", "Allow optional-team external skill sources that are not pinned to a commit", false)
-      .option("--allow-local-path-sources", "Development only: allow local-path skill sources declared by the catalog team", false)
+      .description("预览将目录团队导入公司")
+      .argument("<catalogRef>", "目录团队 ID、键或唯一标识")
+      .option("--target-manager-agent-id <id>", "目录团队根智能体应汇报给的现有智能体 ID")
+      .option("--target-manager-slug <slug>", "目录团队根智能体应汇报给的可移植上级标识")
+      .option("--agent <slug>", "仅预览指定标识的智能体；可重复指定", collectOptionValue, [] as string[])
+      .option("--collision-strategy <strategy>", "导入冲突处理策略（rename、skip、replace）")
+      .option("--name-override <slug=name>", "覆盖导入实体的名称；可重复指定", collectOptionValue, [] as string[])
+      .option("--selected-file <path>", "仅预览选定的可移植文件；可重复指定", collectOptionValue, [] as string[])
+      .option("--allow-external-sources", "允许使用目录团队声明的 GitHub、URL 或 skills.sh 技能来源", false)
+      .option("--allow-unpinned-optional-sources", "允许使用未固定到提交的 optional 团队外部技能来源", false)
+      .option("--allow-local-path-sources", "仅供开发：允许使用目录团队声明的本地路径技能来源", false)
       .action(async (catalogRef: string, opts: TeamPreviewOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -200,25 +200,25 @@ export function registerTeamCommands(program: Command): void {
   addCommonClientOptions(
     teams
       .command("install")
-      .description("Install a catalog team into a company")
-      .argument("<catalogRef>", "Catalog team ID, key, or unique slug")
-      .option("--target-manager-agent-id <id>", "Existing agent ID that catalog root agents should report to")
-      .option("--target-manager-slug <slug>", "Portable manager slug that catalog root agents should report to")
-      .option("--agent <slug>", "Only install selected agent slug; may be repeated", collectOptionValue, [] as string[])
-      .option("--collision-strategy <strategy>", "Import collision strategy (rename, skip, replace)")
-      .option("--name-override <slug=name>", "Override an imported entity name; may be repeated", collectOptionValue, [] as string[])
-      .option("--selected-file <path>", "Restrict install to selected portable file; may be repeated", collectOptionValue, [] as string[])
-      .option("--secret-value <key=value>", "Secret env input value for install; may be repeated", collectOptionValue, [] as string[])
-      .option("--adapter-override <slug=type>", "Adapter type override for an imported agent slug; may be repeated", collectOptionValue, [] as string[])
-      .option("--allow-external-sources", "Allow GitHub, URL, or skills.sh skill sources declared by the catalog team", false)
-      .option("--allow-unpinned-optional-sources", "Allow optional-team external skill sources that are not pinned to a commit", false)
-      .option("--allow-local-path-sources", "Development only: allow local-path skill sources declared by the catalog team", false)
+      .description("将目录团队安装到公司")
+      .argument("<catalogRef>", "目录团队 ID、键或唯一标识")
+      .option("--target-manager-agent-id <id>", "目录团队根智能体应汇报给的现有智能体 ID")
+      .option("--target-manager-slug <slug>", "目录团队根智能体应汇报给的可移植上级标识")
+      .option("--agent <slug>", "仅安装指定标识的智能体；可重复指定", collectOptionValue, [] as string[])
+      .option("--collision-strategy <strategy>", "导入冲突处理策略（rename、skip、replace）")
+      .option("--name-override <slug=name>", "覆盖导入实体的名称；可重复指定", collectOptionValue, [] as string[])
+      .option("--selected-file <path>", "仅安装选定的可移植文件；可重复指定", collectOptionValue, [] as string[])
+      .option("--secret-value <key=value>", "安装时提供的密钥环境变量值；可重复指定", collectOptionValue, [] as string[])
+      .option("--adapter-override <slug=type>", "覆盖导入智能体标识所用的适配器类型；可重复指定", collectOptionValue, [] as string[])
+      .option("--allow-external-sources", "允许使用目录团队声明的 GitHub、URL 或 skills.sh 技能来源", false)
+      .option("--allow-unpinned-optional-sources", "允许使用未固定到提交的 optional 团队外部技能来源", false)
+      .option("--allow-local-path-sources", "仅供开发：允许使用目录团队声明的本地路径技能来源", false)
       .option(
         "--request-approval-on-forbidden",
         "When install is denied by agents:create permissions, create a board approval request instead of exiting with the raw 403",
         false,
       )
-      .option("--approval-issue-id <id>", "Issue ID to link to the fallback approval request; defaults to PAPERCLIP_TASK_ID when set")
+      .option("--approval-issue-id <id>", "关联备用审批请求的任务 ID；若已设置则默认使用 PAPERCLIP_TASK_ID")
       .action(async (catalogRef: string, opts: TeamInstallOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -291,7 +291,7 @@ async function listCatalogTeamStatusRows(
   opts: TeamListOptions,
 ): Promise<CatalogTeamStatusRow[]> {
   if (!ctx.companyId) {
-    throw new Error("Company ID is required.");
+    throw new Error("必须提供公司 ID。");
   }
 
   const [teams, installed] = await Promise.all([
@@ -321,11 +321,11 @@ async function listCatalogTeamStatusRows(
 async function getCatalogTeam(ctx: ResolvedClientContext, catalogRef: string): Promise<CatalogTeam> {
   const ref = catalogRef.trim();
   if (!ref) {
-    throw new Error("Catalog team reference is required.");
+    throw new Error("必须提供目录团队引用。");
   }
   const detail = await ctx.api.get<CatalogTeam>(`/api/teams/catalog/ref?ref=${encodeURIComponent(ref)}`);
   if (!detail) {
-    throw new Error(`Catalog team not found: ${catalogRef}`);
+    throw new Error(`未找到目录团队：${catalogRef}`);
   }
   return detail;
 }
@@ -337,14 +337,14 @@ async function getCatalogTeamFile(
 ): Promise<{ content: string } | null> {
   const ref = catalogRef.trim();
   const path = filePath.trim();
-  if (!ref) throw new Error("Catalog team reference is required.");
-  if (!path) throw new Error("Catalog team file path is required.");
+  if (!ref) throw new Error("必须提供目录团队引用。");
+  if (!path) throw new Error("必须提供目录团队文件路径。");
   const params = new URLSearchParams({ ref, path });
   return ctx.api.get(`/api/teams/catalog/ref/files?${params.toString()}`);
 }
 
 function catalogTeamCompanyPath(companyId: string | undefined, catalogRef: string, action: "preview" | "install") {
-  if (!companyId) throw new Error("Company ID is required.");
+  if (!companyId) throw new Error("必须提供公司 ID。");
   const params = new URLSearchParams({ ref: catalogRef.trim() });
   return `/api/companies/${encodeURIComponent(companyId)}/teams/catalog/ref/${action}?${params.toString()}`;
 }
@@ -393,7 +393,7 @@ async function requestInstallApproval(
   opts: TeamInstallOptions,
   error: ApiRequestError,
 ): Promise<TeamInstallApprovalFallbackResult> {
-  if (!ctx.companyId) throw new Error("Company ID is required.");
+  if (!ctx.companyId) throw new Error("必须提供公司 ID。");
   const trimmedRef = catalogRef.trim();
   const issueIds = resolveApprovalIssueIds(opts);
   const approvalInstallOptions = omitInstallSecretValues(installOptions);
@@ -422,7 +422,7 @@ async function requestInstallApproval(
   };
   const approval = await ctx.api.post<Approval>(apiPath`/api/companies/${ctx.companyId}/approvals`, payload);
   if (!approval) {
-    throw new Error("Approval request failed.");
+    throw new Error("审批请求失败。");
   }
   return {
     status: "approval_requested",
@@ -477,7 +477,7 @@ function parseNameOverrides(values: string[] | undefined): Record<string, string
   for (const raw of values) {
     const [slug, name] = parseKeyValueOption(raw, "--name-override", "slug=name");
     if (!slug || !name) {
-      throw new Error(`Invalid --name-override "${raw}". Use slug=name.`);
+      throw new Error(`--name-override 值无效：“${raw}”。请使用 slug=name 格式。`);
     }
     result[slug] = name;
   }
@@ -490,7 +490,7 @@ function parseSecretValues(values: string[] | undefined): Record<string, string>
   for (const raw of values) {
     const [key, value] = parseKeyValueOption(raw, "--secret-value", "key=value");
     if (!key) {
-      throw new Error(`Invalid --secret-value "${raw}". Use key=value.`);
+      throw new Error(`--secret-value 值无效：“${raw}”。请使用 key=value 格式。`);
     }
     result[key] = value;
   }
@@ -505,7 +505,7 @@ function parseAdapterOverrides(
   for (const raw of values) {
     const [slug, adapterType] = parseKeyValueOption(raw, "--adapter-override", "slug=type");
     if (!slug || !adapterType) {
-      throw new Error(`Invalid --adapter-override "${raw}". Use slug=type.`);
+      throw new Error(`--adapter-override 值无效：“${raw}”。请使用 slug=type 格式。`);
     }
     result[slug] = { adapterType };
   }
@@ -515,7 +515,7 @@ function parseAdapterOverrides(
 function parseKeyValueOption(raw: string, flag: string, format: string): [string, string] {
   const separator = raw.indexOf("=");
   if (separator <= 0) {
-    throw new Error(`Invalid ${flag} "${raw}". Use ${format}.`);
+    throw new Error(`${flag} 的值无效：“${raw}”。请使用 ${format} 格式。`);
   }
   return [raw.slice(0, separator).trim(), raw.slice(separator + 1).trim()];
 }
@@ -642,7 +642,7 @@ function printCatalogTeamDetail(team: CatalogTeam): void {
   console.log(
     `counts=agents:${team.counts.agents},projects:${team.counts.projects},tasks:${team.counts.tasks},skills:${team.counts.localSkills + team.counts.catalogSkills}`,
   );
-  console.log("files:");
+  console.log("文件：");
   printTable(team.files.map((file) => ({
     path: file.path,
     kind: file.kind,
@@ -653,7 +653,7 @@ function printCatalogTeamDetail(team: CatalogTeam): void {
 
 function printCatalogTeamPreview(result: CatalogTeamImportPreviewResult | null): void {
   if (!result) {
-    console.log("Catalog team preview returned no result.");
+    console.log("目录团队预览未返回结果。");
     return;
   }
   const preview = result.portabilityPreview;
@@ -666,7 +666,7 @@ function printCatalogTeamPreview(result: CatalogTeamImportPreviewResult | null):
 
 function printCatalogTeamInstall(result: CatalogTeamInstallResult | null): void {
   if (!result) {
-    console.log("Catalog team install returned no result.");
+    console.log("目录团队安装未返回结果。");
     return;
   }
   console.log(
@@ -686,7 +686,7 @@ function printInstallApprovalRequested(result: TeamInstallApprovalFallbackResult
       deniedReason: result.installAttempt.deniedReason,
     }),
   );
-  console.log("Install was not performed. The board must approve the request and rerun the install with an authorized token.");
+  console.log("未执行安装。看板必须先批准请求，然后使用已授权的令牌重新运行安装。");
 }
 
 function printTable(rows: Array<Record<string, unknown>>): void {

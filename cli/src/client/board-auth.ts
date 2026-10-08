@@ -275,16 +275,16 @@ export async function loginBoardCli(params: {
     }
 
     if (status.status === "cancelled") {
-      throw new Error("CLI auth challenge was cancelled.");
+      throw new Error("CLI 身份验证挑战已取消。");
     }
     if (status.status === "expired") {
-      throw new Error("CLI auth challenge expired before approval.");
+      throw new Error("CLI 身份验证挑战在获批前已过期。");
     }
 
     await sleep(pollMs);
   }
 
-  throw new Error("CLI auth challenge expired before approval.");
+  throw new Error("CLI 身份验证挑战在获批前已过期。");
 }
 
 export async function revokeStoredBoardCredential(params: {

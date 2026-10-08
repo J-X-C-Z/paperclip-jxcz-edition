@@ -1,6 +1,6 @@
 ---
 name: task-execution
-description: Execute an assigned Paperclip task within its scope, verify the deliverable, report blockers and submit artifacts for the designated leader's review.
+description: 在范围内执行已分配的 Paperclip 任务、验证交付成果、报告阻塞项，并提交成果供指定负责人审查。
 key: paperclipai/bundled/paperclip-operations/task-execution
 recommendedForRoles:
   - engineer
@@ -12,16 +12,16 @@ tags:
   - artifacts
 ---
 
-# Task Execution
+# 任务执行
 
-Use this skill for an assigned execution task. Read the Paperclip runtime skill and use its supplied identity, authentication, checkout and audit conventions.
+执行分配给你的任务时，使用此技能。阅读 Paperclip runtime 技能，并遵循其中提供的身份、身份验证、checkout 和审计规范。
 
-1. Read the task description, plan, acceptance criteria, context and real blocker relationships. Parent-child nesting does not imply an execution dependency.
-2. Checkout before modifying the task. On conflict, stop competing for ownership. Work only within the assigned scope and existing company, approval, budget and execution boundaries.
-3. Inspect the relevant inputs, implement the requested result and perform checks proportional to the change. Preserve unrelated work.
-4. When blocked, update the task with the reason, impact and exact condition needed to resume; notify the leader through the task's permitted reporting workflow. Do not solve a blocked dependency by marking it complete.
-5. Upload user-inspectable artifacts through Paperclip and link them as work products. Workspace-only files require a workspace-file work product; a local path alone is not a deliverable.
-6. Submit a concise report: what was completed, what changed, how it was verified, remaining limitations and linked artifacts. Submit through the designated review workflow and leave the task awaiting the leader's review.
-7. On return, address the review feedback, rerun relevant checks and resubmit. Preserve the original acceptance criteria unless an authorized owner changes them.
+1. 阅读任务描述、计划、验收标准、上下文和实际阻塞关系。父子任务关系本身不代表执行依赖。
+2. 修改任务前先 checkout。发生冲突时，停止争夺任务负责人身份。只在分配的范围及现有公司、审批、预算和执行边界内工作。
+3. 检查相关输入，实现所需结果，并根据变更规模执行适当的检查。保留无关工作。
+4. 遇到阻塞时，在任务中说明原因、影响和恢复工作所需的确切条件；通过任务允许的报告流程通知负责人。不要通过将阻塞依赖标记为完成来解决问题。
+5. 通过 Paperclip 上传用户可检查的成果，并将其链接为工作产品。仅保存在 workspace 中的文件必须创建 workspace-file 工作产品；单独提供本地路径不算交付成果。
+6. 提交简明报告：完成了什么、变更了什么、如何验证、尚存哪些限制，以及相关成果链接。通过指定的审查流程提交，并让任务等待负责人审查。
+7. 任务被退回后，根据审查反馈修改、重新运行相关检查并再次提交。除非获授权的负责人修改了验收标准，否则应保留原标准。
 
-Do not create or assign tasks, manage other agents, change your own permissions, approve your own work, directly set done, or remove the required review stage. The leader owns the acceptance decision.
+不要创建或指派任务、管理其他智能体、更改自己的权限、批准自己的工作、直接将任务设为 done，或移除必需的审查阶段。验收决定由负责人做出。

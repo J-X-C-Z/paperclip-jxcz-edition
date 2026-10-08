@@ -661,7 +661,7 @@ function canAutoSkipPendingStage(input: {
 
 function applyIssueExecutionStageTransition(input: TransitionInput): TransitionResult {
   const patch: Record<string, unknown> = {};
-  const existingState = parseIssueExecutionState(input.issue.executionState);
+  let existingState = parseIssueExecutionState(input.issue.executionState);
   const currentAssignee = assigneePrincipal(input.issue);
   const actor = actorPrincipal(input.actor);
   const requestedAssigneePatchProvided =
@@ -975,6 +975,18 @@ function applyIssueExecutionStageTransition(input: TransitionInput): TransitionR
   // closing the issue must not restart the chain at the first stage (#7893).
   if (requestedStatus === "done" && existingState?.status === COMPLETED_STATUS) {
     return { patch };
+  }
+
+  // Explicitly submitting another review starts a fresh pass: approvals of
+  // the previous candidate must not approve the newly submitted work.
+  if (existingState?.status === COMPLETED_STATUS) {
+    existingState = {
+      ...existingState,
+      completedStageIds: [],
+      lastDecisionId: null,
+      lastDecisionOutcome: null,
+      changesRequestedCount: 0,
+    };
   }
 
   let pendingStage =

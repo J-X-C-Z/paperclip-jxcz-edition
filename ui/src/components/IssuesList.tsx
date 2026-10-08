@@ -1996,12 +1996,26 @@ function StreamlinedIssuesList({
         </p>
       )}
       {!isLoading && !externalObjectFilterLoading && filtered.length === 0 && viewState.viewMode === "list" && (
-        <EmptyState
-          icon={CircleDot}
-          message="No tasks match the current filters or search."
-          action={createActionLabel}
-          onAction={() => openCreateIssueDialog()}
-        />
+        <div>
+          <EmptyState
+            icon={CircleDot}
+            message="No tasks match the current filters or search."
+            action={createActionLabel}
+            onAction={() => openCreateIssueDialog()}
+          />
+          {onLoadMoreIssues && (hasMoreIssues || isLoadingMoreIssues) && (
+            <div className="flex justify-center -mt-8 mb-8">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isLoadingMoreIssues}
+                onClick={onLoadMoreIssues}
+              >
+                {tr(isLoadingMoreIssues ? "Loading..." : "Load more")}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       {viewState.viewMode === "board" ? (
@@ -2486,7 +2500,7 @@ function StreamlinedIssuesList({
           </Collapsible>
           );
           })}
-          {(remainingIssueRowCount > 0 || hasMoreIssues || isLoadingMoreIssues) && (
+          {filtered.length > 0 && (remainingIssueRowCount > 0 || hasMoreIssues || isLoadingMoreIssues) && (
             <div className="py-2" data-testid="issues-load-more-sentinel">
               <p className="text-xs text-muted-foreground">
                 {isLoadingMoreIssues
@@ -2495,6 +2509,18 @@ function StreamlinedIssuesList({
                     ? `Rendering ${Math.min(renderedIssueRowLimit, filtered.length)} of ${filtered.length} tasks`
                     : "Scroll to load more tasks"}
               </p>
+              {onLoadMoreIssues && remainingIssueRowCount === 0 && (hasMoreIssues || isLoadingMoreIssues) && (
+                <div className="flex justify-center mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoadingMoreIssues}
+                    onClick={loadMoreIssueRows}
+                  >
+                    {tr(isLoadingMoreIssues ? "Loading..." : "Load more")}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

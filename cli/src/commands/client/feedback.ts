@@ -74,22 +74,22 @@ interface FeedbackExportResult {
 }
 
 export function registerFeedbackCommands(program: Command): void {
-  const feedback = program.command("feedback").description("Inspect and export local feedback traces");
+  const feedback = program.command("feedback").description("检查并导出本地反馈跟踪记录");
 
   addCommonClientOptions(
     feedback
       .command("report")
-      .description("Render a terminal report for company feedback traces")
-      .option("-C, --company-id <id>", "Company ID (overrides context default)")
-      .option("--target-type <type>", "Filter by target type")
-      .option("--vote <vote>", "Filter by vote value")
-      .option("--status <status>", "Filter by trace status")
-      .option("--project-id <id>", "Filter by project ID")
-      .option("--issue-id <id>", "Filter by issue ID")
-      .option("--from <iso8601>", "Only include traces created at or after this timestamp")
-      .option("--to <iso8601>", "Only include traces created at or before this timestamp")
-      .option("--shared-only", "Only include traces eligible for sharing/export")
-      .option("--payloads", "Include raw payload dumps in the terminal report", false)
+      .description("在终端生成公司的反馈跟踪报告")
+      .option("-C, --company-id <id>", "公司 ID（覆盖上下文默认值）")
+      .option("--target-type <type>", "按目标类型筛选")
+      .option("--vote <vote>", "按投票值筛选")
+      .option("--status <status>", "按跟踪状态筛选")
+      .option("--project-id <id>", "按项目 ID 筛选")
+      .option("--issue-id <id>", "按任务 ID 筛选")
+      .option("--from <iso8601>", "仅包含此时间戳及之后创建的跟踪记录")
+      .option("--to <iso8601>", "仅包含此时间戳及之前创建的跟踪记录")
+      .option("--shared-only", "仅包含可共享/导出的跟踪记录")
+      .option("--payloads", "在终端报告中包含原始请求数据转储", false)
       .action(async (opts: FeedbackReportOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -125,17 +125,17 @@ export function registerFeedbackCommands(program: Command): void {
   addCommonClientOptions(
     feedback
       .command("export")
-      .description("Export feedback votes and raw trace bundles into a folder plus zip archive")
-      .option("-C, --company-id <id>", "Company ID (overrides context default)")
-      .option("--target-type <type>", "Filter by target type")
-      .option("--vote <vote>", "Filter by vote value")
-      .option("--status <status>", "Filter by trace status")
-      .option("--project-id <id>", "Filter by project ID")
-      .option("--issue-id <id>", "Filter by issue ID")
-      .option("--from <iso8601>", "Only include traces created at or after this timestamp")
-      .option("--to <iso8601>", "Only include traces created at or before this timestamp")
-      .option("--shared-only", "Only include traces eligible for sharing/export")
-      .option("--out <path>", "Output directory (default: ./feedback-export-<timestamp>)")
+      .description("将反馈投票和原始跟踪数据包导出到目录及 ZIP 压缩包")
+      .option("-C, --company-id <id>", "公司 ID（覆盖上下文默认值）")
+      .option("--target-type <type>", "按目标类型筛选")
+      .option("--vote <vote>", "按投票值筛选")
+      .option("--status <status>", "按跟踪状态筛选")
+      .option("--project-id <id>", "按项目 ID 筛选")
+      .option("--issue-id <id>", "按任务 ID 筛选")
+      .option("--from <iso8601>", "仅包含此时间戳及之后创建的跟踪记录")
+      .option("--to <iso8601>", "仅包含此时间戳及之前创建的跟踪记录")
+      .option("--shared-only", "仅包含可共享/导出的跟踪记录")
+      .option("--out <path>", "输出目录（默认：./feedback-export-<timestamp>）")
       .action(async (opts: FeedbackExportOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -172,8 +172,8 @@ export function registerFeedbackCommands(program: Command): void {
   addCommonClientOptions(
     feedback
       .command("trace")
-      .description("Get a feedback trace")
-      .argument("<traceId>", "Feedback trace ID")
+      .description("获取反馈跟踪记录")
+      .argument("<traceId>", "反馈跟踪 ID")
       .action(async (traceId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -187,8 +187,8 @@ export function registerFeedbackCommands(program: Command): void {
   addCommonClientOptions(
     feedback
       .command("bundle")
-      .description("Get a feedback trace bundle")
-      .argument("<traceId>", "Feedback trace ID")
+      .description("获取反馈跟踪数据包")
+      .argument("<traceId>", "反馈跟踪 ID")
       .action(async (traceId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -210,7 +210,7 @@ export async function resolveFeedbackCompanyId(
   const companyId = companies[0]?.id?.trim();
   if (!companyId) {
     throw new Error(
-      "Company ID is required. Pass --company-id, set PAPERCLIP_COMPANY_ID, or configure a CLI context default.",
+      "必须提供公司 ID。请传入 --company-id、设置 PAPERCLIP_COMPANY_ID，或配置 CLI 上下文默认值。",
     );
   }
   return companyId;
@@ -234,7 +234,7 @@ export function buildFeedbackTraceQuery(opts: FeedbackTraceQueryOptions, include
 export function normalizeFeedbackTraceExportFormat(value: string | undefined): "json" | "ndjson" {
   if (!value || value === "ndjson") return "ndjson";
   if (value === "json") return "json";
-  throw new Error(`Unsupported export format: ${value}`);
+  throw new Error(`不支持的导出格式：${value}`);
 }
 
 export function serializeFeedbackTraces(traces: FeedbackTrace[], format: string | undefined): string {
@@ -262,7 +262,7 @@ export async function fetchFeedbackTraceBundle(
 ): Promise<FeedbackTraceBundle> {
   const bundle = await ctx.api.get<FeedbackTraceBundle>(apiPath`/api/feedback-traces/${traceId}/bundle`);
   if (!bundle) {
-    throw new Error(`Feedback trace bundle ${traceId} not found`);
+    throw new Error(`未找到反馈跟踪数据包 ${traceId}`);
   }
   return bundle;
 }
@@ -556,11 +556,11 @@ async function ensureEmptyOutputDirectory(outputDir: string): Promise<void> {
   try {
     const info = await stat(outputDir);
     if (!info.isDirectory()) {
-      throw new Error(`Output path already exists and is not a directory: ${outputDir}`);
+      throw new Error(`输出路径已存在且不是目录：${outputDir}`);
     }
     const entries = await readdir(outputDir);
     if (entries.length > 0) {
-      throw new Error(`Output directory already exists and is not empty: ${outputDir}`);
+      throw new Error(`输出目录已存在且不为空：${outputDir}`);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

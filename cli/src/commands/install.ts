@@ -63,9 +63,9 @@ export function resolveGitInstallWorkspacePackages(checkoutPath: string): Releas
 
   const visit = (packageName: string): void => {
     if (visited.has(packageName)) return;
-    if (visiting.has(packageName)) throw new Error(`Circular workspace dependency while staging ${packageName}.`);
+    if (visiting.has(packageName)) throw new Error(`暂存 ${packageName} 时发现循环工作区依赖。`);
     const entry = packageByName.get(packageName);
-    if (!entry) throw new Error(`Git install cannot stage workspace dependency ${packageName}; it is missing from scripts/release-package-manifest.json.`);
+    if (!entry) throw new Error(`Git 安装无法暂存工作区依赖 ${packageName}；它未列在 scripts/release-package-manifest.json 中。`);
     visiting.add(packageName);
     const packageJson = JSON.parse(fs.readFileSync(path.join(checkoutPath, entry.dir, "package.json"), "utf8")) as Record<string, unknown>;
     for (const section of ["dependencies", "optionalDependencies", "peerDependencies"] as const) {
@@ -86,7 +86,7 @@ export function resolveGitInstallWorkspacePackages(checkoutPath: string): Releas
 
 export function assertSupportedNodeVersion(): void {
   if (!isSupportedNodeVersion(process.versions.node)) {
-    throw new Error(`Installing or updating Paperclip requires Node.js ${MINIMUM_NODE_VERSION} or newer (found ${process.version} at ${process.execPath}). Put a supported Node bin directory first on PATH and run 'npx paperclipai@latest install --yes' to re-pin an existing managed install.`);
+    throw new Error(`安装或更新 Paperclip 需要 Node.js ${MINIMUM_NODE_VERSION} 或更高版本（当前为 ${process.version}，路径：${process.execPath}）。请将受支持的 Node 可执行文件目录置于 PATH 前部，并运行 'npx paperclipai@latest install --yes' 以重新固定现有托管安装。`);
   }
 }
 
@@ -94,11 +94,11 @@ export function resolveNpmInstallRequest(options: InstallOptions): {
   spec: string;
   channel: InstallChannel;
 } {
-  if (options.canary && options.version) throw new Error("Choose either --canary or --version, not both.");
+  if (options.canary && options.version) throw new Error("--canary 和 --version 只能选择一个。");
   if (options.version) {
     const version = options.version.trim();
     if (!EXACT_VERSION_PATTERN.test(version)) {
-      throw new Error(`--version requires an exact published version, received '${options.version}'.`);
+      throw new Error(`--version 必须指定准确的已发布版本，收到的值为“${options.version}”。`);
     }
     return { spec: version, channel: "pinned" };
   }
@@ -107,14 +107,14 @@ export function resolveNpmInstallRequest(options: InstallOptions): {
 
 function parseResolvedVersion(stdout: string): string {
   const trimmed = stdout.trim();
-  if (!trimmed) throw new Error("npm returned an empty version response.");
+  if (!trimmed) throw new Error("npm 未返回版本信息。");
   try {
     const parsed = JSON.parse(trimmed) as unknown;
     if (typeof parsed === "string") return parsed;
   } catch {
     if (EXACT_VERSION_PATTERN.test(trimmed)) return trimmed;
   }
-  throw new Error(`npm returned an unexpected version response: ${trimmed}`);
+  throw new Error(`npm 返回了意外的版本信息：${trimmed}`);
 }
 
 export async function resolvePublishedVersion(spec: string, runCommand: CommandRunner): Promise<string> {
@@ -128,12 +128,12 @@ export async function resolvePublishedVersion(spec: string, runCommand: CommandR
 
 export function resolveGitInstallRequest(options: InstallOptions): { repo: string; ref: string; pinned: boolean } | null {
   if (!options.ref && !options.repo) return null;
-  if (!options.ref) throw new Error("--repo requires --ref.");
-  if (options.canary || options.version) throw new Error("--ref cannot be combined with --canary or --version.");
+  if (!options.ref) throw new Error("使用 --repo 时必须同时提供 --ref。");
+  if (options.canary || options.version) throw new Error("--ref 不能与 --canary 或 --version 同时使用。");
   const repo = (options.repo ?? DEFAULT_GITHUB_REPO).trim();
   const ref = options.ref.trim();
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error(`--repo must be an owner/name GitHub repository, received '${repo}'.`);
-  if (!ref || ref.startsWith("-") || /[\0\r\n]/.test(ref)) throw new Error(`Invalid GitHub ref '${options.ref}'.`);
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error(`--repo 必须是 owner/name 格式的 GitHub 仓库，收到的值为“${repo}”。`);
+  if (!ref || ref.startsWith("-") || /[\0\r\n]/.test(ref)) throw new Error(`GitHub 引用“${options.ref}”无效。`);
   return { repo, ref, pinned: /^[0-9a-f]{7,40}$/i.test(ref) };
 }
 
@@ -160,8 +160,8 @@ async function runGitHubCurl(
 export async function resolveGitHubRef(repo: string, ref: string, runCommand: CommandRunner): Promise<string> {
   const result = await runGitHubCurl(["--fail", "--silent", "--show-error", "--location", "--header", "Accept: application/vnd.github+json", "--header", "User-Agent: paperclipai-install", `https://api.github.com/repos/${repo}/commits/${encodeURIComponent(ref)}`], runCommand, { maxBuffer: 4 * 1024 * 1024 });
   let sha: unknown;
-  try { sha = (JSON.parse(result.stdout) as { sha?: unknown }).sha; } catch { throw new Error(`GitHub returned an invalid response while resolving ${repo}@${ref}.`); }
-  if (typeof sha !== "string" || !/^[0-9a-f]{40}$/i.test(sha)) throw new Error(`GitHub did not return a full commit SHA for ${repo}@${ref}.`);
+  try { sha = (JSON.parse(result.stdout) as { sha?: unknown }).sha; } catch { throw new Error(`解析 ${repo}@${ref} 时，GitHub 返回了无效响应。`); }
+  if (typeof sha !== "string" || !/^[0-9a-f]{40}$/i.test(sha)) throw new Error(`GitHub 未为 ${repo}@${ref} 返回完整提交 SHA。`);
   return sha.toLowerCase();
 }
 
@@ -171,11 +171,11 @@ function payloadEntrypoint(payloadPath: string): string {
 
 export async function smokePayload(payloadPath: string, expectedVersion: string, runCommand: CommandRunner): Promise<void> {
   const entrypoint = payloadEntrypoint(payloadPath);
-  if (!fs.existsSync(entrypoint)) throw new Error(`Installed package is missing its CLI entrypoint: ${entrypoint}`);
+  if (!fs.existsSync(entrypoint)) throw new Error(`已安装的软件包缺少 CLI 入口：${entrypoint}`);
   const result = await runCommand(process.execPath, [entrypoint, "--version"], { maxBuffer: 1024 * 1024 });
   const reportedVersion = result.stdout.trim().split(/\s+/)[0];
   if (reportedVersion !== expectedVersion) {
-    throw new Error(`Installed CLI smoke check reported ${reportedVersion || "no version"}; expected ${expectedVersion}.`);
+    throw new Error(`已安装 CLI 冒烟检查返回 ${reportedVersion || "无版本信息"}；预期版本为 ${expectedVersion}。`);
   }
 }
 
@@ -193,7 +193,7 @@ export async function installNpmPayload(
   fs.mkdirSync(sourceRoot, { recursive: true, mode: 0o700 });
   const sourceStat = fs.lstatSync(sourceRoot);
   if (!sourceStat.isDirectory() || sourceStat.isSymbolicLink()) {
-    throw new Error(`Refusing to install into unsafe payload root ${sourceRoot}.`);
+    throw new Error(`安装包根目录 ${sourceRoot} 不安全，拒绝安装。`);
   }
   fs.chmodSync(paths.cliRoot, 0o700);
   fs.chmodSync(paths.installsRoot, 0o700);
@@ -254,7 +254,7 @@ export async function installGitPayload(repo: string, sha: string, runCommand: C
   fs.mkdirSync(sourceRoot, { recursive: true, mode: 0o700 });
   const sourceStat = fs.lstatSync(sourceRoot);
   if (!sourceStat.isDirectory() || sourceStat.isSymbolicLink()) {
-    throw new Error(`Refusing to install into unsafe payload root ${sourceRoot}.`);
+    throw new Error(`安装包根目录 ${sourceRoot} 不安全，拒绝安装。`);
   }
   fs.chmodSync(paths.cliRoot, 0o700);
   fs.chmodSync(paths.installsRoot, 0o700);
@@ -297,7 +297,7 @@ export async function installGitPayload(repo: string, sha: string, runCommand: C
     const cliTarball = tarballs.find((entry) => entry === `paperclipai-${metadata.version}.tgz`);
     const workspaceTarballs = tarballs.filter((entry) => entry !== cliTarball);
     if (!cliTarball || workspaceTarballs.length !== workspacePackages.length) {
-      throw new Error(`Git install packaging produced ${workspaceTarballs.length} workspace tarballs; expected ${workspacePackages.length}.`);
+      throw new Error(`Git 安装打包生成了 ${workspaceTarballs.length} 个工作区 tarball；预期数量为 ${workspacePackages.length}。`);
     }
     await runCommand("npm", ["install", "--prefix", stagedPayload, path.join(stagingRoot, cliTarball), ...workspaceTarballs.map((entry) => path.join(stagingRoot, entry)), "--no-audit", "--no-fund"], { cwd: stagingRoot, maxBuffer: 32 * 1024 * 1024 });
     await smokePayload(stagedPayload, metadata.version, runCommand);
@@ -330,28 +330,28 @@ async function ensureShimOnPath(options: InstallOptions): Promise<void> {
     console.log(pc.yellow(`Add Paperclip to PATH for this shell:\n  ${manualInstruction}`));
     return;
   }
-  const confirmed = options.yes === true ? true : await p.confirm({ message: `Add ~/.local/bin to PATH in ${rcPath}?`, initialValue: true });
+  const confirmed = options.yes === true ? true : await p.confirm({ message: `将 ~/.local/bin 添加到 ${rcPath} 的 PATH 中吗？`, initialValue: true });
   if (p.isCancel(confirmed) || !confirmed) {
-    console.log(pc.yellow(`PATH was not changed. Run:\n  ${manualInstruction}`));
+    console.log(pc.yellow(`PATH 未更改。请运行：\n  ${manualInstruction}`));
     return;
   }
   const changed = addManagedPathBlock(rcPath);
-  console.log(changed ? pc.green(`Updated ${rcPath}.`) : pc.dim(`${rcPath} already contains the PATH block.`));
+  console.log(changed ? pc.green(`已更新 ${rcPath}。`) : pc.dim(`${rcPath} 已包含 PATH 配置。`));
 }
 
 async function confirmGitInstall(options: InstallOptions, repo: string, ref: string): Promise<void> {
-  const warning = `Installing ${repo}@${ref} executes dependency and build scripts from that repository.`;
-  console.log(pc.yellow(`Warning: ${warning}`));
+  const warning = `安装 ${repo}@${ref} 会执行该仓库中的依赖安装和构建脚本。`;
+  console.log(pc.yellow(`警告：${warning}`));
   if (options.yes === true) return;
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error(`${warning} Re-run with --yes to consent in non-interactive environments.`);
+    throw new Error(`${warning} 在非交互环境中，请使用 --yes 重新运行以确认。`);
   }
   const confirmed = await p.confirm({
-    message: `${warning} Continue?`,
+    message: `${warning} 是否继续？`,
     initialValue: false,
   });
   if (p.isCancel(confirmed) || !confirmed) {
-    throw new Error("Git-ref install cancelled before downloading or executing repository code.");
+    throw new Error("Git 引用安装已取消，尚未下载或执行仓库代码。");
   }
 }
 
@@ -382,9 +382,9 @@ export async function installCommand(
     return;
   }
   const request = resolveNpmInstallRequest(options);
-  console.log(`Resolving paperclipai@${request.spec} from ${PUBLIC_NPM_REGISTRY}...`);
+  console.log(`正在从 ${PUBLIC_NPM_REGISTRY} 解析 paperclipai@${request.spec}...`);
   const version = await resolvePublishedVersion(request.spec, runCommand);
-  console.log(`Installing paperclipai@${version}...`);
+  console.log(`正在安装 paperclipai@${version}...`);
 
   const paths = resolveInstallStorePaths();
   const installed = await withInstallStoreLock(async () => {
@@ -416,5 +416,5 @@ export async function installCommand(
 
   console.log(pc.green(`${installed.reused ? "Activated cached" : "Installed"} paperclipai ${version} (${request.channel}).`));
   console.log(pc.dim(`Payload: ${installed.payloadPath}`));
-  console.log(`Run ${pc.cyan("paperclipai --version")} to verify the managed install.`);
+  console.log(`运行 ${pc.cyan("paperclipai --version")} 验证托管安装。`);
 }

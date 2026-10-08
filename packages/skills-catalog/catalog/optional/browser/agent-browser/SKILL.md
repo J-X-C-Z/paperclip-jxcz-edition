@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Drive a real browser to inspect or interact with a web page or app — navigate, take screenshots, read console and network, fill simple forms — for verification tasks, not unattended automation.
+description: 操作真实浏览器检查或使用网页和应用，包括导航、截图、查看控制台和网络信息、填写简单表单；用于验证任务，不用于无人值守自动化。
 key: paperclipai/optional/browser/agent-browser
 recommendedForRoles:
   - qa
@@ -13,81 +13,81 @@ tags:
   - verification
 ---
 
-# Agent Browser
+# 智能体浏览器
 
-Use a controlled browser to verify behavior, capture evidence, or extract information from web pages that a static fetch cannot reach (SPAs, login-gated pages, dynamic content). This skill is about supervised verification, not unattended scraping.
+使用受控浏览器验证行为、收集证据，或提取静态请求无法访问的网页信息（SPA、需要登录的页面、动态内容）。此技能用于有人监督的验证，不用于无人值守抓取。
 
-## When to use
+## 适用场景
 
-- You need a screenshot of a deployed page or a local dev server to confirm a UI change.
-- You need to read JavaScript-rendered content that `curl`/`wget` will not see.
-- A user reports a UI bug and you need to reproduce it interactively to capture console errors, network requests, or layout state.
-- You need to walk through a short flow (load page, click, observe) to verify acceptance criteria.
+- 你需要对已部署页面或本地开发服务器截图，以确认 UI 变更。
+- 你需要查看 `curl`/`wget` 无法读取的 JavaScript 渲染内容。
+- 用户报告了 UI 问题，你需要交互式复现，以获取控制台错误、网络请求或布局状态。
+- 你需要执行简短流程（加载页面、点击、观察）来验证验收标准。
 
-## When not to use
+## 不适用场景
 
-- The page is reachable as static HTML. Use `curl`/HTTP fetch — it is cheaper, faster, and more reliable.
-- The task is unattended large-scale scraping. That belongs to a dedicated scraper with rate limits, robots.txt handling, and a real user agent policy — not this skill.
-- The site is behind authentication you do not own credentials for, or whose terms of service prohibit automation.
-- The site involves sensitive accounts (banking, healthcare, government) where automation risks lockout or compliance issues.
+- 页面可通过静态 HTML 访问。使用 `curl`/HTTP 请求，更省资源、更快且更可靠。
+- 任务是无人值守的大规模抓取。这应由专用抓取程序处理，并遵守速率限制、robots.txt 和真实用户代理策略；不要使用此技能。
+- 网站需要身份验证，而你没有相应凭据；或网站服务条款禁止自动化。
+- 网站涉及敏感账户（银行、医疗、政府），自动化可能导致账户锁定或合规问题。
 
-## Before launching the browser
+## 启动浏览器前
 
-- Confirm the URL and what state should be true after navigation.
-- Decide what evidence is needed: full-page screenshot, viewport screenshot, console log, network trace, HTML snapshot, extracted text.
-- Decide the viewport size that matters for the task (mobile vs desktop). Default to a desktop size unless the task is mobile-specific.
-- For local dev servers, confirm the server is running and the port is what you expect.
+- 确认 URL 以及导航后应该出现的状态。
+- 确定所需证据：整页截图、视口截图、控制台日志、网络记录、HTML 快照或提取的文本。
+- 确定任务所需的视口大小（移动端或桌面端）。除非任务针对移动端，否则默认使用桌面视口。
+- 对于本地开发服务器，确认服务器正在运行，且端口正确。
 
-## Driving the browser
+## 操作浏览器
 
-A typical verification session:
+常见验证流程如下：
 
-1. **Launch with a real-looking user agent** when the target is the public internet; an unrealistic UA flags automation traffic.
-2. **Set a sane viewport** (e.g., 1366×768 desktop, 390×844 iPhone-ish).
-3. **Navigate and wait for the right signal.** Prefer waiting for a specific selector or network-idle over arbitrary sleeps.
-4. **Capture evidence immediately** after the wait condition succeeds, before any interaction perturbs the state.
-5. **Interact deliberately.** One click at a time, with a wait between actions; re-screenshot after each meaningful state change.
-6. **Read the console and network panels** for unexpected errors, 4xx/5xx responses, or slow requests.
-7. **Close the browser cleanly** when done. Long-running browser sessions leak memory and hold ports.
+1. **目标为公网时，使用看起来真实的 user agent 启动。** 不真实的 UA 会暴露自动化流量。
+2. **设置合适的视口**（例如桌面端 1366×768、类似 iPhone 的 390×844）。
+3. **导航并等待合适的信号。** 优先等待特定选择器或网络空闲，不要随意睡眠等待。
+4. **等待条件满足后立即收集证据**，避免交互改变页面状态。
+5. **谨慎交互。** 每次只点击一处，操作之间等待；每次重要状态变化后重新截图。
+6. **检查控制台和网络面板**，关注意外错误、4xx/5xx 响应或缓慢请求。
+7. **完成后正常关闭浏览器。** 长时间运行的浏览器会占用内存和端口。
 
-## What evidence to record
+## 记录哪些证据
 
-For a verification task, deliver:
+验证任务应提供：
 
-- A full-page or viewport screenshot of each meaningful state.
-- The console log, filtered to warnings/errors.
-- Any non-2xx network response with the URL, status, and a short response body excerpt.
-- A short narration: "Navigated to X, observed Y, clicked Z, observed W."
+- 每个重要状态的整页或视口截图。
+- 筛选出警告和错误的控制台日志。
+- 每个非 2xx 网络响应的 URL、状态码和简短响应正文摘录。
+- 简短的过程说明：“导航到 X，看到 Y，点击 Z，看到 W。”
 
-For a UI bug repro, also record:
+复现 UI 问题时，还应记录：
 
-- The exact reproduction steps the user can follow.
-- Viewport size and (where relevant) device pixel ratio.
-- Whether the bug reproduces on first load vs after interaction.
+- 用户可以遵循的确切复现步骤。
+- 视口大小，以及适用时的设备像素比。
+- 问题是在首次加载时出现，还是交互后出现。
 
-## Login-gated pages
+## 需要登录的页面
 
-- Prefer programmatic auth (API token, magic link) over UI login.
-- If UI login is the only path, the user must provide credentials explicitly for this run. Never reuse credentials outside the session.
-- Do not store credentials in the session log, screenshot, or returned output.
+- 优先使用程序化身份验证（API token、magic link），而不是 UI 登录。
+- 如果只能通过 UI 登录，用户必须明确提供本次运行所用凭据。不要在会话外重复使用凭据。
+- 不要在会话日志、屏幕截图或返回内容中保存凭据。
 
-## Performance and politeness
+## 性能和礼貌
 
-- Throttle to one navigation per few seconds when touching shared infra.
-- Respect `robots.txt` for public sites you are inspecting at any volume.
-- Cancel navigations if a page exceeds a reasonable timeout (e.g., 30s); the page is broken or rate-limiting you.
-- Do not retry forever on failure. Retry once with a longer timeout, then escalate.
+- 操作共享基础设施时，每隔几秒最多导航一次。
+- 检查公网网站时，无论访问量多少，都要遵循 `robots.txt`。
+- 页面加载超过合理时限（例如 30 秒）时，取消导航；页面可能已损坏或正在限流。
+- 失败时不要无限重试。延长超时时间再试一次，然后升级处理。
 
-## Common failure modes
+## 常见失败情况
 
-- **Selector not found.** Page changed, or you are waiting before render. Take a screenshot to see actual state; adjust the selector.
-- **Click does nothing.** The element is offscreen, covered by a modal, or in a shadow DOM. Scroll into view or pierce the shadow root.
-- **Headless detection.** Some sites detect headless Chrome and serve a different page. Use a non-headless mode or a fingerprint-realistic configuration only when authorized.
-- **Cross-origin iframe blocking.** Iframes you do not own cannot be inspected; the page must offer the data outside the iframe or the task is infeasible.
+- **找不到 selector。** 页面可能已变化，或你在渲染前就开始等待。截图查看实际状态，然后调整 selector。
+- **点击无响应。** 元素可能在屏幕之外、被模态框遮挡或位于 shadow DOM 中。滚动到可见区域或访问 shadow root。
+- **检测到无头浏览器。** 某些网站会检测无头 Chrome 并返回不同页面。仅在获得授权时，使用非无头模式或真实指纹配置。
+- **跨域 iframe 限制。** 你无权检查不属于你的 iframe；页面必须在 iframe 外提供数据，否则任务无法执行。
 
-## Anti-patterns
+## 反模式
 
-- Long unsupervised browser sessions that drift from the original task.
-- Scraping behind authentication you do not own.
-- Captioning a screenshot with "looks good" without saying what state was loaded and what selectors confirmed it.
-- Treating a passing screenshot as proof of correctness across viewports you did not actually test.
+- 长时间无人监督的浏览器会话，逐渐偏离原始任务。
+- 抓取你无权访问的登录后内容。
+- 只说屏幕截图“看起来不错”，却不说明加载了什么状态以及哪些 selector 确认了结果。
+- 将通过的截图视为未经实际测试的其他视口也正确的证据。

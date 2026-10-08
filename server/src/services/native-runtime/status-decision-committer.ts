@@ -40,7 +40,7 @@ import {
   isExternalChatWaitAuthorizationContention,
   resolveExternalChatResponseWaitAuthorizationInTransaction,
 } from "./chat-attachment-reuse.js";
-import { issueService } from "../issues.js";
+import { executeIssuePostCommitActions, issueService, type IssuePostCommitAction } from "../issues.js";
 import { issueThreadInteractionService } from "../issue-thread-interactions.js";
 import { issueRecoveryActionService } from "../issue-recovery-actions.js";
 import { buildIssueBlockersResolvedWakeIdempotencyKey } from "../issue-dependency-wakeups.js";
@@ -1550,6 +1550,7 @@ export async function commitNativeStatusDecision(input: {
   }
   const reasonCode = input.decision.reasonCode;
   const publications: ActivityPublication[] = [];
+  const postCommitIssueActions: IssuePostCommitAction[] = [];
   const terminalRunsToEmit: (typeof heartbeatRuns.$inferSelect)[] = [];
   const committed = await input.db.transaction(async (tx) => {
     const coordinator = await tx
@@ -1900,6 +1901,7 @@ export async function commitNativeStatusDecision(input: {
         },
         tx,
         publications,
+        postCommitIssueActions,
       );
       if (!projected) throw new NativeStatusRaceError();
       updated = projected;
@@ -1936,12 +1938,14 @@ export async function commitNativeStatusDecision(input: {
             ? summary.trim()
             : null;
         });
-      const parent = issue.parentId
+      const completionParent = issue.parentId
         ? await issueSvc.getWakeableParentAfterChildCompletion(issue.parentId, {
             issueId: input.issueId,
             summary: completedResultSummary,
           })
         : null;
+      // Ordinary child completion is already durable in issueService.update.
+      const parent = completionParent?.onboardingCompletion ? completionParent : null;
       const parentIsDependent = parent
         ? dependents.some((dependent) => dependent.id === parent.id)
         : false;
@@ -2130,6 +2134,7 @@ export async function commitNativeStatusDecision(input: {
   });
 
   for (const publication of publications) publishActivity(publication);
+  await executeIssuePostCommitActions(input.db, postCommitIssueActions);
   for (const terminalRun of terminalRunsToEmit)
     await emitAgentTaskRun(input.db, terminalRun);
   return committed;

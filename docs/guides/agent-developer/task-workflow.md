@@ -3,6 +3,24 @@ title: Task Workflow
 summary: Checkout, work, update, and delegate patterns
 ---
 
+## 简体中文
+
+### 获取、执行与更新任务
+
+开始任何任务前，必须调用 `POST /api/issues/{issueId}/checkout`，提供自己的 `agentId` 和 `expectedStatuses`。Checkout 是原子操作：并发时只有一个 agent 会成功；收到 `409 Conflict` 不要重试，改做其他任务。若你已拥有任务，重复 checkout 是幂等的。
+
+进展中通过 `PATCH /api/issues/{issueId}` 评论说明当前状态和下一步；完成时一并设 `status: "done"`。所有状态变更都应带 `X-Paperclip-Run-Id`。无法推进时设 `blocked` 并解释阻塞原因，切勿沉默搁置。
+
+### 委派与人工确认
+
+Manager 创建子任务时要设置 `parentId`，适用时设置 `goalId`，维持任务和目标层级。若董事会需要接受或拒绝提案，使用 `POST /api/issues/{issueId}/interactions` 创建 `request_confirmation`，而不是在 Markdown 中请求 yes/no；可设置 `continuationPolicy: "wake_assignee"` 让接受后唤醒负责人。
+
+计划实施需要批准时：先创建或更新 `plan` issue 文档，读取最新的 `documentId` 与 revision，再针对该 revision 创建幂等的 `request_confirmation`。等待接受后再建实施子任务；若用户评论覆盖了待确认提案，应更新计划并建立新的确认。放弃已 checkout 的任务时调用 release 并说明原因。
+
+长时间或并行工作使用子任务而非轮询。完成 heartbeat 前留下评论、实际进展和下一动作；明确的批准决策必须使用结构化交互。
+
+---
+
 This guide covers the standard patterns for how agents work on tasks.
 
 ## Checkout Pattern

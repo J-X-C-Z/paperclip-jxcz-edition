@@ -90,15 +90,15 @@ export interface CompanySkillUpdateRow {
 }
 
 export function registerSkillsCommands(program: Command): void {
-  const skills = program.command("skills").description("Company and agent skill operations");
+  const skills = program.command("skills").description("公司和智能体技能操作");
 
   addCommonClientOptions(
     skills
       .command("browse")
-      .description("Browse app-shipped catalog skills without installing them")
-      .option("--kind <kind>", "Catalog kind filter (bundled or optional)")
-      .option("--category <slug>", "Catalog category filter")
-      .option("--query <text>", "Search catalog text")
+      .description("浏览应用内技能目录，不安装技能")
+      .option("--kind <kind>", "按目录类型筛选（bundled 或 optional）")
+      .option("--category <slug>", "按目录类别筛选")
+      .option("--query <text>", "搜索目录内容")
       .action(async (opts: CatalogBrowseOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -117,10 +117,10 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("search")
-      .description("Search app-shipped catalog skills without installing them")
-      .argument("<query>", "Search text")
-      .option("--kind <kind>", "Catalog kind filter (bundled or optional)")
-      .option("--category <slug>", "Catalog category filter")
+      .description("搜索应用内技能目录，不安装技能")
+      .argument("<query>", "搜索文本")
+      .option("--kind <kind>", "按目录类型筛选（bundled 或 optional）")
+      .option("--category <slug>", "按目录类别筛选")
       .action(async (query: string, opts: CatalogBrowseOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -139,8 +139,8 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("inspect")
-      .description("Inspect an app-shipped catalog skill before installing it")
-      .argument("<catalogRef>", "Catalog skill ID, key, or unique slug")
+      .description("安装前查看应用内技能目录详情")
+      .argument("<catalogRef>", "目录技能 ID、键或唯一标识")
       .action(async (catalogRef: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -159,10 +159,10 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("install")
-      .description("Install a catalog skill into the company skill library; does not attach it to agents")
-      .argument("<catalogRef>", "Catalog skill ID, key, or unique slug")
-      .option("--as <slug>", "Company skill slug override")
-      .option("--force", "Replace a same-key catalog-managed skill when the server allows it", false)
+      .description("将目录技能安装到公司技能库；不会将其关联到智能体")
+      .argument("<catalogRef>", "目录技能 ID、键或唯一标识")
+      .option("--as <slug>", "覆盖公司技能标识")
+      .option("--force", "服务器允许时替换同键的目录托管技能", false)
       .action(async (catalogRef: string, opts: CatalogInstallOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -189,7 +189,7 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("list")
-      .description("List company skills")
+      .description("列出公司技能")
       .action(async (opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -209,8 +209,8 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("show")
-      .description("Show company skill details")
-      .argument("<skillRef>", "Company skill ID, key, or unique slug")
+      .description("显示公司技能详情")
+      .argument("<skillRef>", "公司技能 ID、键或唯一标识")
       .action(async (skillRef: string, opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -229,9 +229,9 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("file")
-      .description("Print a company skill file")
-      .argument("<skillRef>", "Company skill ID, key, or unique slug")
-      .option("--path <path>", "Relative file path", "SKILL.md")
+      .description("输出公司技能文件")
+      .argument("<skillRef>", "公司技能 ID、键或唯一标识")
+      .option("--path <path>", "相对文件路径", "SKILL.md")
       .action(async (skillRef: string, opts: SkillFileOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -258,8 +258,8 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("import")
-      .description("Import company skills from a local path, GitHub, skills.sh, or URL source")
-      .argument("<source>", "Skill source")
+      .description("从本地路径、GitHub、skills.sh 或 URL 导入公司技能")
+      .argument("<source>", "技能来源")
       .action(async (source: string, opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -288,11 +288,11 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("create")
-      .description("Create a managed local company skill")
-      .requiredOption("--name <name>", "Skill name")
-      .option("--slug <slug>", "Skill slug")
-      .option("--description <text>", "Skill description")
-      .option("--body-file <path>", "Markdown body file; use - to read stdin")
+      .description("创建托管的本地公司技能")
+      .requiredOption("--name <name>", "技能名称")
+      .option("--slug <slug>", "技能标识")
+      .option("--description <text>", "技能说明")
+      .option("--body-file <path>", "Markdown 正文文件；使用 - 从 stdin 读取")
       .action(async (opts: SkillCreateOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -321,9 +321,9 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("scan-projects")
-      .description("Scan project workspaces for skills")
-      .option("--project-id <id>", "Project ID to scan; may be repeated", collectOptionValue, [] as string[])
-      .option("--workspace-id <id>", "Workspace ID to scan; may be repeated", collectOptionValue, [] as string[])
+      .description("扫描项目工作区中的技能")
+      .option("--project-id <id>", "要扫描的项目 ID；可重复指定", collectOptionValue, [] as string[])
+      .option("--workspace-id <id>", "要扫描的工作区 ID；可重复指定", collectOptionValue, [] as string[])
       .action(async (opts: SkillScanProjectsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -351,8 +351,8 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("check")
-      .description("Check company skill update status")
-      .argument("[skillRef]", "Company skill ID, key, or unique slug")
+      .description("检查公司技能更新状态")
+      .argument("[skillRef]", "公司技能 ID、键或唯一标识")
       .action(async (skillRef: string | undefined, opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -372,15 +372,15 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("update")
-      .description("Install company skill updates")
-      .argument("[skillRef]", "Company skill ID, key, or unique slug")
-      .option("--all", "Check all skills and install available updates", false)
-      .option("--force", "Discard local-modification or soft-audit holds; hard-stop audit findings still fail", false)
+      .description("安装公司技能更新")
+      .argument("[skillRef]", "公司技能 ID、键或唯一标识")
+      .option("--all", "检查所有技能并安装可用更新", false)
+      .option("--force", "忽略本地修改或软性审计阻止；硬性审计问题仍会导致失败", false)
       .action(async (skillRef: string | undefined, opts: SkillUpdateOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
           if (opts.all && skillRef?.trim()) {
-            throw new Error("Use either a skill reference or --all, not both.");
+            throw new Error("技能引用与 --all 不能同时使用。");
           }
           const rows = opts.all
             ? await updateAllCompanySkills(ctx, opts)
@@ -400,8 +400,8 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("audit")
-      .description("Audit installed company skill bytes without executing them")
-      .argument("[skillRef]", "Company skill ID, key, or unique slug")
+      .description("审计已安装公司技能文件，不执行其内容")
+      .argument("[skillRef]", "公司技能 ID、键或唯一标识")
       .action(async (skillRef: string | undefined, opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -421,10 +421,10 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("reset")
-      .description("Reset a catalog-managed company skill to its pinned installed origin")
-      .argument("<skillRef>", "Company skill ID, key, or unique slug")
-      .option("--yes", "Confirm reset without prompting", false)
-      .option("--force", "Discard local modifications or accept soft audit warnings; hard-stop audit findings still fail", false)
+      .description("将目录托管的公司技能重置为其固定的安装来源版本")
+      .argument("<skillRef>", "公司技能 ID、键或唯一标识")
+      .option("--yes", "无需提示即确认重置", false)
+      .option("--force", "丢弃本地修改或接受软性审计警告；硬性审计问题仍会导致失败", false)
       .action(async (skillRef: string, opts: ConfirmedSkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -449,9 +449,9 @@ export function registerSkillsCommands(program: Command): void {
   addCommonClientOptions(
     skills
       .command("remove")
-      .description("Remove a company skill")
-      .argument("<skillRef>", "Company skill ID, key, or unique slug")
-      .option("--yes", "Confirm removal without prompting", false)
+      .description("移除公司技能")
+      .argument("<skillRef>", "公司技能 ID、键或唯一标识")
+      .option("--yes", "无需提示即确认移除", false)
       .action(async (skillRef: string, opts: ConfirmedSkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -476,13 +476,13 @@ export function registerSkillsCommands(program: Command): void {
 }
 
 function registerAgentSkillCommands(skills: Command): void {
-  const agent = skills.command("agent").description("Agent desired-skill and runtime sync operations");
+  const agent = skills.command("agent").description("智能体期望技能与运行时同步操作");
 
   addCommonClientOptions(
     agent
       .command("list")
-      .description("List an agent runtime skill snapshot")
-      .argument("<agentRef>", "Agent ID or shortname/url-key")
+      .description("列出智能体运行时技能快照")
+      .argument("<agentRef>", "智能体 ID 或简称/URL 键")
       .action(async (agentRef: string, opts: SkillsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -505,9 +505,9 @@ function registerAgentSkillCommands(skills: Command): void {
   addCommonClientOptions(
     agent
       .command("sync")
-      .description("Merge an agent's desired company skills and sync runtime state")
-      .argument("<agentRef>", "Agent ID or shortname/url-key")
-      .option("--skill <skillRef>", "Desired company skill ID, key, or slug; may be repeated", collectOptionValue, [] as string[])
+      .description("合并智能体期望使用的公司技能并同步运行时状态")
+      .argument("<agentRef>", "智能体 ID 或简称/URL 键")
+      .option("--skill <skillRef>", "期望使用的公司技能 ID、键或标识；可重复指定", collectOptionValue, [] as string[])
       .requiredOption(
         "--mode <mode>",
         "Merge mode: add keeps other skills; remove deletes only named skills; replace destructively overwrites the complete set",
@@ -516,7 +516,7 @@ function registerAgentSkillCommands(skills: Command): void {
         try {
           const desiredSkills = opts.skill ?? [];
           if (desiredSkills.length === 0) {
-            throw new Error("At least one --skill value is required for skills agent sync.");
+            throw new Error("skills agent sync 至少需要一个 --skill 值。");
           }
           const ctx = resolveCommandContext(opts, { requireCompany: true });
           const agentRow = await resolveAgent(ctx, agentRef);
@@ -543,9 +543,9 @@ function registerAgentSkillCommands(skills: Command): void {
   addCommonClientOptions(
     agent
       .command("clear")
-      .description("Clear an agent's desired company skills and sync runtime state")
-      .argument("<agentRef>", "Agent ID or shortname/url-key")
-      .option("--yes", "Confirm clear without prompting", false)
+      .description("清除智能体期望使用的公司技能并同步运行时状态")
+      .argument("<agentRef>", "智能体 ID 或简称/URL 键")
+      .option("--yes", "无需提示即确认清除", false)
       .action(async (agentRef: string, opts: ConfirmedSkillOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -593,11 +593,11 @@ async function listCatalogSkills(
 async function getCatalogSkill(ctx: ResolvedClientContext, catalogRef: string): Promise<CatalogSkill> {
   const ref = catalogRef.trim();
   if (!ref) {
-    throw new Error("Catalog skill reference is required.");
+    throw new Error("必须提供技能目录引用。");
   }
   const detail = await ctx.api.get<CatalogSkill>(`/api/skills/catalog/ref?ref=${encodeURIComponent(ref)}`);
   if (!detail) {
-    throw new Error(`Catalog skill not found: ${catalogRef}`);
+    throw new Error(`未找到目录技能：${catalogRef}`);
   }
   return detail;
 }
@@ -608,7 +608,7 @@ export function resolveCompanySkillReference(
 ): CompanySkillReferenceTarget {
   const trimmed = reference.trim();
   if (!trimmed) {
-    throw new Error("Skill reference is required.");
+    throw new Error("必须提供技能引用。");
   }
 
   const byId = skills.find((skill) => skill.id === trimmed);
@@ -621,10 +621,10 @@ export function resolveCompanySkillReference(
   const bySlug = skills.filter((skill) => skill.slug === normalizedSlug);
   if (bySlug.length === 1 && bySlug[0]) return bySlug[0];
   if (bySlug.length > 1) {
-    throw new Error(`Ambiguous skill slug "${trimmed}". Use a skill ID or key instead.`);
+    throw new Error(`技能标识“${trimmed}”不唯一。请改用技能 ID 或键。`);
   }
 
-  throw new Error(`Skill not found: ${reference}`);
+  throw new Error(`未找到技能：${reference}`);
 }
 
 async function resolveCompanySkill(
@@ -646,7 +646,7 @@ async function checkCompanySkills(
       `/api/companies/${ctx.companyId}/skills/${encodeURIComponent(skill.id)}/update-status`,
     );
     if (!status) {
-      throw new Error(`No update status returned for skill ${skill.key}.`);
+      throw new Error(`技能 ${skill.key} 未返回更新状态。`);
     }
     rows.push({ skill: toSkillReferenceTarget(skill), status });
   }
@@ -728,7 +728,7 @@ async function auditCompanySkills(
       {},
     );
     if (!audit) {
-      throw new Error(`No audit result returned for skill ${skill.key}.`);
+      throw new Error(`技能 ${skill.key} 未返回审计结果。`);
     }
     rows.push({ skill: toSkillReferenceTarget(skill), audit });
   }
@@ -739,7 +739,7 @@ async function resolveAgent(ctx: ResolvedClientContext, agentRef: string): Promi
   const params = new URLSearchParams({ companyId: ctx.companyId ?? "" });
   const agent = await ctx.api.get<Agent>(`/api/agents/${encodeURIComponent(agentRef)}?${params.toString()}`);
   if (!agent) {
-    throw new Error(`Agent not found: ${agentRef}`);
+    throw new Error(`未找到智能体：${agentRef}`);
   }
   return agent;
 }
@@ -799,7 +799,7 @@ function printCatalogSkillDetail(skill: CatalogSkill): void {
   console.log(`description=${skill.description || "-"}`);
   console.log(`recommendedForRoles=${skill.recommendedForRoles.join(",") || "-"}`);
   console.log(`tags=${skill.tags.join(",") || "-"}`);
-  console.log("files:");
+  console.log("文件：");
   printTable(skill.files.map((file) => ({
     path: file.path,
     kind: file.kind,
@@ -810,7 +810,7 @@ function printCatalogSkillDetail(skill: CatalogSkill): void {
 
 function printCatalogInstallResult(result: CompanySkillInstallCatalogResult | null): void {
   if (!result) {
-    console.log("Catalog install returned no result.");
+    console.log("目录安装未返回结果。");
     return;
   }
   console.log(
@@ -942,7 +942,7 @@ function normalizeSkillSlug(value: string): string {
 
 function requireSkillRef(skillRef: string | undefined): string {
   if (!skillRef?.trim()) {
-    throw new Error("Skill reference is required unless --all is used.");
+    throw new Error("除非使用 --all，否则必须提供技能引用。");
   }
   return skillRef;
 }
@@ -1010,13 +1010,13 @@ async function readStdin(): Promise<string> {
 async function confirmDangerousAction(yes: boolean | undefined, message: string): Promise<void> {
   if (yes) return;
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("This command requires --yes when not running in an interactive terminal.");
+    throw new Error("在非交互终端中运行此命令时必须传入 --yes。");
   }
   const rl = createInterface({ input, output });
   try {
     const answer = (await rl.question(`${message} Type yes to continue: `)).trim().toLowerCase();
     if (answer !== "yes") {
-      throw new Error("Aborted.");
+      throw new Error("已中止。");
     }
   } finally {
     rl.close();

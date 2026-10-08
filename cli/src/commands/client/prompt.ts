@@ -39,13 +39,13 @@ export function registerPromptCommands(program: Command): void {
   addCommonClientOptions(
     program
       .command("agent-prompt")
-      .description("Create/update Paperclip work for an agent using an agent API key")
-      .argument("<agent>", "Agent ID, shortname, or name")
-      .argument("<agentApiKey>", "Agent API key")
-      .argument("<prompt...>", "Prompt text")
-      .option("--issue <issueId>", "Append as a comment to an existing issue")
-      .option("--title <title>", "Issue title when creating a new issue")
-      .option("--no-wake", "Do not wake the agent after creating/updating work")
+      .description("使用智能体 API 密钥为智能体创建或更新 Paperclip 工作")
+      .argument("<agent>", "智能体 ID、简称或名称")
+      .argument("<agentApiKey>", "智能体 API 密钥")
+      .argument("<prompt...>", "提示词文本")
+      .option("--issue <issueId>", "作为评论追加到现有任务")
+      .option("--title <title>", "创建新任务时使用的标题")
+      .option("--no-wake", "创建或更新工作后不唤醒智能体")
       .action(async (agent: string, agentApiKey: string, promptParts: string[], opts: PromptOptions) => {
         try {
           const result = await runAgentPrompt(agent, promptParts.join(" "), {
@@ -64,13 +64,13 @@ export function registerPromptCommands(program: Command): void {
   addCommonClientOptions(
     agent
       .command("prompt")
-      .description("Create/update Paperclip work using an agent persona")
-      .argument("<prompt...>", "Prompt text")
-      .option("--agent <agent>", "Agent ID, shortname, or name; defaults to profile/identity agent")
-      .option("--api-key-env <name>", "Read the agent API key from this environment variable")
-      .option("--issue <issueId>", "Append as a comment to an existing issue")
-      .option("--title <title>", "Issue title when creating a new issue")
-      .option("--no-wake", "Do not wake the agent after creating/updating work")
+      .description("使用智能体身份创建或更新 Paperclip 工作")
+      .argument("<prompt...>", "提示词文本")
+      .option("--agent <agent>", "智能体 ID、简称或名称；默认使用配置/身份中的智能体")
+      .option("--api-key-env <name>", "从此环境变量读取智能体 API 密钥")
+      .option("--issue <issueId>", "作为评论追加到现有任务")
+      .option("--title <title>", "创建新任务时使用的标题")
+      .option("--no-wake", "创建或更新工作后不唤醒智能体")
       .action(async (promptParts: string[], opts: PromptOptions) => {
         try {
           const apiKey = readApiKeyEnvOption(opts);
@@ -86,17 +86,17 @@ export function registerPromptCommands(program: Command): void {
       }),
   );
 
-  const board = program.command("board").description("Board operator operations");
+  const board = program.command("board").description("看板操作员操作");
   addCommonClientOptions(
     board
       .command("prompt")
-      .description("Create/update Paperclip work for an agent using board auth")
-      .requiredOption("--agent <agent>", "Target agent ID, shortname, or name")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--issue <issueId>", "Append as a comment to an existing issue")
-      .option("--title <title>", "Issue title when creating a new issue")
-      .option("--no-wake", "Do not wake the agent after creating/updating work")
-      .argument("<prompt...>", "Prompt text")
+      .description("使用看板身份验证为智能体创建或更新 Paperclip 工作")
+      .requiredOption("--agent <agent>", "目标智能体 ID、简称或名称")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--issue <issueId>", "作为评论追加到现有任务")
+      .option("--title <title>", "创建新任务时使用的标题")
+      .option("--no-wake", "创建或更新工作后不唤醒智能体")
+      .argument("<prompt...>", "提示词文本")
       .action(async (promptParts: string[], opts: PromptOptions) => {
         try {
           const result = await runBoardPrompt(opts.agent ?? "", promptParts.join(" "), opts);
@@ -116,11 +116,11 @@ export async function runAgentPrompt(
 ): Promise<PromptResult> {
   const ctx = resolveCommandContext(opts);
   if (ctx.profile.persona && ctx.profile.persona !== "agent") {
-    throw new Error(`Profile '${ctx.profileName}' is persona=${ctx.profile.persona}; use an agent profile or board prompt.`);
+    throw new Error(`配置“${ctx.profileName}”的 persona 为 ${ctx.profile.persona}；请使用 agent 配置或 board 提示词。`);
   }
   const body = normalizePrompt(prompt);
   const me = await ctx.api.get<Agent>("/api/agents/me");
-  if (!me) throw new Error("Agent authentication failed");
+  if (!me) throw new Error("智能体身份验证失败");
   const expectedRef = agentRef?.trim() || ctx.profile.agentId || me.id;
   assertAgentMatchesReference(me, expectedRef);
 
@@ -144,12 +144,12 @@ export async function runBoardPrompt(
 ): Promise<PromptResult> {
   const ctx = resolveCommandContext(opts, { requireCompany: true });
   if (ctx.profile.persona && ctx.profile.persona !== "board") {
-    throw new Error(`Profile '${ctx.profileName}' is persona=${ctx.profile.persona}; use an agent prompt command or a board profile.`);
+    throw new Error(`配置“${ctx.profileName}”的 persona 为 ${ctx.profile.persona}；请使用 agent 提示词命令或 board 配置。`);
   }
   const body = normalizePrompt(prompt);
   const query = new URLSearchParams({ companyId: ctx.companyId ?? "" });
   const agent = await ctx.api.get<Agent>(`${apiPath`/api/agents/${agentRef}`}?${query.toString()}`);
-  if (!agent) throw new Error(`Agent not found: ${agentRef}`);
+  if (!agent) throw new Error(`未找到智能体：${agentRef}`);
 
   return createOrCommentForAgent({
     api: ctx.api,
@@ -236,7 +236,7 @@ function wakeAgent(
 
 function normalizePrompt(prompt: string): string {
   const normalized = prompt.trim();
-  if (!normalized) throw new Error("Prompt text is required");
+  if (!normalized) throw new Error("必须提供提示词文本");
   return normalized;
 }
 
@@ -247,7 +247,7 @@ function defaultPromptTitle(prompt: string): string {
 
 function assertAgentMatchesReference(agent: Agent, reference: string): void {
   const normalized = reference.trim().toLowerCase();
-  if (!normalized) throw new Error("Agent reference is required");
+  if (!normalized) throw new Error("必须提供智能体引用");
   const matches = [
     agent.id,
     agent.name,
@@ -255,7 +255,7 @@ function assertAgentMatchesReference(agent: Agent, reference: string): void {
   ].some((value) => value?.toLowerCase() === normalized);
   if (!matches) {
     throw new Error(
-      `Agent key belongs to ${agent.name} (${agent.id}), not '${reference}'. Use the matching agent or a board prompt.`,
+      `智能体密钥属于 ${agent.name}（${agent.id}），而非“${reference}”。请使用对应智能体或看板提示。`,
     );
   }
 }
@@ -271,6 +271,6 @@ function agentSummary(agent: Agent): PromptResult["agent"] {
 function readApiKeyEnvOption(opts: PromptOptions): string | undefined {
   if (!opts.apiKeyEnv?.trim()) return undefined;
   const value = process.env[opts.apiKeyEnv.trim()]?.trim();
-  if (!value) throw new Error(`Environment variable ${opts.apiKeyEnv.trim()} is not set`);
+  if (!value) throw new Error(`未设置环境变量 ${opts.apiKeyEnv.trim()}`);
   return value;
 }

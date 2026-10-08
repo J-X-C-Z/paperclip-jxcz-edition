@@ -1090,20 +1090,140 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         collected.push({ ...item, dismissal });
       };
 
-      const pendingApprovals = await db
-        .select({
-          id: approvals.id,
-          type: approvals.type,
-          status: approvals.status,
-          requestedByAgentId: approvals.requestedByAgentId,
-          requestedByUserId: approvals.requestedByUserId,
-          payload: approvals.payload,
-          createdAt: approvals.createdAt,
-          updatedAt: approvals.updatedAt,
-        })
-        .from(approvals)
-        .where(and(eq(approvals.companyId, companyId), eq(approvals.status, "pending")))
-        .orderBy(desc(approvals.updatedAt), desc(approvals.id));
+      const openDecisionQuery = db.select({
+        id: decisions.id,
+        bundleId: decisions.bundleId,
+        originAgentId: decisions.originAgentId,
+        ruleKey: decisions.ruleKey,
+        title: decisions.title,
+        body: decisions.body,
+        status: decisions.status,
+        expiresAt: decisions.expiresAt,
+        originIssueId: decisions.originIssueId,
+        createdAt: decisions.createdAt,
+        updatedAt: decisions.updatedAt,
+      }).from(decisions).where(and(eq(decisions.companyId, companyId), eq(decisions.status, "open")))
+        .orderBy(desc(decisions.updatedAt), desc(decisions.id));
+      // Independent sources share the existing pool instead of paying each
+      // remote database round trip in sequence. Enrichment still follows its IDs.
+      const [
+        pendingApprovals,
+        interactionRows,
+        openDecisions,
+        pendingJoins,
+        recoveryRows,
+        blockedIssues,
+        reviewRows,
+        failedRows,
+        budgetOverview,
+        erroredAgents,
+      ] = await Promise.all([
+        db
+          .select({
+            id: approvals.id,
+            type: approvals.type,
+            status: approvals.status,
+            requestedByAgentId: approvals.requestedByAgentId,
+            requestedByUserId: approvals.requestedByUserId,
+            payload: approvals.payload,
+            createdAt: approvals.createdAt,
+            updatedAt: approvals.updatedAt,
+          })
+          .from(approvals)
+          .where(and(eq(approvals.companyId, companyId), eq(approvals.status, "pending")))
+          .orderBy(desc(approvals.updatedAt), desc(approvals.id)),
+        db
+          .select({
+            id: issueThreadInteractions.id,
+            issueId: issueThreadInteractions.issueId,
+            kind: issueThreadInteractions.kind,
+            status: issueThreadInteractions.status,
+            title: issueThreadInteractions.title,
+            summary: issueThreadInteractions.summary,
+            payload: issueThreadInteractions.payload,
+            addresseeAgentId: issueThreadInteractions.addresseeAgentId,
+            addresseeUserId: issueThreadInteractions.addresseeUserId,
+            createdByAgentId: issueThreadInteractions.createdByAgentId,
+            requestedResolverPolicy: issueThreadInteractions.requestedResolverPolicy,
+            effectiveResolverPolicy: issueThreadInteractions.effectiveResolverPolicy,
+            resolverPolicyProvenance: issueThreadInteractions.resolverPolicyProvenance,
+            effectiveResolverPolicySource: issueThreadInteractions.effectiveResolverPolicySource,
+            createdAt: issueThreadInteractions.createdAt,
+            updatedAt: issueThreadInteractions.updatedAt,
+          })
+          .from(issueThreadInteractions)
+          .where(and(
+            eq(issueThreadInteractions.companyId, companyId),
+            inArray(issueThreadInteractions.status, [...PENDING_INTERACTION_STATUSES]),
+          ))
+          .orderBy(desc(issueThreadInteractions.updatedAt), desc(issueThreadInteractions.id)),
+        options.all
+          ? openDecisionQuery
+          : openDecisionQuery.limit(openDecisionLimit),
+        db
+          .select({
+            id: joinRequests.id,
+            requestType: joinRequests.requestType,
+            status: joinRequests.status,
+            requestingUserId: joinRequests.requestingUserId,
+            requestEmailSnapshot: joinRequests.requestEmailSnapshot,
+            agentName: joinRequests.agentName,
+            adapterType: joinRequests.adapterType,
+            createdAt: joinRequests.createdAt,
+            updatedAt: joinRequests.updatedAt,
+          })
+          .from(joinRequests)
+          .innerJoin(invites, eq(joinRequests.inviteId, invites.id))
+          .where(and(
+            eq(joinRequests.companyId, companyId),
+            eq(invites.companyId, companyId),
+            eq(joinRequests.status, "pending_approval"),
+          ))
+          .orderBy(desc(joinRequests.updatedAt), desc(joinRequests.id)),
+        db
+          .select()
+          .from(issueRecoveryActions)
+          .where(and(
+            eq(issueRecoveryActions.companyId, companyId),
+            inArray(issueRecoveryActions.status, [...OPEN_RECOVERY_STATUSES]),
+            inArray(issueRecoveryActions.ownerType, [...HUMAN_RECOVERY_OWNER_TYPES]),
+          ))
+          .orderBy(desc(issueRecoveryActions.updatedAt), desc(issueRecoveryActions.id)),
+        issueService(db).list(companyId, { status: "blocked", includeBlockedBy: true }),
+        db
+          .select({
+            id: issues.id,
+            companyId: issues.companyId,
+            identifier: issues.identifier,
+            title: issues.title,
+            status: issues.status,
+            priority: issues.priority,
+            assigneeAgentId: issues.assigneeAgentId,
+            assigneeUserId: issues.assigneeUserId,
+            executionState: issues.executionState,
+            createdAt: issues.createdAt,
+            updatedAt: issues.updatedAt,
+          })
+          .from(issues)
+          .where(and(eq(issues.companyId, companyId), eq(issues.status, "in_review"), executionIssueCondition()))
+          .orderBy(desc(issues.updatedAt), desc(issues.id)),
+        listAttentionExhaustedRuns(db, companyId),
+        budgetService(db).overview(companyId),
+        db
+          .select({
+            id: agents.id,
+            companyId: agents.companyId,
+            name: agents.name,
+            role: agents.role,
+            status: agents.status,
+            errorReason: agents.errorReason,
+            createdAt: agents.createdAt,
+            updatedAt: agents.updatedAt,
+          })
+          .from(agents)
+          .where(and(eq(agents.companyId, companyId), eq(agents.status, "error")))
+          .orderBy(desc(agents.updatedAt), desc(agents.id)),
+      ]);
 
       const pendingApprovalIds = pendingApprovals.map((approval) => approval.id);
       const approvalIssueRows = pendingApprovalIds.length > 0
@@ -1161,31 +1281,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const interactionRows = await db
-        .select({
-          id: issueThreadInteractions.id,
-          issueId: issueThreadInteractions.issueId,
-          kind: issueThreadInteractions.kind,
-          status: issueThreadInteractions.status,
-          title: issueThreadInteractions.title,
-          summary: issueThreadInteractions.summary,
-          payload: issueThreadInteractions.payload,
-          addresseeAgentId: issueThreadInteractions.addresseeAgentId,
-          addresseeUserId: issueThreadInteractions.addresseeUserId,
-          createdByAgentId: issueThreadInteractions.createdByAgentId,
-          requestedResolverPolicy: issueThreadInteractions.requestedResolverPolicy,
-          effectiveResolverPolicy: issueThreadInteractions.effectiveResolverPolicy,
-          resolverPolicyProvenance: issueThreadInteractions.resolverPolicyProvenance,
-          effectiveResolverPolicySource: issueThreadInteractions.effectiveResolverPolicySource,
-          createdAt: issueThreadInteractions.createdAt,
-          updatedAt: issueThreadInteractions.updatedAt,
-        })
-        .from(issueThreadInteractions)
-        .where(and(
-          eq(issueThreadInteractions.companyId, companyId),
-          inArray(issueThreadInteractions.status, [...PENDING_INTERACTION_STATUSES]),
-        ))
-        .orderBy(desc(issueThreadInteractions.updatedAt), desc(issueThreadInteractions.id));
       // Addressee invokability needs the org graph; the audience line also needs
       // the creator's name whenever the effective policy excludes it, so a
       // creator-excluding row pulls the roster in too (PAP-17287).
@@ -1269,23 +1364,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const openDecisionQuery = db.select({
-        id: decisions.id,
-        bundleId: decisions.bundleId,
-        originAgentId: decisions.originAgentId,
-        ruleKey: decisions.ruleKey,
-        title: decisions.title,
-        body: decisions.body,
-        status: decisions.status,
-        expiresAt: decisions.expiresAt,
-        originIssueId: decisions.originIssueId,
-        createdAt: decisions.createdAt,
-        updatedAt: decisions.updatedAt,
-      }).from(decisions).where(and(eq(decisions.companyId, companyId), eq(decisions.status, "open")))
-        .orderBy(desc(decisions.updatedAt), desc(decisions.id));
-      const openDecisions = options.all
-        ? await openDecisionQuery
-        : await openDecisionQuery.limit(openDecisionLimit);
       // Bundle titles let the feed render a single "Agent proposed N decisions"
       // group header over sibling decisions (v1 still decides each independently).
       const bundleIds = [...new Set(openDecisions.map((decision) => decision.bundleId).filter((value): value is string => Boolean(value)))];
@@ -1324,27 +1402,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
           detail: { kind: "generic", summaryExcerpt: decision.body.slice(0, DETAIL_EXCERPT_LENGTH), images: [] },
         }));
       }
-
-      const pendingJoins = await db
-        .select({
-          id: joinRequests.id,
-          requestType: joinRequests.requestType,
-          status: joinRequests.status,
-          requestingUserId: joinRequests.requestingUserId,
-          requestEmailSnapshot: joinRequests.requestEmailSnapshot,
-          agentName: joinRequests.agentName,
-          adapterType: joinRequests.adapterType,
-          createdAt: joinRequests.createdAt,
-          updatedAt: joinRequests.updatedAt,
-        })
-        .from(joinRequests)
-        .innerJoin(invites, eq(joinRequests.inviteId, invites.id))
-        .where(and(
-          eq(joinRequests.companyId, companyId),
-          eq(invites.companyId, companyId),
-          eq(joinRequests.status, "pending_approval"),
-        ))
-        .orderBy(desc(joinRequests.updatedAt), desc(joinRequests.id));
 
       for (const join of pendingJoins) {
         const label = join.requestType === "agent"
@@ -1386,15 +1443,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const recoveryRows = await db
-        .select()
-        .from(issueRecoveryActions)
-        .where(and(
-          eq(issueRecoveryActions.companyId, companyId),
-          inArray(issueRecoveryActions.status, [...OPEN_RECOVERY_STATUSES]),
-          inArray(issueRecoveryActions.ownerType, [...HUMAN_RECOVERY_OWNER_TYPES]),
-        ))
-        .orderBy(desc(issueRecoveryActions.updatedAt), desc(issueRecoveryActions.id));
       const [recoveryIssueMap, recoveryImageMap] = await Promise.all([
         issueSummaryMap(
           db,
@@ -1450,7 +1498,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const blockedIssues = await issueService(db).list(companyId, { status: "blocked", includeBlockedBy: true });
       type BlockedAttentionIssue = IssueSubjectRow & {
         blockerAttention?: {
           state?: string;
@@ -1570,23 +1617,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const reviewRows = await db
-        .select({
-          id: issues.id,
-          companyId: issues.companyId,
-          identifier: issues.identifier,
-          title: issues.title,
-          status: issues.status,
-          priority: issues.priority,
-          assigneeAgentId: issues.assigneeAgentId,
-          assigneeUserId: issues.assigneeUserId,
-          executionState: issues.executionState,
-          createdAt: issues.createdAt,
-          updatedAt: issues.updatedAt,
-        })
-        .from(issues)
-        .where(and(eq(issues.companyId, companyId), eq(issues.status, "in_review"), executionIssueCondition()))
-        .orderBy(desc(issues.updatedAt), desc(issues.id));
       const reviewIssueIds = reviewRows.map((row) => row.id);
       const pendingReviewApprovalRows = reviewIssueIds.length === 0
         ? []
@@ -1661,7 +1691,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const failedRows = await listAttentionExhaustedRuns(db, companyId);
       const failedIssueIds = failedRows.map((row) => readRunIssueId(row.contextSnapshot));
       const failedAgentIds = [...new Set(failedRows.map((row) => row.agentId))];
       const oldestFailedRunCreatedAt = failedRows.reduce<Date | null>((oldest, row) => {
@@ -1755,7 +1784,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
         }));
       }
 
-      const budgetOverview = await budgetService(db).overview(companyId);
       for (const incident of budgetOverview.activeIncidents) {
         const observedPercent = budgetObservedPercent(incident.amountObserved, incident.amountLimit);
         if (incident.thresholdType !== "hard" && observedPercent < 85) continue;
@@ -1808,21 +1836,6 @@ export function attentionService(db: Db, serviceOptions: AttentionServiceOptions
           },
         }));
       }
-
-      const erroredAgents = await db
-        .select({
-          id: agents.id,
-          companyId: agents.companyId,
-          name: agents.name,
-          role: agents.role,
-          status: agents.status,
-          errorReason: agents.errorReason,
-          createdAt: agents.createdAt,
-          updatedAt: agents.updatedAt,
-        })
-        .from(agents)
-        .where(and(eq(agents.companyId, companyId), eq(agents.status, "error")))
-        .orderBy(desc(agents.updatedAt), desc(agents.id));
 
       for (const agent of erroredAgents) {
         const dedupKey = `agent_error:${agent.id}`;

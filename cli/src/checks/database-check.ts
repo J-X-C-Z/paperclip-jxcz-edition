@@ -17,9 +17,9 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
       return {
         name: "Database",
         status: "fail",
-        message: "PostgreSQL mode selected but no connection string configured",
+        message: "已选择 PostgreSQL 模式，但尚未配置连接字符串",
         canRepair: false,
-        repairHint: "Run `paperclipai configure --section database`",
+        repairHint: "运行 `paperclipai configure --section database` 修改配置",
       };
     }
 
@@ -30,15 +30,15 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
       return {
         name: "Database",
         status: "pass",
-        message: "PostgreSQL connection successful",
+        message: "PostgreSQL 连接成功",
       };
     } catch (err) {
       return {
         name: "Database",
         status: "fail",
-        message: `Cannot connect to PostgreSQL: ${err instanceof Error ? err.message : String(err)}`,
+        message: `无法连接 PostgreSQL：${err instanceof Error ? err.message : String(err)}`,
         canRepair: false,
-        repairHint: "Check your connection string and ensure PostgreSQL is running",
+        repairHint: "检查连接字符串，并确认 PostgreSQL 正在运行",
       };
     }
   }
@@ -77,15 +77,15 @@ export async function databaseCheck(config: PaperclipConfig, configPath?: string
     return {
       name: "Database",
       status: "pass",
-      message: `Embedded PostgreSQL configured at ${dataDir} (port ${config.database.embeddedPostgresPort})`,
+      message: `已配置内嵌 PostgreSQL：${dataDir}（端口 ${config.database.embeddedPostgresPort}）`,
     };
   }
 
   return {
     name: "Database",
     status: "fail",
-    message: `Unknown database mode: ${String(config.database.mode)}`,
+    message: `未知数据库模式：${String(config.database.mode)}`,
     canRepair: false,
-    repairHint: "Run `paperclipai configure --section database`",
+    repairHint: "运行 `paperclipai configure --section database` 修改配置",
   };
 }

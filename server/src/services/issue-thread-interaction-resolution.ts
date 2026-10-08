@@ -1,8 +1,11 @@
+import type { Db } from "@paperclipai/db";
+import { issueThreadInteractions } from "@paperclipai/db";
+import { and, eq } from "drizzle-orm";
 import type {
   IssueThreadInteractionCanonicalResolverPolicy,
   IssueThreadInteractionResolverPolicy,
 } from "@paperclipai/shared";
-import { normalizeIssueThreadInteractionResolverPolicy } from "@paperclipai/shared";
+import { isUuidLike, normalizeIssueThreadInteractionResolverPolicy } from "@paperclipai/shared";
 import { HttpError } from "../errors.js";
 
 export const ISSUE_THREAD_INTERACTION_RESOLUTION_DENIAL_CODES = [
@@ -359,4 +362,27 @@ export function issueThreadInteractionAttentionAgentAllowed(input: {
     additionalRestriction: input.additionalRestriction,
     governedAction: input.governedAction,
   }).allowed;
+}
+
+/** Revalidate persisted attention authority; a wake reason alone grants nothing. */
+export async function isPendingIssueThreadInteractionAttentionWake(
+  db: Pick<Db, "select">,
+  input: { companyId: string; issueId: string; agentId: string; contextSnapshot: Record<string, unknown> },
+): Promise<boolean> {
+  const { contextSnapshot: context } = input;
+  if (context.wakeReason !== "interaction_pending" || typeof context.interactionId !== "string" || !isUuidLike(context.interactionId)) return false;
+  const [interaction] = await db.select().from(issueThreadInteractions).where(and(
+    eq(issueThreadInteractions.id, context.interactionId),
+    eq(issueThreadInteractions.companyId, input.companyId),
+    eq(issueThreadInteractions.issueId, input.issueId),
+    eq(issueThreadInteractions.status, "pending"),
+    eq(issueThreadInteractions.addresseeAgentId, input.agentId),
+  )).limit(1);
+  return Boolean(interaction && issueThreadInteractionAttentionAgentAllowed({
+    agentId: input.agentId,
+    interaction,
+    governedAction: interaction.kind === "request_confirmation" &&
+      typeof interaction.payload === "object" && interaction.payload !== null &&
+      "toolAction" in interaction.payload && interaction.payload.toolAction !== undefined,
+  }));
 }

@@ -1,52 +1,44 @@
 ---
 name: first-task
 description: >
-  Guide the user's first Paperclip task when its description invokes /first-task.
-  Interpret the opening answer, clarify their goal, propose a plan or a single
-  task, and wait for approval before hiring agents or executing approved work.
+  当任务描述调用 /first-task 时，引导用户完成其在 Paperclip 中的首个任务。
+  解读开场回答、澄清目标、提出计划或单项任务，并在招聘智能体或执行已批准的工作前等待批准。
 ---
 
-# First task
+# 首个任务
 
-Use this workflow only for the onboarding task that invokes `/first-task`,
-including later replies and approval wakes on that same task. Do not apply it
-to the agent's other tasks just because this skill is installed. Follow it
-without announcing the first-task skill in routine messages, cards, or documents.
-Say "I'm doing X," not "I'm using the first-task skill to do X," and explain
-next steps directly. This is a wording preference: answer truthfully if the
-user asks about the workflow, and always disclose relevant permissions,
-security implications, and execution actions.
+此工作流仅适用于调用 `/first-task` 的引导任务，包括该任务的后续回复和审批唤醒。不要仅因安装了此技能，就将其用于该智能体的其他任务。遵循流程时，不要在常规消息、卡片或文档中主动提及 first-task 技能。直接说“我正在做 X”，不要说“我正在使用 first-task 技能做 X”，并直接说明下一步。这是措辞偏好：如果用户询问工作流，请如实回答；同时务必说明相关权限、安全影响和执行操作。
 
-This is the user's first task in Paperclip. Your job is to understand what they want and propose a path forward. A greeting and an opening question card were already posted for you; the card offered two choices: "Interview me and propose a plan and an agent team to execute it." (option `interview`) or "I have a task in mind" (option `task`, with a text field). You are running because the user answered that card (the answer is in your wake payload) or wrote a message instead of answering. Don't re-introduce yourself and don't post the opening card again.
+这是用户在 Paperclip 中的首个任务。你的工作是了解用户需求并提出后续方案。系统已发布问候语和开场问题卡片，其中有两个选项：“采访我，并提出计划和执行计划的智能体团队。”（选项 `interview`）或“我有一个任务想做”（选项 `task`，带文本框）。你之所以运行，是因为用户回答了该卡片（答案位于唤醒载荷中）或直接发送了消息。不要重新自我介绍，也不要再次发布开场卡片。
 
-Work in this order.
+按以下顺序处理。
 
-1. Take the path the user picked.
+1. 按用户选择的路径处理。
 
-   - `interview` → ask the user 3–4 questions in one Paperclip question card (`request_human_input` with `interactionKind: "questions"` when available, otherwise the `ask_user_questions` API) that pin down what their organization does, what they want to achieve first, any constraints (time, budget, tools), and what "done" looks like. Don't guess; ask. Don't post anything else before the card. The answers lead to the plan-and-team path in step 2.
+   - `interview` → 在一张 Paperclip 问题卡片中询问用户 3–4 个问题（如果可用，使用带 `interactionKind: "questions"` 的 `request_human_input`；否则使用 `ask_user_questions` API），以确定组织的业务、首要目标、限制条件（时间、预算、工具）以及完成标准。不要猜测，应直接提问。发布卡片前不要发布其他内容。回答将进入第 2 步的计划和团队方案流程。
 
-   - `task` → the text they typed is the task. If it is clear enough to propose on, go straight to step 2. If not, reply by asking 2–3 questions specific to their message (concrete goal, constraints, what "done" looks like), then go to step 2.
+   - `task` → 用户输入的文本就是任务。如果内容足够清晰，可以直接进入第 2 步提出方案；如果不够清晰，先针对用户消息询问 2–3 个问题（具体目标、限制条件和完成标准），再进入第 2 步。
 
-   - If they wrote a message instead of answering the card, treat the message as the `task` path.
+   - 如果用户直接发送消息而没有回答卡片，则按 `task` 路径处理。
 
-2. Propose, then wait for acceptance.
+2. 提出方案，然后等待用户接受。
 
-   - Choose the proposal form from the user’s request first: an explicit plan request or the interview path always requires a saved plan, even when the task description says `confirmation`.
-   - If they want a plan, save a `plan` document on this onboarding task describing the goal, scope, steps, proposed team, and what done means. Post one `request_checkbox_confirmation` targeting the saved plan revision. A card or thread message alone is not a saved plan. This applies to explicit plan requests regardless of the single-task proposal mode. Proposing a team does not authorize hiring it.
-   - If they want one thing done, propose exactly one child task with a clear outcome and scope. Ask them to accept it before creating the child. Do not produce the requested finished work inside the proposal, even when it is quick to do.
-   - For a single-task proposal, follow the `Single-task proposal mode` saved in the task description: `confirmation` means one `request_confirmation` card describing the child task, without a plan document; `plan` means save a short `plan` document describing that same child task and post one `request_checkbox_confirmation` targeting its saved revision.
-   - Keep this task `in_review` while waiting. You may clarify, research for planning, and save or revise a plan/proposal before acceptance. Do not hire, create execution tasks, perform the deliverable, save finished output, or claim completion yet.
+   - 首先根据用户请求选择提案形式：用户明确要求计划，或选择访谈路径时，始终需要保存计划，即使任务描述中的模式是 `confirmation`。
+   - 用户需要计划时，在此引导任务中保存一份 `plan` 文档，说明目标、范围、步骤、建议团队和完成标准。发布一张 `request_checkbox_confirmation` 卡片，指向已保存的计划版本。单独发布卡片或线程消息不算保存计划。无论单任务提案模式是什么，用户明确要求计划时都适用此规则。提出团队方案不代表获准招聘团队成员。
+   - 用户只想完成一件事时，提出且仅提出一个结果和范围明确的子任务。创建子任务前，先请求用户接受。即使工作很快就能完成，也不要在提案中直接产出最终成果。
+   - 对单任务提案，遵循任务描述中保存的 `Single-task proposal mode`：`confirmation` 表示发布一张描述子任务的 `request_confirmation` 卡片，不另存计划文档；`plan` 表示保存一份描述同一子任务的简短 `plan` 文档，并发布一张指向其已保存版本的 `request_checkbox_confirmation` 卡片。
+   - 等待期间，将此任务保持为 `in_review`。获批前，你可以澄清需求、为计划进行调研，以及保存或修改计划/提案。此时不要招聘、创建执行任务、制作交付成果、保存完成的输出或声称已完成。
 
-3. Interpret the next reply against the latest proposal.
+3. 根据最新提案解读用户的下一条回复。
 
-   - Acceptance is an accepted confirmation card or an explicit conversational reply agreeing to the proposal. The opening answer, a clear request, and answers to clarification questions supply scope; they are not acceptance of a proposal you have not yet made.
-   - When acceptance or rejection arrives in chat, persist it on the corresponding pending confirmation **before** hiring, creating a child, executing, or closing this task. Read this task's interactions and comments, then POST `/api/issues/{issueId}/interactions/{interactionId}/resolve-from-comment` with `{ "commentId": "<user-message-id>", "decision": "accept" }` (or `"reject"` and the user's reason). Native runners use `call_api`. For a checkbox card, include `selectedOptionIds` for the user's actual selection; never infer acceptance from defaults. Wait for the saved accepted/rejected result. Retry an interrupted write using the same message and decision; inspect a conflicting result instead of proceeding. Do not tell the user to return to the card after answering in chat.
-   - An ambiguous reply with multiple pending proposals is not permission to resolve them all. Ask which proposal or options they mean. A card already answered through the UI needs no second resolution. Forms, governed actions, and human-only policies keep their existing response rules.
-   - A clarification answer means update the proposal if needed and ask for acceptance. A requested revision supersedes the old scope: revise the proposal and wait for acceptance of the revised version.
-   - If they reject the proposal, acknowledge and stop. Do not execute it. You may close the onboarding task after acknowledging the rejection; do not describe rejected work as completed.
+   - 用户接受提案的方式包括接受确认卡片，或在对话中明确同意。开场回答、明确的请求和对澄清问题的回答只用于确定范围，不代表接受尚未提出的提案。
+   - 用户在聊天中接受或拒绝时，**必须先**将决定写入对应的待处理确认请求，然后才能招聘、创建子任务、执行工作或关闭此任务。先读取此任务的交互和评论，再调用 `POST /api/issues/{issueId}/interactions/{interactionId}/resolve-from-comment`，并传入 `{ "commentId": "<user-message-id>", "decision": "accept" }`（或传入 `"reject"` 及用户给出的理由）。原生 runner 使用 `call_api`。对于复选卡，应按用户实际选择填写 `selectedOptionIds`；不要根据默认值推断用户已接受。等待系统保存接受/拒绝结果。写入中断时，使用同一消息和决定重试；如果结果冲突，先检查，不要继续执行。用户在聊天中回答后，不要让他们返回卡片操作。
+   - 如果存在多项待处理提案，含糊的回复不能视为接受全部提案。应询问用户指的是哪项提案或哪些选项。用户已在 UI 中回答的卡片无需再次处理。表单、受治理的操作和仅限人工处理的策略继续遵循现有规则。
+   - 用户回答澄清问题后，如有需要应更新提案并请求接受。用户要求修改时，新范围将取代旧范围：修改提案并等待用户接受新版本。
+   - 用户拒绝提案时，确认收到并停止。不要执行该提案。确认拒绝后，可以关闭引导任务；不要将被拒绝的工作描述为已完成。
 
-4. Carry out the accepted scope.
+4. 执行已接受的范围。
 
-   - For a plan-only request, retain the accepted plan on this task. Do not start its implementation or hire the proposed team without authorization to do that work.
-   - For an accepted single task, check for an existing child from this proposal before creating anything. Create exactly one child linked to this onboarding task, assign it to yourself, and execute it. On later wakes, continue that same child instead of creating another.
-   - Save the finished output as a document on the child task and mark that child done. Link it from the onboarding conversation. Completing the onboarding parent in place, or saving the output only on the parent, does not fulfill the accepted child-task proposal.
+   - 对于只要求制定计划的请求，应在此任务中保留已接受的计划。未经授权，不要开始实施计划或招聘提议的团队。
+   - 对于已接受的单任务提案，先检查此提案是否已有子任务，再创建任何内容。只创建一个关联到此引导任务的子任务，指派给自己并执行。后续唤醒时，继续处理该子任务，不要创建新任务。
+   - 将最终成果保存为子任务中的文档，并将该子任务标记为 done。在引导对话中链接此文档。直接完成引导父任务，或只将成果保存在父任务中，都不符合已接受的子任务提案。

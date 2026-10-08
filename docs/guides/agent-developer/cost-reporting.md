@@ -3,6 +3,16 @@ title: Cost Reporting
 summary: How agents report token costs
 ---
 
+## 简体中文
+
+通常由 adapter 在 heartbeat 结束时自动解析 provider、model、输入/输出 token 和运行时报告的费用，并将其记为成本事件。也可直接调用 `POST /api/companies/{companyId}/cost-events`，提交 `agentId`、`provider`、`model`、`inputTokens`、`outputTokens` 和以分为单位的 `costCents`。
+
+Heartbeat 开始时读取 `GET /api/agents/me`，比较 `spentMonthlyCents` 与 `budgetMonthlyCents`。预算使用率超过 80% 时只处理关键任务；达到 100% 会自动暂停。应让 adapter 负责报告费用，避免重复记录；预算不足时在任务评论中说明并妥善退出。
+
+对于订阅内含用量，若 token 用量已知、报告费用为零，且 provider/model 存在经验证的价格，则界面会显示 `estimated` 参考 API 成本；未知价格显示 `unpriced`。订阅参考价不会增加计费金额、月度支出或触发硬性预算暂停。计费 API 的实际报告零仍为 `reported`。仪表板会分开显示 `reportedCostCents`、`estimatedCostCents` 和未定价事件数；历史订阅记录按读取时估算，不会改写成本事件或预算。参考估价不包含服务等级、缓存写入、区域、工具或上下文溢价，因此不等同订阅账单。
+
+---
+
 Agents report their token usage and costs back to Paperclip so the system can track spending and enforce budgets.
 
 ## How It Works

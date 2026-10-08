@@ -114,7 +114,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
     EmbeddedPostgres = mod.default as EmbeddedPostgresCtor;
   } catch {
     throw new Error(
-      "Embedded PostgreSQL support requires dependency `embedded-postgres`. Reinstall dependencies and try again.",
+      "嵌入式 PostgreSQL 需要 `embedded-postgres` 依赖。请重新安装依赖后重试。",
     );
   }
   await prepareEmbeddedPostgresNativeRuntime();
@@ -147,7 +147,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
       await instance.initialise();
     } catch (error) {
       throw formatEmbeddedPostgresError(error, {
-        fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
+        fallbackMessage: `在 ${dataDir} 初始化嵌入式 PostgreSQL 集群失败（端口 ${port}）`,
         recentLogs: logBuffer.getRecentLogs(),
       });
     }
@@ -161,7 +161,7 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
     await instance.start();
   } catch (error) {
     throw formatEmbeddedPostgresError(error, {
-      fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+      fallbackMessage: `在端口 ${port} 启动嵌入式 PostgreSQL 失败`,
       recentLogs: logBuffer.getRecentLogs(),
     });
   }
@@ -185,7 +185,7 @@ async function openConfiguredDb(configPath: string): Promise<{
 }> {
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`未在 ${configPath} 找到配置文件。`);
   }
 
   let embeddedHandle: EmbeddedPostgresHandle | null = null;
@@ -213,7 +213,7 @@ async function openConfiguredDb(configPath: string): Promise<{
 
     const connectionString = nonEmpty(config.database.connectionString);
     if (!connectionString) {
-      throw new Error(`Config at ${configPath} does not define a database connection string.`);
+      throw new Error(`配置文件 ${configPath} 中未定义数据库连接字符串。`);
     }
 
     await applyPendingMigrations(connectionString);
@@ -242,12 +242,12 @@ export async function disableAllRoutinesInConfig(
     ?? nonEmpty(process.env.PAPERCLIP_COMPANY_ID)
     ?? null;
   if (!companyId) {
-    throw new Error("Company ID is required. Pass --company-id or set PAPERCLIP_COMPANY_ID.");
+    throw new Error("必须提供公司 ID。请传入 --company-id 或设置 PAPERCLIP_COMPANY_ID。");
   }
 
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`未在 ${configPath} 找到配置文件。`);
   }
 
   let embeddedHandle: EmbeddedPostgresHandle | null = null;
@@ -266,7 +266,7 @@ export async function disableAllRoutinesInConfig(
     } else {
       const connectionString = nonEmpty(config.database.connectionString);
       if (!connectionString) {
-        throw new Error(`Config at ${configPath} does not define a database connection string.`);
+        throw new Error(`配置文件 ${configPath} 中未定义数据库连接字符串。`);
       }
       await applyPendingMigrations(connectionString);
       db = createDb(connectionString) as ClosableDb;
@@ -333,15 +333,15 @@ export async function disableAllRoutinesCommand(options: RoutinesDisableAllOptio
 }
 
 export function registerRoutineCommands(program: Command): void {
-  const routinesCommand = program.command("routines").description("Local routine maintenance commands");
+  const routinesCommand = program.command("routines").description("本地例行任务维护命令");
 
   routinesCommand
     .command("disable-all")
-    .description("Pause all non-archived routines in the configured local instance for one company")
-    .option("-c, --config <path>", "Path to config file")
-    .option("-d, --data-dir <path>", "Paperclip data directory root (isolates state from ~/.paperclip)")
-    .option("-C, --company-id <id>", "Company ID")
-    .option("--json", "Output raw JSON")
+    .description("暂停配置的本地实例中指定公司的所有未归档例行任务")
+    .option("-c, --config <path>", "配置文件路径")
+    .option("-d, --data-dir <path>", "Paperclip 数据目录根路径（将状态与 ~/.paperclip 隔离）")
+    .option("-C, --company-id <id>", "公司 ID")
+    .option("--json", "输出原始 JSON")
     .action(async (opts: RoutinesDisableAllOptions) => {
       try {
         await disableAllRoutinesCommand(opts);

@@ -699,6 +699,49 @@ describe("agent live run routes", () => {
     );
   });
 
+  it("returns every live company run with all=true without applying the limit or historical padding", async () => {
+    const rows = Array.from({ length: 60 }, (_, index) => ({
+      id: `run-${index}`,
+      companyId: "company-1",
+      status: "running",
+      invocationSource: "on_demand",
+      triggerDetail: "manual",
+      startedAt: new Date("2026-04-10T09:30:00.000Z"),
+      finishedAt: null,
+      createdAt: new Date(
+        `2026-04-10T09:${String(index % 60).padStart(2, "0")}:00.000Z`,
+      ),
+      agentId: "agent-1",
+      agentName: "Builder",
+      adapterType: "codex_local",
+      logBytes: 0,
+      livenessState: "healthy",
+      livenessReason: null,
+      continuationAttempt: 0,
+      lastUsefulActionAt: null,
+      nextAction: null,
+      lastOutputAt: null,
+      lastOutputSeq: null,
+      lastOutputStream: null,
+      lastOutputBytes: 0,
+      processStartedAt: null,
+      issueId: "issue-1",
+    }));
+    const { db, limit } = createLiveRunsDbStub(rows);
+
+    const res = await requestApp(await createApp(db), (baseUrl) =>
+      request(baseUrl).get(
+        "/api/companies/company-1/live-runs?all=true&minCount=75",
+      ),
+    );
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body).toHaveLength(60);
+    expect(limit).not.toHaveBeenCalled();
+    expect(db.select).toHaveBeenCalledTimes(1);
+    expect(mockRunSecretRedactionRegistry.redactForRuns).toHaveBeenCalledTimes(1);
+  });
+
   it("treats explicit zero or invalid live run limit as the capped default", async () => {
     const rows = Array.from({ length: 75 }, (_, index) => ({
       id: `run-${index}`,
@@ -1469,6 +1512,63 @@ describe("agent live run routes", () => {
         mockChatRunRetries.prepareFailedChatRunRetry,
       ).not.toHaveBeenCalled();
     });
+  });
+
+  it.each([
+    ["assigned direct report", {}, {}, {}, 202],
+    ["peer", { reportsTo: "other-agent" }, {}, {}, 403],
+    ["unbound wake", {}, {}, { payload: null }, 403],
+    ["other task assignee", {}, { assigneeAgentId: "other-agent" }, {}, 403],
+    ["other company task", {}, { companyId: "company-2" }, {}, 404],
+    ["chat task", {}, { conversationAgentId: routeAgentId }, {}, 403],
+    ["fresh session override", {}, {}, { forceFreshSession: true }, 403],
+    ["timer override", {}, {}, { source: "timer" }, 403],
+  ])("scopes manager wake: %s", async (_name, agentPatch, issuePatch, bodyPatch, status) => {
+    mockAgentService.getById.mockResolvedValue({
+      id: routeAgentId, companyId: "company-1", reportsTo: "manager-agent", ...agentPatch,
+    });
+    mockIssueService.getById.mockResolvedValue({
+      id: failedChatIssueId, identifier: "ORI-115", companyId: "company-1",
+      assigneeAgentId: routeAgentId, status: "in_progress", ...issuePatch,
+    });
+    const res = await requestApp(await createApp({}, {
+      type: "agent", agentId: "manager-agent", companyId: "company-1",
+    }), url => request(url).post(`/api/agents/${routeAgentId}/wakeup`).send({
+      payload: { issueId: failedChatIssueId, taskId: "forged-task", resumeIntent: true, interruptedRunId: "forged-run" },
+      ...bodyPatch,
+    }));
+    expect(res.status, JSON.stringify(res.body)).toBe(status);
+    if (status === 202) {
+      expect(mockAccessService.decide.mock.calls.map(([input]) => input.action)).toEqual(["agent:wake", "issue:comment"]);
+      expect(mockHeartbeatService.wakeup).toHaveBeenCalledWith(routeAgentId, expect.objectContaining({
+        payload: {
+          issueId: failedChatIssueId, taskId: failedChatIssueId, taskKey: "ORI-115",
+          commentId: undefined, wakeCommentId: undefined, wakeCommentIds: undefined,
+        },
+      }));
+    } else expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
+  });
+
+  it.each(["agent:wake", "issue:comment"])("retains %s denial for manager wakes", async (deniedAction) => {
+    mockAgentService.getById.mockResolvedValue({ id: routeAgentId, companyId: "company-1", reportsTo: "manager-agent" });
+    mockIssueService.getById.mockResolvedValue({ id: failedChatIssueId, companyId: "company-1", assigneeAgentId: routeAgentId });
+    mockAccessService.decide.mockImplementation(async ({ action }) => ({
+      allowed: action !== deniedAction, explanation: "Denied by policy.", action,
+    }));
+    const res = await requestApp(await createApp({}, {
+      type: "agent", agentId: "manager-agent", companyId: "company-1",
+    }), url => request(url).post(`/api/agents/${routeAgentId}/wakeup`).send({ payload: { issueId: failedChatIssueId } }));
+    expect(res.status).toBe(403);
+    expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
+  });
+
+  it("keeps legacy cross-agent invocation self-only", async () => {
+    mockAgentService.getById.mockResolvedValue({ id: routeAgentId, companyId: "company-1", reportsTo: "manager-agent" });
+    const res = await requestApp(await createApp({}, {
+      type: "agent", agentId: "manager-agent", companyId: "company-1",
+    }), url => request(url).post(`/api/agents/${routeAgentId}/heartbeat/invoke`).send({ payload: { issueId: failedChatIssueId } }));
+    expect(res.status).toBe(403);
+    expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
   });
 
   it("allows implicit local administrators to opt one manual run into raw provider tracing", async () => {

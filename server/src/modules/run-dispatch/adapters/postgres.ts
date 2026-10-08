@@ -1,3 +1,5 @@
+import { isChildCompletionAttentionWake } from "../../../services/issue-dependency-wakeups.js";
+import { isPendingIssueThreadInteractionAttentionWake } from "../../../services/issue-thread-interaction-resolution.js";
 import { hasConversationContinuationPolicy } from "../../../services/conversation-continuation.js";
 import { getExecutionBlocker } from "../../../services/execution-blocker.js";
 import { getNativeReviewAssignment } from "../../../services/native-runtime/native-review-participant.js";
@@ -531,7 +533,8 @@ export function createPostgresRunDispatchAdapter(
     const isInteractionWake = allowsIssueInteractionWake(
       context,
       ISSUE_TREE_CONTROL_INTERACTION_WAKE_REASONS,
-    );
+    ) || await isPendingIssueThreadInteractionAttentionWake(dbOrTx, input)
+      || await isChildCompletionAttentionWake(dbOrTx, input);
     const resumeIntent = context.resumeIntent === true || context.followUpRequested === true;
     const wakeReason = readNonEmptyString(context.wakeReason);
     const retryReason =

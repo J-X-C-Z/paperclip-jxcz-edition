@@ -195,19 +195,19 @@ interface ReviewBulkOptions extends PipelineOptions {
 }
 
 export function registerPipelineCommands(program: Command): void {
-  const pipelines = program.command("pipelines").description("Pipeline and case operations");
+  const pipelines = program.command("pipelines").description("流水线与案件操作");
 
   addPipelineOptions(
     pipelines
       .command("create")
-      .description("Create a pipeline")
-      .requiredOption("--key <key>", "Pipeline key")
-      .requiredOption("--name <name>", "Pipeline name")
-      .option("--description <text>", "Pipeline description")
-      .option("--project-id <id>", "Project ID")
-      .option("--enforce-transitions", "Only allow configured transitions")
-      .option("--stages-json <json>", "Pipeline stage array as JSON")
-      .option("--stages-file <path>", "Read pipeline stage array from JSON file")
+      .description("创建流水线")
+      .requiredOption("--key <key>", "流水线键")
+      .requiredOption("--name <name>", "流水线名称")
+      .option("--description <text>", "流水线说明")
+      .option("--project-id <id>", "项目 ID")
+      .option("--enforce-transitions", "仅允许已配置的流转")
+      .option("--stages-json <json>", "JSON 格式的流水线阶段数组")
+      .option("--stages-file <path>", "从 JSON 文件读取流水线阶段数组")
       .action((opts: CreateOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const body: JsonObject = {
@@ -226,7 +226,7 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("list")
-      .description("List pipelines")
+      .description("列出流水线")
       .action((opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const rows = await ctx.api.get<PipelineSummary[]>(apiPath`/api/companies/${ctx.companyId}/pipelines`) ?? [];
@@ -239,8 +239,8 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("get")
-      .description("Get a pipeline by ID or key")
-      .argument("<pipeline>", "Pipeline ID or key")
+      .description("按 ID 或键获取流水线")
+      .argument("<pipeline>", "流水线 ID 或键")
       .action((pipeline: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printPipeline(await getPipeline(ctx, pipeline), ctx);
@@ -250,10 +250,10 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("set-transitions")
-      .description("Replace a pipeline transition edge set")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .requiredOption("--file <path>", "JSON file with transition array or { transitions }")
-      .option("--enforce", "Enable transition enforcement")
+      .description("替换流水线流转边集合")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .requiredOption("--file <path>", "包含流转数组或 { transitions } 对象的 JSON 文件")
+      .option("--enforce", "启用流转限制")
       .action((pipeline: string, opts: TransitionSetOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
@@ -264,12 +264,12 @@ export function registerPipelineCommands(program: Command): void {
       })),
   );
 
-  const guidance = pipelines.command("guidance").description("Pipeline guidance document operations");
+  const guidance = pipelines.command("guidance").description("流水线指导文档操作");
   addPipelineOptions(
     guidance
       .command("get")
-      .description("Get pipeline guidance")
-      .argument("<pipeline>", "Pipeline ID or key")
+      .description("获取流水线指导文档")
+      .argument("<pipeline>", "流水线 ID 或键")
       .action((pipeline: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
@@ -280,16 +280,16 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     guidance
       .command("put")
-      .description("Create or replace pipeline guidance")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .option("--file <path>", "Markdown file")
-      .option("--body <markdown>", "Markdown body")
-      .option("--title <title>", "Document title")
+      .description("创建或替换流水线指导文档")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .option("--file <path>", "Markdown 文件")
+      .option("--body <markdown>", "Markdown 正文")
+      .option("--title <title>", "文档标题")
       .action((pipeline: string, opts: GuidancePutOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
         const body = opts.body ?? (opts.file ? await readFile(opts.file, "utf8") : undefined);
-        if (body === undefined) throw new Error("Guidance body is required. Pass --file or --body.");
+        if (body === undefined) throw new Error("必须提供指导文档正文。请传入 --file 或 --body。");
         printOutput(await ctx.api.put(apiPath`/api/pipelines/${pipelineId}/documents/guidance`, {
           title: opts.title ?? "Pipeline guidance",
           body,
@@ -300,16 +300,16 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("set-automation")
-      .description("Set a run_routine onEnter automation on a stage")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .requiredOption("--stage <key>", "Stage key")
-      .requiredOption("--routine <id>", "Routine ID")
-      .option("--note <text>", "Automation note")
+      .description("为阶段设置 run_routine onEnter 自动化")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .requiredOption("--stage <key>", "阶段键")
+      .requiredOption("--routine <id>", "例程 ID")
+      .option("--note <text>", "自动化备注")
       .action((pipeline: string, opts: AutomationOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const detail = await getPipeline(ctx, pipeline);
         const stage = detail.stages?.find((item) => item.key === opts.stage);
-        if (!stage) throw new Error(`Stage not found on pipeline ${detail.key}: ${opts.stage}`);
+        if (!stage) throw new Error(`在流水线 ${detail.key} 中未找到阶段：${opts.stage}`);
         const config = {
           ...(stage.config ?? {}),
           onEnter: {
@@ -326,18 +326,18 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("ingest")
-      .description("Ingest one case into a pipeline")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .option("--case-key <key>", "Case idempotency key")
-      .requiredOption("--title <title>", "Case title")
-      .option("--summary <text>", "Case summary")
-      .option("--fields-json <json>", "Case fields JSON object")
-      .option("--fields-file <path>", "Read case fields JSON object from file")
-      .option("--stage <key>", "Initial stage key")
-      .option("--parent-case <id>", "Parent case ID")
-      .option("--workspace-ref-json <json>", "Workspace ref JSON object")
-      .option("--blocked-by <csv>", "Comma-separated blocker case IDs")
-      .option("--blocked-by-key <csv>", "Comma-separated blocker case keys")
+      .description("向流水线导入单个案件")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .option("--case-key <key>", "案件幂等键")
+      .requiredOption("--title <title>", "案件标题")
+      .option("--summary <text>", "案件摘要")
+      .option("--fields-json <json>", "案件字段 JSON 对象")
+      .option("--fields-file <path>", "从文件读取案件字段 JSON 对象")
+      .option("--stage <key>", "初始阶段键")
+      .option("--parent-case <id>", "父案件 ID")
+      .option("--workspace-ref-json <json>", "工作区引用 JSON 对象")
+      .option("--blocked-by <csv>", "阻塞案件 ID，以逗号分隔")
+      .option("--blocked-by-key <csv>", "阻塞案件键，以逗号分隔")
       .action((pipeline: string, opts: IngestOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
@@ -349,9 +349,9 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("ingest-batch")
-      .description("Ingest a batch of cases")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .requiredOption("--file <path>", "JSON file containing an array or { items }")
+      .description("批量导入案件")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .requiredOption("--file <path>", "包含数组或 { items } 对象的 JSON 文件")
       .action((pipeline: string, opts: IngestBatchOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
@@ -364,12 +364,12 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("cases")
-      .description("List cases in a pipeline")
-      .argument("<pipeline>", "Pipeline ID or key")
-      .option("--stage <key>", "Filter by stage key")
-      .option("--parent <caseId>", "Filter by parent case ID")
-      .option("--terminal", "Only terminal cases")
-      .option("--q <text>", "Search title/summary")
+      .description("列出流水线中的案件")
+      .argument("<pipeline>", "流水线 ID 或键")
+      .option("--stage <key>", "按阶段键筛选")
+      .option("--parent <caseId>", "按父案件 ID 筛选")
+      .option("--terminal", "仅显示终态案件")
+      .option("--q <text>", "搜索标题/摘要")
       .action((pipeline: string, opts: CasesOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const pipelineId = await resolvePipelineId(ctx, pipeline);
@@ -384,15 +384,15 @@ export function registerPipelineCommands(program: Command): void {
       })),
   );
 
-  const caseCommand = pipelines.command("case").description("Pipeline case operations");
+  const caseCommand = pipelines.command("case").description("流水线案件操作");
   registerCaseCommands(caseCommand);
 
   addPipelineOptions(
     pipelines
       .command("review-inbox")
-      .description("List cases waiting in review stages")
-      .option("--pipeline <idOrKey>", "Filter to one pipeline")
-      .option("--parent <caseId>", "Filter by parent case ID")
+      .description("列出等待审查的案件")
+      .option("--pipeline <idOrKey>", "筛选单条流水线")
+      .option("--parent <caseId>", "按父案件 ID 筛选")
       .action((opts: ReviewInboxOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const params = new URLSearchParams();
@@ -407,8 +407,8 @@ export function registerPipelineCommands(program: Command): void {
   addPipelineOptions(
     pipelines
       .command("review-bulk")
-      .description("Apply bulk review decisions: approve, reject, or request_changes")
-      .requiredOption("--file <path>", "JSON file containing an array or { items }")
+      .description("批量应用审查决定：approve、reject 或 request_changes")
+      .requiredOption("--file <path>", "包含数组或 { items } 对象的 JSON 文件")
       .action((opts: ReviewBulkOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const input = await readJsonFile(opts.file);
@@ -422,8 +422,8 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("get")
-      .description("Get a case")
-      .argument("<caseId>", "Case ID")
+      .description("获取案件")
+      .argument("<caseId>", "案件 ID")
       .action((caseId: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printCaseDetail(await ctx.api.get<CaseDetail>(apiPath`/api/cases/${caseId}`), ctx);
@@ -433,8 +433,8 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("events")
-      .description("List case events")
-      .argument("<caseId>", "Case ID")
+      .description("列出案件事件")
+      .argument("<caseId>", "案件 ID")
       .action((caseId: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.get(apiPath`/api/cases/${caseId}/events`), { json: ctx.json });
@@ -444,8 +444,8 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("rollup")
-      .description("Get recursive case rollup")
-      .argument("<caseId>", "Case ID")
+      .description("获取案件递归汇总")
+      .argument("<caseId>", "案件 ID")
       .action((caseId: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.get(apiPath`/api/cases/${caseId}/rollup`), { json: ctx.json });
@@ -455,16 +455,16 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("edit")
-      .description("Edit case content")
-      .argument("<caseId>", "Case ID")
-      .option("--expected-version <n>", "Expected case version")
-      .option("--title <title>", "New title")
-      .option("--summary <text>", "New summary")
-      .option("--fields-json <json>", "Replacement fields JSON object")
-      .option("--fields-file <path>", "Read replacement fields from JSON file")
-      .option("--workspace-ref-json <json>", "Workspace ref JSON object")
-      .option("--parent-case <id>", "Parent case ID")
-      .option("--lease-token <token>", "Lease token")
+      .description("编辑案件内容")
+      .argument("<caseId>", "案件 ID")
+      .option("--expected-version <n>", "预期案件版本")
+      .option("--title <title>", "新标题")
+      .option("--summary <text>", "新摘要")
+      .option("--fields-json <json>", "替换字段的 JSON 对象")
+      .option("--fields-file <path>", "从 JSON 文件读取替换字段")
+      .option("--workspace-ref-json <json>", "工作区引用 JSON 对象")
+      .option("--parent-case <id>", "父案件 ID")
+      .option("--lease-token <token>", "租约令牌")
       .action((caseId: string, opts: EditOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const body: JsonObject = {};
@@ -483,9 +483,9 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("claim")
-      .description("Claim a case lease")
-      .argument("<caseId>", "Case ID")
-      .option("--lease-seconds <n>", "Lease duration in seconds")
+      .description("认领案件租约")
+      .argument("<caseId>", "案件 ID")
+      .option("--lease-seconds <n>", "租约时长（秒）")
       .action((caseId: string, opts: ClaimOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const body = opts.leaseSeconds ? { leaseSeconds: parsePositiveInt(opts.leaseSeconds, "lease seconds") } : {};
@@ -496,10 +496,10 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("release")
-      .description("Release a case lease")
-      .argument("<caseId>", "Case ID")
-      .option("--lease-token <token>", "Lease token")
-      .option("--force", "Force release as board/user")
+      .description("释放案件租约")
+      .argument("<caseId>", "案件 ID")
+      .option("--lease-token <token>", "租约令牌")
+      .option("--force", "以看板/用户身份强制释放")
       .action((caseId: string, opts: ReleaseOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.post(apiPath`/api/cases/${caseId}/release`, {
@@ -512,13 +512,13 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("transition")
-      .description("Transition a case to another stage")
-      .argument("<caseId>", "Case ID")
-      .requiredOption("--to <stageKey>", "Target stage key")
-      .requiredOption("--expected-version <n>", "Expected case version")
-      .option("--reason <text>", "Transition reason")
-      .option("--lease-token <token>", "Lease token")
-      .option("--accept-suggestion <id>", "Accepted suggestion ID")
+      .description("将案件流转到其他阶段")
+      .argument("<caseId>", "案件 ID")
+      .requiredOption("--to <stageKey>", "目标阶段键")
+      .requiredOption("--expected-version <n>", "预期案件版本")
+      .option("--reason <text>", "流转原因")
+      .option("--lease-token <token>", "租约令牌")
+      .option("--accept-suggestion <id>", "已接受的建议 ID")
       .action((caseId: string, opts: CaseTransitionOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.post(apiPath`/api/cases/${caseId}/transition`, {
@@ -534,11 +534,11 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("suggest")
-      .description("Suggest a transition without moving the case")
-      .argument("<caseId>", "Case ID")
-      .requiredOption("--to <stageKey>", "Target stage key")
-      .requiredOption("--rationale <text>", "Suggestion rationale")
-      .option("--confidence <n>", "Confidence 0..1")
+      .description("建议流转，但不移动案件")
+      .argument("<caseId>", "案件 ID")
+      .requiredOption("--to <stageKey>", "目标阶段键")
+      .requiredOption("--rationale <text>", "建议理由")
+      .option("--confidence <n>", "置信度，范围 0..1")
       .action((caseId: string, opts: SuggestOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const body: JsonObject = {
@@ -553,14 +553,14 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("resolve-suggestion")
-      .description("Accept or dismiss a pending transition suggestion")
-      .argument("<caseId>", "Case ID")
-      .requiredOption("--suggestion <id>", "Suggestion ID")
-      .option("--accept", "Accept the suggestion")
-      .option("--dismiss", "Dismiss the suggestion")
-      .option("--expected-version <n>", "Expected case version")
-      .option("--reason <text>", "Decision reason")
-      .option("--lease-token <token>", "Lease token")
+      .description("接受或忽略待处理的流转建议")
+      .argument("<caseId>", "案件 ID")
+      .requiredOption("--suggestion <id>", "建议 ID")
+      .option("--accept", "接受建议")
+      .option("--dismiss", "忽略建议")
+      .option("--expected-version <n>", "预期案件版本")
+      .option("--reason <text>", "决策原因")
+      .option("--lease-token <token>", "租约令牌")
       .action((caseId: string, opts: ResolveSuggestionOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const decision = exactlyOneFlag(opts.accept, opts.dismiss, "--accept", "--dismiss") === "--accept" ? "accept" : "dismiss";
@@ -578,20 +578,20 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("review")
-      .description("Approve, reject, or request changes for a case in a review stage")
-      .argument("<caseId>", "Case ID")
-      .option("--approve", "Approve the case")
-      .option("--reject", "Reject the case")
-      .option("--request-changes", "Request changes for the case")
-      .option("--reason <text>", "Decision reason")
-      .requiredOption("--expected-version <n>", "Expected case version")
-      .option("--edits-json <json>", "Review edits JSON")
-      .option("--edits-file <path>", "Read review edits JSON from file")
-      .option("--title <title>", "Edit title before decision")
-      .option("--summary <text>", "Edit summary before decision")
-      .option("--fields-json <json>", "Edit fields before decision")
-      .option("--fields-file <path>", "Read edit fields from JSON file")
-      .option("--lease-token <token>", "Lease token")
+      .description("批准、拒绝或要求修改处于审查阶段的案件")
+      .argument("<caseId>", "案件 ID")
+      .option("--approve", "批准案件")
+      .option("--reject", "拒绝案件")
+      .option("--request-changes", "要求修改案件")
+      .option("--reason <text>", "决策原因")
+      .requiredOption("--expected-version <n>", "预期案件版本")
+      .option("--edits-json <json>", "审查修改内容的 JSON")
+      .option("--edits-file <path>", "从文件读取审查修改 JSON")
+      .option("--title <title>", "决策前修改标题")
+      .option("--summary <text>", "决策前修改摘要")
+      .option("--fields-json <json>", "决策前修改字段")
+      .option("--fields-file <path>", "从 JSON 文件读取修改字段")
+      .option("--lease-token <token>", "租约令牌")
       .action((caseId: string, opts: ReviewOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         const decision = reviewDecisionFromOptions(opts);
@@ -609,9 +609,9 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("block")
-      .description("Replace a case blocker set")
-      .argument("<caseId>", "Case ID")
-      .requiredOption("--by <csv>", "Comma-separated blocker case IDs, or empty string to clear")
+      .description("替换案件阻塞项集合")
+      .argument("<caseId>", "案件 ID")
+      .requiredOption("--by <csv>", "逗号分隔的阻塞案件 ID；传入空字符串以清除")
       .action((caseId: string, opts: BlockOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.put(apiPath`/api/cases/${caseId}/blockers`, {
@@ -623,8 +623,8 @@ function registerCaseCommands(caseCommand: Command): void {
   addPipelineOptions(
     caseCommand
       .command("open-conversation")
-      .description("Open or return the case conversation issue")
-      .argument("<caseId>", "Case ID")
+      .description("打开或返回案件对话任务")
+      .argument("<caseId>", "案件 ID")
       .action((caseId: string, opts: PipelineOptions) => withPipelineErrors(async () => {
         const ctx = resolvePipelineContext(opts);
         printOutput(await ctx.api.post(apiPath`/api/cases/${caseId}/open-conversation`, {}), { json: ctx.json });
@@ -644,14 +644,14 @@ async function resolvePipelineId(ctx: ResolvedClientContext & { companyId: strin
   if (looksLikeUuid(pipeline)) return pipeline;
   const rows = await ctx.api.get<PipelineSummary[]>(apiPath`/api/companies/${ctx.companyId}/pipelines`) ?? [];
   const match = rows.find((row) => row.key === pipeline || row.id === pipeline);
-  if (!match) throw new Error(`Pipeline not found by key or id: ${pipeline}`);
+  if (!match) throw new Error(`未找到键或 ID 为 ${pipeline} 的流水线`);
   return match.id;
 }
 
 async function getPipeline(ctx: ResolvedClientContext & { companyId: string }, pipeline: string): Promise<PipelineDetail> {
   const pipelineId = await resolvePipelineId(ctx, pipeline);
   const detail = await ctx.api.get<PipelineDetail>(apiPath`/api/pipelines/${pipelineId}`);
-  if (!detail) throw new Error(`Pipeline not found: ${pipeline}`);
+  if (!detail) throw new Error(`未找到流水线：${pipeline}`);
   return detail;
 }
 
@@ -679,7 +679,7 @@ async function buildReviewEdits(opts: ReviewOptions): Promise<JsonObject | undef
 }
 
 async function readJsonFromOptions(json?: string, file?: string): Promise<unknown | undefined> {
-  if (json && file) throw new Error("Pass either inline JSON or a JSON file, not both.");
+  if (json && file) throw new Error("内联 JSON 和 JSON 文件只能使用一种。");
   if (json) return parseJson(json);
   if (file) return readJsonFile(file);
   return undefined;
@@ -693,13 +693,13 @@ function parseJson(value: string): unknown {
   try {
     return JSON.parse(value) as unknown;
   } catch (error) {
-    throw new Error(`Invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`JSON 无效：${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 function asObject(value: unknown): JsonObject {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Expected a JSON object.");
+    throw new Error("预期为 JSON 对象。");
   }
   return value as JsonObject;
 }
@@ -710,7 +710,7 @@ function asOptionalObject(value: unknown): JsonObject | undefined {
 
 function parsePositiveInt(value: string, label: string): number {
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`Invalid ${label}: ${value}`);
+  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${label} 无效：${value}`);
   return parsed;
 }
 
@@ -727,7 +727,7 @@ function looksLikeUuid(value: string): boolean {
 }
 
 function exactlyOneFlag(first: boolean | undefined, second: boolean | undefined, firstName: string, secondName: string): string {
-  if (Boolean(first) === Boolean(second)) throw new Error(`Pass exactly one of ${firstName} or ${secondName}.`);
+  if (Boolean(first) === Boolean(second)) throw new Error(`请在 ${firstName} 和 ${secondName} 中选择一个。`);
   return first ? firstName : secondName;
 }
 
@@ -738,7 +738,7 @@ function reviewDecisionFromOptions(opts: ReviewOptions): "approve" | "reject" | 
     opts.requestChanges ? { flag: "--request-changes", decision: "request_changes" as const } : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
   if (selected.length !== 1) {
-    throw new Error("Pass exactly one of --approve, --reject, or --request-changes.");
+    throw new Error("--approve、--reject 和 --request-changes 只能选择一个。");
   }
   return selected[0]!.decision;
 }
@@ -826,7 +826,7 @@ function handlePipelineError(error: unknown): never {
     if (stage !== undefined) parts.push(`currentStage=${formatStageForError(stage)}`);
     console.error(pc.red(parts.join(" ")));
     if (error.status === 409) {
-      console.error(pc.yellow("Recovery: re-read the case with `paperclipai pipelines case get <case-id> --json`, then retry with the current version/stage."));
+      console.error(pc.yellow("恢复方法：使用 `paperclipai pipelines case get <case-id> --json` 重新读取案件，然后使用当前版本/阶段重试。"));
     }
     if (error.details !== undefined && !code) console.error(pc.dim(`details=${JSON.stringify(error.details)}`));
     process.exit(1);

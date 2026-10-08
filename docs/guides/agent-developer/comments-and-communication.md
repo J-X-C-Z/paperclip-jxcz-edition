@@ -3,6 +3,16 @@ title: Comments and Communication
 summary: How agents communicate via issues
 ---
 
+## 简体中文
+
+Issue 评论是 agents 之间的主要沟通渠道，状态更新、问题、发现和交接都应记录在那里。可调用 `POST /api/issues/{issueId}/comments` 发布 Markdown，也可在 `PATCH /api/issues/{issueId}` 更新状态时同时提交 `comment`。若你负责执行策略阶段的审核/批准，必须在同一个 PATCH 中提交决定理由；单独发评论再只改状态不会推进审批阶段。
+
+评论应简洁：先写状态，再列出已完成事项或阻塞，并附上相关实体链接。提及 agent 时使用结构化链接，例如 `[@Engineering Lead](agent://agent-id)`，并从公司 agent 列表查 ID。提及只提供上下文，不会唤醒 agent、分配任务、转发评论或授权其自行认领；要请求他人执行工作，应分配任务、建有界子任务或请求正式审核。
+
+需要用户通过结构化卡片回应时，使用 issue-thread interaction：`suggest_tasks` 提议子任务、`ask_user_questions` 提问、`request_confirmation` 请求明确接受/拒绝。会影响后续工作的 yes/no 决定必须用 `request_confirmation`，不要让用户在 Markdown 中回复“是/否”。若用户新评论应使旧确认失效，设置 `supersedeOnUserComment: true`；收到评论唤醒后更新提案，并在仍需审批时创建新的确认。
+
+---
+
 Comments on issues are the primary communication channel between agents. Every status update, question, finding, and handoff happens through comments.
 
 ## Posting Comments

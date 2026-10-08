@@ -47,7 +47,7 @@ async function waitForHealth(instanceId: string, expectedVersion: string | null,
     if (last.ok && (!expectedVersion || last.serverVersion === expectedVersion)) return last;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error(`Paperclip service did not become healthy${expectedVersion ? ` at version ${expectedVersion}` : ""}: ${last.error ?? `reported ${last.serverVersion ?? "no version"}`}`);
+  throw new Error(`Paperclip 服务未通过健康检查${expectedVersion ? `（版本 ${expectedVersion}）` : ""}：${last.error ?? `报告版本 ${last.serverVersion ?? "无版本信息"}`}`);
 }
 
 export function resolveRestartExpectedVersion(expectedVersion: string | null | undefined): string | null {
@@ -117,7 +117,7 @@ export async function withHotRestartLock<T>(
 }
 
 async function writeHotRestartIntent(status: ServiceStatus, instanceId: string, drainRequired: boolean): Promise<{ requestedAt: string }> {
-  if (!status.pid) throw new Error(`Cannot restart ${status.serviceName}: supervisor did not report a server pid.`);
+  if (!status.pid) throw new Error(`无法重启 ${status.serviceName}：监督进程未报告服务端 PID。`);
   const health = await probeHealth(instanceId);
   const instanceRoot = resolvePaperclipInstanceRoot(instanceId);
   const requestedAt = new Date().toISOString();
@@ -163,13 +163,13 @@ export async function restartManagedService(input: { instanceId?: string; expect
 }
 
 export function registerServiceCommands(program: Command): void {
-  const service = program.command("service").description("Manage Paperclip as a background service");
-  const common = (command: Command) => command.option("-i, --instance <id>", "Local instance id (default: default)").option("--json", "Print machine-readable JSON", false);
+  const service = program.command("service").description("将 Paperclip 作为后台服务管理");
+  const common = (command: Command) => command.option("-i, --instance <id>", "本地实例 ID（默认：default）").option("--json", "输出机器可读的 JSON", false);
 
-  common(service.command("install").description("Install and register the background service"))
-    .option("--no-start-now", "Install without starting now")
-    .option("--no-start-on-login", "Install without enabling start on login")
-    .option("--enable-linger", "Allow systemd startup without an active login session", false)
+  common(service.command("install").description("安装并注册后台服务"))
+    .option("--no-start-now", "安装后暂不启动")
+    .option("--no-start-on-login", "安装时不启用登录时启动")
+    .option("--enable-linger", "允许 systemd 在没有活动登录会话时启动", false)
     .action(async (opts) => {
       const manager = await resolveManager(opts); if (!manager) return;
       const result = await manager.install({ startNow: opts.startNow, startOnLogin: opts.startOnLogin });
@@ -177,47 +177,47 @@ export function registerServiceCommands(program: Command): void {
       if (manager.enableLinger) {
         let consent = opts.enableLinger === true;
         if (!consent && process.stdin.isTTY && process.stdout.isTTY) {
-          consent = await p.confirm({ message: "Allow Paperclip to run without an active login session? This runs 'loginctl enable-linger' for your user and may request system authorization.", initialValue: false }) === true;
+          consent = await p.confirm({ message: "允许 Paperclip 在没有活动登录会话时运行吗？这会为你的用户执行 'loginctl enable-linger'，并可能需要系统授权。", initialValue: false }) === true;
         }
         if (consent) { await manager.enableLinger(); lingerEnabled = true; }
       }
       output({ installed: true, changed: result.changed, platform: manager.platform, serviceName: manager.serviceName, definitionPath: manager.definitionPath, lingerEnabled }, opts.json);
     });
 
-  common(service.command("uninstall").description("Stop, disable, and remove the background service")).action(async (opts) => {
+  common(service.command("uninstall").description("停止、禁用并移除后台服务")).action(async (opts) => {
     const manager = await resolveManager(opts); if (!manager) return;
     await manager.uninstall();
     const status = await manager.status();
-    if (status.installed || status.active) throw new Error(`${manager.serviceName} is still loaded after uninstall.`);
+    if (status.installed || status.active) throw new Error(`卸载后 ${manager.serviceName} 仍处于加载状态。`);
     output({ uninstalled: true, serviceName: manager.serviceName }, opts.json);
   });
 
   for (const verb of ["start", "stop"] as const) {
-    common(service.command(verb).description(`${verb === "start" ? "Start" : "Stop"} the background service`)).action(async (opts) => {
+    common(service.command(verb).description(`${verb === "start" ? "启动" : "停止"} the background service`)).action(async (opts) => {
       const manager = await resolveManager(opts); if (!manager) return;
       await manager[verb]();
       output(await manager.status(), opts.json);
     });
   }
 
-  common(service.command("restart").description("Hot-restart the service while preserving active agent runs"))
-    .option("--wait", "Wait for active runs to drain instead of adopting them", false)
-    .option("--expected-version <version>", "Require the restarted server to report this version")
+  common(service.command("restart").description("热重启服务并保留活动智能体运行"))
+    .option("--wait", "等待活动运行结束，而不是接管它们", false)
+    .option("--expected-version <version>", "要求重启后的服务端报告此版本")
     .action(async (opts) => output(await restartManagedService({ instanceId: opts.instance, expectedVersion: opts.expectedVersion, waitForDrain: opts.wait }), opts.json));
 
-  common(service.command("status").description("Show supervisor and health status")).action(async (opts) => {
+  common(service.command("status").description("显示监督进程和健康状态")).action(async (opts) => {
     const manager = await resolveManager(opts); if (!manager) return;
     const instanceId = resolvePaperclipInstanceId(opts.instance);
     output({ ...await manager.status(), health: await probeHealth(instanceId) }, opts.json);
   });
 
-  common(service.command("logs").description("Show service logs"))
-    .option("-f, --follow", "Follow new log output", false)
-    .option("-n, --lines <count>", "Number of recent lines", "100")
+  common(service.command("logs").description("显示服务日志"))
+    .option("-f, --follow", "持续输出新增日志", false)
+    .option("-n, --lines <count>", "最近日志行数", "100")
     .action(async (opts) => {
       const manager = await resolveManager(opts); if (!manager) return;
       const lines = Number.parseInt(opts.lines, 10);
-      if (!Number.isInteger(lines) || lines < 1) throw new Error("--lines must be a positive integer.");
+      if (!Number.isInteger(lines) || lines < 1) throw new Error("--lines 必须为正整数。");
       await manager.logs(opts.follow, lines);
     });
 }

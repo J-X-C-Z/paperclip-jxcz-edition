@@ -11,7 +11,13 @@ const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 const MIGRATIONS_JOURNAL_JSON = fileURLToPath(new URL("./migrations/meta/_journal.json", import.meta.url));
 
 function createUtilitySql(url: string) {
-  return postgres(url, { max: 1, onnotice: () => {} });
+  const sql = postgres(url, {
+    ...postgresJsOptions(databaseClientOptionsWithEnv({ maxConnections: 1 })),
+    onnotice: () => {},
+  });
+  const key = hostPortKeyOrNull(url);
+  if (key) registerClient(key, sql);
+  return sql;
 }
 
 type RegisteredPostgresClient = ReturnType<typeof postgres>;
@@ -64,6 +70,16 @@ function registerClient(key: string, client: RegisteredPostgresClient): void {
   }
   refs.add(ref);
   clientFinalizer.register(client, { hostPortKey: key, ref }, ref);
+  const originalEnd = client.end.bind(client);
+  client.end = async (...args: Parameters<RegisteredPostgresClient["end"]>) => {
+    try {
+      await originalEnd(...args);
+    } finally {
+      clientFinalizer.unregister(ref);
+      refs.delete(ref);
+      if (refs.size === 0 && clientsByHostPort.get(key) === refs) clientsByHostPort.delete(key);
+    }
+  };
 }
 
 /**
@@ -241,6 +257,15 @@ export function resolveDatabaseClientOptions(options: DatabaseClientOptions): Da
   };
 }
 
+/** Environment tuning is shared by every client; defined caller options win. */
+export function databaseClientOptionsWithEnv(
+  options: DatabaseClientOptions = {},
+  env: NodeJS.ProcessEnv = process.env,
+): DatabaseClientOptions {
+  const definedOptions = Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined));
+  return resolveDatabaseClientOptions({ ...databaseClientOptionsFromEnv(env), ...definedOptions });
+}
+
 export function postgresJsOptions(options: DatabaseClientOptions): Record<string, unknown> {
   const driverOptions: Record<string, unknown> = {};
   if (options.prepare !== undefined) driverOptions.prepare = options.prepare;
@@ -268,7 +293,10 @@ export async function withDedicatedDbConnection<T>(db: Db, action: (dedicated: D
 }
 
 export function createDb(url: string, options?: DatabaseClientOptions) {
-  const resolved = resolveDatabaseClientOptions(options ?? databaseClientOptionsFromEnv());
+  return createDbWithResolvedOptions(url, databaseClientOptionsWithEnv(options));
+}
+
+function createDbWithResolvedOptions(url: string, resolved: DatabaseClientOptions) {
   const sql = postgres(url, postgresJsOptions(resolved));
   const key = hostPortKeyOrNull(url);
   if (key) registerClient(key, sql);
@@ -277,7 +305,8 @@ export function createDb(url: string, options?: DatabaseClientOptions) {
   // message cannot establish that replay is safe. Leave retries to callers
   // that know the complete operation is idempotent.
   const db = drizzlePg(sql, { schema });
-  dedicatedDbFactories.set(db, () => createDb(url, {
+  // Use the originating pool's resolved snapshot, even if process.env changes.
+  dedicatedDbFactories.set(db, () => createDbWithResolvedOptions(url, {
     ...resolved, maxConnections: 1, applicationName: "paperclip-workspace-finalization-lock",
   }));
   return db;

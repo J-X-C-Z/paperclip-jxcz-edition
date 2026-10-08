@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { Link } from "@/lib/router";
+import { uiText } from "@/i18n";
 
 export const githubSelectClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -71,7 +72,7 @@ export function GitHubPolicyEditor({
     <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="github-invocation">
-          When should this agent review?
+          {uiText("When should this agent review?")}
         </Label>
         <select
           id="github-invocation"
@@ -85,19 +86,19 @@ export function GitHubPolicyEditor({
           }
         >
           <option value="linked_authors">
-            Linked members’ PRs and authorized mentions
+            {uiText("Linked members’ PRs and authorized mentions")}
           </option>
-          <option value="mentions_only">Authorized mentions only</option>
+          <option value="mentions_only">{uiText("Authorized mentions only")}</option>
           <option value="allowed_authors">
-            Allowed authors’ PRs and authorized mentions
+            {uiText("Allowed authors’ PRs and authorized mentions")}
           </option>
         </select>
         <p className="text-xs text-muted-foreground">
-          Newly added people have a separate automatic-review setting in Access.
+          {uiText("Newly added people have a separate automatic-review setting in Access.")}
         </p>
       </div>
       <div>
-        <h3 className="text-sm font-medium">Automatic review events</h3>
+        <h3 className="text-sm font-medium">{uiText("Automatic review events")}</h3>
         {GITHUB_REVIEW_EVENTS.slice(0, 4).map((event) => (
           <GitHubToggle
             key={event}
@@ -114,20 +115,18 @@ export function GitHubPolicyEditor({
           />
         ))}
         <GitHubToggle
-          label="Include draft PRs"
-          checked={policy.reviewDrafts}
+          label={uiText("Include draft PRs")}          checked={policy.reviewDrafts}
           onChange={(value) => set("reviewDrafts", value)}
         />
         <GitHubToggle
-          label="Include bot authors"
-          description="Also allow the bot account in Access with a sponsor and automatic reviews enabled."
+          label={uiText("Include bot authors")}          description="Also allow the bot account in Access with a sponsor and automatic reviews enabled."
           checked={policy.reviewBotAuthors}
           onChange={(value) => set("reviewBotAuthors", value)}
         />
       </div>
       <details className="rounded-lg border border-border p-4">
         <summary className="cursor-pointer text-sm font-medium">
-          Author, branch, label, and file filters
+          {uiText("Author, branch, label, and file filters")}
         </summary>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {(
@@ -183,24 +182,22 @@ export function GitHubPolicyEditor({
           ))}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Authorized manual requests bypass automatic scheduling filters.
-          Repository restrictions and ignored files still apply.
+          {uiText("Authorized manual requests bypass automatic scheduling filters. Repository restrictions and ignored files still apply.")}
         </p>
       </details>
       <div className="space-y-2">
-        <Label htmlFor="github-instructions">Review instructions</Label>
+        <Label htmlFor="github-instructions">{uiText("Review instructions")}</Label>
         <Textarea
           id="github-instructions"
           value={policy.instructions}
           onChange={(e) => set("instructions", e.target.value)}
         />
         <p className="text-xs text-muted-foreground">
-          Additional guidance for the assigned agent. Provider content cannot
-          change its permissions.
+          {uiText("Additional guidance for the assigned agent. Provider content cannot change its permissions.")}
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="github-prompt-event">Event prompts</Label>
+        <Label htmlFor="github-prompt-event">{uiText("Event prompts")}</Label>
         <select
           id="github-prompt-event"
           className={githubSelectClass}
@@ -221,14 +218,12 @@ export function GitHubPolicyEditor({
           }
         />
         <p className="text-xs text-muted-foreground">
-          Paperclip supplies repository, PR, base and head commits, sender, and
-          prior head as typed context. Saved revisions remain attached to review
-          activity.
+          {uiText("Paperclip supplies repository, PR, base and head commits, sender, and prior head as typed context. Saved revisions remain attached to review activity.")}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="github-categories">Finding categories</Label>
+          <Label htmlFor="github-categories">{uiText("Finding categories")}</Label>
           <Input
             id="github-categories"
             value={policy.findingCategories.join(", ")}
@@ -243,12 +238,12 @@ export function GitHubPolicyEditor({
             }
           />
           <p className="text-xs text-muted-foreground">
-            Comma-separated assessment categories.
+            {uiText("Comma-separated assessment categories.")}
           </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="github-severity">
-            Minimum inline comment severity
+            {uiText("Minimum inline comment severity")}
           </Label>
           <select
             id="github-severity"
@@ -261,41 +256,37 @@ export function GitHubPolicyEditor({
               )
             }
           >
-            <option value="info">Info</option>
-            <option value="warning">Warning</option>
-            <option value="error">Error</option>
+            <option value="info">{uiText("Info")}</option>
+            <option value="warning">{uiText("Warning")}</option>
+            <option value="error">{uiText("Error")}</option>
           </select>
           <p className="text-xs text-muted-foreground">
-            Hidden comments still count in the assessment.
+            {uiText("Hidden comments still count in the assessment.")}
           </p>
         </div>
       </div>
       <div>
-        <h3 className="text-sm font-medium">Publication permissions</h3>
+        <h3 className="text-sm font-medium">{uiText("Publication permissions")}</h3>
         <GitHubToggle
-          label="Publish summary"
-          checked={policy.publishSummary}
+          label={uiText("Publish summary")}          checked={policy.publishSummary}
           onChange={(value) => set("publishSummary", value)}
         />
         <GitHubToggle
-          label="Publish inline findings"
-          checked={policy.publishInline}
+          label={uiText("Publish inline findings")}          checked={policy.publishInline}
           onChange={(value) => set("publishInline", value)}
         />
         <GitHubToggle
-          label="Allow formal approvals"
-          description="A separate agent action; a 5/5 score never automatically approves."
+          label={uiText("Allow formal approvals")}          description="A separate agent action; a 5/5 score never automatically approves."
           checked={policy.allowApprove}
           onChange={(value) => set("allowApprove", value)}
         />
         <GitHubToggle
-          label="Allow formal request changes"
-          checked={policy.allowRequestChanges}
+          label={uiText("Allow formal request changes")}          checked={policy.allowRequestChanges}
           onChange={(value) => set("allowRequestChanges", value)}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="github-rating">Paperclip Review check</Label>
+        <Label htmlFor="github-rating">{uiText("Paperclip Review check")}</Label>
         <select
           id="github-rating"
           className={githubSelectClass}
@@ -311,17 +302,13 @@ export function GitHubPolicyEditor({
         >
           {[5, 4, 3, 2, 1].map((score) => (
             <option key={score} value={score}>
-              Require at least {score}/5
+              {uiText("Require at least")} {score}/5
             </option>
           ))}
-          <option value="report">Report only</option>
+          <option value="report">{uiText("Report only")}</option>
         </select>
         <p className="text-xs text-muted-foreground">
-          Paperclip computes the result for the exact reviewed commit.
-          Incomplete reviews cannot pass. To require it before merging, select
-          “Paperclip Review” in your GitHub branch protection or ruleset
-          settings and choose this bot’s GitHub App as the expected source. Run
-          a review first so the check appears in GitHub’s selector.
+          {uiText("Paperclip computes the result for the exact reviewed commit. Incomplete reviews cannot pass. To require it before merging, select “Paperclip Review” in your GitHub branch protection or ruleset settings and choose this bot’s GitHub App as the expected source. Run a review first so the check appears in GitHub’s selector.")}
         </p>
         <a
           className="text-xs underline"
@@ -329,7 +316,7 @@ export function GitHubPolicyEditor({
           target="_blank"
           rel="noreferrer"
         >
-          Set up a required check on GitHub
+          {uiText("Set up a required check on GitHub")}
         </a>
       </div>
     </div>
@@ -388,7 +375,7 @@ export function GitHubAccessEditor({
     <div className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="github-responsible">
-          Responsible user for automatic events
+          {uiText("Responsible user for automatic events")}
         </Label>
         <select
           id="github-responsible"
@@ -405,12 +392,11 @@ export function GitHubAccessEditor({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          Accountable for automatic tasks. The PR author and webhook sender
-          remain recorded separately.
+          {uiText("Accountable for automatic tasks. The PR author and webhook sender remain recorded separately.")}
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="github-member-access">Company member access</Label>
+        <Label htmlFor="github-member-access">{uiText("Company member access")}</Label>
         <select
           id="github-member-access"
           className={githubSelectClass}
@@ -422,17 +408,17 @@ export function GitHubAccessEditor({
             })
           }
         >
-          <option value="all_linked">All linked company members</option>
-          <option value="selected">Only selected linked members</option>
+          <option value="all_linked">{uiText("All linked company members")}</option>
+          <option value="selected">{uiText("Only selected linked members")}</option>
         </select>
         <p className="text-xs text-muted-foreground">
-          Members connect their own GitHub account.{" "}
+          {uiText("Members connect their own GitHub account.")}{" "}
           <Link
             className="underline"
             ref={accountLink}
             to={`/apps/chat/connect?provider=github&resume=${endpointId}&stage=identity`}
           >
-            Open account linking
+            {uiText("Open account linking")}
           </Link>
           <Button
             variant="link"
@@ -450,14 +436,14 @@ export function GitHubAccessEditor({
           >
             {linkCopied ? "Link copied" : "Copy link for teammates"}
           </Button>
-          .
+          {uiText(".")}
         </p>
       </div>
       <div className="space-y-3">
-        <h3 className="text-sm font-medium">Linked GitHub accounts</h3>
+        <h3 className="text-sm font-medium">{uiText("Linked GitHub accounts")}</h3>
         {links.isError && (
           <p role="alert" className="text-sm text-destructive">
-            Could not load linked accounts.
+            {uiText("Could not load linked accounts.")}
           </p>
         )}
         {(links.data ?? [])
@@ -494,7 +480,7 @@ export function GitHubAccessEditor({
                   }
                 }}
               >
-                Unlink account
+                {uiText("Unlink account")}
               </Button>
             </div>
           ))}
@@ -502,16 +488,14 @@ export function GitHubAccessEditor({
           !links.isError &&
           !(links.data ?? []).some((link) => link.status === "linked") && (
             <p className="text-sm text-muted-foreground">
-              No accounts linked yet. Each teammate confirms their own GitHub
-              identity.
+              {uiText("No accounts linked yet. Each teammate confirms their own GitHub identity.")}
             </p>
           )}
       </div>
       <div className="divide-y divide-border rounded-lg border border-border">
         {configuration.people.length === 0 && (
           <p className="p-4 text-sm text-muted-foreground">
-            No individual access entries. Unlinked people cannot invoke this
-            bot.
+            {uiText("No individual access entries. Unlinked people cannot invoke this bot.")}
           </p>
         )}
         {configuration.people.map((person) => (
@@ -537,7 +521,7 @@ export function GitHubAccessEditor({
                   })
                 }
               >
-                Remove
+                {uiText("Remove")}
               </Button>
             </div>
             <GitHubToggle
@@ -556,11 +540,11 @@ export function GitHubAccessEditor({
             />
             {person.kind === "guest" && (
               <p className="text-xs text-muted-foreground">
-                Sponsor:{" "}
+                {uiText("Sponsor:")}{" "}
                 {activeMembers.find(
                   (member) => member.principalId === person.sponsorUserId,
                 )?.user?.name ?? person.sponsorUserId}
-                . No company membership or personal credentials are granted.
+                {uiText(". No company membership or personal credentials are granted.")}
               </p>
             )}
           </div>
@@ -568,17 +552,16 @@ export function GitHubAccessEditor({
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setKind("member")}>
-          Add linked member
+          {uiText("Add linked member")}
         </Button>
         <Button variant="outline" onClick={() => setKind("guest")}>
-          Allow external contributor
+          {uiText("Allow external contributor")}
         </Button>
       </div>
       {kind === "member" && (
         <div className="space-y-3 rounded-lg border border-border p-4">
           <p className="text-sm">
-            Adding a member switches access to the selected-member list.
-            Automatic PR reviews start off.
+            {uiText("Adding a member switches access to the selected-member list. Automatic PR reviews start off.")}
           </p>
           {(links.data ?? [])
             .filter((link) => link.status === "linked" && link.paperclipUserId)
@@ -612,18 +595,17 @@ export function GitHubAccessEditor({
               </Button>
             ))}
           <Button variant="ghost" onClick={() => setKind(null)}>
-            Cancel
+            {uiText("Cancel")}
           </Button>
         </div>
       )}
       {kind === "guest" && (
         <div className="space-y-4 rounded-lg border border-border p-4">
           <p className="text-sm">
-            Allow one GitHub account to mention the bot with restricted guest
-            permissions. A sponsor is required.
+            {uiText("Allow one GitHub account to mention the bot with restricted guest permissions. A sponsor is required.")}
           </p>
           <div className="space-y-2">
-            <Label htmlFor="github-guest-login">GitHub username</Label>
+            <Label htmlFor="github-guest-login">{uiText("GitHub username")}</Label>
             <div className="flex gap-2">
               <Input
                 id="github-guest-login"
@@ -650,12 +632,12 @@ export function GitHubAccessEditor({
                   }
                 }}
               >
-                Look up
+                {uiText("Look up")}
               </Button>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="github-guest-sponsor">Sponsor</Label>
+            <Label htmlFor="github-guest-sponsor">{uiText("Sponsor")}</Label>
             <select
               id="github-guest-sponsor"
               className={githubSelectClass}
@@ -671,12 +653,12 @@ export function GitHubAccessEditor({
           </div>
           {candidate && (
             <p className="text-sm">
-              @{candidate.login} · GitHub ID {candidate.githubUserId}
+              @{candidate.login} {uiText("· GitHub ID")} {candidate.githubUserId}
             </p>
           )}
           <div className="flex justify-between">
             <Button variant="ghost" onClick={() => setKind(null)}>
-              Cancel
+              {uiText("Cancel")}
             </Button>
             <Button
               disabled={
@@ -697,7 +679,7 @@ export function GitHubAccessEditor({
                 })
               }
             >
-              Allow this account
+              {uiText("Allow this account")}
             </Button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { createBackgroundWorkCoordinator } from "./background-work.js";
 import { browserUseRoutes } from "./routes/browser-use.js";
 import { browserUseService } from "./services/browser-use.js";
 import { slackToolRoutes } from "./routes/slack-tools.js";
@@ -50,6 +51,8 @@ import { companyRoutes } from "./routes/companies.js";
 import { companySkillRoutes } from "./routes/company-skills.js";
 import { companySkillPolicyRoutes } from "./routes/company-skill-policy.js";
 import { inboxAgentPolicyRoutes } from "./routes/inbox-agent-policy.js";
+import { bridgeRoutes } from "./routes/bridge.js";
+import { briefRoutes } from "./routes/briefs.js";
 import { builtInAgentRoutes } from "./routes/built-in-agents.js";
 import { folderRoutes } from "./routes/folders.js";
 import { summarySlotRoutes } from "./routes/summary-slots.js";
@@ -102,6 +105,7 @@ import { serverVersion } from "./version.js";
 import { resourceMembershipRoutes } from "./routes/resource-memberships.js";
 import { inboxDismissalRoutes } from "./routes/inbox-dismissals.js";
 import { instanceSettingsRoutes } from "./routes/instance-settings.js";
+import { modelSwitchRoutes } from "./routes/model-switch.js";
 import { instanceSettingsService } from "./services/instance-settings.js";
 import { openApiRoutes } from "./routes/openapi.js";
 import {
@@ -488,6 +492,8 @@ export async function createApp(
     hostVersion?: string;
     localPluginDir?: string;
     pluginMigrationDb?: Db;
+    /** Background and plugin work should not consume the HTTP request pool. */
+    backgroundDb?: Db;
     pluginWorkerManager?: PluginWorkerManager;
     decisionServiceOptions: DecisionServiceOptions;
     betterAuthHandler?: express.RequestHandler;
@@ -506,6 +512,7 @@ export async function createApp(
   },
 ) {
   const app = express();
+  const backgroundDb = opts.backgroundDb ?? db;
   app.locals.paperclipDb = db;
   const captureRawBody = (
     req: express.Request,
@@ -581,22 +588,22 @@ export async function createApp(
 
   const hostServicesDisposers = new Map<string, () => void>();
   const workerManager = opts.pluginWorkerManager ?? createPluginWorkerManager();
-  const connectionIntentHeartbeat = heartbeatService(db, {
+  const connectionIntentHeartbeat = heartbeatService(backgroundDb, {
     pluginWorkerManager: workerManager,
   });
-  const chatChannels = chatChannelService(db, {
+  const chatChannels = chatChannelService(backgroundDb, {
     deferWebhookProcessing: true,
     heartbeat: connectionIntentHeartbeat,
     publicBaseUrl: opts.authPublicBaseUrl,
     webhookPublicBaseUrl: opts.chatWebhookPublicBaseUrl,
     resolveNativeQuestion: (interaction) =>
-      deliverNativeQuestionResponse(db, interaction),
+      deliverNativeQuestionResponse(backgroundDb, interaction),
     storage: opts.storageService,
   });
   // Provider-authenticated ingress is intentionally outside the board
   // mutation guard. The Chat SDK adapter verifies the provider signature
   // before Paperclip persists or acts on any event.
-  const emailChannels = emailChannelService(db, { heartbeat: connectionIntentHeartbeat, storage: opts.storageService, publicBaseUrl: opts.chatWebhookPublicBaseUrl ?? opts.authPublicBaseUrl });
+  const emailChannels = emailChannelService(backgroundDb, { heartbeat: connectionIntentHeartbeat, storage: opts.storageService, publicBaseUrl: opts.chatWebhookPublicBaseUrl ?? opts.authPublicBaseUrl });
   app.use(emailWebhookRoutes(emailChannels));
   app.use(chatWebhookRoutes(chatChannels));
   // The instance validates single-use registration state and its trusted
@@ -662,6 +669,8 @@ export async function createApp(
   api.use(companySkillPolicyRoutes(db));
   api.use(inboxAgentPolicyRoutes(db));
   api.use(builtInAgentRoutes(db));
+  api.use(briefRoutes(db));
+  api.use(bridgeRoutes(db));
   api.use(summarySlotRoutes(db));
   api.use(statusCardRoutes(db));
   api.use(teamsCatalogRoutes(db));
@@ -802,16 +811,17 @@ export async function createApp(
   api.use(resourceMembershipRoutes(db));
   api.use(inboxDismissalRoutes(db));
   api.use(instanceSettingsRoutes(db));
+  api.use(modelSwitchRoutes(db));
   if (opts.databaseBackupService) {
     api.use(instanceDatabaseBackupRoutes(opts.databaseBackupService));
   }
   const pluginRegistry = pluginRegistryService(db);
   const eventBus = createPluginEventBus();
   setPluginEventBus(eventBus);
-  const jobStore = pluginJobStore(db);
+  const jobStore = pluginJobStore(backgroundDb);
   const lifecycle = pluginLifecycleManager(db, { workerManager });
   const scheduler = createPluginJobScheduler({
-    db,
+    db: backgroundDb,
     jobStore,
     workerManager,
   });
@@ -825,8 +835,9 @@ export async function createApp(
     deploymentExposure: opts.deploymentExposure,
     trustedLocalStdioRuntimeHost,
   });
-  const toolActionDeliveries = toolActionDeliveryService(db, heartbeatService(db, { pluginWorkerManager: workerManager }));
+  const toolActionDeliveries = toolActionDeliveryService(backgroundDb, connectionIntentHeartbeat);
   const toolGateway = createToolGatewayService(db, {
+    backgroundDb,
     onToolActionSettled: (id) => toolActionDeliveries.deliver(id),
     pluginToolDispatcher: toolDispatcher,
     deploymentMode: opts.deploymentMode,
@@ -908,7 +919,7 @@ export async function createApp(
           if (handle) handle.notify(method, params);
         };
         const services = buildHostServices(
-          db,
+          backgroundDb,
           pluginId,
           manifest.id,
           eventBus,
@@ -928,8 +939,8 @@ export async function createApp(
     },
   );
   runtimePluginLoader = loader;
-  const browserUse = browserUseService(db, undefined,
-    { cancelWorkForScope: heartbeatService(db, { pluginWorkerManager: workerManager }).cancelBudgetScopeWork },
+  const browserUse = browserUseService(backgroundDb, undefined,
+    { cancelWorkForScope: connectionIntentHeartbeat.cancelBudgetScopeWork },
     (session, run) => toolGateway.browserUseSessionAuthorized({ ...session, runId: run.heartbeatRunId, invocationId: run.invocationId }));
   api.use(browserUseRoutes(db, browserUse));
   api.use(toolGatewayRoutes(db, toolGateway));
@@ -1129,6 +1140,9 @@ export async function createApp(
   jobCoordinator.start();
   scheduler.start();
   const stopExchangeRateUpdates = process.env.NODE_ENV === "test" ? () => {} : startExchangeRateUpdates();
+  const appBackgroundWork = createBackgroundWorkCoordinator({
+    onError: (key, err) => logger.error({ err, key }, "application background work failed"),
+  });
   let feedbackExportShuttingDown = false;
   let feedbackExportTimer: ReturnType<typeof setInterval> | null = null;
   const disableFeedbackExportFlushes = () => {
@@ -1157,12 +1171,12 @@ export async function createApp(
 
   feedbackExportTimer = opts.feedbackExportService
     ? setInterval(() => {
-        void flushPendingFeedbackExports();
+        appBackgroundWork.start("feedback-exports", flushPendingFeedbackExports);
       }, FEEDBACK_EXPORT_FLUSH_INTERVAL_MS)
     : null;
   feedbackExportTimer?.unref?.();
   if (opts.feedbackExportService) {
-    void flushPendingFeedbackExports();
+    appBackgroundWork.start("feedback-exports", flushPendingFeedbackExports);
   }
   emailChannels.start();
   const flushChatPublications = async () => {
@@ -1174,7 +1188,7 @@ export async function createApp(
     processFailedGitHubWebhookDeliveries: () =>
       chatChannels.processFailedGitHubWebhookDeliveries(),
     projectRunMilestones: () =>
-      enqueueChatRunMilestones(db, {
+      enqueueChatRunMilestones(backgroundDb, {
         publicBaseUrl: opts.authPublicBaseUrl,
       }),
     flushPublications: () => flushChatPublications(),
@@ -1206,7 +1220,7 @@ export async function createApp(
   // shape as the feedback export flush above.
   const importTransferSpoolRoot = resolveDefaultImportTransferSpoolRoot();
   const sweepImportTransferSpools = () => {
-    sweepAbandonedImportTransferSpools(db, importTransferSpoolRoot)
+    appBackgroundWork.start("import-spools", () => sweepAbandonedImportTransferSpools(backgroundDb, importTransferSpoolRoot)
       .then((result) => {
         if (result.swept > 0) {
           logger.info(result, "swept abandoned company import transfer spools");
@@ -1217,11 +1231,13 @@ export async function createApp(
           { err },
           "abandoned company import transfer spool sweep failed",
         );
-      });
+      }));
   };
-  const browserUseTimer = setInterval(() => { void browserUse.sweep().catch(() => logger.warn("Browser Use reconciliation failed; retrying.")); }, 3000);
+  const browserUseTimer = setInterval(() => {
+    appBackgroundWork.start("browser-use", () => browserUse.sweep().catch(() => logger.warn("Browser Use reconciliation failed; retrying.")));
+  }, 3000);
   browserUseTimer.unref?.();
-  void browserUse.sweep().catch(() => logger.warn("Browser Use startup reconciliation failed; retrying."));
+  appBackgroundWork.start("browser-use", () => browserUse.sweep().catch(() => logger.warn("Browser Use startup reconciliation failed; retrying.")));
   let importTransferSweepTimer: ReturnType<typeof setInterval> | null =
     setInterval(
       sweepImportTransferSpools,
@@ -1233,8 +1249,8 @@ export async function createApp(
   // still "applying" now was interrupted by the previous shutdown and would
   // otherwise 409 every retry forever. Fail those stranded runs — their
   // spooled parts stay reusable — then run the normal sweep once.
-  void companyTransferRunService
-    .recoverStrandedApplyingRuns(db)
+  appBackgroundWork.start("import-recovery", () => companyTransferRunService
+    .recoverStrandedApplyingRuns(backgroundDb)
     .then((recovered) => {
       if (recovered.length > 0) {
         logger.warn(
@@ -1248,7 +1264,7 @@ export async function createApp(
     })
     .finally(() => {
       sweepImportTransferSpools();
-    });
+    }));
   void toolDispatcher.initialize().catch((err) => {
     logger.error({ err }, "Failed to initialize plugin tool dispatcher");
   });
@@ -1321,6 +1337,7 @@ export async function createApp(
       // The scheduler tick queries the database. Stop it here, inside the
       // awaited teardown, so no tick runs after the caller ends the pool.
       scheduler.stop();
+      appBackgroundWork.stop();
       stopExchangeRateUpdates();
       jobCoordinator.stop();
       disableFeedbackExportFlushes();
@@ -1330,12 +1347,16 @@ export async function createApp(
         clearInterval(chatPublicationTimer);
         chatPublicationTimer = null;
       }
-      await chatReconciliation.drain();
       clearInterval(browserUseTimer);
       if (importTransferSweepTimer) {
         clearInterval(importTransferSweepTimer);
         importTransferSweepTimer = null;
       }
+      await Promise.all([
+        chatReconciliation.drain(),
+        scheduler.drain(),
+        appBackgroundWork.drain(),
+      ]);
       devWatcher?.close();
       viteHtmlRenderer?.dispose();
       void viteDevServer?.close().catch(() => undefined);

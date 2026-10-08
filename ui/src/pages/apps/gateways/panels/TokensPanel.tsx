@@ -191,17 +191,15 @@ export function TokensPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-2xl space-y-1">
           <p className="text-sm text-muted-foreground">
-            Issue a reusable token for an external client. Its name is also used as the client label.
+            {uiText("Issue a reusable token for an external client. Its name is also used as the client label.")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Paperclip creates a fresh one-hour runtime token when an agent run starts, then revokes it when the
-            run ends. Codex can receive the same gateway through both an app connection and the managed-gateway
-            path, so one run may leave two revoked rows. These are audit history, not repeated manual tokens.
+            {uiText("Paperclip creates a fresh one-hour runtime token when an agent run starts, then revokes it when the run ends. Codex can receive the same gateway through both an app connection and the managed-gateway path, so one run may leave two revoked rows. These are audit history, not repeated manual tokens.")}
           </p>
         </div>
         <Button size="sm" onClick={startIssuing}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Issue token
+          {uiText("Issue token")}
         </Button>
       </div>
 
@@ -241,7 +239,7 @@ export function TokensPanel({
             <div>
               <div className="text-sm font-semibold text-foreground">{uiText("New token — copy now")}</div>
               <div className="text-xs text-muted-foreground">
-                It is now available in Client snippets for a copy-ready configuration.
+                {uiText("It is now available in Client snippets for a copy-ready configuration.")}
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setCreated(null)} aria-label={uiText("Dismiss new token")}> {uiText("Dismiss")} </Button>
@@ -265,7 +263,7 @@ export function TokensPanel({
           <Button variant="ghost" className="h-auto w-full justify-between px-0 py-1 hover:bg-transparent">
             <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <KeyRound className="h-4 w-4 text-muted-foreground" />
-              Token history
+              {uiText("Token history")}
               <span className="font-normal text-muted-foreground">{tokens.length}</span>
             </span>
             {historyOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -356,7 +354,7 @@ export function TokensPanel({
               {pageCount > 1 ? (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
-                    Page {historyPage} {uiText("of")} {pageCount} · {tokens.length} tokens
+                    {uiText("Page")} {historyPage} {uiText("of")} {pageCount} · {tokens.length} {uiText("tokens")}
                   </p>
                   <div className="flex items-center gap-1">
                     <Button
@@ -391,8 +389,7 @@ export function TokensPanel({
             <div>
               <h3 className="text-sm font-semibold text-foreground">{uiText("Revoke this token?")}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Any client using <span className="font-medium text-foreground">{confirmToken.name}</span> goes
-                silent immediately. This can’t be undone. Type the token name to confirm.
+                {uiText("Any client using")} <span className="font-medium text-foreground">{confirmToken.name}</span> {uiText("goes silent immediately. This can’t be undone. Type the token name to confirm.")}
               </p>
             </div>
             <Input

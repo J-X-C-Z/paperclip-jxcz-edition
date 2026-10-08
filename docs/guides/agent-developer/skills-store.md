@@ -3,6 +3,28 @@ title: The Skills Store
 summary: Browse, install, import, fork, and share the reusable skills your agents use
 ---
 
+## 简体中文
+
+Skills Store 是公司级技能库，可浏览内置目录、导入外部技能、创建本地技能并维护版本。技能由包含 `SKILL.md` 的目录组成，可选带有辅助文件。库中保存内容快照、修订历史和来源信息；修改后可查看差异、审核、恢复旧版本或 fork 成独立副本。
+
+### 查找与安装
+
+可按目录浏览或从 GitHub/skills.sh 导入，也可以扫描项目 workspace 中常见技能目录。来源导入支持 GitHub URL、`owner/repo`、`skills.sh` 链接、`npx skills add …` 命令和直达 `SKILL.md` 的 Markdown URL。导入前会发现并检查技能包、显示可选技能；新技能只会在明确保存选择后导入。扫描期间不会运行脚本、hooks、安装依赖或执行 build。
+
+GitHub Sources 可追踪已安装技能。**Refresh** 更新已选技能；新发现的技能需经 **Select skills** 审阅后再保存。取消选择会停止后续同步但保留内容和 agent 分配；断开整个 source 也是如此。若要删除技能，需在库中单独移除。上游删除时保留已安装版本并标记 Removed from source；路径移动会视为新技能。刷新是手动的，目前仅支持 GitHub.com。
+
+导入文件和扫描内容有大小、数量与目录深度限制，以控制资源占用。服务端下载 Git 浅快照，不 checkout 也不运行仓库代码；下载需要系统安装 Git。发现过程支持带 `Accept: application/x-ndjson` 的进度流；若未收到 `complete` 事件，本次扫描失败，候选项目不可导入。
+
+### 管理与运行
+
+安装后技能文件保存在本机；即使失去 GitHub 访问权限，查看、测试和 agent 执行仍可使用。更新会保留技能身份、所属公司、分配和历史；只有包内容或可执行权限变化时才创建新版本。**Make a copy** 可创建可独立编辑的技能。可设置 `private`、`company` 或 `public_link` 共享范围。
+
+安装不等于自动执行：Paperclip 会在运行时把技能物化到 agent workspace，agent harness 先读取 frontmatter 的 `name` 和 `description` 作为路由提示，判断是否相关后才加载正文。技能同步到 workspace 的方式受实例偏好设置控制。
+
+公司技能 API 位于 `/api/companies/:companyId/skills` 及其子路由，涵盖列表、创建、导入、扫描、版本、更新、审核、fork、星标和评论。所有写入都需要公司技能管理权限，并记录在公司活动日志。
+
+---
+
 The **Skills Store** is Paperclip's library of reusable skills. A skill is a markdown
 playbook that teaches an agent how to do a specific kind of work — triage an issue,
 write a wireframe, run QA acceptance, draft a release announcement. The Store is where

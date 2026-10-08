@@ -297,11 +297,11 @@ const WORKTREE_NAME_PREFIX = "paperclip-";
 function resolveWorktreeMakeName(name: string): string {
   const value = nonEmpty(name);
   if (!value) {
-    throw new Error("Worktree name is required.");
+    throw new Error("必须提供 worktree 名称。");
   }
   if (!/^[A-Za-z0-9._-]+$/.test(value)) {
     throw new Error(
-      "Worktree name must contain only letters, numbers, dots, underscores, or dashes.",
+      "worktree 名称只能包含字母、数字、点、下划线或短横线。",
     );
   }
   return value.startsWith(WORKTREE_NAME_PREFIX) ? value : `${WORKTREE_NAME_PREFIX}${value}`;
@@ -322,18 +322,18 @@ type ConfiguredStorage = {
 
 function assertStorageCompanyPrefix(companyId: string, objectKey: string): void {
   if (!objectKey.startsWith(`${companyId}/`) || objectKey.includes("..")) {
-    throw new Error(`Invalid object key for company ${companyId}.`);
+    throw new Error(`公司 ${companyId} 的对象键无效。`);
   }
 }
 
 function normalizeStorageObjectKey(objectKey: string): string {
   const normalized = objectKey.replace(/\\/g, "/").trim();
   if (!normalized || normalized.startsWith("/")) {
-    throw new Error("Invalid object key.");
+    throw new Error("对象键无效。");
   }
   const parts = normalized.split("/").filter((part) => part.length > 0);
   if (parts.length === 0 || parts.some((part) => part === "." || part === "..")) {
-    throw new Error("Invalid object key.");
+    throw new Error("对象键无效。");
   }
   return parts.join("/");
 }
@@ -342,14 +342,14 @@ function resolveLocalStoragePath(baseDir: string, objectKey: string): string {
   const resolved = path.resolve(baseDir, normalizeStorageObjectKey(objectKey));
   const root = path.resolve(baseDir);
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new Error("Invalid object key path.");
+    throw new Error("对象键路径无效。");
   }
   return resolved;
 }
 
 async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
   if (!body) {
-    throw new Error("Object not found.");
+    throw new Error("未找到对象。");
   }
   if (Buffer.isBuffer(body)) {
     return body;
@@ -377,7 +377,7 @@ async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
     return Buffer.from(await candidate.arrayBuffer());
   }
 
-  throw new Error("Unsupported storage response body.");
+  throw new Error("不支持的存储响应内容。");
 }
 
 function normalizeS3Prefix(prefix: string | undefined): string {
@@ -458,7 +458,7 @@ function createConfiguredStorageFromPaperclipConfig(config: PaperclipConfig): Co
 function openConfiguredStorage(configPath: string): ConfiguredStorage {
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`未在 ${configPath} 找到配置文件。`);
   }
   return createConfiguredStorageFromPaperclipConfig(config);
 }
@@ -674,7 +674,7 @@ function detectGitBranchName(cwd: string): string | null {
 function validateGitBranchName(cwd: string, branchName: string): string {
   const value = nonEmpty(branchName);
   if (!value) {
-    throw new Error("Branch name is required.");
+    throw new Error("必须提供分支名称。");
   }
   try {
     execFileSync("git", ["check-ref-format", "--branch", value], {
@@ -682,7 +682,7 @@ function validateGitBranchName(cwd: string, branchName: string): string {
       stdio: ["ignore", "pipe", "pipe"],
     });
   } catch (error) {
-    throw new Error(`Invalid branch name "${branchName}": ${extractExecSyncErrorMessage(error) ?? String(error)}`);
+    throw new Error(`分支名称“${branchName}”无效：${extractExecSyncErrorMessage(error) ?? String(error)}`);
   }
   return value;
 }
@@ -695,7 +695,7 @@ function isPrimaryGitWorktree(cwd: string): boolean {
 function resolvePrimaryGitRepoRoot(cwd: string): string {
   const workspace = detectGitWorkspaceInfo(cwd);
   if (!workspace) {
-    throw new Error("Current directory is not inside a git repository.");
+    throw new Error("当前目录不在 Git 仓库中。");
   }
   if (workspace.gitDir === workspace.commonDir) {
     return workspace.root;
@@ -872,7 +872,7 @@ export function resolveWorktreeReseedSource(input: WorktreeReseedOptions): Resol
 
   if (fromSelector && hasExplicitConfigSource) {
     throw new Error(
-      "Use either --from <worktree> or --from-config/--from-data-dir/--from-instance, not both.",
+      "--from <worktree> 与 --from-config/--from-data-dir/--from-instance 只能选择一种。",
     );
   }
 
@@ -897,7 +897,7 @@ export function resolveWorktreeReseedSource(input: WorktreeReseedOptions): Resol
   }
 
   throw new Error(
-    "Pass --from <worktree> or --from-config/--from-instance explicitly so the reseed source is unambiguous.",
+    "请明确传入 --from <worktree> 或 --from-config/--from-instance，以指定唯一的种子数据来源。",
   );
 }
 
@@ -926,7 +926,7 @@ export function resolveWorktreeReseedTargetPaths(input: {
 
   if (!homeDir || !instanceId) {
     throw new Error(
-      `Target config ${input.configPath} does not look like a worktree-local Paperclip instance. Expected PAPERCLIP_HOME and PAPERCLIP_INSTANCE_ID in the adjacent .env.`,
+      `目标配置 ${input.configPath} 似乎不是 worktree 本地 Paperclip 实例。相邻的 .env 中应包含 PAPERCLIP_HOME 和 PAPERCLIP_INSTANCE_ID。`,
     );
   }
 
@@ -1003,7 +1003,7 @@ async function ensureRepairTargetWorktree(input: {
   );
 
   if (existsSync(targetPath)) {
-    throw new Error(`Target path already exists but is not a registered git worktree: ${targetPath}`);
+    throw new Error(`目标路径已存在，但不是已注册的 Git worktree：${targetPath}`);
   }
 
   mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -1021,7 +1021,7 @@ async function ensureRepairTargetWorktree(input: {
     });
     spinner.stop(`Created git worktree at ${targetPath}.`);
   } catch (error) {
-    spinner.stop(pc.red("Failed to create git worktree."));
+    spinner.stop(pc.red("创建 Git worktree 失败。"));
     throw new Error(extractExecSyncErrorMessage(error) ?? String(error));
   }
 
@@ -1041,7 +1041,7 @@ function resolveSourceConnectionString(config: PaperclipConfig, envEntries: Reco
     const connectionString = nonEmpty(envEntries.DATABASE_URL) ?? nonEmpty(config.database.connectionString);
     if (!connectionString) {
       throw new Error(
-        "Source instance uses postgres mode but has no connection string in config or adjacent .env.",
+        "源实例使用 postgres 模式，但配置文件和相邻 .env 中都没有连接字符串。",
       );
     }
     return connectionString;
@@ -1088,7 +1088,7 @@ export function copySeededSecretsKey(input: {
 
   if (!existsSync(sourceKeyFilePath)) {
     throw new Error(
-      `Cannot seed worktree database because source local_encrypted secrets key was not found at ${sourceKeyFilePath}.`,
+      `找不到源实例的 local_encrypted 密钥文件：${sourceKeyFilePath}，无法为 worktree 数据库写入种子数据。`,
     );
   }
 
@@ -1112,7 +1112,7 @@ export async function ensureEmbeddedPostgres(
     EmbeddedPostgres = mod.default as EmbeddedPostgresCtor;
   } catch {
     throw new Error(
-      "Embedded PostgreSQL support requires dependency `embedded-postgres`. Reinstall dependencies and try again.",
+      "嵌入式 PostgreSQL 需要 `embedded-postgres` 依赖。请重新安装依赖后重试。",
     );
   }
   await prepareEmbeddedPostgresNativeRuntime();
@@ -1122,8 +1122,8 @@ export async function ensureEmbeddedPostgres(
   if (runningPid) {
     if (options.allowExisting === false) {
       throw new Error(
-        `Cannot seed target embedded PostgreSQL at ${dataDir} while it is already running (pid=${runningPid}). `
-        + "Stop the worktree service that owns this database, then retry the seed.",
+        `目标内嵌 PostgreSQL 已在运行（数据目录 ${dataDir}，pid=${runningPid}）。`
+        + "请停止使用此数据库的 worktree 服务，然后重试种子数据操作。",
       );
     }
     return {
@@ -1151,7 +1151,7 @@ export async function ensureEmbeddedPostgres(
       await instance.initialise();
     } catch (error) {
       throw formatEmbeddedPostgresError(error, {
-        fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
+        fallbackMessage: `在 ${dataDir} 初始化嵌入式 PostgreSQL 集群失败（端口 ${port}）`,
         recentLogs: logBuffer.getRecentLogs(),
       });
     }
@@ -1163,7 +1163,7 @@ export async function ensureEmbeddedPostgres(
     await instance.start();
   } catch (error) {
     throw formatEmbeddedPostgresError(error, {
-      fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+      fallbackMessage: `在端口 ${port} 启动嵌入式 PostgreSQL 失败`,
       recentLogs: logBuffer.getRecentLogs(),
     });
   }
@@ -1436,18 +1436,18 @@ export function resolveWorktreeSeedMigrationRevision(
     appliedMigrationNames.size !== expectedAppliedPrefix.length ||
     expectedAppliedPrefix.some((migration) => !appliedMigrationNames.has(migration))
   ) {
-    throw new Error("Migration journal is not a prefix of this Paperclip checkout's migration journal.");
+    throw new Error("迁移日志不是此 Paperclip 检出版本迁移日志的前缀。");
   }
 
   if (requirement === "upToDate" && migrationState.status !== "upToDate") {
     throw new Error(
-      `Migration journal is not current (${migrationState.pendingMigrations.length} pending migration(s)).`,
+      `迁移日志尚未更新（有 ${migrationState.pendingMigrations.length} 个迁移待处理）。`,
     );
   }
 
   const migrationRevision = expectedAppliedPrefix.at(-1);
   if (!migrationRevision) {
-    throw new Error("Migration journal has no applied revision.");
+    throw new Error("迁移日志中没有已应用的版本。");
   }
   return migrationRevision;
 }
@@ -1581,7 +1581,7 @@ async function inspectVerifiedSeedDatabase(
     if (!admin) {
       throw new Error(
         requiresCredentialAccount
-          ? "No auth user has a non-empty credential account, instance-admin role, and active company membership. Authenticated worktree seeding requires a credential-backed instance administrator."
+          ? "没有用户同时具备有效凭据、instance-admin 角色和有效公司成员资格。authenticated worktree 写入种子数据需要具备凭据的实例管理员。"
           : "No auth user has an instance-admin role and active company membership for local-trusted worktree seeding.",
       );
     }
@@ -1600,7 +1600,7 @@ async function inspectVerifiedSeedDatabase(
       .limit(1)
       .then((rows) => rows[0] ?? null);
     if (!representative) {
-      throw new Error("No representative cloned company and issue pair is readable.");
+      throw new Error("无法读取可用的克隆公司和任务示例。");
     }
 
     const summary: WorktreeSeedValidationSummary = {
@@ -1622,7 +1622,7 @@ async function inspectVerifiedSeedDatabase(
       || summary.companyCount < 1
       || summary.issueCount < 1
     ) {
-      throw new Error("Seed validation found an incomplete auth, membership, company, or issue shape.");
+      throw new Error("种子数据校验发现身份验证、成员关系、公司或任务数据不完整。");
     }
 
     return {
@@ -1788,19 +1788,19 @@ export function formatWorktreeSeedFailureDiagnostic(
     phase === "restore"
     && /database system is shutting down|terminating connection due to administrator command/i.test(message)
   ) {
-    return "Target embedded PostgreSQL shut down during restore. Stop any competing worktree service and retry the seed.";
+    return "恢复期间目标内嵌 PostgreSQL 已关闭。请停止其他 worktree 服务后重试种子数据导入。";
   }
   if (phase === "restore" && /Cannot seed target embedded PostgreSQL.+already running/i.test(message)) {
-    return "Target embedded PostgreSQL is owned by a running worktree service. Stop that service and retry the seed.";
+    return "目标内嵌 PostgreSQL 正由运行中的 worktree 服务使用。请停止该服务后重试种子数据导入。";
   }
   if (
     /No auth user has a non-empty credential account, instance-admin role, and active company membership/i.test(
       message,
     )
   ) {
-    return "Seed validation could not find a credential-backed instance administrator with an active company membership. Authenticated instances must create or sign in an administrator before seeding.";
+    return "种子数据校验未找到具备凭据且拥有有效公司成员资格的实例管理员。authenticated 实例须先创建管理员或登录后才能导入种子数据。";
   }
-  return `Seed failed during ${phase}.`;
+  return `种子数据操作在 ${phase} 阶段失败。`;
 }
 
 function dispatchSeedInterruption(signal: NodeJS.Signals): void {
@@ -1901,7 +1901,7 @@ export function readWorktreeSeedManifest(configPath: string): WorktreeSeedManife
     || !diagnosticsValid
     || !verifiedTerminalValid
   ) {
-    throw new Error(`Invalid worktree seed manifest at ${manifestPath}.`);
+    throw new Error(`worktree 种子清单无效：${manifestPath}。`);
   }
   return value as WorktreeSeedManifest;
 }
@@ -1958,7 +1958,7 @@ function updateWorktreeSeedManifest(input: {
 }): WorktreeSeedManifest {
   const markers = resolveWorktreeSeedMarkerPaths(input.configPath);
   const current = readWorktreeSeedManifest(input.configPath);
-  if (!current) throw new Error(`Worktree seed manifest does not exist at ${markers.manifest}.`);
+  if (!current) throw new Error(`worktree 种子清单不存在：${markers.manifest}。`);
   const at = (input.now ?? new Date()).toISOString();
   const nextState = input.state ?? current.state;
   const diagnostic = {
@@ -2002,7 +2002,7 @@ function readLegacyWorktreeSeedPendingMarker(filePath: string): LegacyWorktreeSe
     || typeof (parsed as { sourceConfigPath?: unknown }).sourceConfigPath !== "string"
     || !(parsed as { sourceConfigPath: string }).sourceConfigPath.trim()
   ) {
-    throw new Error(`Invalid worktree seed-pending marker at ${filePath}.`);
+    throw new Error(`worktree 待初始化标记无效：${filePath}。`);
   }
 
   return parsed as LegacyWorktreeSeedPendingMarker;
@@ -2085,14 +2085,14 @@ async function acquireWorktreeSeedLock(lockPath: string): Promise<() => Promise<
     );
     if (currentOwner && !processIsAlive(currentOwner.pid)) {
       throw new Error(
-        `Worktree seed lock ${lockPath} belongs to exited process ${currentOwner.pid}. `
-        + "Verify that no seed is running, then remove the stale lock and retry.",
+        `Worktree 种子数据锁 ${lockPath} 属于已退出的进程 ${currentOwner.pid}。`
+        + "请确认没有种子数据操作正在运行，然后删除过期锁并重试。",
       );
     }
     if (!currentOwner && malformedLockIsStale) {
       throw new Error(
-        `Worktree seed lock ${lockPath} is stale or malformed. `
-        + "Verify that no seed is running, then remove the stale lock and retry.",
+        `Worktree 种子数据锁 ${lockPath} 已过期或格式错误。`
+        + "请确认没有种子数据操作正在运行，然后删除过期锁并重试。",
       );
     }
     await new Promise((resolve) => setTimeout(resolve, WORKTREE_SEED_LOCK_POLL_MS));
@@ -2102,7 +2102,7 @@ async function acquireWorktreeSeedLock(lockPath: string): Promise<() => Promise<
 function startWorktreeSeedAttempt(configPath: string, now = new Date()): WorktreeSeedManifest {
   const markers = resolveWorktreeSeedMarkerPaths(configPath);
   const current = readWorktreeSeedManifest(configPath);
-  if (!current) throw new Error(`Worktree seed manifest does not exist at ${markers.manifest}.`);
+  if (!current) throw new Error(`worktree 种子清单不存在：${markers.manifest}。`);
   const at = now.toISOString();
   const next: WorktreeSeedManifest = {
     ...current,
@@ -2142,7 +2142,7 @@ async function runVerifiedWorktreeSeed(input: {
       phase: previous.phase,
       status: "failed",
       state: "failed",
-      message: "The previous seed attempt ended without a terminal result.",
+      message: "上一次种子数据尝试结束时没有最终结果。",
     });
   }
   startWorktreeSeedAttempt(input.configPath);
@@ -2153,7 +2153,7 @@ async function runVerifiedWorktreeSeed(input: {
       phase: activePhase,
       status: "failed",
       state: "failed",
-      message: `Seed interrupted by ${signal} during ${activePhase}.`,
+      message: `种子数据操作在 ${activePhase} 阶段被 ${signal} 中断。`,
     });
   });
 
@@ -2182,7 +2182,7 @@ async function runVerifiedWorktreeSeed(input: {
       },
     });
     if (!details.snapshotAt || !details.migrationRevision || !details.validation) {
-      throw new Error("Seed implementation returned without required validation evidence.");
+      throw new Error("种子数据实现未提供所需的校验证据便已返回。");
     }
     updateWorktreeSeedManifest({
       configPath: input.configPath,
@@ -2258,7 +2258,7 @@ export async function ensureWorktreeSeeded(
     ?? undefined;
   if (!explicitSourceConfigPath && registeredBaseWorkspaceCwd && (!registeredProjectWorkspaceId || !expectedCompanyId)) {
     throw new Error(
-      "Managed worktree seed registration is incomplete; project workspace and company bindings are required.",
+      "托管 worktree 种子数据登记不完整；必须设置项目工作区和公司关联。",
     );
   }
 
@@ -2272,7 +2272,7 @@ export async function ensureWorktreeSeeded(
   });
 
   if (initialManifest && initialManifest.targetInstanceId !== registeredSeedSource.targetInstanceId) {
-    throw new Error("Worktree seed manifest target instance does not match the registered target instance.");
+    throw new Error("worktree 种子清单中的目标实例与已注册的目标实例不匹配。");
   }
 
   // Resolve all authority-bearing paths before creating the lock. The manifest is
@@ -2292,7 +2292,7 @@ export async function ensureWorktreeSeeded(
     if (!manifest && existsSync(markers.pending)) {
       const currentLegacyPending = readLegacyWorktreeSeedPendingMarker(markers.pending);
       if (currentLegacyPending.sourceConfigPath !== legacyPending?.sourceConfigPath) {
-        throw new Error("Worktree seed source diagnostics changed while waiting for the seed lock.");
+        throw new Error("等待种子数据锁期间，worktree 种子源诊断信息发生变化。");
       }
       markWorktreeSeedPending({
         configPath,
@@ -2323,7 +2323,7 @@ export async function ensureWorktreeSeeded(
           state: "verified",
           snapshotAt: new Date().toISOString(),
           migrationRevision: legacyEvidence.migrationRevision,
-          message: "Adopted an existing legacy worktree database after validating its migration journal and core schema.",
+          message: "已校验迁移日志和核心架构，并接管现有旧版 worktree 数据库。",
         });
         return { seeded: false, reason: "legacy_database" };
       }
@@ -2337,7 +2337,7 @@ export async function ensureWorktreeSeeded(
       });
       manifest = readWorktreeSeedManifest(configPath);
       if (!manifest) {
-        throw new Error("Failed to create a pending worktree seed manifest.");
+        throw new Error("创建待填充的 worktree 种子清单失败。");
       }
     }
     if (
@@ -2365,11 +2365,11 @@ export async function ensureWorktreeSeeded(
 
     const sourceConfig = readConfig(sourceConfigPath);
     if (!sourceConfig) {
-      throw new Error(`Source config not found at ${sourceConfigPath}.`);
+      throw new Error(`未在 ${sourceConfigPath} 找到源配置文件。`);
     }
     const targetConfig = readConfig(configPath);
     if (!targetConfig) {
-      throw new Error(`Target config not found at ${configPath}.`);
+      throw new Error(`未在 ${configPath} 找到目标配置文件。`);
     }
 
     const seedDatabase = dependencies.seedDatabase ?? seedWorktreeDatabase;
@@ -2405,7 +2405,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   );
   const seedMode = opts.seedMode ?? "minimal";
   if (!isWorktreeSeedMode(seedMode)) {
-    throw new Error(`Unsupported seed mode "${seedMode}". Expected one of: minimal, full.`);
+    throw new Error(`不支持种子数据模式“${seedMode}”。可用值：minimal、full。`);
   }
   const instanceId = sanitizeWorktreeInstanceId(opts.instance ?? worktreeName);
   const paths = resolveWorktreeLocalPaths({
@@ -2422,7 +2422,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
 
   if ((existsSync(paths.configPath) || existsSync(paths.instanceRoot)) && !opts.force) {
     throw new Error(
-      `Worktree config already exists at ${paths.configPath} or instance data exists at ${paths.instanceRoot}. Re-run with --force to replace it.`,
+      `Worktree 配置已存在于 ${paths.configPath}，或实例数据已存在于 ${paths.instanceRoot}。请使用 --force 重新运行以替换。`,
     );
   }
 
@@ -2514,7 +2514,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   if (opts.seed !== false) {
     if (!sourceConfig) {
       throw new Error(
-        `Cannot seed worktree database because source config was not found at ${sourceConfigPath}. Use --no-seed or provide --from-config.`,
+        `找不到源配置文件 ${sourceConfigPath}，无法为 worktree 数据库写入种子数据。请使用 --no-seed 或传入 --from-config。`,
       );
     }
     const spinner = p.spinner();
@@ -2539,46 +2539,46 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
       reboundWorkspaceSummary = seeded.reboundWorkspaces;
       spinner.stop(`Seeded isolated worktree database (${seedMode}).`);
     } catch (error) {
-      spinner.stop(pc.red("Failed to seed worktree database."));
+      spinner.stop(pc.red("写入 worktree 数据库种子数据失败。"));
       throw error;
     } finally {
       await releaseSeedLock();
     }
   }
 
-  p.log.message(pc.dim(`Repo config: ${paths.configPath}`));
-  p.log.message(pc.dim(`Repo env: ${paths.envPath}`));
-  p.log.message(pc.dim(`Isolated home: ${paths.homeDir}`));
-  p.log.message(pc.dim(`Instance: ${paths.instanceId}`));
-  p.log.message(pc.dim(`Worktree badge: ${branding.name} (${branding.color})`));
-  p.log.message(pc.dim(`Server port: ${serverPort} | DB port: ${databasePort}`));
+  p.log.message(pc.dim(`仓库配置：${paths.configPath}`));
+  p.log.message(pc.dim(`仓库环境文件：${paths.envPath}`));
+  p.log.message(pc.dim(`隔离主目录：${paths.homeDir}`));
+  p.log.message(pc.dim(`实例：${paths.instanceId}`));
+  p.log.message(pc.dim(`Worktree 标识：${branding.name}（${branding.color}）`));
+  p.log.message(pc.dim(`服务端口：${serverPort} | 数据库端口：${databasePort}`));
   if (copiedGitHooks?.copied) {
     p.log.message(
-      pc.dim(`Mirrored git hooks: ${copiedGitHooks.sourceHooksPath} -> ${copiedGitHooks.targetHooksPath}`),
+      pc.dim(`已镜像 Git hooks：${copiedGitHooks.sourceHooksPath} -> ${copiedGitHooks.targetHooksPath}`),
     );
   }
   if (seedSummary) {
-    p.log.message(pc.dim(`Seed mode: ${seedMode}`));
-    p.log.message(pc.dim(`Seed snapshot: ${seedSummary}`));
+    p.log.message(pc.dim(`种子数据模式：${seedMode}`));
+    p.log.message(pc.dim(`种子数据快照：${seedSummary}`));
     if (opts.preserveLiveWork) {
-      p.log.warning("Preserved copied live work; this worktree instance may auto-run source-instance assignments.");
+      p.log.warning("已保留复制的实时工作；此 worktree 实例可能会自动运行源实例的任务分配。");
     } else if (seedExecutionQuarantineSummary) {
       p.log.message(
-        pc.dim(`Seed execution quarantine: ${formatSeededWorktreeExecutionQuarantineSummary(seedExecutionQuarantineSummary)}`),
+        pc.dim(`种子数据执行隔离：${formatSeededWorktreeExecutionQuarantineSummary(seedExecutionQuarantineSummary)}`),
       );
     }
     if (pausedScheduledRoutineCount != null) {
-      p.log.message(pc.dim(`Paused scheduled routines: ${pausedScheduledRoutineCount}`));
+      p.log.message(pc.dim(`已暂停的定时例程：${pausedScheduledRoutineCount}`));
     }
     for (const rebound of reboundWorkspaceSummary) {
       p.log.message(
-        pc.dim(`Rebound workspace ${rebound.name}: ${rebound.fromCwd} -> ${rebound.toCwd}`),
+        pc.dim(`已重新绑定工作区 ${rebound.name}：${rebound.fromCwd} -> ${rebound.toCwd}`),
       );
     }
   }
   p.outro(
     pc.green(
-      `Worktree ready. Run Paperclip inside this repo and the CLI/server will use ${paths.instanceId} automatically.`,
+      `Worktree 已就绪。在此仓库中运行 Paperclip 时，CLI 和服务器会自动使用实例 ${paths.instanceId}。`,
     ),
   );
 }
@@ -2594,33 +2594,33 @@ export async function worktreeEnsureSeededCommand(opts: WorktreeEnsureSeededOpti
   p.intro(pc.bgCyan(pc.black(" paperclipai worktree ensure-seeded ")));
 
   const spinner = p.spinner();
-  spinner.start("Checking isolated worktree database seed state...");
+  spinner.start("正在检查隔离 worktree 数据库的种子数据状态……");
   try {
     const result = await ensureWorktreeSeeded(opts);
     if (result.seeded) {
-      spinner.stop("Seeded isolated worktree database (minimal).");
+      spinner.stop("已为隔离 worktree 数据库写入最小种子数据。");
     } else if (result.reason === "legacy_database") {
-      spinner.stop("Validated and adopted an existing legacy worktree database.");
+      spinner.stop("已验证并采用现有旧版 worktree 数据库。");
     } else {
-      spinner.stop("Worktree database already has a verified seed manifest.");
+      spinner.stop("Worktree 数据库已有经过验证的种子数据清单。");
     }
     if (result.details) {
-      p.log.message(pc.dim(`Seed snapshot: ${result.details.backupSummary}`));
+      p.log.message(pc.dim(`种子数据快照：${result.details.backupSummary}`));
       p.log.message(
         pc.dim(
-          `Seed execution quarantine: ${formatSeededWorktreeExecutionQuarantineSummary(result.details.executionQuarantine)}`,
+          `种子数据执行隔离：${formatSeededWorktreeExecutionQuarantineSummary(result.details.executionQuarantine)}`,
         ),
       );
-      p.log.message(pc.dim(`Paused scheduled routines: ${result.details.pausedScheduledRoutines}`));
+      p.log.message(pc.dim(`已暂停的定时例程：${result.details.pausedScheduledRoutines}`));
       for (const rebound of result.details.reboundWorkspaces) {
         p.log.message(
-          pc.dim(`Rebound workspace ${rebound.name}: ${rebound.fromCwd} -> ${rebound.toCwd}`),
+          pc.dim(`已重新绑定工作区 ${rebound.name}：${rebound.fromCwd} -> ${rebound.toCwd}`),
         );
       }
     }
-    p.outro(pc.green("Worktree database seed complete."));
+    p.outro(pc.green("Worktree 数据库种子数据已完成。"));
   } catch (error) {
-    spinner.stop(pc.red("Failed to seed worktree database."));
+    spinner.stop(pc.red("写入 worktree 数据库种子数据失败。"));
     throw error;
   }
 }
@@ -2635,7 +2635,7 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
   const sourceConfigPath = resolveSourceConfigPath(opts);
   const targetPath = resolveWorktreeMakeTargetPath(name);
   if (existsSync(targetPath)) {
-    throw new Error(`Target path already exists: ${targetPath}`);
+    throw new Error(`目标路径已存在：${targetPath}`);
   }
 
   mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -2669,7 +2669,7 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
     });
     spinner.stop(`Created git worktree at ${targetPath}.`);
   } catch (error) {
-    spinner.stop(pc.red("Failed to create git worktree."));
+    spinner.stop(pc.red("创建 Git worktree 失败。"));
     throw new Error(extractExecSyncErrorMessage(error) ?? String(error));
   }
 
@@ -2881,8 +2881,8 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
   );
 
   if (!hasBranch && !hasTargetDir && !hasInstanceData && !linkedWorktree) {
-    p.log.info("Nothing to clean up — no branch, worktree directory, or instance data found.");
-    p.outro(pc.green("Already clean."));
+    p.log.info("无需清理：未找到分支、worktree 目录或实例数据。");
+    p.outro(pc.green("已清理完成。"));
     return;
   }
 
@@ -2894,19 +2894,19 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
     const onRemote = branchExistsOnAnyRemote(sourceCwd, name);
     if (onRemote) {
       p.log.info(
-        `Branch "${name}" has unique local commits, but the branch also exists on a remote — safe to delete locally.`,
+        `分支“${name}”有独有的本地提交，但该分支也存在于远端，可安全地在本地删除。`,
       );
     } else {
       problems.push(
-        `Branch "${name}" has commits not found on any other branch or remote. ` +
-          `Deleting it will lose work. Push it first, or use --force.`,
+        `分支“${name}”包含其他分支和远端都没有的提交。` +
+          `删除该分支会丢失这些工作。请先推送，或使用 --force。`,
       );
     }
   }
 
   if (hasTargetDir && worktreePathHasUncommittedChanges(targetPath)) {
     problems.push(
-      `Worktree directory ${targetPath} has uncommitted changes. Commit or stash first, or use --force.`,
+      `Worktree 目录 ${targetPath} 有未提交的更改。请先提交或暂存，或使用 --force。`,
     );
   }
 
@@ -2914,11 +2914,11 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
     for (const problem of problems) {
       p.log.error(problem);
     }
-    throw new Error("Safety checks failed. Resolve the issues above or re-run with --force.");
+    throw new Error("安全检查未通过。请先解决上述问题，或使用 --force 重新运行。");
   }
   if (problems.length > 0 && opts.force) {
     for (const problem of problems) {
-      p.log.warning(`Overridden by --force: ${problem}`);
+      p.log.warning(`已通过 --force 忽略：${problem}`);
     }
   }
 
@@ -2943,12 +2943,12 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
         p.log.warning(extractExecSyncErrorMessage(error) ?? String(error));
       }
     } else {
-      spinner.start("Pruning stale worktree entry...");
+      spinner.start("正在清理过期的 worktree 条目……");
       execFileSync("git", ["worktree", "prune"], {
         cwd: sourceCwd,
         stdio: ["ignore", "pipe", "pipe"],
       });
-      spinner.stop("Pruned stale worktree entry.");
+      spinner.stop("已清理过期的 worktree 条目。");
     }
   } else {
     // Even without a linked worktree, prune to clean up any orphaned entries
@@ -2986,12 +2986,12 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
   // 3d. Remove instance data
   if (existsSync(instanceRoot)) {
     const spinner = p.spinner();
-    spinner.start(`Removing instance data at ${instanceRoot}...`);
+    spinner.start(`正在移除实例数据：${instanceRoot}……`);
     rmSync(instanceRoot, { recursive: true, force: true });
-    spinner.stop(`Removed instance data at ${instanceRoot}.`);
+    spinner.stop(`已移除实例数据：${instanceRoot}。`);
   }
 
-  p.outro(pc.green("Cleanup complete."));
+  p.outro(pc.green("清理完成。"));
 }
 
 export async function worktreeEnvCommand(opts: WorktreeEnvOptions): Promise<void> {
@@ -3071,7 +3071,7 @@ function resolveAttachmentLookupStorages(input: {
 async function openConfiguredDb(configPath: string): Promise<OpenDbHandle> {
   const config = readConfig(configPath);
   if (!config) {
-    throw new Error(`Config not found at ${configPath}.`);
+    throw new Error(`未在 ${configPath} 找到配置文件。`);
   }
   const envEntries = readPaperclipEnvEntries(resolvePaperclipEnvFile(configPath));
   let embeddedHandle: EmbeddedPostgresHandle | null = null;
@@ -3091,7 +3091,7 @@ async function openConfiguredDb(configPath: string): Promise<OpenDbHandle> {
           ? ` Pending migrations: ${migrationState.pendingMigrations.join(", ")}.`
           : "";
       throw new Error(
-        `Database for ${configPath} is not up to date.${pending} Run \`pnpm db:migrate\` (or start Paperclip once) before using worktree merge history.`,
+        `配置 ${configPath} 对应的数据库不是最新版本。${pending} 使用 worktree 合并历史前，请运行 \`pnpm db:migrate\`（或启动一次 Paperclip）。`,
       );
     }
     const db = createDb(connectionString) as ClosableDb;
@@ -3142,7 +3142,7 @@ async function resolveMergeCompany(input: {
       (company) => company.id === selector || company.issuePrefix.toLowerCase() === selector.toLowerCase(),
     );
     if (!matched) {
-      throw new Error(`Could not resolve company "${selector}" in both source and target databases.`);
+      throw new Error(`无法在源和目标数据库中解析公司“${selector}”。`);
     }
     return matched;
   }
@@ -3152,13 +3152,13 @@ async function resolveMergeCompany(input: {
   }
 
   if (shared.length === 0) {
-    throw new Error("Source and target databases do not share a company id. Pass --company explicitly once both sides match.");
+    throw new Error("源数据库和目标数据库的公司 ID 不一致。两侧匹配后，请明确传入 --company。");
   }
 
   const options = shared
     .map((company) => `${company.issuePrefix} (${company.name})`)
     .join(", ");
-  throw new Error(`Multiple shared companies found. Re-run with --company <id-or-prefix>. Options: ${options}`);
+  throw new Error(`找到多个共享公司。请使用 --company <id-or-prefix> 重新运行。选项：${options}`);
 }
 
 function renderMergePlan(plan: Awaited<ReturnType<typeof collectMergePlan>>["plan"], extras: {
@@ -3484,7 +3484,7 @@ async function collectMergePlan(input: {
   ]);
 
   if (!targetCompanyRow) {
-    throw new Error(`Target company ${companyId} was not found.`);
+    throw new Error(`未找到目标公司 ${companyId}。`);
   }
 
   const plan = buildWorktreeMergePlan({
@@ -3565,12 +3565,12 @@ async function promptForProjectMappings(input: {
     );
     const importSelectionValue = `__import__:${sourceProjectId}`;
     const selection = await p.select<string | null>({
-      message: `Project "${sourceProject.name}" is missing in target. How should ${input.plan.issuePrefix} imports handle it?`,
+      message: `目标中缺少项目“${sourceProject.name}”。导入 ${input.plan.issuePrefix} 时如何处理？`,
       options: [
         {
           value: importSelectionValue,
-          label: `Import ${sourceProject.name}`,
-          hint: "Create the project and copy its workspace settings",
+          label: `导入 ${sourceProject.name}`,
+          hint: "创建项目并复制其工作区设置",
         },
         ...(nameMatch
           ? [{
@@ -3589,7 +3589,7 @@ async function promptForProjectMappings(input: {
       initialValue: nameMatch?.id ?? null,
     });
     if (p.isCancel(selection)) {
-      throw new Error("Project mapping cancelled.");
+      throw new Error("项目映射已取消。");
     }
     if (selection === importSelectionValue) {
       importProjectIds.add(sourceProjectId);
@@ -3639,7 +3639,7 @@ function resolveWorktreeEndpointFromSelector(
   const trimmed = selector.trim();
   const allowCurrent = opts?.allowCurrent !== false;
   if (trimmed.length === 0) {
-    throw new Error("Worktree selector cannot be empty.");
+    throw new Error("worktree 选择器不能为空。");
   }
 
   const currentEndpoint = resolveCurrentWorktreeEndpoint();
@@ -3655,7 +3655,7 @@ function resolveWorktreeEndpointFromSelector(
     }
     const configPath = path.resolve(directPath, ".paperclip", "config.json");
     if (!existsSync(configPath)) {
-      throw new Error(`Resolved worktree path ${directPath} does not contain .paperclip/config.json.`);
+      throw new Error(`解析出的 worktree 路径 ${directPath} 中没有 .paperclip/config.json。`);
     }
     return {
       rootPath: directPath,
@@ -3673,11 +3673,11 @@ function resolveWorktreeEndpointFromSelector(
   );
   if (!matched) {
     throw new Error(
-      `Could not resolve worktree "${selector}". Use a path, a listed worktree directory name, branch name, or "current".`,
+      `无法解析 worktree“${selector}”。请使用路径、列表中的 worktree 目录名、分支名或“current”。`,
     );
   }
   if (!matched.hasPaperclipConfig && !matched.isCurrent) {
-    throw new Error(`Resolved worktree "${selector}" does not look like a Paperclip worktree.`);
+    throw new Error(`解析出的 worktree“${selector}”似乎不是 Paperclip worktree。`);
   }
   return resolveEndpointFromChoice(matched);
 }
@@ -3694,14 +3694,14 @@ async function promptForSourceEndpoint(excludeWorktreePath?: string): Promise<Re
       hint: `${choice.worktree}${choice.isCurrent ? " (current)" : ""}`,
     }));
   if (choices.length === 0) {
-    throw new Error("No Paperclip worktrees were found. Run `paperclipai worktree:list` to inspect the repo worktrees.");
+    throw new Error("未找到 Paperclip worktree。运行 `paperclipai worktree:list` 检查仓库中的 worktree。");
   }
   const selection = await p.select<string>({
-    message: "Choose the source worktree to import from",
+    message: "选择要从中导入的源 worktree",
     options: choices,
   });
   if (p.isCancel(selection)) {
-    throw new Error("Source worktree selection cancelled.");
+    throw new Error("已取消选择源 worktree。");
   }
   if (selection === "__current__") {
     return currentEndpoint;
@@ -4104,11 +4104,11 @@ async function applyMergePlan(input: {
 
 export async function worktreeMergeHistoryCommand(sourceArg: string | undefined, opts: WorktreeMergeHistoryOptions): Promise<void> {
   if (opts.apply && opts.dry) {
-    throw new Error("Use either --apply or --dry, not both.");
+    throw new Error("--apply 和 --dry 不能同时使用。");
   }
 
   if (sourceArg && opts.from) {
-    throw new Error("Use either the positional source argument or --from, not both.");
+    throw new Error("位置参数 source 和 --from 不能同时使用。");
   }
 
   const targetEndpoint = opts.to
@@ -4121,7 +4121,7 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
       : await promptForSourceEndpoint(targetEndpoint.rootPath);
 
   if (path.resolve(sourceEndpoint.configPath) === path.resolve(targetEndpoint.configPath)) {
-    throw new Error("Source and target Paperclip configs are the same. Choose different --from/--to worktrees.");
+    throw new Error("源和目标 Paperclip 配置相同。请为 --from 和 --to 选择不同的 worktree。");
   }
 
   const scopes = parseWorktreeMergeScopes(opts.scope);
@@ -4179,11 +4179,11 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
     const confirmed = opts.yes
       ? true
       : await p.confirm({
-        message: `Import ${collected.plan.counts.issuesToInsert} issues and ${collected.plan.counts.commentsToInsert} comments from ${sourceEndpoint.label} into ${targetEndpoint.label}?`,
+        message: `将 ${collected.plan.counts.issuesToInsert} 个任务和 ${collected.plan.counts.commentsToInsert} 条评论从 ${sourceEndpoint.label} 导入到 ${targetEndpoint.label} 吗？`,
         initialValue: false,
       });
     if (p.isCancel(confirmed) || !confirmed) {
-      p.log.warn("Import cancelled.");
+      p.log.warn("导入已取消。");
       return;
     }
 
@@ -4196,12 +4196,12 @@ export async function worktreeMergeHistoryCommand(sourceArg: string | undefined,
     });
     if (applied.skippedMissingAttachmentObjects > 0) {
       p.log.warn(
-        `Skipped ${applied.skippedMissingAttachmentObjects} attachments whose source files were missing from storage.`,
+        `已跳过 ${applied.skippedMissingAttachmentObjects} 个附件，其源文件在存储中不存在。`,
       );
     }
     p.outro(
       pc.green(
-        `Imported ${applied.insertedProjects} projects (${applied.insertedProjectWorkspaces} workspaces), ${applied.insertedIssues} issues, ${applied.insertedComments} comments, ${applied.insertedDocuments} documents (${applied.insertedDocumentRevisions} revisions, ${applied.mergedDocuments} merged), and ${applied.insertedAttachments} attachments into ${company.issuePrefix}.`,
+        `已将 ${applied.insertedProjects} 个项目（${applied.insertedProjectWorkspaces} 个工作区）、${applied.insertedIssues} 个任务、${applied.insertedComments} 条评论、${applied.insertedDocuments} 篇文档（${applied.insertedDocumentRevisions} 个修订，合并 ${applied.mergedDocuments} 篇）和 ${applied.insertedAttachments} 个附件导入 ${company.issuePrefix}。`,
       ),
     );
   } finally {
@@ -4215,7 +4215,7 @@ async function backupWorktreeReseedTarget(input: {
   targetPaths: WorktreeLocalPaths;
 }): Promise<string> {
   if (input.targetConfig.database.mode !== "embedded-postgres") {
-    throw new Error("Managed worktree repair requires an embedded PostgreSQL target.");
+    throw new Error("托管 worktree 修复要求目标使用嵌入式 PostgreSQL。");
   }
   const targetHandle = await ensureEmbeddedPostgres(
     input.targetConfig.database.embeddedPostgresDataDir,
@@ -4241,7 +4241,7 @@ async function backupWorktreeReseedTarget(input: {
 async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
   const seedMode = opts.seedMode ?? "full";
   if (!isWorktreeSeedMode(seedMode)) {
-    throw new Error(`Unsupported seed mode "${seedMode}". Expected one of: minimal, full.`);
+    throw new Error(`不支持种子数据模式“${seedMode}”。可用值：minimal、full。`);
   }
 
   const targetEndpoint = opts.to
@@ -4250,19 +4250,19 @@ async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
   const source = resolveWorktreeReseedSource(opts);
 
   if (path.resolve(source.configPath) === path.resolve(targetEndpoint.configPath)) {
-    throw new Error("Source and target Paperclip configs are the same. Choose different --from/--to values.");
+    throw new Error("源和目标 Paperclip 配置相同。请为 --from 和 --to 设置不同的值。");
   }
   if (!existsSync(source.configPath)) {
-    throw new Error(`Source config not found at ${source.configPath}.`);
+    throw new Error(`未在 ${source.configPath} 找到源配置文件。`);
   }
 
   const targetConfig = readConfig(targetEndpoint.configPath);
   if (!targetConfig) {
-    throw new Error(`Target config not found at ${targetEndpoint.configPath}.`);
+    throw new Error(`未在 ${targetEndpoint.configPath} 找到目标配置文件。`);
   }
   const sourceConfig = readConfig(source.configPath);
   if (!sourceConfig) {
-    throw new Error(`Source config not found at ${source.configPath}.`);
+    throw new Error(`未在 ${source.configPath} 找到源配置文件。`);
   }
 
   const targetPaths = resolveWorktreeReseedTargetPaths({
@@ -4272,27 +4272,27 @@ async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
   const runningTargetPid = resolveRunningEmbeddedPostgresPid(targetConfig);
   if (runningTargetPid && !opts.allowLiveTarget) {
     throw new Error(
-      `Target worktree database appears to be running (pid ${runningTargetPid}). Stop Paperclip in ${targetEndpoint.rootPath} before reseeding, or re-run with --allow-live-target if you want to override this guard.`,
+      `目标 worktree 数据库似乎正在运行（pid ${runningTargetPid}）。重新写入种子数据前，请停止 ${targetEndpoint.rootPath} 中的 Paperclip；如需跳过此保护，请使用 --allow-live-target 重新运行。`,
     );
   }
 
   const confirmed = opts.yes
     ? true
     : await p.confirm({
-      message: `Overwrite the isolated Paperclip DB for ${targetEndpoint.label} from ${source.label} using ${seedMode} seed mode?`,
+      message: `使用 ${seedMode} 种子模式，将 ${source.label} 的数据覆盖到 ${targetEndpoint.label} 的隔离 Paperclip 数据库吗？`,
       initialValue: false,
     });
   if (p.isCancel(confirmed) || !confirmed) {
-    p.log.warn("Reseed cancelled.");
+    p.log.warn("重新写入种子数据已取消。");
     return;
   }
 
   if (runningTargetPid && opts.allowLiveTarget) {
-    p.log.warning(`Proceeding even though the target embedded PostgreSQL appears to be running (pid ${runningTargetPid}).`);
+    p.log.warning(`目标内嵌 PostgreSQL 似乎仍在运行（pid ${runningTargetPid}），继续操作。`);
   }
 
   const spinner = p.spinner();
-  spinner.start(`Reseeding ${targetEndpoint.label} from ${source.label} (${seedMode})...`);
+  spinner.start(`正在使用 ${source.label} 的数据为 ${targetEndpoint.label} 重新写入种子（${seedMode}）……`);
   const markers = resolveWorktreeSeedMarkerPaths(targetEndpoint.configPath);
   mkdirSync(path.dirname(markers.lock), { recursive: true });
   const releaseSeedLock = await acquireWorktreeSeedLock(markers.lock);
@@ -4300,7 +4300,7 @@ async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
     let targetBackupSummary: string | null = null;
     if (opts.backupTarget) {
       targetBackupSummary = await backupWorktreeReseedTarget({ targetConfig, targetPaths });
-      p.log.message(pc.dim(`Recoverable pre-repair backup: ${targetBackupSummary}`));
+      p.log.message(pc.dim(`修复前备份（可恢复）：${targetBackupSummary}`));
     }
     markWorktreeSeedPending({
       configPath: targetEndpoint.configPath,
@@ -4320,26 +4320,26 @@ async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
       expectedCompanyId: nonEmpty(process.env.PAPERCLIP_SEED_EXPECTED_COMPANY_ID) ?? undefined,
       seedDatabase: seedWorktreeDatabase,
     });
-    spinner.stop(`Reseeded ${targetEndpoint.label} (${seedMode}).`);
-    p.log.message(pc.dim(`Source: ${source.configPath}`));
-    p.log.message(pc.dim(`Target: ${targetEndpoint.configPath}`));
-    p.log.message(pc.dim(`Seed snapshot: ${seeded.backupSummary}`));
+    spinner.stop(`已为 ${targetEndpoint.label} 重新写入种子数据（${seedMode}）。`);
+    p.log.message(pc.dim(`来源：${source.configPath}`));
+    p.log.message(pc.dim(`目标：${targetEndpoint.configPath}`));
+    p.log.message(pc.dim(`种子数据快照：${seeded.backupSummary}`));
     if (opts.preserveLiveWork) {
-      p.log.warning("Preserved copied live work; this worktree instance may auto-run source-instance assignments.");
+      p.log.warning("已保留复制的实时工作；此 worktree 实例可能会自动运行源实例的任务分配。");
     } else {
       p.log.message(
-        pc.dim(`Seed execution quarantine: ${formatSeededWorktreeExecutionQuarantineSummary(seeded.executionQuarantine)}`),
+        pc.dim(`种子数据执行隔离：${formatSeededWorktreeExecutionQuarantineSummary(seeded.executionQuarantine)}`),
       );
     }
-    p.log.message(pc.dim(`Paused scheduled routines: ${seeded.pausedScheduledRoutines}`));
+    p.log.message(pc.dim(`已暂停的定时例程：${seeded.pausedScheduledRoutines}`));
     for (const rebound of seeded.reboundWorkspaces) {
       p.log.message(
-        pc.dim(`Rebound workspace ${rebound.name}: ${rebound.fromCwd} -> ${rebound.toCwd}`),
+        pc.dim(`已重新绑定工作区 ${rebound.name}：${rebound.fromCwd} -> ${rebound.toCwd}`),
       );
     }
-    p.outro(pc.green(`Reseed complete for ${targetEndpoint.label}.`));
+    p.outro(pc.green(`已为 ${targetEndpoint.label} 完成种子数据重写。`));
   } catch (error) {
-    spinner.stop(pc.red("Failed to reseed worktree database."));
+    spinner.stop(pc.red("重新写入 worktree 数据库种子数据失败。"));
     throw error;
   } finally {
     await releaseSeedLock();
@@ -4358,7 +4358,7 @@ export async function worktreeRepairCommand(opts: WorktreeRepairOptions): Promis
 
   const seedMode = opts.seedMode ?? "minimal";
   if (!isWorktreeSeedMode(seedMode)) {
-    throw new Error(`Unsupported seed mode "${seedMode}". Expected one of: minimal, full.`);
+    throw new Error(`不支持种子数据模式“${seedMode}”。可用值：minimal、full。`);
   }
 
   const target = await ensureRepairTargetWorktree({
@@ -4367,17 +4367,17 @@ export async function worktreeRepairCommand(opts: WorktreeRepairOptions): Promis
     opts,
   });
   if (!target) {
-    p.log.warn("Current checkout is the primary repo worktree. Pass --branch to create or repair a linked worktree.");
-    p.outro(pc.yellow("No worktree repaired."));
+    p.log.warn("当前检出是主仓库 worktree。请传入 --branch 创建或修复关联 worktree。");
+    p.outro(pc.yellow("未修复 worktree。"));
     return;
   }
 
   const source = resolveWorktreeRepairSource(opts);
   if (!existsSync(source.configPath)) {
-    throw new Error(`Source config not found at ${source.configPath}.`);
+    throw new Error(`未在 ${source.configPath} 找到源配置文件。`);
   }
   if (path.resolve(source.configPath) === path.resolve(target.configPath)) {
-    throw new Error("Source and target Paperclip configs are the same. Use --from-config/--from-instance to point repair at a different source.");
+    throw new Error("源和目标 Paperclip 配置相同。请使用 --from-config/--from-instance 将修复操作指向其他来源。");
   }
 
   const targetConfig = existsSync(target.configPath) ? readConfig(target.configPath) : null;
@@ -4387,8 +4387,8 @@ export async function worktreeRepairCommand(opts: WorktreeRepairOptions): Promis
   );
 
   if (targetConfig && targetHasWorktreeEnv && opts.noSeed) {
-    p.log.message(pc.dim(`Target ${target.label} already has worktree-local config/env. Skipping reseed because --no-seed was passed.`));
-    p.outro(pc.green(`Worktree metadata already looks healthy for ${target.label}.`));
+    p.log.message(pc.dim(`目标 ${target.label} 已有 worktree 本地 config/env；因传入 --no-seed，跳过种子数据重写。`));
+    p.outro(pc.green(`目标 ${target.label} 的 worktree 元数据正常。`));
     return;
   }
 
@@ -4413,11 +4413,11 @@ export async function worktreeRepairCommand(opts: WorktreeRepairOptions): Promis
   const runningTargetPid = readRunningPostmasterPid(path.resolve(repairPaths.embeddedPostgresDataDir, "postmaster.pid"));
   if (runningTargetPid && !opts.allowLiveTarget) {
     throw new Error(
-      `Target worktree database appears to be running (pid ${runningTargetPid}). Stop Paperclip in ${target.rootPath} before repairing, or re-run with --allow-live-target if you want to override this guard.`,
+      `目标 worktree 数据库似乎正在运行（pid ${runningTargetPid}）。修复前，请停止 ${target.rootPath} 中的 Paperclip；如需跳过此保护，请使用 --allow-live-target 重新运行。`,
     );
   }
   if (runningTargetPid && opts.allowLiveTarget) {
-    p.log.warning(`Proceeding even though the target embedded PostgreSQL appears to be running (pid ${runningTargetPid}).`);
+    p.log.warning(`目标内嵌 PostgreSQL 似乎仍在运行（pid ${runningTargetPid}），继续操作。`);
   }
 
   const originalCwd = process.cwd();
@@ -4439,114 +4439,114 @@ export async function worktreeRepairCommand(opts: WorktreeRepairOptions): Promis
 }
 
 export function registerWorktreeCommands(program: Command): void {
-  const worktree = program.command("worktree").description("Worktree-local Paperclip instance helpers");
+  const worktree = program.command("worktree").description("worktree 本地 Paperclip 实例工具");
 
   program
     .command("worktree:make")
-    .description("Create ~/NAME as a git worktree, then initialize an isolated Paperclip instance inside it")
-    .argument("<name>", "Worktree name — auto-prefixed with paperclip- if needed (created at ~/paperclip-NAME)")
-    .option("--start-point <ref>", "Remote ref to base the new branch on (env: PAPERCLIP_WORKTREE_START_POINT)")
-    .option("--instance <id>", "Explicit isolated instance id")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
-    .option("--server-port <port>", "Preferred server port", (value) => Number(value))
-    .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: minimal)", "minimal")
-    .option("--preserve-live-work", "Do not quarantine copied agent work or workspace runtime services in the seeded worktree", false)
-    .option("--no-seed", "Skip database seeding from the source instance")
-    .option("--force", "Replace existing repo-local config and isolated instance data", false)
+    .description("将 ~/NAME 创建为 Git worktree，并在其中初始化隔离的 Paperclip 实例")
+    .argument("<name>", "worktree 名称——必要时自动添加 paperclip- 前缀（创建于 ~/paperclip-NAME）")
+    .option("--start-point <ref>", "新分支所基于的远程引用（环境变量：PAPERCLIP_WORKTREE_START_POINT）")
+    .option("--instance <id>", "明确指定隔离实例 ID")
+    .option("--home <path>", `worktree 实例主目录（环境变量：PAPERCLIP_WORKTREES_DIR，默认：${DEFAULT_WORKTREE_HOME}）`)
+    .option("--from-config <path>", "用于生成种子数据的源 config.json")
+    .option("--from-data-dir <path>", "用于推导源配置的源 PAPERCLIP_HOME")
+    .option("--from-instance <id>", "用于推导源配置的源实例 ID", "default")
+    .option("--server-port <port>", "首选服务端口", (value) => Number(value))
+    .option("--db-port <port>", "首选嵌入式 Postgres 端口", (value) => Number(value))
+    .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：minimal）", "minimal")
+    .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
+    .option("--no-seed", "跳过从源实例导入数据库种子数据")
+    .option("--force", "替换现有仓库本地配置和隔离实例数据", false)
     .action(worktreeMakeCommand);
 
   worktree
     .command("init")
-    .description("Create repo-local config/env and an isolated instance for this worktree")
-    .option("--name <name>", "Display name used to derive the instance id")
-    .option("--instance <id>", "Explicit isolated instance id")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config", "default")
-    .option("--server-port <port>", "Preferred server port", (value) => Number(value))
-    .option("--db-port <port>", "Preferred embedded Postgres port", (value) => Number(value))
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: minimal)", "minimal")
-    .option("--preserve-live-work", "Do not quarantine copied agent work or workspace runtime services in the seeded worktree", false)
-    .option("--no-seed", "Skip database seeding from the source instance")
-    .option("--force", "Replace existing repo-local config and isolated instance data", false)
+    .description("为此 worktree 创建仓库本地 config/env 和隔离实例")
+    .option("--name <name>", "用于生成实例 ID 的显示名称")
+    .option("--instance <id>", "明确指定隔离实例 ID")
+    .option("--home <path>", `worktree 实例主目录（环境变量：PAPERCLIP_WORKTREES_DIR，默认：${DEFAULT_WORKTREE_HOME}）`)
+    .option("--from-config <path>", "用于生成种子数据的源 config.json")
+    .option("--from-data-dir <path>", "用于推导源配置的源 PAPERCLIP_HOME")
+    .option("--from-instance <id>", "用于推导源配置的源实例 ID", "default")
+    .option("--server-port <port>", "首选服务端口", (value) => Number(value))
+    .option("--db-port <port>", "首选嵌入式 Postgres 端口", (value) => Number(value))
+    .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：minimal）", "minimal")
+    .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
+    .option("--no-seed", "跳过从源实例导入数据库种子数据")
+    .option("--force", "替换现有仓库本地配置和隔离实例数据", false)
     .action(worktreeInitCommand);
 
   worktree
     .command("env")
-    .description("Print shell exports for the current worktree-local Paperclip instance")
-    .option("-c, --config <path>", "Path to config file")
-    .option("--json", "Print JSON instead of shell exports")
+    .description("输出当前 worktree 本地 Paperclip 实例的 shell 环境变量")
+    .option("-c, --config <path>", "配置文件路径")
+    .option("--json", "输出 JSON，而不是 shell 环境变量")
     .action(worktreeEnvCommand);
 
   worktree
     .command("ensure-seeded")
-    .description("Seed a seed-pending worktree database exactly once from its source instance")
-    .option("-c, --config <path>", "Path to the target worktree config file")
-    .option("--from-config <path>", "Source config.json to seed from (defaults to the seed-pending marker)")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config")
-    .option("--preserve-live-work", "Do not quarantine copied agent work or workspace runtime services", false)
+    .description("从源实例向待初始化的 worktree 数据库导入一次种子数据")
+    .option("-c, --config <path>", "目标 worktree 配置文件路径")
+    .option("--from-config <path>", "用于生成种子数据的源 config.json（默认使用待初始化标记中的值）")
+    .option("--from-data-dir <path>", "用于推导源配置的源 PAPERCLIP_HOME")
+    .option("--from-instance <id>", "用于推导源配置的源实例 ID")
+    .option("--preserve-live-work", "不要隔离复制的智能体工作或工作区运行时服务", false)
     .action(worktreeEnsureSeededCommand);
 
   program
     .command("worktree:list")
-    .description("List git worktrees visible from this repo and whether they look like Paperclip worktrees")
-    .option("--json", "Print JSON instead of text output")
+    .description("列出此仓库中的 Git worktree，并标明哪些看起来是 Paperclip worktree")
+    .option("--json", "输出 JSON，而不是文本")
     .action(worktreeListCommand);
 
   program
     .command("worktree:merge-history")
-    .description("Preview or import issue/comment history from another worktree into the current instance")
-    .argument("[source]", "Optional source worktree path, directory name, or branch name (back-compat alias for --from)")
-    .option("--from <worktree>", "Source worktree path, directory name, branch name, or current")
-    .option("--to <worktree>", "Target worktree path, directory name, branch name, or current (defaults to current)")
-    .option("--company <id-or-prefix>", "Shared company id or issue prefix inside the chosen source/target instances")
-    .option("--scope <items>", "Comma-separated scopes to import (issues, comments)", "issues,comments")
-    .option("--apply", "Apply the import after previewing the plan", false)
-    .option("--dry", "Preview only and do not import anything", false)
-    .option("--yes", "Skip the interactive confirmation prompt when applying", false)
+    .description("预览或导入其他 worktree 中的任务/评论历史到当前实例")
+    .argument("[source]", "可选源 worktree 路径、目录名或分支名（为兼容旧版本，相当于 --from）")
+    .option("--from <worktree>", "源 worktree 路径、目录名、分支名或 current")
+    .option("--to <worktree>", "目标 worktree 路径、目录名、分支名或 current（默认：current）")
+    .option("--company <id-or-prefix>", "所选源/目标实例中的共享公司 ID 或任务前缀")
+    .option("--scope <items>", "要导入的范围，以逗号分隔（issues、comments）", "issues,comments")
+    .option("--apply", "预览计划后应用导入", false)
+    .option("--dry", "仅预览，不导入任何内容", false)
+    .option("--yes", "应用导入时跳过交互式确认提示", false)
     .action(worktreeMergeHistoryCommand);
 
   worktree
     .command("reseed")
-    .description("Re-seed an existing worktree-local instance from another Paperclip instance or worktree")
-    .option("--from <worktree>", "Source worktree path, directory name, branch name, or current")
-    .option("--to <worktree>", "Target worktree path, directory name, branch name, or current (defaults to current)")
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config")
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: full)", "full")
-    .option("--preserve-live-work", "Do not quarantine copied agent work or workspace runtime services in the seeded worktree", false)
-    .option("--yes", "Skip the destructive confirmation prompt", false)
-    .option("--allow-live-target", "Override the guard that requires the target worktree DB to be stopped first", false)
-    .option("--backup-target", "Retain a recoverable full backup of the isolated target DB before reseeding", false)
+    .description("从其他 Paperclip 实例或 worktree 重新导入数据到现有 worktree 本地实例")
+    .option("--from <worktree>", "源 worktree 路径、目录名、分支名或 current")
+    .option("--to <worktree>", "目标 worktree 路径、目录名、分支名或 current（默认：current）")
+    .option("--from-config <path>", "用于生成种子数据的源 config.json")
+    .option("--from-data-dir <path>", "用于推导源配置的源 PAPERCLIP_HOME")
+    .option("--from-instance <id>", "用于推导源配置的源实例 ID")
+    .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：full）", "full")
+    .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
+    .option("--yes", "跳过破坏性操作确认提示", false)
+    .option("--allow-live-target", "覆盖要求先停止目标 worktree 数据库的保护措施", false)
+    .option("--backup-target", "重新导入数据前保留目标隔离数据库的完整可恢复备份", false)
     .action(worktreeReseedCommand);
 
   worktree
     .command("repair")
-    .description("Create or repair a linked worktree-local Paperclip instance without touching the primary checkout")
-    .option("--branch <name>", "Existing branch/worktree selector to repair, or a branch name to create under .paperclip/worktrees")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--from-config <path>", "Source config.json to seed from")
-    .option("--from-data-dir <path>", "Source PAPERCLIP_HOME used when deriving the source config")
-    .option("--from-instance <id>", "Source instance id when deriving the source config (default: default)")
-    .option("--seed-mode <mode>", "Seed profile: minimal or full (default: minimal)", "minimal")
-    .option("--preserve-live-work", "Do not quarantine copied agent work or workspace runtime services in the seeded worktree", false)
-    .option("--no-seed", "Repair metadata only and skip reseeding when bootstrapping a missing worktree config", false)
-    .option("--allow-live-target", "Override the guard that requires the target worktree DB to be stopped first", false)
+    .description("创建或修复关联的 worktree 本地 Paperclip 实例，不修改主检出目录")
+    .option("--branch <name>", "要修复的现有分支/worktree 选择器，或要在 .paperclip/worktrees 下创建的分支名称")
+    .option("--home <path>", `worktree 实例主目录（环境变量：PAPERCLIP_WORKTREES_DIR，默认：${DEFAULT_WORKTREE_HOME}）`)
+    .option("--from-config <path>", "用于生成种子数据的源 config.json")
+    .option("--from-data-dir <path>", "用于推导源配置的源 PAPERCLIP_HOME")
+    .option("--from-instance <id>", "用于推导源配置的源实例 ID（默认：default）")
+    .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：minimal）", "minimal")
+    .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
+    .option("--no-seed", "仅修复元数据；初始化缺失的 worktree 配置时跳过重新导入数据", false)
+    .option("--allow-live-target", "覆盖要求先停止目标 worktree 数据库的保护措施", false)
     .action(worktreeRepairCommand);
 
   program
     .command("worktree:cleanup")
-    .description("Safely remove a worktree, its branch, and its isolated instance data")
-    .argument("<name>", "Worktree name — auto-prefixed with paperclip- if needed")
-    .option("--instance <id>", "Explicit instance id (if different from the worktree name)")
-    .option("--home <path>", `Home root for worktree instances (env: PAPERCLIP_WORKTREES_DIR, default: ${DEFAULT_WORKTREE_HOME})`)
-    .option("--force", "Bypass safety checks (uncommitted changes, unique commits)", false)
+    .description("安全移除 worktree、对应分支及其隔离实例数据")
+    .argument("<name>", "worktree 名称——必要时自动添加 paperclip- 前缀")
+    .option("--instance <id>", "明确指定实例 ID（与 worktree 名称不同时使用）")
+    .option("--home <path>", `worktree 实例主目录（环境变量：PAPERCLIP_WORKTREES_DIR，默认：${DEFAULT_WORKTREE_HOME}）`)
+    .option("--force", "跳过安全检查（未提交的更改、独有提交）", false)
     .action(worktreeCleanupCommand);
 }

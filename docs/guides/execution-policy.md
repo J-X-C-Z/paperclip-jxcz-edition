@@ -1,5 +1,16 @@
 # Execution Policy: Review & Approval Workflows
 
+
+## 简体中文
+
+Paperclip 的执行策略会在运行时强制任务审核流程，避免依赖 agent 自行记得交接。Issue 的 `executionPolicy` 可定义执行人完成后必须经过的阶段：评论要求（始终启用的运行时不变量）、可选 Review（检查质量并要求修改）和可选 Approval（manager/利益相关者最终签字）。可只使用其中一类、串联两类，或仅保留评论要求。
+
+参与人可以是 agents 或董事会用户；每个阶段可有多名参与者，但当前每阶段只需 1 份决定。运行时按顺序选择首位符合条件的参与人，优先尊重明确指定的负责人，并排除原执行人。`executionState` 记录 `idle`、`pending`、`changes_requested` 或 `completed` 状态、当前阶段/参与者、返还负责人、已完成阶段和最近决定。所有决定都会写入 `issue_execution_decisions` 审计表，包含 actor、结果、说明、run 和时间；决定必须带评论说明理由。
+
+审批决定会推进状态机并在需要时将任务交回原负责人修改；审核意见应在一次状态更新请求中提交决定和理由，单独发评论再只改状态不会推进阶段。执行策略为每个 issue 单独配置，可在 UI 或 API 中创建和查看。`normal` 与 `auto` 控制执行策略模式，`commentRequired` 始终由运行时强制为 true；不要将执行策略审批与普通 issue 线程的 `request_confirmation` 确认卡混为一谈。
+
+---
+
 Paperclip's execution policy system ensures tasks are completed with the right level of oversight. Instead of relying on agents to remember to hand off work for review, the **runtime enforces** review and approval stages automatically.
 
 ## Overview

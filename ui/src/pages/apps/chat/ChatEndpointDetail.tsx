@@ -290,7 +290,7 @@ export function ChatEndpointDetail() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold">
-            {endpoint.assignedAgentName} in {providerNames[endpoint.provider]}
+            {endpoint.assignedAgentName} {uiText("in")} {providerNames[endpoint.provider]}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {endpoint.providerAccountLabel ?? "Chat connection"}
@@ -408,8 +408,8 @@ function Settings({
       {endpoint.provider === "imessage-photon" && <p className="text-sm text-muted-foreground">{uiText(endpoint.photonAllocation === "shared" ? "Shared Photon project · direct messages only. Enroll senders in Photon and link their Messages identities in Access. Groups cannot be enabled." : "Enable each group individually. Agent replies are visible to everyone in that group; only authorized senders can start work.")}</p>}
       {endpoint.provider === "slack" && (
         <div className="space-y-2 text-sm">
-          <h2 className="text-lg font-semibold">Chat in Slack</h2>
-          <p>Invite the bot to a channel, then mention it to start a conversation.</p>
+          <h2 className="text-lg font-semibold">{uiText("Chat in Slack")}</h2>
+          <p>{uiText("Invite the bot to a channel, then mention it to start a conversation.")}</p>
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
             <code>{mentionMessage}</code>
             <Button size="icon" variant="ghost" aria-label={messageCopied ? "Message copied" : "Copy message"} onClick={() => {
@@ -419,8 +419,8 @@ function Settings({
         </div>
       )}
       {endpoint.provider === "slack" && (
-        avatarAgent.isPending ? <p role="status" className="text-sm text-muted-foreground">Loading agent avatar…</p>
-          : avatarAgent.isError ? <p role="alert" className="text-sm text-destructive">Couldn’t load the agent’s avatar. <button className="underline" onClick={() => void avatarAgent.refetch()}>Try again</button></p>
+        avatarAgent.isPending ? <p role="status" className="text-sm text-muted-foreground">{uiText("Loading agent avatar…")}</p>
+          : avatarAgent.isError ? <p role="alert" className="text-sm text-destructive">{uiText("Couldn’t load the agent’s avatar.")} <button className="underline" onClick={() => void avatarAgent.refetch()}>{uiText("Try again")}</button></p>
           : <SlackAvatarSettings
               agentName={avatarAgent.data?.name ?? endpoint.assignedAgentName}
               appName={endpoint.setup?.slackApp?.appName ?? defaultSlackAppName(avatarAgent.data?.name ?? endpoint.assignedAgentName)}
@@ -475,7 +475,7 @@ function Settings({
                       ? (resource.detail ?? resource.type)
                       : "Unavailable at the provider"}
                   </p>
-                  {resource.participants?.length ? <p className="mt-1 break-words text-xs text-muted-foreground">Participants: {resource.participants.join(", ")}</p> : null}
+                  {resource.participants?.length ? <p className="mt-1 break-words text-xs text-muted-foreground">{uiText("Participants:")} {resource.participants.join(", ")}</p> : null}
                 </div>
                 <ToggleSwitch
                   aria-label={`Enable ${resource.label}`}
@@ -624,10 +624,10 @@ function Access({
       {endpoint.provider === "slack" && <SlackSearchAccess companyId={endpoint.companyId} endpointId={endpointId} />}
       {endpoint.provider === "slack" && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold">Invite others to connect their Slack accounts</h3>
+          <h3 className="text-sm font-semibold">{uiText("Invite others to connect their Slack accounts")}</h3>
           <ol className="list-decimal space-y-3 pl-5 text-sm">
             <li>
-              Ask them to send this command in your Slack workspace:
+              {uiText("Ask them to send this command in your Slack workspace:")}
               <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <code>{joinCommand}</code>
                 <Button size="sm" variant="ghost" onClick={() => {
@@ -635,10 +635,10 @@ function Access({
                 }}><Copy className="size-4" />{joinCommandCopied ? "Copied" : "Copy command"}</Button>
               </div>
             </li>
-            <li>Open the private link from the bot, sign into Paperclip, and confirm their Slack account. The link expires in 15 minutes and works once.</li>
-            <li>If they aren’t a member of this organization, choose <strong>Request access</strong>. An admin must approve their request before they can link their account.</li>
+            <li>{uiText("Open the private link from the bot, sign into Paperclip, and confirm their Slack account. The link expires in 15 minutes and works once.")}</li>
+            <li>{uiText("If they aren’t a member of this organization, choose")} <strong>{uiText("Request access")}</strong>{uiText(". An admin must approve their request before they can link their account.")}</li>
           </ol>
-          <p className="text-sm text-muted-foreground">Each person links their own account and uses their own Paperclip permissions. They don’t need to create another Slack app or share credentials.</p>
+          <p className="text-sm text-muted-foreground">{uiText("Each person links their own account and uses their own Paperclip permissions. They don’t need to create another Slack app or share credentials.")}</p>
         </div>
       )}
       <SettingToggle
@@ -751,13 +751,13 @@ function Conversations({
           {uiText("No conversations yet. Address the agent in an enabled destination to start one.")}
         </p>
       ) : (
-        <ul aria-label="Conversations" className="divide-y divide-border overflow-x-auto border-y border-border">
+        <ul aria-label={uiText("Conversations")}className="divide-y divide-border overflow-x-auto border-y border-border">
           {rows.map((row) => (
             <li key={row.id} className="flex min-w-xl items-center gap-3 px-2 py-3 text-sm transition-colors hover:bg-accent/50">
               <AppLogo name={providerNames[provider]} brandKey={provider} compact className="size-5! rounded-sm bg-transparent" />
               <div className="flex min-w-0 max-w-56 items-center gap-2">
                 <span className="truncate font-medium" title={row.externalLabel}>{row.externalLabel}</span>
-                {row.externalUrl && <a href={row.externalUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline">Open {providerNames[provider]}<ExternalLink className="size-3" /></a>}
+                {row.externalUrl && <a href={row.externalUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline">{uiText("Open")} {providerNames[provider]}<ExternalLink className="size-3" /></a>}
               </div>
               <span aria-hidden="true" className="text-muted-foreground">·</span>
               <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -944,9 +944,9 @@ function Activity({
       )}
       <details className="group rounded-lg border border-border">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-medium chat-connection-health-summary">
-          <span>Connection health and controls</span>
+          <span>{uiText("Connection health and controls")}</span>
           <span className="flex items-center gap-2">
-            {endpoint.setup?.callbacksNeedUpdate && <span className="text-xs text-(--status-task-blocked)">Callback URLs need attention</span>}
+            {endpoint.setup?.callbacksNeedUpdate && <span className="text-xs text-(--status-task-blocked)">{uiText("Callback URLs need attention")}</span>}
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
           </span>
         </summary>
@@ -974,7 +974,7 @@ function Activity({
                 </p>
                 {surface.observedAt && (
                   <p className="text-xs text-muted-foreground">
-                    Last observed{" "}
+                    {uiText("Last observed")}{" "}
                     <time
                       dateTime={surface.observedAt}
                       title={surface.observedAt}
@@ -1066,7 +1066,7 @@ function Activity({
       </details>
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">
-          Recent activity
+          {uiText("Recent activity")}
         </h3>
         <div className="divide-y divide-border border-y border-border">
           {query.isLoading && (
@@ -1110,7 +1110,7 @@ function Activity({
                   <p className="mt-1 text-xs text-muted-foreground">{activityKindLabels[item.kind]}</p>
                   {item.fileTransfer && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {item.fileTransfer.filename} —{" "}
+                      {item.fileTransfer.filename} {uiText("—")}{" "}
                       {item.fileTransfer.phase.replaceAll("_", " ")}
                     </p>
                   )}
@@ -1157,11 +1157,11 @@ function Activity({
           )}
         </div>
       </div>
-      <nav aria-label="Activity pagination" className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">Page {cursors.length}</span>
+      <nav aria-label={uiText("Activity pagination")}className="flex items-center justify-between gap-3">
+        <span className="text-xs text-muted-foreground">{uiText("Page")} {cursors.length}</span>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={cursors.length === 1 || query.isFetching} onClick={() => setCursors((pages) => pages.slice(0, -1))}>Previous</Button>
-          <Button size="sm" variant="outline" disabled={!query.data?.nextCursor || query.isFetching || query.isError} onClick={() => { if (query.data?.nextCursor) setCursors((pages) => [...pages, query.data.nextCursor!]); }}>Next</Button>
+          <Button size="sm" variant="outline" disabled={cursors.length === 1 || query.isFetching} onClick={() => setCursors((pages) => pages.slice(0, -1))}>{uiText("Previous")}</Button>
+          <Button size="sm" variant="outline" disabled={!query.data?.nextCursor || query.isFetching || query.isError} onClick={() => { if (query.data?.nextCursor) setCursors((pages) => [...pages, query.data.nextCursor!]); }}>{uiText("Next")}</Button>
         </div>
       </nav>
       <AlertDialog
@@ -1260,9 +1260,8 @@ function Activity({
           <AlertDialogHeader>
             <AlertDialogTitle>{uiText("Remove this connection?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {endpoint.assignedAgentName} will stop receiving new work from
-              {` ${providerNames[endpoint.provider]}`}. Existing Paperclip tasks
-              remain available.{" "}
+              {endpoint.assignedAgentName} {uiText("will stop receiving new work from")}
+              {` ${providerNames[endpoint.provider]}`}{uiText(". Existing Paperclip tasks remain available.")}{" "}
               {providerLifecycleGuidance[endpoint.provider].remove}
             </AlertDialogDescription>
           </AlertDialogHeader>

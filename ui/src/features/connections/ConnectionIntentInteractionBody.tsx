@@ -30,6 +30,7 @@ import {
   type ConnectionSetupCompletion,
   type ConnectionSetupFlowProps,
 } from "./ConnectionSetupFlow";
+import { uiText } from "@/i18n";
 
 export interface ConnectionIntentInteractionBodyProps {
   interaction: ConnectionIntentInteraction;
@@ -342,8 +343,7 @@ export function ConnectionIntentInteractionBody({
   const inlineContent = setupQuery.isLoading || setupQuery.isError ? setupContent
     : readyForAdoption ? <div className="space-y-3">
         <p className="text-sm">
-          Use Connections for {interaction.payload.requestingAgentName}? This replaces the agent’s existing authentication
-          with the responsible person’s {interaction.payload.serviceName} connection. The model stays the same.
+          {uiText("Use Connections for")} {interaction.payload.requestingAgentName}{uiText("? This replaces the agent’s existing authentication with the responsible person’s")} {interaction.payload.serviceName} {uiText("connection. The model stays the same.")}
         </p>
         <Button disabled={adoptMutation.isPending} onClick={() => adoptMutation.mutate(readyForAdoption)}>
           {adoptMutation.isPending ? "Checking connection…" : "Use connection and continue"}
@@ -493,7 +493,7 @@ export function ConnectionIntentInteractionBody({
         ) : null}
         {selectAiAccountMutation.isError && selectAiAccountMutation.variables?.generation === generation && (
           <Button className="mt-3" onClick={() => selectAiAccountMutation.mutate(selectAiAccountMutation.variables!)}>
-            Retry using this connection
+            {uiText("Retry using this connection")}
           </Button>
         )}
       </div>

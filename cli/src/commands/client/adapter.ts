@@ -16,12 +16,12 @@ interface AdapterOptions extends BaseClientOptions {
 }
 
 export function registerAdapterCommands(program: Command): void {
-  const adapter = program.command("adapter").description("Adapter management operations");
+  const adapter = program.command("adapter").description("适配器管理操作");
 
   addCommonClientOptions(
     adapter
       .command("list")
-      .description("List registered adapters")
+      .description("列出已注册的适配器")
       .action(async (opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -37,8 +37,8 @@ export function registerAdapterCommands(program: Command): void {
   addCommonClientOptions(
     adapter
       .command("get")
-      .description("Get one adapter")
-      .argument("<type>", "Adapter type")
+      .description("获取适配器详情")
+      .argument("<type>", "适配器类型")
       .action(async (type: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -57,8 +57,8 @@ export function registerAdapterCommands(program: Command): void {
   addCommonClientOptions(
     adapter
       .command("delete")
-      .description("Delete an external adapter registration")
-      .argument("<type>", "Adapter type")
+      .description("删除外部适配器注册项")
+      .argument("<type>", "适配器类型")
       .action(async (type: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -72,8 +72,8 @@ export function registerAdapterCommands(program: Command): void {
   addCommonClientOptions(
     adapter
       .command("config-schema")
-      .description("Get adapter config schema")
-      .argument("<type>", "Adapter type")
+      .description("获取适配器配置架构")
+      .argument("<type>", "适配器类型")
       .action(async (type: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -87,8 +87,8 @@ export function registerAdapterCommands(program: Command): void {
   addCommonClientOptions(
     adapter
       .command("ui-parser")
-      .description("Get adapter UI parser JavaScript")
-      .argument("<type>", "Adapter type")
+      .description("获取适配器界面解析器 JavaScript")
+      .argument("<type>", "适配器类型")
       .action(async (type: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -102,11 +102,11 @@ export function registerAdapterCommands(program: Command): void {
   addCommonClientOptions(
     adapter
       .command("models")
-      .description("List adapter models for a company")
-      .argument("<type>", "Adapter type")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--refresh", "Refresh provider model list", false)
-      .option("--environment-id <id>", "Environment ID for environment-aware adapters")
+      .description("列出公司的适配器模型")
+      .argument("<type>", "适配器类型")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--refresh", "刷新提供方模型列表", false)
+      .option("--environment-id <id>", "支持环境配置的适配器所用的环境 ID")
       .action(async (type: string, opts: AdapterOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -128,7 +128,7 @@ export function registerAdapterCommands(program: Command): void {
 
 function addJsonPost(parent: Command, name: string, description: string, path: string): void {
   addCommonClientOptions(
-    parent.command(name).description(description).requiredOption("--payload-json <json>", "JSON payload").action(async (opts: AdapterOptions) => {
+    parent.command(name).description(description).requiredOption("--payload-json <json>", "JSON 请求数据").action(async (opts: AdapterOptions) => {
       try {
         const ctx = resolveCommandContext(opts);
         printOutput(await ctx.api.post(path, parseJson(opts.payloadJson ?? "{}")), { json: ctx.json });
@@ -144,8 +144,8 @@ function addAdapterPatch(parent: Command, name: string, description: string, suf
     parent
       .command(name)
       .description(description)
-      .argument("<type>", "Adapter type")
-      .requiredOption("--payload-json <json>", "JSON payload")
+      .argument("<type>", "适配器类型")
+      .requiredOption("--payload-json <json>", "JSON 请求数据")
       .action(async (type: string, opts: AdapterOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -162,8 +162,8 @@ function addAdapterPost(parent: Command, name: string, description: string, suff
     parent
       .command(name)
       .description(description)
-      .argument("<type>", "Adapter type")
-      .option("--payload-json <json>", "JSON payload", "{}")
+      .argument("<type>", "适配器类型")
+      .option("--payload-json <json>", "JSON 请求数据", "{}")
       .action(async (type: string, opts: AdapterOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -180,8 +180,8 @@ function addCompanyAdapterGet(parent: Command, name: string, description: string
     parent
       .command(name)
       .description(description)
-      .argument("<type>", "Adapter type")
-      .option("-C, --company-id <id>", "Company ID")
+      .argument("<type>", "适配器类型")
+      .option("-C, --company-id <id>", "公司 ID")
       .action(async (type: string, opts: AdapterOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -199,9 +199,9 @@ function addCompanyAdapterPost(parent: Command, name: string, description: strin
     parent
       .command(name)
       .description(description)
-      .argument("<type>", "Adapter type")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--payload-json <json>", "JSON payload", "{}")
+      .argument("<type>", "适配器类型")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--payload-json <json>", "JSON 请求数据", "{}")
       .action(async (type: string, opts: AdapterOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });

@@ -1,56 +1,56 @@
 ---
-title: Authentication
-summary: API keys, JWTs, and auth modes
+title: 身份验证
+summary: API 密钥、JWT 和验证模式
 ---
 
-Paperclip supports multiple authentication methods depending on the deployment mode and caller type.
+Paperclip 会根据部署模式和调用方类型使用不同的身份验证方式。
 
-## Agent Authentication
+## 智能体身份验证
 
-### Run JWTs (Recommended for agents)
+### 运行 JWT（推荐供智能体使用）
 
-During heartbeats, agents receive a short-lived JWT via the `PAPERCLIP_API_KEY` environment variable. Use it in the Authorization header:
+心跳期间，智能体会通过 `PAPERCLIP_API_KEY` 环境变量接收短期 JWT。请在 Authorization 请求头中使用该令牌：
 
 ```
 Authorization: Bearer <PAPERCLIP_API_KEY>
 ```
 
-This JWT is scoped to the agent and the current run.
+此 JWT 的作用范围限定为该智能体及当前运行。
 
-### Agent API Keys
+### 智能体 API 密钥
 
-Long-lived API keys can be created for agents that need persistent access:
+可为需要持续访问权限的智能体创建长期 API 密钥：
 
 ```
 POST /api/agents/{agentId}/keys
 ```
 
-Returns a key that should be stored securely. The key is hashed at rest — you can only see the full value at creation time.
+响应会返回一个密钥，应妥善保存。密钥静态存储时会经过哈希处理，因此只有创建时能查看完整值。
 
-### Agent Identity
+### 智能体身份
 
-Agents can verify their own identity:
+智能体可以验证自身身份：
 
 ```
 GET /api/agents/me
 ```
 
-Returns the agent record including ID, company, role, chain of command, and budget.
+此端点返回智能体记录，包括 ID、公司、角色、汇报关系和预算。
 
-## Board Operator Authentication
+## 看板操作员身份验证
 
-### Local Trusted Mode
+### 本地可信模式
 
-No authentication required. All requests are treated as the local board operator.
+无需身份验证。所有请求都视为来自本地看板操作员。
 
-### Authenticated Mode
+### 已认证模式
 
-Board operators authenticate via Better Auth sessions (cookie-based). The web UI handles login/logout flows automatically.
+看板操作员通过 Better Auth 会话（基于 Cookie）进行身份验证。网页界面会自动处理登录和退出流程。
 
-## Company Scoping
+## 公司范围
 
-All entities belong to a company. The API enforces company boundaries:
+所有实体都属于某家公司。API 会强制执行公司边界：
 
-- Agents can only access entities in their own company
-- Board operators can access all companies they're members of
-- Cross-company access is denied with `403`
+- 智能体只能访问所属公司的实体
+- 看板操作员可以访问其加入的所有公司
+- 跨公司访问会被拒绝，并返回 `403`

@@ -1,0 +1,47 @@
+name: paperclip-bridge
+version: 0.1.0
+description: Capture Hermes sessions and queue events for Paperclip
+manifest_version: 2
+api_version: 1
+python_dependencies:
+  - "psycopg[binary]>=3.2,<4"
+config_schema:
+  database_url:
+    type: secret
+    env: PAPERCLIP_BRIDGE_DATABASE_URL
+    required: true
+    description: PostgreSQL role with EXECUTE-only access to paperclip_bridge_v1 functions
+  binding_id:
+    type: str
+    required: true
+    description: Board-created fixed binding UUID for this Hermes Profile
+  binding_revision:
+    type: int
+    required: true
+    description: Current immutable binding revision
+  queue_path:
+    type: str
+    default: ""
+    description: Optional Profile-local SQLite queue path
+  memory_snapshot_key:
+    type: str
+    default: "memory"
+    description: Snapshot key to cache and inject as role context
+  snapshot_refresh_seconds:
+    type: int
+    default: 60
+    description: Seconds between read-only Paperclip snapshot refreshes
+  flush_seconds:
+    type: int
+    default: 2
+    description: Maximum idle interval before pending events are flushed
+provides_hooks:
+  - pre_llm_call
+  - on_session_start
+  - post_llm_call
+  - post_tool_call
+  - post_api_request
+  - api_request_error
+  - post_auxiliary_call
+  - on_session_end
+  - on_session_reset

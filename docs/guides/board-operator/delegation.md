@@ -3,6 +3,25 @@ title: How Delegation Works
 summary: How the CEO breaks down goals into tasks and assigns them to agents
 ---
 
+## 简体中文
+
+委派流程让你设定目标，由 CEO agent 制订计划并组织团队执行：
+
+```
+设定公司目标 → CEO 在 heartbeat 中启动 → 提交策略审批 → 人工批准
+→ CEO 拆分并分配任务 → 成员被唤醒并执行 → CEO 监控、排障和升级 → Dashboard 查看结果
+```
+
+你的职责是战略监督：设定清晰、可衡量的目标；审阅并批准 CEO 的策略；按需审批招聘；通过 Dashboard 和 Activity log 监控；只有停滞时才介入。遇到停滞，先检查待处理审批、agent 是否暂停或报错，以及 CEO 预算是否超过 80%。
+
+策略获批后，CEO 会根据角色和能力拆分任务、分配工作、创建子任务、在公司设置允许时申请招聘、持续监控下属并在无法解决时向你升级。无需手动逐个指定工程或营销成员。
+
+小团队可由 CEO 直接管理 3–5 名成员；规模较大时可通过 CTO、CMO 等 manager 分层委派。也可从 CEO 单人开始，随着实际需求逐步招聘。
+
+若 CEO 没有委派，检查审批队列、成员状态、预算、公司目标、heartbeat 是否启用，以及 CEO 的 `AGENTS.md` 是否配置了拆任务、招聘和分配指令。单个任务卡住时，检查任务评论、`blocked` 状态、负责人状态和预算，再考虑重新分配或补充说明。
+
+---
+
 Delegation is one of Paperclip's most powerful features. You set company goals, and the CEO agent automatically breaks them into tasks and assigns them to the right agents. This guide explains the full lifecycle from your perspective as the board operator.
 
 ## The Delegation Lifecycle

@@ -1,6 +1,6 @@
 ---
 name: doc-maintenance
-description: Keep project docs aligned with recent code and feature changes — detect drift, update affected pages, and add release-relevant notes without rewriting unchanged sections.
+description: 使项目文档与近期代码和功能变更保持一致：发现偏差、更新相关页面，并补充发布说明，不重写未变更的部分。
 key: paperclipai/bundled/docs/doc-maintenance
 recommendedForRoles:
   - engineer
@@ -12,64 +12,64 @@ tags:
   - release-notes
 ---
 
-# Doc Maintenance
+# 文档维护
 
-Keep the documentation honest with minimum churn. The goal is alignment between docs and behavior, not stylistic rewrites or cosmetic re-organization. Reviewers should be able to read a diff and see "this updates docs to match recent behavior changes".
+以最少改动确保文档准确。目标是让文档与实际行为一致，而不是重写文风或调整外观结构。审查者应能从 diff 中直接看出“此变更使文档与近期行为一致”。
 
-## When to use
+## 适用场景
 
-- A PR or recent set of merges changed user-visible behavior: CLI flags, API shapes, default values, configuration keys, endpoints, environment variables, supported versions.
-- A user-reported bug traced back to outdated documentation.
-- A release is being cut and the docs need a pass against the merged commits.
-- A new feature shipped but only the engineer's PR description describes how to use it.
+- PR 或近期合并变更了用户可见行为：CLI flags、API 结构、默认值、配置键、endpoints、环境变量或支持的版本。
+- 用户报告的问题源于文档过时。
+- 即将发布版本，需要根据已合并的 commits 检查文档。
+- 新功能已发布，但只有工程师的 PR 描述说明了使用方法。
 
-## When not to use
+## 不适用场景
 
-- The change is internal-only (private helper rename, refactor) with no user-visible impact.
-- You want to "improve the docs" without a behavior anchor. That is a separate scoped project, not maintenance — make a plan first.
+- 变更仅限内部（私有 helper 重命名、重构），不会影响用户。
+- 你想在没有行为变更依据的情况下“改进文档”。这属于单独的项目，而非维护工作；请先制定计划。
 
-## The pass
+## 检查流程
 
-1. **Establish the baseline.** Get the commit range you are documenting against (since last release tag, since last merged-doc commit, or since a specific PR).
-2. **Enumerate user-visible changes.** Read commits and PR descriptions. List, for each change, what a user can now do differently.
-3. **Map changes to docs.** For each change, find every page that mentions the affected concept. Common targets: README, CLI reference, API reference, configuration reference, migration guide, FAQ, examples.
-4. **Update precisely.** Edit only the lines that need to change. Do not rewrap paragraphs you did not modify — it pollutes the diff.
-5. **Add new entries where needed.** New CLI flag → CLI reference entry. New env var → configuration reference entry. New endpoint → API reference entry. Don't only add it to the changelog.
-6. **Update examples and snippets.** Code blocks in docs are wrong faster than prose. Re-run any example that touches new behavior.
-7. **Write the release note.** One sentence per user-visible change. Group by Added / Changed / Fixed / Deprecated / Removed. Link to the relevant PRs and docs section.
-8. **Cross-check.** Search the docs for the old behavior wording and remove or update stragglers.
+1. **确定基准。** 找出此次文档更新对应的 commit 范围（上次 release tag 以来、上次合并文档的 commit 以来，或指定 PR 以来）。
+2. **列出用户可见的变更。** 阅读 commits 和 PR 描述。逐项列出用户现在可以执行的不同操作。
+3. **将变更对应到文档。** 对每项变更，查找所有提及相关概念的页面。常见文档包括 README、CLI 参考、API 参考、配置参考、迁移指南、FAQ 和示例。
+4. **精确更新。** 只编辑需要修改的行。不要重新排版未修改的段落，以免造成无关 diff。
+5. **按需添加条目。** 新 CLI flag → CLI 参考；新环境变量 → 配置参考；新 endpoint → API 参考。不要只在变更日志中提及。
+6. **更新示例和代码片段。** 文档中的代码块比说明文字更容易过时。重新运行涉及新行为的示例。
+7. **编写发布说明。** 每项用户可见变更用一句话说明。按 Added / Changed / Fixed / Deprecated / Removed 分组，并链接到相关 PR 和文档章节。
+8. **交叉检查。** 搜索仍描述旧行为的文档，并更新或删除遗漏内容。
 
-## Style baseline
+## 文风基准
 
-- Voice: second person ("you can pass `--json` to ..."). Avoid "we" except in narrative pages.
-- Tense: present, not future. The behavior exists once shipped.
-- Headings: imperative ("Configure the cache") or noun-phrase ("Cache configuration"), match the surrounding page.
-- Code blocks: include the language tag so syntax highlighting works.
-- Cross-links: link the first mention of a concept on each page; do not link every occurrence.
-- Avoid promising future behavior. If something is unreleased, mark it `experimental` or omit it.
+- 视角：使用第二人称（“你可以传入 `--json`……”）。叙述性页面除外，避免使用“我们”。
+- 时态：使用现在时，不用将来时。功能发布后即已可用。
+- 标题：使用祈使句（“配置缓存”）或名词短语（“缓存配置”），并与页面其余部分保持一致。
+- 代码块：标注语言，以启用语法高亮。
+- 交叉链接：在每个页面首次提及某概念时添加链接，不要为每处重复内容都加链接。
+- 不要承诺未来行为。尚未发布的内容应标记为 `experimental` 或省略。
 
-## Drift detection
+## 偏差检查
 
-A doc page is drifting if any of these are true:
+出现以下任一情况，即表示文档可能已过时：
 
-- It documents a flag, key, or endpoint that no longer exists.
-- An example does not run as written.
-- A default value in the docs does not match the code.
-- A supported-versions list excludes a version the project actually supports, or includes one it dropped.
-- A "Coming soon" section references a feature that shipped or was cancelled.
+- 文档提及的 flag、key 或 endpoint 已不存在。
+- 示例无法按文档说明运行。
+- 文档中的默认值与代码不一致。
+- 支持版本列表漏掉项目实际支持的版本，或仍包含已停止支持的版本。
+- “即将推出”章节提到的功能已发布或已取消。
 
-When you find drift, fix it in the same pass and note it in the release note's `Fixed` group.
+发现偏差时，应在本次检查中修复，并在发布说明的 `Fixed` 组中记录。
 
-## Release-note rules
+## 发布说明规则
 
-- One sentence per item. If two sentences are needed, the item is likely two items.
-- User impact first, internal cause second. `Faster cold start (avoid full bundle download on first run)` beats `Refactor bootstrap loader`.
-- Link the PR for engineering readers and the docs page for users.
-- Mark breaking changes explicitly: `**Breaking:**` prefix. Include migration steps inline or via link.
+- 每项写一句话。如果需要两句话，通常表示应拆成两项。
+- 先说用户影响，再说内部原因。`冷启动更快（首次运行时不再下载整个 bundle）` 优于 `重构启动加载器`。
+- 为工程读者链接 PR，为用户链接文档页面。
+- 明确标注破坏性变更：使用 `**Breaking:**` 前缀。迁移步骤应直接写在条目中或通过链接提供。
 
-## Anti-patterns
+## 反模式
 
-- Massive doc PRs that bundle stylistic rewrites with real updates. Reviewers cannot tell which lines reflect actual behavior changes.
-- "Updated docs" commit messages with no detail. Make the commit say what changed and why.
-- Adding to the changelog without updating the reference docs the changelog points to.
-- Marking a feature as available before its code lands. Documentation must follow behavior, not promise it.
+- 将文风重写和实际更新捆在一起的大型文档 PR。审查者无法判断哪些行对应实际行为变更。
+- 只写“更新文档”的 commit message，没有具体说明。commit 应说明变更内容和原因。
+- 只更新变更日志，却不更新变更日志所指向的参考文档。
+- 代码尚未落地就标注功能已可用。文档应反映实际行为，而不是做出承诺。

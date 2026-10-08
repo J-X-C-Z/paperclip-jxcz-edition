@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   createServerInfoSnapshot,
   getServerInfoSnapshot,
+  getServerInfoSnapshotAsync,
   resetServerInfoCacheForTests,
 } from "../server-info.js";
 
@@ -199,5 +200,33 @@ describe("getServerInfoSnapshot", () => {
     const first = getServerInfoSnapshot({ now: 0, gitCommand: gitCommandFor("aaaaaaa", "a") });
     const second = getServerInfoSnapshot({ now: 5000, gitCommand: gitCommandFor("bbbbbbb", "b") });
     expect(second.processStartedAt).toBe(first.processStartedAt);
+  });
+
+  it("coalesces slow asynchronous git reads while other requests can proceed", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const commands: string[] = [];
+    const runGit = async (args: string[]) => {
+      commands.push(args[0]);
+      await gate;
+      if (args[0] === "show") return gitCommandFor("aaaaaaa", "Async boot")();
+      if (args[0] === "status") return " M server/src/server-info.ts\n";
+      return "codex/first-load\n";
+    };
+    let settled = false;
+    const first = getServerInfoSnapshotAsync(runGit).then((snapshot) => {
+      settled = true;
+      return snapshot;
+    });
+    const second = getServerInfoSnapshotAsync(runGit);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    expect(commands).toEqual(["show", "status", "symbolic-ref"]);
+    release();
+    const [left, right] = await Promise.all([first, second]);
+    expect(left).toEqual(right);
+    expect(left.git).toMatchObject({ shortSha: "aaaaaaa", branchName: "codex/first-load", localChanges: { unstagedFileCount: 1 } });
+    expect(await getServerInfoSnapshotAsync(runGit)).toEqual(left);
+    expect(commands).toHaveLength(3);
   });
 });

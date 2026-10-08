@@ -122,7 +122,7 @@ export function parseSecretsInclude(input: string | undefined): CompanyPortabili
     skills: values.includes("skills"),
   };
   if (!Object.values(include).some(Boolean)) {
-    throw new Error("Invalid --include value. Use one or more of: company,agents,projects,issues,tasks,skills");
+    throw new Error("--include 值无效。请从以下选项中选择一个或多个：company、agents、projects、issues、tasks、skills");
   }
   return include;
 }
@@ -193,15 +193,15 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function readValueFromOptions(opts: { value?: string; valueEnv?: string }): string {
   if (opts.value !== undefined && opts.valueEnv !== undefined) {
-    throw new Error("Use only one of --value or --value-env.");
+    throw new Error("--value 和 --value-env 只能使用一个。");
   }
   if (opts.valueEnv !== undefined) {
     const value = process.env[opts.valueEnv];
-    if (!value) throw new Error(`Environment variable ${opts.valueEnv} is empty or unset.`);
+    if (!value) throw new Error(`环境变量 ${opts.valueEnv} 未设置或为空。`);
     return value;
   }
   if (opts.value !== undefined) return opts.value;
-  throw new Error("Secret value is required. Pass --value or --value-env.");
+  throw new Error("必须提供密钥值。请传入 --value 或 --value-env。");
 }
 
 function renderDeclaration(input: CompanyPortabilityEnvInput): Record<string, unknown> {
@@ -299,7 +299,7 @@ async function migrateInlineEnv(opts: SecretMigrateInlineEnvOptions): Promise<vo
       { json: ctx.json },
     );
     if (!ctx.json) {
-      console.log(pc.dim("Re-run with --apply to create/rotate secrets and update agent env bindings."));
+      console.log(pc.dim("使用 --apply 重新运行，以创建或轮换密钥并更新智能体环境变量绑定。"));
     }
     return;
   }
@@ -327,7 +327,7 @@ async function migrateInlineEnv(opts: SecretMigrateInlineEnvOptions): Promise<vo
       value,
       description: `Migrated from agent ${candidate.agentId} env ${candidate.envKey}`,
     });
-    if (!created) throw new Error(`Secret create returned no data for ${candidate.secretName}`);
+    if (!created) throw new Error(`创建密钥 ${candidate.secretName} 时未返回数据`);
     createdOrRotated.set(`${candidate.agentId}:${candidate.envKey}`, created.id);
     createdSecrets += 1;
   }
@@ -365,13 +365,13 @@ async function migrateInlineEnv(opts: SecretMigrateInlineEnvOptions): Promise<vo
 }
 
 export function registerSecretCommands(program: Command): void {
-  const secrets = program.command("secrets").description("Secret declaration and provider operations");
+  const secrets = program.command("secrets").description("密钥声明与提供方操作");
 
   addCommonClientOptions(
     secrets
       .command("list")
-      .description("List secret metadata for a company")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("列出公司的密钥元数据")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (opts: SecretListOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -386,16 +386,16 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("declarations")
-      .description("List portable env declarations emitted by company export")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--include <values>", "Comma-separated include set: company,agents,projects,issues,tasks,skills", "company,agents,projects")
-      .option("--kind <kind>", "Filter declarations: all | secret | plain", "all")
+      .description("列出公司导出时生成的可移植环境变量声明")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .option("--include <values>", "要包含的项目，以逗号分隔：company、agents、projects、issues、tasks、skills", "company,agents,projects")
+      .option("--kind <kind>", "筛选声明：all | secret | plain", "all")
       .action(async (opts: SecretDeclarationsOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
           const kind = opts.kind ?? "all";
           if (!["all", "secret", "plain"].includes(kind)) {
-            throw new Error("Invalid --kind value. Use: all, secret, plain");
+            throw new Error("--kind 值无效。请使用 all、secret 或 plain。");
           }
           const preview = await ctx.api.post<CompanyPortabilityExportPreviewResult>(
             apiPath`/api/companies/${ctx.companyId}/exports/preview`,
@@ -413,14 +413,14 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("create")
-      .description("Create a Paperclip-managed secret")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--name <name>", "Secret display name")
-      .option("--key <key>", "Portable secret key")
-      .option("--provider <provider>", "Secret provider id")
-      .option("--value <value>", "Secret value")
-      .option("--value-env <name>", "Read secret value from an environment variable")
-      .option("--description <text>", "Description")
+      .description("创建由 Paperclip 管理的密钥")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--name <name>", "密钥显示名称")
+      .option("--key <key>", "可移植密钥键")
+      .option("--provider <provider>", "密钥提供方 ID")
+      .option("--value <value>", "密钥值")
+      .option("--value-env <name>", "从环境变量读取密钥值")
+      .option("--description <text>", "说明")
       .action(async (opts: SecretCreateOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -441,14 +441,14 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("link")
-      .description("Link an external provider-owned secret without storing its value in Paperclip")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--name <name>", "Secret display name")
-      .requiredOption("--provider <provider>", "Secret provider id")
-      .requiredOption("--external-ref <ref>", "Provider secret ARN/name/path/reference")
-      .option("--key <key>", "Portable secret key")
-      .option("--provider-version-ref <ref>", "Provider version id or label")
-      .option("--description <text>", "Description")
+      .description("关联由外部提供方管理的密钥，不在 Paperclip 中存储其值")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--name <name>", "密钥显示名称")
+      .requiredOption("--provider <provider>", "密钥提供方 ID")
+      .requiredOption("--external-ref <ref>", "提供方密钥 ARN/名称/路径/引用")
+      .option("--key <key>", "可移植密钥键")
+      .option("--provider-version-ref <ref>", "提供方版本 ID 或标签")
+      .option("--description <text>", "说明")
       .action(async (opts: SecretLinkOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -471,9 +471,9 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("update")
-      .description("Update secret metadata")
-      .argument("<secretId>", "Secret ID")
-      .requiredOption("--payload-json <json>", "UpdateSecret JSON payload")
+      .description("更新密钥元数据")
+      .argument("<secretId>", "密钥 ID")
+      .requiredOption("--payload-json <json>", "UpdateSecret JSON 请求数据")
       .action(async (secretId: string, opts: SecretUpdateOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -487,10 +487,10 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("rotate")
-      .description("Rotate a Paperclip-managed secret value")
-      .argument("<secretId>", "Secret ID")
-      .option("--value <value>", "New secret value")
-      .option("--value-env <name>", "Read new secret value from an environment variable")
+      .description("轮换 Paperclip 托管的密钥值")
+      .argument("<secretId>", "密钥 ID")
+      .option("--value <value>", "新的密钥值")
+      .option("--value-env <name>", "从环境变量读取新的密钥值")
       .action(async (secretId: string, opts: SecretRotateOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -504,8 +504,8 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("usage")
-      .description("Show where a secret is referenced")
-      .argument("<secretId>", "Secret ID")
+      .description("显示密钥的引用位置")
+      .argument("<secretId>", "密钥 ID")
       .action(async (secretId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -519,8 +519,8 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("access-events")
-      .description("List secret access events")
-      .argument("<secretId>", "Secret ID")
+      .description("列出密钥访问事件")
+      .argument("<secretId>", "密钥 ID")
       .action(async (secretId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -534,15 +534,15 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("delete")
-      .description("Delete a secret")
-      .argument("<secretId>", "Secret ID")
-      .option("--yes", "Required safety flag to confirm destructive action", false)
-      .option("--confirm <secretId>", "Repeat the secret ID to confirm deletion")
+      .description("删除密钥")
+      .argument("<secretId>", "密钥 ID")
+      .option("--yes", "确认破坏性操作所需的安全标记", false)
+      .option("--confirm <secretId>", "重复输入密钥 ID 以确认删除")
       .action(async (secretId: string, opts: SecretDeleteOptions) => {
         try {
-          if (!opts.yes) throw new Error("Deletion requires --yes.");
+          if (!opts.yes) throw new Error("删除操作必须传入 --yes。");
           if (opts.confirm !== secretId) {
-            throw new Error("Deletion requires --confirm <secretId> matching the secret ID.");
+            throw new Error("删除操作必须传入与密钥 ID 一致的 --confirm <secretId>。");
           }
           const ctx = resolveCommandContext(opts);
           printOutput(await ctx.api.delete(apiPath`/api/secrets/${secretId}`), { json: ctx.json });
@@ -555,8 +555,8 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("doctor")
-      .description("Run secret provider health checks through the Paperclip API")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("通过 Paperclip API 运行密钥提供方健康检查")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (opts: SecretDoctorOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -573,8 +573,8 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("providers")
-      .description("List configured secret provider descriptors")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("列出已配置的密钥提供方描述")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (opts: SecretDoctorOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -591,8 +591,8 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("provider-configs")
-      .description("List company secret provider vault configs")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .description("列出公司密钥提供方保险库配置")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (opts: SecretDoctorOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -621,9 +621,9 @@ export function registerSecretCommands(program: Command): void {
   addCommonClientOptions(
     secrets
       .command("migrate-inline-env")
-      .description("Migrate inline sensitive agent env values into secret references")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--apply", "Persist changes; default is a dry run", false)
+      .description("将直接写入智能体配置的敏感环境变量迁移为密钥引用")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .option("--apply", "保存更改；默认仅试运行", false)
       .action(async (opts: SecretMigrateInlineEnvOptions) => {
         try {
           await migrateInlineEnv(opts);
@@ -639,8 +639,8 @@ function addCompanySecretJsonPost(parent: Command, name: string, description: st
     parent
       .command(name)
       .description(description)
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--payload-json <json>", "JSON payload")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--payload-json <json>", "JSON 请求数据")
       .action(async (opts: SecretJsonOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -657,7 +657,7 @@ function addSecretProviderConfigGet(parent: Command, name: string, description: 
     parent
       .command(name)
       .description(description)
-      .argument("<configId>", "Provider config ID")
+      .argument("<configId>", "提供方配置 ID")
       .action(async (configId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -674,8 +674,8 @@ function addSecretProviderConfigPatch(parent: Command, name: string, description
     parent
       .command(name)
       .description(description)
-      .argument("<configId>", "Provider config ID")
-      .requiredOption("--payload-json <json>", "JSON payload")
+      .argument("<configId>", "提供方配置 ID")
+      .requiredOption("--payload-json <json>", "JSON 请求数据")
       .action(async (configId: string, opts: SecretJsonOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -692,7 +692,7 @@ function addSecretProviderConfigPost(parent: Command, name: string, description:
     parent
       .command(name)
       .description(description)
-      .argument("<configId>", "Provider config ID")
+      .argument("<configId>", "提供方配置 ID")
       .action(async (configId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -709,7 +709,7 @@ function addSecretProviderConfigDelete(parent: Command, name: string, descriptio
     parent
       .command(name)
       .description(description)
-      .argument("<configId>", "Provider config ID")
+      .argument("<configId>", "提供方配置 ID")
       .action(async (configId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);

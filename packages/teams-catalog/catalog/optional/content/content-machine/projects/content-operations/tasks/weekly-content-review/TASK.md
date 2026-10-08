@@ -6,4 +6,4 @@ project: content-operations
 recurring: true
 ---
 
-Review the content calendar, select the next posts to draft, and identify any blocked publication work.
+检查内容日历，选出接下来要起草的文章，并找出受阻的发布工作。

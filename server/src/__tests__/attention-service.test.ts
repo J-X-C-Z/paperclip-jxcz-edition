@@ -225,6 +225,29 @@ describeEmbeddedPostgres("attention service", () => {
     };
   }
 
+  it("loads independent sources before enriching approval links", async () => {
+    const { companyId, workerId } = await seedCompany("PAR");
+    await db.insert(approvals).values({
+      companyId,
+      type: "hire_agent",
+      status: "pending",
+      requestedByAgentId: workerId,
+      payload: {},
+    });
+    const queries: string[] = [];
+    const previousDebug = db.$client.options.debug;
+    db.$client.options.debug = (_connection, query) => queries.push(query);
+    try {
+      await attentionService(db).list(companyId, { userId: "board-user" });
+    } finally {
+      db.$client.options.debug = previousDebug;
+    }
+    const interactionRead = queries.findIndex((query) => query.includes('from "issue_thread_interactions"'));
+    const approvalLinks = queries.findIndex((query) => query.includes('from "issue_approvals"'));
+    expect(interactionRead).toBeGreaterThanOrEqual(0);
+    expect(approvalLinks).toBeGreaterThan(interactionRead);
+  });
+
   it("excludes internal harness reviews from items, counts, and decision queues", async () => {
     const { companyId, workerId } = await seedCompany("ATH");
     const harnessIssueId = await insertIssue({

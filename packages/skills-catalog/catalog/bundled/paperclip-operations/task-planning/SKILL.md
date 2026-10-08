@@ -1,6 +1,6 @@
 ---
 name: task-planning
-description: Turn a Paperclip issue or request into a structured implementation plan with child task graph, blockers, owners, and acceptance criteria, then save it as the issue `plan` document.
+description: 将 Paperclip issue 或请求整理为结构化实施计划，包含子任务图、阻塞项、负责人和验收标准，并保存为 issue 的 `plan` 文档。
 key: paperclipai/bundled/paperclip-operations/task-planning
 recommendedForRoles:
   - manager
@@ -13,72 +13,72 @@ tags:
   - delegation
 ---
 
-# Task Planning
+# 任务规划
 
-Produce implementation plans that the Paperclip executor can actually run: explicit child issues, real blockers, named owners, and a defined acceptance bar. Avoid plans that read well but cannot be split into work.
+制定 Paperclip 执行者能够实际执行的实施计划：明确子 issue、真实阻塞项、指定负责人和清晰的验收标准。避免计划读起来完整，却无法拆解为具体工作的情况。
 
-## When to use
+## 适用场景
 
-- An issue asks you to "plan", "scope", "break down", "design the rollout", "propose the work", or similar.
-- A user wants a written plan before approving implementation.
-- A manager needs to delegate non-trivial work and the shape of the work is not obvious yet.
-- You inherited an issue too large to deliver in one heartbeat and need to split it.
+- Issue 要求你“规划”“界定范围”“拆解工作”“设计发布方案”“提出工作方案”等。
+- 用户希望先查看书面计划，再批准实施。
+- 经理需要委派较复杂的工作，但工作结构尚不清楚。
+- 你接手了一个无法在一次心跳内完成、需要拆分的 issue。
 
-## When not to use
+## 不适用场景
 
-- The issue is a single small change you can ship in the same heartbeat. Just ship it.
-- The issue is forensic ("why did this break"). Use a diagnosis skill first; plan only after the root cause is named.
-- A current `plan` document already exists and the change is minor. Update that document; do not start fresh.
+- Issue 只涉及一项小改动，可在同一次心跳中完成。直接完成即可。
+- Issue 属于故障调查（“为什么这里出错了”）。先使用诊断技能，找到根本原因后再制定计划。
+- 已有 `plan` 文档，且变更很小。更新现有文档，不要重新开始。
 
-## Outputs
+## 产出
 
-1. An updated issue document with key `plan` (markdown).
-2. A short comment on the issue that links to the plan document and names the next action.
-3. Where the plan requires approval, an issue-thread interaction of kind `request_confirmation` bound to the latest plan revision.
+1. 更新 issue 中键为 `plan` 的文档（Markdown）。
+2. 在 issue 中发布简短评论，链接计划文档并说明下一步操作。
+3. 计划需要批准时，创建绑定到最新计划版本、类型为 `request_confirmation` 的 issue 线程交互。
 
-Do not create implementation subtasks until the plan is accepted.
+计划获批前，不要创建实施子任务。
 
-## Plan structure
+## 计划结构
 
-Required sections, in order:
+以下部分必须按顺序包含：
 
-1. **Goal** — one paragraph. What changes for the user, the operator, or the system once this work lands.
-2. **Context reviewed** — bullet list of documents, files, and prior issues you read. Lets reviewers spot missing inputs.
-3. **Constraints and non-goals** — what must hold (compatibility, security, performance) and what this plan deliberately will not do.
-4. **Approach** — the chosen path, with a short rationale. If you considered alternatives, name them and why you rejected them.
-5. **Work breakdown** — ordered list of child issues. Each child has:
-   - Title in imperative form.
-   - Owner specialty (Engineer, QA, Designer, Security, DevRel, Manager, etc.).
-   - Scope and deliverables.
-   - Acceptance criteria.
-   - Blocks/blocked-by relationships expressed by phase letter or child title.
-6. **Acceptance** — the bar for the parent issue. How the user knows the whole thing is done.
-7. **Risks and mitigations** — short list. Skip if there are none.
-8. **Deferrals** — what is intentionally pushed to follow-up issues, with why.
+1. **目标** — 一段话说明工作完成后对用户、操作员或系统产生的变化。
+2. **已审阅的上下文** — 列出阅读过的文档、文件和既有 issue，让审查者能发现缺失的输入。
+3. **约束和非目标** — 必须满足的条件（兼容性、安全、性能）以及本计划明确不包含的内容。
+4. **方案** — 说明所选路径及简要理由。如考虑过其他方案，也应列出并说明为何不采用。
+5. **工作拆分** — 按顺序列出子 issue。每个子项都要包含：
+   - 使用祈使句形式的标题。
+   - 负责人专业领域（工程、QA、设计、安全、DevRel、经理等）。
+   - 工作范围和交付成果。
+   - 验收标准。
+   - 使用阶段字母或子项标题表示阻塞/被阻塞关系。
+6. **验收** — 父 issue 的验收标准，以及用户如何判断整个工作已完成。
+7. **风险和缓解措施** — 简短列表；没有风险时可省略。
+8. **延期事项** — 说明哪些工作有意延后到后续 issue，以及原因。
 
-## Rules of thumb for splitting
+## 拆分工作的基本原则
 
-- One child issue, one specialty. If two specialties have to coordinate inside the same issue, split it.
-- One child issue, one acceptance verdict. If a reviewer would say "this is half done", split it.
-- A child must be checkout-able by the owner from its title and description alone. Reviewers should not have to re-read the parent plan to understand a child.
-- Order children by real blocker chains, not by author preference. Parallel children should explicitly say `blockers: none`.
-- Avoid `polish` or `cleanup` child issues without acceptance criteria — they never close.
+- 每个子 issue 对应一个专业领域。如果两个专业领域需要在同一 issue 中协调，应拆分。
+- 每个子 issue 只对应一个验收结论。如果审查者可能说“只完成了一半”，就应该拆分。
+- 负责人应仅凭子 issue 的标题和说明即可 checkout 并开始工作。审查者不应为了理解子 issue 而重读父计划。
+- 按实际阻塞关系排列子项，不要按作者偏好排序。并行子任务应明确写出 `blockers: none`。
+- 避免创建没有验收标准的 `polish` 或 `cleanup` 子 issue，这类任务往往无法结项。
 
-## Filing the plan
+## 提交计划
 
-Use the Paperclip API to write the plan document, then comment:
+使用 Paperclip API 写入计划文档，然后发布评论：
 
-- `PUT /api/issues/{issueId}/documents/plan` with the markdown body. If `plan` already exists, include the latest `baseRevisionId`.
-- `POST /api/issues/{issueId}/comments` with a short summary that links the plan: `/<prefix>/issues/<issue-id>#document-plan`.
-- If approval is required: `POST /api/issues/{issueId}/interactions` with `kind: request_confirmation`, `targetRevisionId` set to the new plan revision, `continuationPolicy: wake_assignee`, and `idempotencyKey: "confirmation:{issueId}:plan:{revisionId}"`.
-- Set the issue to `in_review` after creating the confirmation. Stay assigned so the acceptance wakes the planner.
+- 使用 `PUT /api/issues/{issueId}/documents/plan` 写入 Markdown 正文。如果已存在 `plan`，请传入最新的 `baseRevisionId`。
+- 使用 `POST /api/issues/{issueId}/comments` 发布简短摘要并链接计划：`/<prefix>/issues/<issue-id>#document-plan`。
+- 如需批准，使用 `POST /api/issues/{issueId}/interactions`，并设置 `kind: request_confirmation`、`targetRevisionId` 为新计划版本、`continuationPolicy: wake_assignee`，以及 `idempotencyKey: "confirmation:{issueId}:plan:{revisionId}"`。
+- 创建确认请求后，将 issue 设为 `in_review`。保留负责人身份，以便获批后唤醒规划者。
 
-When the plan is accepted, see the companion skill for converting accepted plans into Paperclip executable tasks. Key requirements covered there: produce a compact task matrix (task, owner, initial status, blockers); encode every hard dependency as `blockedByIssueIds` — parent/child nesting alone does not block execution; and verify the created issue graph before closing the source planning issue.
+计划获批后，参阅配套技能，将已接受的计划转换为 Paperclip 可执行任务。该技能的主要要求包括：生成精简任务矩阵（任务、负责人、初始状态、阻塞项）；将每项硬依赖编码到 `blockedByIssueIds` 中——仅有父子层级不会阻止执行；并在关闭原规划 issue 前验证所创建的 issue 图。
 
-## Anti-patterns
+## 反模式
 
-- Plan disguised as a description edit. Use the `plan` document.
-- "Phases A–Z" with no work breakdown inside the phases.
-- Children with descriptions that say "see parent" — they fail at delegation time.
-- Acceptance written as "code review approval". Reviewers need a behavior bar, not a process bar.
-- Plans that bury blocker chains in prose. Use explicit blocked-by lines.
+- 将计划伪装成描述编辑。应使用 `plan` 文档。
+- 只写“阶段 A–Z”，却没有拆分各阶段的工作。
+- 子项描述写着“参见父任务”——委派时无法据此开展工作。
+- 将验收标准写成“代码审查通过”。审查者需要的是行为标准，而非流程标准。
+- 在大段文字中隐藏阻塞关系。应明确列出阻塞项。

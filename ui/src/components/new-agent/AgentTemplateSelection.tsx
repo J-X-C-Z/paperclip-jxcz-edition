@@ -56,6 +56,7 @@ export function AgentTemplateSelection({ companyId, onClose, onSelect }: {
             <Button key={template.id} variant="outline" className="h-auto flex-col items-start gap-2 whitespace-normal p-4 text-left" onClick={() => onSelect(template)}>
               <span className="text-base font-semibold">{template.name}</span>
               <span className="font-mono text-xs">{template.model.modelId}</span>
+              {template.model.reasoningEffort ? <span className="text-xs text-muted-foreground">思考：{template.model.reasoningEffort === "medium" ? "中度" : template.model.reasoningEffort}</span> : null}
               <span className="text-xs text-muted-foreground">{template.description}</span>
             </Button>
           ))}

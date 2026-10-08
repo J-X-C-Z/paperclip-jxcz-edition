@@ -27,7 +27,7 @@ export function applyAgentTemplateDefaults(input: Record<string, unknown>, templ
   return {
     role: "general", capabilities: template.description,
     ...input,
-    adapterConfig: { model: template.model.modelId, ...(input.adapterType === "paperclip_runner" ? { provider: template.model.provider } : {}), ...record(input.adapterConfig) },
+    adapterConfig: { model: template.model.modelId, ...(template.model.reasoningEffort ? { modelReasoningEffort: template.model.reasoningEffort } : {}), ...(input.adapterType === "paperclip_runner" ? { provider: template.model.provider } : {}), ...record(input.adapterConfig) },
     instructionsBundle: input.instructionsBundle ?? { entryFile: "AGENTS.md", files: { "AGENTS.md": template.systemPrompt } },
     desiredSkills: input.desiredSkills ?? [...template.skills],
     permissions: { canCreateSkills: template.role === "leader" || template.role === "department_head", canCreateAgents: permissions.manageAgents, canCreateTasks: permissions.createTask, canAssignTasks: permissions.assignTask, canReviewTasks: permissions.reviewTask, canManageAgents: permissions.manageAgents, ...record(input.permissions) },

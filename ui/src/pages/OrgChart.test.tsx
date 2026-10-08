@@ -4,12 +4,19 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { uiText } from "@/i18n";
 import { queryKeys } from "@/lib/queryKeys";
 import { OrgChart } from "./OrgChart";
 
 const navigateMock = vi.fn();
 const orgMock = vi.fn();
 const listMock = vi.fn();
+const updateMock = vi.fn();
+const liveRunsMock = vi.fn();
+const issueMock = vi.fn();
+
+vi.mock("../api/heartbeats", () => ({ heartbeatsApi: { liveRunsForCompany: (...args: unknown[]) => liveRunsMock(...args) } }));
+vi.mock("../api/issues", () => ({ issuesApi: { get: (id: string) => issueMock(id) } }));
 
 vi.mock("@/lib/router", () => ({
   Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a>,
@@ -28,6 +35,7 @@ vi.mock("../api/agents", () => ({
   agentsApi: {
     org: () => orgMock(),
     list: () => listMock(),
+    update: (id: string, data: unknown) => updateMock(id, data),
   },
 }));
 
@@ -142,6 +150,9 @@ describe("OrgChart mobile gestures", () => {
     viewportHeight = 520;
     orgMock.mockResolvedValue(orgTree);
     listMock.mockResolvedValue(agents);
+    liveRunsMock.mockResolvedValue([]);
+    issueMock.mockImplementation(async (id: string) => ({ id, companyId: "company-1", identifier: "ORI-123", title: "Implement feature" }));
+    updateMock.mockImplementation(async (id: string, data: object) => ({ ...agents[1], id, ...data }));
 
     Object.defineProperty(HTMLElement.prototype, "clientWidth", {
       configurable: true,
@@ -184,6 +195,7 @@ describe("OrgChart mobile gestures", () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     if (root) {
       await act(async () => {
         root.unmount();
@@ -212,8 +224,183 @@ describe("OrgChart mobile gestures", () => {
     };
   }
 
+  function pointerEvent(type: string, point: { x: number; y: number }, pointerType = "mouse") {
+    const event = new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: point.x,
+      clientY: point.y,
+      button: 0,
+    });
+    Object.defineProperties(event, {
+      pointerId: { value: 1 },
+      pointerType: { value: pointerType },
+      isPrimary: { value: true },
+    });
+    return event;
+  }
+
+  it("shows idle agents and running or queued task codes, then clears finished work", async () => {
+    const run = { id: "run-1", agentId: "agent-2", status: "running", issueId: "issue-1" };
+    liveRunsMock.mockResolvedValue([run, { ...run, id: "run-2", agentId: "agent-1", status: "queued" }]);
+    await renderOrgChart();
+    await flushReact();
+    expect(container.querySelector('[data-testid="org-work-agent-2"]')?.textContent).toContain(uiText("Working"));
+    expect(container.querySelector('[data-testid="org-work-agent-1"]')?.textContent).toContain(uiText("Queued"));
+    expect(container.querySelector('[data-testid="org-work-agent-2"] a')?.textContent).toBe("ORI-123");
+    expect(liveRunsMock).toHaveBeenCalledWith("company-1", { all: true });
+    expect(issueMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      queryClient.setQueryData([...queryKeys.liveRuns("company-1"), "org-chart", { all: true }], []);
+    });
+    await flushReact();
+    expect(container.querySelector('[data-testid="org-work-agent-2"]')?.textContent).toContain(uiText("Idle"));
+    expect(container.querySelector('[data-testid="org-work-agent-2"]')?.textContent).toContain(uiText("No current task"));
+    expect(container.textContent).not.toContain("ORI-123");
+  });
+
+  it("shows unlinked work and does not mistake a failed status request for idle", async () => {
+    liveRunsMock.mockResolvedValue([{ id: "run-1", agentId: "agent-2", status: "running", issueId: null }]);
+    await renderOrgChart();
+    expect(container.querySelector('[data-testid="org-work-agent-2"]')?.textContent).toContain(uiText("No linked task"));
+    liveRunsMock.mockRejectedValue(new Error("Offline"));
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.liveRuns("company-1") });
+    });
+    await flushReact();
+    expect(container.querySelector('[data-testid="org-work-agent-1"]')?.textContent).toContain(uiText("Work status unavailable"));
+  });
+
+  function card(id: string) {
+    return container.querySelector(`[data-org-card="${id}"]`) as HTMLDivElement;
+  }
+
+  function center(id: string) {
+    const element = card(id);
+    const layer = container.querySelector('[data-testid="org-chart-card-layer"]') as HTMLDivElement;
+    const match = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(layer.style.transform)!;
+    return {
+      x: Number(match[1]) + (parseFloat(element.style.left) + 100) * Number(match[3]),
+      y: Number(match[2]) + (parseFloat(element.style.top) + 50) * Number(match[3]),
+    };
+  }
+
+  async function holdCard(id: string) {
+    vi.useFakeTimers();
+    await act(async () => {
+      card(id).dispatchEvent(pointerEvent("pointerdown", center(id)));
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+  }
+
+  async function renderMovableTeam() {
+    orgMock.mockResolvedValue([
+      { ...orgTree[0], reports: [{ ...orgTree[0].reports[0], reports: [
+        { id: "agent-3", name: "Member", role: "engineer", status: "active", reports: [] },
+      ] }] },
+      { id: "agent-4", name: "Other leader", role: "manager", status: "active", reports: [] },
+    ]);
+    listMock.mockResolvedValue([
+      ...agents,
+      { ...agents[1], id: "agent-3", name: "Member", reportsTo: "agent-2" },
+      { ...agents[0], id: "agent-4", name: "Other leader", reportsTo: null },
+    ]);
+    return renderOrgChart();
+  }
+
+  it("moves a leader and its descendants together and persists only the leader's new manager", async () => {
+    const { viewport } = await renderMovableTeam();
+    const target = center("agent-4");
+    await holdCard("agent-2");
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointermove", target));
+    });
+
+    expect(card("agent-2").style.transform).not.toBe("");
+    expect(card("agent-3").style.transform).toBe(card("agent-2").style.transform);
+    expect(card("agent-1").style.transform).toBe("");
+    expect(card("agent-4").style.transform).toBe("");
+
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointerup", target));
+    });
+    await flushReact();
+
+    expect(updateMock).toHaveBeenCalledExactlyOnceWith("agent-2", { reportsTo: "agent-4" });
+    expect(orgMock.mock.calls.length).toBeGreaterThan(1);
+    expect(listMock.mock.calls.length).toBeGreaterThan(1);
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a drop onto a descendant to prevent reporting cycles", async () => {
+    const { viewport } = await renderMovableTeam();
+    const descendant = center("agent-3");
+    await holdCard("agent-2");
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointermove", descendant));
+    });
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointerup", descendant));
+    });
+    await flushReact();
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("cancels a held drag without saving or navigating", async () => {
+    const { viewport } = await renderMovableTeam();
+    const target = center("agent-4");
+    await holdCard("agent-2");
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointermove", target));
+    });
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointercancel", target));
+      card("agent-2").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(card("agent-2").style.transform).toBe("");
+    expect(card("agent-3").style.transform).toBe("");
+  });
+
+  it("keeps a short pointer press as ordinary card navigation", async () => {
+    const { viewport } = await renderOrgChart();
+    const point = center("agent-2");
+    await act(async () => {
+      card("agent-2").dispatchEvent(pointerEvent("pointerdown", point));
+      viewport.dispatchEvent(pointerEvent("pointerup", point));
+      card("agent-2").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(navigateMock).toHaveBeenCalledWith("/agents/engineer");
+  });
+
+  it("shows a failed save and restores the unmoved chart", async () => {
+    updateMock.mockRejectedValue(new Error("Unable to update manager"));
+    const { viewport } = await renderMovableTeam();
+    const target = center("agent-4");
+    await holdCard("agent-2");
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointermove", target));
+    });
+    await act(async () => {
+      viewport.dispatchEvent(pointerEvent("pointerup", target));
+    });
+    await flushReact();
+
+    expect(updateMock).toHaveBeenCalledExactlyOnceWith("agent-2", { reportsTo: "agent-4" });
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Unable to update manager");
+    expect(card("agent-2").style.transform).toBe("");
+    expect(card("agent-3").style.transform).toBe("");
+  });
+
   it("pans the chart with one-finger touch drag", async () => {
     const { viewport, layer } = await renderOrgChart();
+    const before = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(layer.style.transform)!;
 
     await act(async () => {
       viewport.dispatchEvent(createTouchEvent("touchstart", [{ clientX: 100, clientY: 100 }]));
@@ -221,7 +408,10 @@ describe("OrgChart mobile gestures", () => {
       viewport.dispatchEvent(createTouchEvent("touchend", []));
     });
 
-    expect(layer.style.transform).toBe("translate(50px, 105px) scale(1)");
+    const after = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(layer.style.transform)!;
+    expect(Number(after[1]) - Number(before[1])).toBeCloseTo(30);
+    expect(Number(after[2]) - Number(before[2])).toBeCloseTo(45);
+    expect(after[3]).toBe(before[3]);
   });
 
   it("suppresses card navigation after a touch pan", async () => {
@@ -252,6 +442,7 @@ describe("OrgChart mobile gestures", () => {
   });
   it("pinch-zooms toward the touch center", async () => {
     const { viewport, layer } = await renderOrgChart();
+    const before = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(layer.style.transform)!;
 
     await act(async () => {
       viewport.dispatchEvent(createTouchEvent("touchstart", [
@@ -265,7 +456,10 @@ describe("OrgChart mobile gestures", () => {
       viewport.dispatchEvent(createTouchEvent("touchend", []));
     });
 
-    expect(layer.style.transform).toBe("translate(-45px, 40px) scale(1.5)");
+    const after = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(layer.style.transform)!;
+    expect(Number(after[3])).toBeCloseTo(Number(before[3]) * 1.5);
+    expect(Number(after[1])).toBeCloseTo(150 - (150 - Number(before[1])) * 1.5);
+    expect(Number(after[2])).toBeCloseTo(100 - (100 - Number(before[2])) * 1.5);
   });
 
   it("does not produce a negative zoom while the viewport has no usable height", async () => {
@@ -275,7 +469,7 @@ describe("OrgChart mobile gestures", () => {
     expect(layer.style.transform).toBe("translate(0px, 0px) scale(1)");
 
     await act(async () => {
-      (container.querySelector('[aria-label="Fit chart to screen"]') as HTMLButtonElement).click();
+      (container.querySelector(`[aria-label="${uiText("Fit chart to screen")}"]`) as HTMLButtonElement).click();
     });
 
     expect(layer.style.transform).toBe("translate(0px, 0px) scale(1)");
@@ -284,15 +478,15 @@ describe("OrgChart mobile gestures", () => {
   it("shows both portability buttons on self-hosted instances", async () => {
     await renderOrgChart();
 
-    expect(container.textContent).toContain("Import organization");
-    expect(container.textContent).toContain("Export organization");
+    expect(container.textContent).toContain(uiText("Import organization"));
+    expect(container.textContent).toContain(uiText("Export organization"));
   });
 
   it("hides the Import button but keeps Export on a Cloud-managed instance", async () => {
     queryClient.setQueryData(queryKeys.health, { status: "ok", cloud: { managed: true } });
     await renderOrgChart();
 
-    expect(container.textContent).not.toContain("Import organization");
-    expect(container.textContent).toContain("Export organization");
+    expect(container.textContent).not.toContain(uiText("Import organization"));
+    expect(container.textContent).toContain(uiText("Export organization"));
   });
 });

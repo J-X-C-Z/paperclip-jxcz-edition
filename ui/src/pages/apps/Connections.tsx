@@ -533,7 +533,7 @@ export function Connections() {
 
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-xs text-muted-foreground">
-              Apps you connect become available to every agent unless you change “Who can use it”.
+              {uiText("Apps you connect become available to every agent unless you change “Who can use it”.")}
             </p>
           </div>
         </div>
@@ -593,7 +593,7 @@ function CloudConnectorEnrollmentBanner({
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-foreground">{tr("Paperclip-managed sign-in is ready")}</div>
           <div className="truncate text-xs text-muted-foreground">
-            Provider authorization uses {status.brokerBaseUrl}; credentials stay in this instance.
+            {uiText("Provider authorization uses")} {status.brokerBaseUrl}{uiText("; credentials stay in this instance.")}
           </div>
         </div>
       </div>
@@ -615,7 +615,7 @@ function CloudConnectorEnrollmentBanner({
           {status?.status === "pending" ? uiText("Finish Paperclip Cloud enrollment") : uiText("Enable Paperclip-managed sign-in")}
         </div>
         <div className="text-xs text-muted-foreground">
-          Confirm this server’s exact address before Cloud can return encrypted Google credentials to it.
+          {uiText("Confirm this server’s exact address before Cloud can return encrypted Google credentials to it.")}
         </div>
       </div>
       <Button variant="outline" size="sm" disabled={busy} onClick={onEnable}>

@@ -191,14 +191,14 @@ const defaultDependencies: OnboardServiceDependencies = {
   },
   confirm: async () => {
     const answer = await p.confirm({
-      message: "Install Paperclip as a background service?",
+      message: "将 Paperclip 安装为后台服务吗？",
       initialValue: true,
     });
     return !p.isCancel(answer) && answer === true;
   },
   confirmLinger: async () => {
     const answer = await p.confirm({
-      message: "Allow Paperclip to keep running after logout? This may request system authorization.",
+      message: "允许 Paperclip 在注销后继续运行吗？这可能需要系统授权。",
       initialValue: false,
     });
     return !p.isCancel(answer) && answer === true;

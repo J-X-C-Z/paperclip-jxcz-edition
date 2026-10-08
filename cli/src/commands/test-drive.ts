@@ -90,7 +90,7 @@ const NON_PAPERCLIP_ISOLATED_ENV_KEYS = [
 
 function requiredApiResult<T>(value: T | null, action: string): T {
   if (value === null) {
-    throw new Error(`Paperclip returned no result while ${action}.`);
+    throw new Error(`Paperclip 在${action}时未返回结果。`);
   }
   return value;
 }
@@ -154,7 +154,7 @@ export async function resolveTestDriveServerPort(preferredPort = 3100): Promise<
   for (let port = preferredPort; port <= 65_535; port += 1) {
     if (await loopbackPortAvailable(port)) return port;
   }
-  throw new Error(`No available loopback port found at or above ${preferredPort}.`);
+  throw new Error(`在 ${preferredPort} 及更高端口中未找到可用的 loopback 端口。`);
 }
 
 /**
@@ -206,16 +206,16 @@ export function assertTestDriveDatabaseIsolation(
 ): void {
   if (env.DATABASE_URL?.trim() || env.DATABASE_MIGRATION_URL?.trim()) {
     throw new Error(
-      "test-drive requires its isolated embedded database. Remove DATABASE_URL and " +
-        "DATABASE_MIGRATION_URL from the selected data directory's .env, or choose a fresh --data-dir.",
+      "test-drive 需要使用隔离的内嵌数据库。请从所选数据目录的 .env 中移除 DATABASE_URL 和 " +
+        "DATABASE_MIGRATION_URL，或选择新的 --data-dir。",
     );
   }
 
   const config = readConfigFile(configPath);
   if (config?.database.mode === "postgres") {
     throw new Error(
-      "test-drive cannot reuse a data directory configured for an external PostgreSQL database. " +
-        "Choose a fresh data directory or change database.mode to embedded-postgres.",
+      "test-drive 不能复用配置为外部 PostgreSQL 数据库的数据目录。" +
+        "请选择新的数据目录，或将 database.mode 改为 embedded-postgres。",
     );
   }
 }
@@ -225,41 +225,41 @@ export function resolveTestDriveBootstrap(
   env: NodeJS.ProcessEnv = process.env,
 ): ResolvedTestDriveBootstrap {
   if (options.apiKey !== undefined && options.apiKeyEnv !== undefined) {
-    throw new Error("--api-key and --api-key-env are mutually exclusive.");
+    throw new Error("--api-key 和 --api-key-env 不能同时使用。");
   }
 
   const harness = options.harness ?? "claude";
   const definition = HARNESS_DEFINITIONS[harness];
   if (!definition) {
-    throw new Error(`Unsupported test-drive harness: ${String(harness)}.`);
+    throw new Error(`不支持的 test-drive 测试框架：${String(harness)}。`);
   }
 
   const companyName = (options.companyName ?? "Test Company").trim();
   const agentName = (options.agentName ?? "CEO").trim();
-  if (!companyName) throw new Error("--company-name cannot be empty.");
-  if (!agentName) throw new Error("--agent-name cannot be empty.");
+  if (!companyName) throw new Error("--company-name 不能为空。");
+  if (!agentName) throw new Error("--agent-name 不能为空。");
 
   const model = options.model;
   if (model !== undefined && (!model || model.trim() !== model)) {
-    throw new Error("--model cannot be empty or have surrounding whitespace.");
+    throw new Error("--model 不能为空，也不能包含首尾空格。");
   }
   if (
     harness === "opencode" &&
     (!model || !/^openrouter\/[^/\s]+(?:\/[^/\s]+)*$/.test(model))
   ) {
     throw new Error(
-      "OpenCode test drives require --model openrouter/<model>, with no empty path segments.",
+      "OpenCode 测试运行要求 --model 使用 openrouter/<model>，路径段不能为空。",
     );
   }
 
   const sourceEnvName = options.apiKeyEnv?.trim() || definition.credentialTarget;
   if (options.apiKeyEnv !== undefined && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(sourceEnvName)) {
-    throw new Error("--api-key-env must name a valid environment variable.");
+    throw new Error("--api-key-env 必须指定有效的环境变量名称。");
   }
   const credential = options.apiKey ?? env[sourceEnvName];
   if (!credential || credential.trim().length === 0) {
     throw new Error(
-      `No credential found. Set ${sourceEnvName}, pass --api-key-env <variable>, or pass --api-key <value>.`,
+      `未找到凭据。请设置 ${sourceEnvName}、传入 --api-key-env <variable>，或传入 --api-key <value>。`,
     );
   }
 
@@ -310,8 +310,8 @@ export async function reconcileTestDriveWorktreeExecution(
   );
   if (!worktreeExecutionArmed(verified, instanceId)) {
     throw new Error(
-      `Could not arm “Run tasks in this worktree” for Paperclip instance ${instanceId}. ` +
-        "Check that PAPERCLIP_IN_WORKTREE=true and retry the command.",
+      `无法为 Paperclip 实例 ${instanceId} 启用“在此 worktree 中运行任务”。` +
+        "请确认 PAPERCLIP_IN_WORKTREE=true，然后重试。",
     );
   }
 }
@@ -423,10 +423,10 @@ export async function testDriveCommand(
     bootstrapEnv[HARNESS_DEFINITIONS[options.harness ?? "claude"].credentialTarget],
   ];
 
-  p.log.message(pc.dim(`Data directory: ${dataDir}`));
-  p.log.message(pc.dim("The data directory is retained when Paperclip exits."));
+  p.log.message(pc.dim(`数据目录：${dataDir}`));
+  p.log.message(pc.dim("Paperclip 退出后会保留此数据目录。"));
   if (options.apiKey !== undefined) {
-    p.log.warn("A key passed with --api-key may be visible in process arguments and shell history.");
+    p.log.warn("通过 --api-key 传入的密钥可能会出现在进程参数和 shell 历史记录中。");
   }
 
   try {
@@ -450,27 +450,27 @@ export async function testDriveCommand(
         });
         if (result.reused) {
           p.log.message(
-            `Using existing data for ${pc.cyan(result.company.name)}; bootstrap flags were ignored.`,
+            `使用 ${pc.cyan(result.company.name)} 的现有数据；已忽略初始化参数。`,
           );
         } else {
           p.log.success(
-            `Created ${pc.cyan(result.company.name)} with agent ${pc.cyan(result.agent?.name ?? "CEO")}.`,
+            `已创建 ${pc.cyan(result.company.name)}，并包含智能体 ${pc.cyan(result.agent?.name ?? "CEO")}。`,
           );
         }
         if (linkedWorktree) {
-          p.log.success("Run tasks in this worktree is enabled for this instance.");
+          p.log.success("此实例已启用在该 worktree 中运行任务。");
         }
 
         const url = dashboardUrl(server);
         if (options.browser === false) {
-          p.log.success(`Paperclip is ready at ${pc.cyan(url)}.`);
+          p.log.success(`Paperclip 已就绪：${pc.cyan(url)}。`);
           return;
         }
         const opened = await dependencies.openBrowser(url);
         if (opened) {
-          p.log.success(`Paperclip is ready and opened at ${pc.cyan(url)}.`);
+          p.log.success(`Paperclip 已就绪并已打开：${pc.cyan(url)}。`);
         } else {
-          p.log.warn(`Paperclip is ready, but the browser could not be opened. Visit ${url}.`);
+          p.log.warn(`Paperclip 已就绪，但无法打开浏览器。请访问 ${url}。`);
         }
       },
     });
@@ -482,16 +482,16 @@ export async function testDriveCommand(
 export function registerTestDriveCommand(program: Command): void {
   program
     .command("test-drive")
-    .description("Start an isolated, initialized Paperclip instance for manual testing")
-    .option("-d, --data-dir <path>", "Paperclip data directory to create or reuse")
-    .option("--company-name <name>", "Initial company name", "Test Company")
-    .option("--agent-name <name>", "Initial CEO agent name", "CEO")
+    .description("启动隔离且已初始化的 Paperclip 实例，以便手动测试")
+    .option("-d, --data-dir <path>", "要创建或复用的 Paperclip 数据目录")
+    .option("--company-name <name>", "初始公司名称", "Test Company")
+    .option("--agent-name <name>", "初始 CEO 智能体名称", "CEO")
     .addOption(
       new Option("--harness <harness>", "Initial agent harness")
         .choices(TEST_DRIVE_HARNESSES)
         .default("claude"),
     )
-    .option("--model <model-id>", "Initial agent model")
+    .option("--model <model-id>", "初始智能体模型")
     .addOption(
       new Option("--api-key-env <variable>", "Read the provider key from an environment variable")
         .conflicts("apiKey"),
@@ -500,7 +500,7 @@ export function registerTestDriveCommand(program: Command): void {
       new Option("--api-key <value>", "Provider API key")
         .conflicts("apiKeyEnv"),
     )
-    .option("--no-browser", "Do not open the initialized instance in a browser")
+    .option("--no-browser", "不在浏览器中打开已初始化的实例")
     .action(async (options: TestDriveOptions) => {
       await testDriveCommand(options);
     });

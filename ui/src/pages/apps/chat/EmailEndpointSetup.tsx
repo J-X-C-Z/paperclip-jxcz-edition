@@ -311,7 +311,7 @@ export function EmailEndpointSetup() {
             <Button
               onClick={() => navigate(`/apps/${connectionId}/permissions`)}
             >
-              Open permissions <ArrowRight className="size-4" />
+              {uiText("Open permissions")} <ArrowRight className="size-4" />
             </Button>
           </div>
         </section>
@@ -380,7 +380,7 @@ export function EmailEndpointSetup() {
         <>
           <section className="space-y-5 rounded-xl border border-border p-6">
             <h2 className="text-lg font-semibold">
-              Choose {chosen?.name}’s email address
+              {uiText("Choose")} {chosen?.name}{uiText("’s email address")}
             </h2>
             <RadioCardGroup
               ariaLabel="Email address source"
@@ -498,7 +498,7 @@ export function EmailEndpointSetup() {
             </h2>
             <p className="text-lg font-semibold">{address}</p>
             <p className="text-sm">
-              Assigned to {chosen?.name} ·{" "}
+              {uiText("Assigned to")} {chosen?.name} ·{" "}
               {mode === "websocket" ? "Live connection" : "Signed webhook"}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -511,7 +511,7 @@ export function EmailEndpointSetup() {
         <section className="space-y-5 rounded-xl border border-border p-6">
           <p className="flex items-center gap-2 text-sm">
             <Check className="size-4" />
-            Receiving email for {chosen?.name}
+            {uiText("Receiving email for")} {chosen?.name}
           </p>
           <p className="text-lg font-semibold">{setup.data?.address}</p>
           <EmailSafetyNotice />

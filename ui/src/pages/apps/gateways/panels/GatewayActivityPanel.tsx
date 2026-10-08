@@ -180,11 +180,11 @@ export function GatewayActivityPanel({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Calls through this gateway from the last 30 days. Open a row to inspect its tool, redacted arguments, result, and decision.
+        {uiText("Calls through this gateway from the last 30 days. Open a row to inspect its tool, redacted arguments, result, and decision.")}
       </p>
       {events.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No calls have gone through this gateway yet.
+          {uiText("No calls have gone through this gateway yet.")}
         </div>
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">

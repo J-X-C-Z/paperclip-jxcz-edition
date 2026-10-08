@@ -248,8 +248,8 @@ const support = await getEmbeddedPostgresTestSupport();
     await db.update(agents).set({ status: "idle" }).where(eq(agents.id, f.agentId));
     await f.due(); await f.service.deliver(delivery.id); expect(f.wakeup).toHaveBeenCalledOnce();
   });
-  it("queues onboarding completion behind a busy turn without changing generic handoffs", () => {
+  it("queues both onboarding and ordinary child completion behind a busy turn", () => {
     expect(shouldQueueFollowupForRunningIssueWake({ contextSnapshot: { wakeReason: "issue_children_completed", onboardingCompletion: true }, wakeCommentId: null })).toBe(true);
-    expect(shouldQueueFollowupForRunningIssueWake({ contextSnapshot: { wakeReason: "issue_children_completed" }, wakeCommentId: null })).toBe(false);
+    expect(shouldQueueFollowupForRunningIssueWake({ contextSnapshot: { wakeReason: "issue_children_completed" }, wakeCommentId: null })).toBe(true);
   });
 });

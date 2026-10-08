@@ -3,6 +3,24 @@ title: Costs and Budgets
 summary: Budget caps, cost tracking, and auto-pause enforcement
 ---
 
+## 简体中文
+
+Paperclip 汇总 agents 的 token 用量和费用，并通过预算限制避免支出失控。每次 heartbeat 的成本事件可包含 provider、model、输入/输出 token 数和分币计价的金额；费用按 UTC 自然月、按 agent 聚合。
+
+### 设置与执行预算
+
+公司预算可通过 `PATCH /api/companies/{companyId}` 设置 `budgetMonthlyCents`，单个 agent 可通过 `PATCH /api/agents/{agentId}` 设置同名字段。达到 80% 时系统发出软提醒并要求 agent 优先处理关键任务；达到 100% 时 agent 会自动暂停。提高预算或等到下个自然月可恢复 agent。
+
+在 **Audit → Costs** 按项目、团队、部门和日期范围查看费用。界面区分已报告费用、按 token 估算费用和暂未定价的用量；未知 model 会显示为未定价，不会误显示为免费。订阅内含的 CLI 用量可显示等效 API 参考成本，但计费金额和预算支出仍为零。
+
+Dashboard 可查看本月公司及各 agent 的支出和预算。API 汇总入口包括 `GET /api/companies/{companyId}/costs/summary`、`/costs/by-agent` 和 `/costs/by-project`。
+
+### 建议
+
+开始时使用保守预算，根据实际结果逐步增加；定期检查费用突增；用 agent 级预算限制单个 agent 的风险。CEO、CTO 等关键角色可能需要比个人贡献者更高的额度。
+
+---
+
 Paperclip tracks every token spent by every agent and enforces budget limits to prevent runaway costs.
 
 ## How Cost Tracking Works

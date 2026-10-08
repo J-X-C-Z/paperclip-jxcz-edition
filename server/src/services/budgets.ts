@@ -7,6 +7,7 @@ import {
   budgetPolicies,
   companies,
   costEvents,
+  costAccountingOutbox,
   projects,
 } from "@paperclipai/db";
 import type {
@@ -23,7 +24,7 @@ import type {
   BudgetWindowKind,
 } from "@paperclipai/shared";
 import { notFound, unprocessable } from "../errors.js";
-import { logActivity } from "./activity-log.js";
+import { logActivity, type ActivityPublication, type LogActivityInput } from "./activity-log.js";
 
 type ScopeRecord = {
   companyId: string;
@@ -34,6 +35,79 @@ type ScopeRecord = {
 
 type PolicyRow = typeof budgetPolicies.$inferSelect;
 type IncidentRow = typeof budgetIncidents.$inferSelect;
+type ScopeReference = Pick<PolicyRow, "scopeType" | "scopeId">;
+
+function scopeKey(scope: ScopeReference) {
+  return `${scope.scopeType}:${scope.scopeId}`;
+}
+
+function requireScopeRecord(records: Map<string, ScopeRecord>, scope: ScopeReference) {
+  const record = records.get(scopeKey(scope));
+  if (!record) {
+    throw notFound(scope.scopeType === "company" ? "Company not found" : scope.scopeType === "agent" ? "Agent not found" : "Project not found");
+  }
+  return record;
+}
+
+async function resolveScopeRecords(db: Db, scopes: ScopeReference[]) {
+  const ids = (type: string) => [...new Set(scopes.filter((scope) => scope.scopeType === type).map((scope) => scope.scopeId))];
+  const companyIds = ids("company");
+  const agentIds = ids("agent");
+  const projectIds = ids("project");
+  const [companyRows, agentRows, projectRows] = await Promise.all([
+    companyIds.length ? db.select({ id: companies.id, name: companies.name, status: companies.status,
+      pauseReason: companies.pauseReason, pausedAt: companies.pausedAt }).from(companies).where(inArray(companies.id, companyIds)) : [],
+    agentIds.length ? db.select({ id: agents.id, companyId: agents.companyId, name: agents.name,
+      status: agents.status, pauseReason: agents.pauseReason }).from(agents).where(inArray(agents.id, agentIds)) : [],
+    projectIds.length ? db.select({ id: projects.id, companyId: projects.companyId, name: projects.name,
+      pauseReason: projects.pauseReason, pausedAt: projects.pausedAt }).from(projects).where(inArray(projects.id, projectIds)) : [],
+  ]);
+  const records = new Map<string, ScopeRecord>();
+  for (const row of companyRows) records.set(`company:${row.id}`, {
+    companyId: row.id, name: row.name, paused: row.status === "paused" || Boolean(row.pausedAt),
+    pauseReason: (row.pauseReason as PauseReason) ?? null,
+  });
+  for (const row of agentRows) records.set(`agent:${row.id}`, {
+    companyId: row.companyId, name: row.name, paused: row.status === "paused",
+    pauseReason: (row.pauseReason as PauseReason) ?? null,
+  });
+  for (const row of projectRows) records.set(`project:${row.id}`, {
+    companyId: row.companyId, name: row.name, paused: Boolean(row.pausedAt),
+    pauseReason: (row.pauseReason as PauseReason) ?? null,
+  });
+  return records;
+}
+
+async function computeOverviewAmounts(db: Db, policies: PolicyRow[], now: Date) {
+  if (policies.length === 0) return new Map<string, number>();
+  const { start, end } = currentUtcMonthWindow(now);
+  // Parameterized policy snapshots keep the totals on the same scope/window
+  // metadata already read for this response, even during a concurrent update.
+  const requestedPolicies = JSON.stringify(policies.map((policy) => ({
+    policy_id: policy.id, company_id: policy.companyId, scope_type: policy.scopeType,
+    scope_id: policy.scopeId, metric: policy.metric, window_kind: policy.windowKind,
+  })));
+  const totals = await db.execute<{ policyId: string; total: number }>(sql`
+    WITH requested AS (
+      SELECT * FROM jsonb_to_recordset(${requestedPolicies}::jsonb) AS policy(
+        policy_id uuid, company_id uuid, scope_type text, scope_id uuid, metric text, window_kind text
+      )
+    )
+    SELECT requested.policy_id AS "policyId",
+      coalesce(sum(${costEvents.costCents}), 0)::double precision AS total
+    FROM requested
+    LEFT JOIN ${costEvents} ON ${costEvents.companyId} = requested.company_id
+      AND requested.metric = 'billed_cents'
+      AND (requested.scope_type NOT IN ('agent', 'project')
+        OR (requested.scope_type = 'agent' AND ${costEvents.agentId} = requested.scope_id)
+        OR (requested.scope_type = 'project' AND ${costEvents.projectId} = requested.scope_id))
+      AND (requested.window_kind <> 'calendar_month_utc'
+        OR (${costEvents.occurredAt} >= ${start.toISOString()}::timestamptz
+          AND ${costEvents.occurredAt} < ${end.toISOString()}::timestamptz))
+    GROUP BY requested.policy_id
+  `);
+  return new Map(totals.map((row) => [row.policyId, Number(row.total ?? 0)]));
+}
 
 export type BudgetEnforcementScope = {
   companyId: string;
@@ -42,6 +116,7 @@ export type BudgetEnforcementScope = {
 };
 
 export type BudgetServiceHooks = {
+  postCommitPublications?: ActivityPublication[];
   cancelWorkForScope?: (scope: BudgetEnforcementScope) => Promise<void>;
 };
 
@@ -211,6 +286,8 @@ async function markApprovalStatus(
 }
 
 export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
+  const recordBudgetActivity = (input: LogActivityInput) => hooks.postCommitPublications
+    ? logActivity(db, input, hooks.postCommitPublications) : logActivity(db, input);
   async function pauseScopeForBudget(policy: PolicyRow) {
     const now = new Date();
     if (policy.scopeType === "agent") {
@@ -251,11 +328,10 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
 
   async function pauseAndCancelScopeForBudget(policy: PolicyRow) {
     await pauseScopeForBudget(policy);
-    await hooks.cancelWorkForScope?.({
-      companyId: policy.companyId,
-      scopeType: policy.scopeType as BudgetScopeType,
-      scopeId: policy.scopeId,
-    });
+    const { start } = resolveWindow(policy.windowKind as BudgetWindowKind);
+    await db.insert(costAccountingOutbox).values({ companyId: policy.companyId,
+      scopeType: policy.scopeType, scopeId: policy.scopeId, policyId: policy.id, windowStart: start })
+      .onConflictDoNothing();
   }
 
   async function resumeScopeFromBudget(policy: PolicyRow) {
@@ -317,7 +393,11 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
   async function buildPolicySummary(policy: PolicyRow): Promise<BudgetPolicySummary> {
     const scope = await resolveScopeRecord(db, policy.scopeType as BudgetScopeType, policy.scopeId);
     const observedAmount = await computeObservedAmount(db, policy);
-    const { start, end } = resolveWindow(policy.windowKind as BudgetWindowKind);
+    return summarizePolicy(policy, scope, observedAmount);
+  }
+
+  function summarizePolicy(policy: PolicyRow, scope: ScopeRecord, observedAmount: number, now = new Date()): BudgetPolicySummary {
+    const { start, end } = resolveWindow(policy.windowKind as BudgetWindowKind, now);
     const amount = policy.isActive ? policy.amount : 0;
     const utilizationPercent =
       amount > 0 ? Number(((observedAmount / amount) * 100).toFixed(2)) : 0;
@@ -456,7 +536,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
     }
   }
 
-  async function hydrateIncidentRows(rows: IncidentRow[]): Promise<BudgetIncident[]> {
+  async function hydrateIncidentRows(rows: IncidentRow[], scopes?: Promise<Map<string, ScopeRecord>>): Promise<BudgetIncident[]> {
     const approvalIds = rows.map((row) => row.approvalId).filter((value): value is string => Boolean(value));
     const approvalRows = approvalIds.length > 0
       ? await db
@@ -465,10 +545,12 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         .where(inArray(approvals.id, approvalIds))
       : [];
     const approvalStatusById = new Map(approvalRows.map((row) => [row.id, row.status]));
+    const scopeRecords = scopes ? await scopes : undefined;
 
     return Promise.all(
       rows.map(async (row) => {
-        const scope = await resolveScopeRecord(db, row.scopeType as BudgetScopeType, row.scopeId);
+        const scope = scopeRecords ? requireScopeRecord(scopeRecords, row)
+          : await resolveScopeRecord(db, row.scopeType as BudgetScopeType, row.scopeId);
         return {
           id: row.id,
           companyId: row.companyId,
@@ -609,7 +691,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         await resolveOpenIncidentsForPolicy(row.id, actorUserId ? "approved" : null, actorUserId);
       }
 
-      await logActivity(db, {
+      await recordBudgetActivity({
         companyId,
         actorType: "user",
         actorId: actorUserId ?? "board",
@@ -628,14 +710,18 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
     },
 
     overview: async (companyId: string): Promise<BudgetOverview> => {
-      const rows = await listPolicyRows(companyId);
-      const policies = await Promise.all(rows.map((row) => buildPolicySummary(row)));
-      const activeIncidentRows = await db
-        .select()
-        .from(budgetIncidents)
-        .where(and(eq(budgetIncidents.companyId, companyId), eq(budgetIncidents.status, "open")))
-        .orderBy(desc(budgetIncidents.createdAt));
-      const activeIncidents = await hydrateIncidentRows(activeIncidentRows);
+      const now = new Date();
+      const [rows, activeIncidentRows] = await Promise.all([
+        listPolicyRows(companyId),
+        db.select().from(budgetIncidents)
+          .where(and(eq(budgetIncidents.companyId, companyId), eq(budgetIncidents.status, "open")))
+          .orderBy(desc(budgetIncidents.createdAt)),
+      ]);
+      const scopes = resolveScopeRecords(db, [...rows, ...activeIncidentRows]);
+      const [amounts, scopeRecords, activeIncidents] = await Promise.all([
+        computeOverviewAmounts(db, rows, now), scopes, hydrateIncidentRows(activeIncidentRows, scopes),
+      ]);
+      const policies = rows.map((row) => summarizePolicy(row, requireScopeRecord(scopeRecords, row), amounts.get(row.id) ?? 0, now));
       return {
         companyId,
         policies,
@@ -673,7 +759,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         if (policy.notifyEnabled && observedAmount >= softThreshold) {
           const softIncident = await createIncidentIfNeeded(policy, "soft", observedAmount);
           if (softIncident?.created) {
-            await logActivity(db, {
+            await recordBudgetActivity({
               companyId: policy.companyId,
               actorType: "system",
               actorId: "budget_service",
@@ -695,7 +781,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
           const hardIncident = await createIncidentIfNeeded(policy, "hard", observedAmount);
           await pauseAndCancelScopeForBudget(policy);
           if (hardIncident?.created) {
-            await logActivity(db, {
+            await recordBudgetActivity({
               companyId: policy.companyId,
               actorType: "system",
               actorId: "budget_service",
@@ -933,7 +1019,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         await markApprovalStatus(db, incident.approvalId ?? null, "rejected", input.decisionNote, actorUserId);
       }
 
-      await logActivity(db, {
+      await recordBudgetActivity({
         companyId: incident.companyId,
         actorType: "user",
         actorId: actorUserId,

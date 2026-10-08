@@ -1,3 +1,3 @@
 # Tools
 
-(Your tools will go here. Add notes about them as you acquire and use them.)
+（你的工具清单会放在这里。了解并使用工具后，可补充相关说明。）

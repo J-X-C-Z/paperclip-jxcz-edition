@@ -1802,6 +1802,17 @@ export {
 } from "./validators/instance.js";
 
 export {
+  modelSwitchAssignmentSchema,
+  modelSwitchProfileSchema,
+  modelSwitchProfileDataSchema,
+  saveModelSwitchProfileSchema,
+  type ModelSwitchAssignment,
+  type ModelSwitchProfile,
+  type ModelSwitchProfileData,
+  type SaveModelSwitchProfile,
+} from "./validators/model-switch.js";
+
+export {
   instanceSettingsSchema,
   instanceGeneralSettingsSchema,
   patchInstanceGeneralSettingsSchema,
@@ -2790,7 +2801,7 @@ export * from "./validators/email.js";
 export { configureRailwaySshSchema, type ConfigureRailwaySsh, type RailwaySshSetup } from "./railway-connection.js";
 export * from "./announcements.js";
 
-export { AGENT_TEMPLATES, DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, CUSTOM_AGENT_TEMPLATE, getAgentTemplate, updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema, agentTemplateSchema, agentTemplatePermissionsSchema } from "./agent-templates.js";
+export { AGENT_TEMPLATES, DEPARTMENT_HEAD_TEMPLATE, TEAM_LEADER_TEMPLATE, TEAM_MEMBER_TEMPLATE, SECRETARY_TEMPLATE, CUSTOM_AGENT_TEMPLATE, getAgentTemplate, updateAgentTemplateSkillsSchema, updateAgentTemplateDefaultsSchema, agentTemplateSchema, agentTemplatePermissionsSchema } from "./agent-templates.js";
 export type { AgentTemplate, AgentTemplatePermissions, AgentTemplateRole, AgentTemplateMetadata } from "./agent-templates.js";
 export type { ProjectAgentMembership } from "./types/project.js";
 export { upsertProjectAgentMembershipSchema, type UpsertProjectAgentMembership } from "./validators/project.js";
@@ -2821,3 +2832,8 @@ export * from "./browser-use.js";
 export * from "./types/skill-source.js";
 export * from "./validators/skill-source.js";
 export * from "./github-skill-repository.js";
+
+export * from "./briefs.js";
+
+export * from "./types/bridge.js";
+export * from "./validators/bridge.js";

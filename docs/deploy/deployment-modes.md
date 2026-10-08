@@ -1,45 +1,45 @@
 ---
-title: Deployment Modes
-summary: local_trusted vs authenticated (private/public)
+title: 部署模式
+summary: local_trusted 与 authenticated（私有/公网）
 ---
 
-Paperclip supports two runtime modes with different security profiles. Reachability is configured separately with `bind`.
+Paperclip 支持两种安全属性不同的运行模式。网络可访问性通过 `bind` 单独配置。
 
 ## `local_trusted`
 
-The default mode. Optimized for single-operator local use.
+默认模式，适用于单人本地使用。
 
-- **Host binding**: loopback only (localhost)
-- **Bind**: `loopback`
-- **Authentication**: no login required
-- **Use case**: local development, solo experimentation
-- **Board identity**: auto-created local board user
+- **主机绑定**：仅限回环地址（localhost）
+- **Bind**：`loopback`
+- **身份验证**：无需登录
+- **适用场景**：本地开发、个人实验
+- **看板身份**：自动创建本地看板用户
 
 ```sh
-# Set during onboard
+# 在初始化时设置
 pnpm paperclipai onboard
-# Choose "local_trusted"
+# 选择 "local_trusted"
 ```
 
 ## `authenticated`
 
-Login required. Supports two exposure policies.
+需要登录，支持两种网络暴露策略。
 
 ### `authenticated` + `private`
 
-For private network access (Tailscale, VPN, LAN).
+用于私有网络访问（Tailscale、VPN、局域网）。
 
-- **Authentication**: login required via Better Auth
-- **URL handling**: auto base URL mode (lower friction)
-- **Host trust**: private-host trust policy required
-- **Bind**: choose `loopback`, `lan`, `tailnet`, or `custom`
+- **身份验证**：通过 Better Auth 登录
+- **URL 处理**：自动基准 URL 模式，减少配置步骤
+- **主机信任**：需要配置私有主机信任策略
+- **Bind**：可选 `loopback`、`lan`、`tailnet` 或 `custom`
 
 ```sh
 pnpm paperclipai onboard
-# Choose "authenticated" -> "private"
+# 选择 "authenticated" -> "private"
 ```
 
-Allow custom Tailscale hostnames:
+允许自定义 Tailscale 主机名：
 
 ```sh
 npx paperclipai allowed-hostname my-machine
@@ -47,41 +47,41 @@ npx paperclipai allowed-hostname my-machine
 
 ### `authenticated` + `public`
 
-For internet-facing deployment.
+用于面向互联网的部署。
 
-- **Authentication**: login required
-- **URL**: explicit public URL required
-- **Security**: stricter deployment checks in doctor
-- **Bind**: usually `loopback` behind a reverse proxy; `lan/custom` is advanced
+- **身份验证**：需要登录
+- **URL**：必须指定公网 URL
+- **安全性**：doctor 会执行更严格的部署检查
+- **Bind**：通常在反向代理后使用 `loopback`；`lan/custom` 属于高级配置
 
 ```sh
 pnpm paperclipai onboard
-# Choose "authenticated" -> "public"
+# 选择 "authenticated" -> "public"
 ```
 
-## Board Claim Flow
+## 看板所有权认领流程
 
-When migrating from `local_trusted` to `authenticated`, Paperclip emits a one-time claim URL at startup:
+从 `local_trusted` 迁移到 `authenticated` 时，Paperclip 会在启动时生成一次性认领 URL：
 
 ```
 /board-claim/<token>?code=<code>
 ```
 
-A signed-in user visits this URL to claim board ownership. This:
+已登录用户访问此 URL 后即可认领看板所有权。此流程会：
 
-- Promotes the current user to instance admin
-- Demotes the auto-created local board admin
-- Ensures active company membership for the claiming user
+- 将当前用户提升为实例管理员
+- 将自动创建的本地看板管理员降级
+- 确保认领用户具有有效的公司成员身份
 
-## Changing Modes
+## 更改模式
 
-Update the deployment mode:
+更新部署模式：
 
 ```sh
 pnpm paperclipai configure --section server
 ```
 
-Runtime override via environment variable:
+通过环境变量覆盖运行时配置：
 
 ```sh
 PAPERCLIP_DEPLOYMENT_MODE=authenticated PAPERCLIP_BIND=lan pnpm paperclipai run

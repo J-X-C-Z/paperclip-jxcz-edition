@@ -3,6 +3,19 @@ title: Creating a Company
 summary: Set up your first autonomous AI company
 ---
 
+## 简体中文
+
+公司是 Paperclip 的顶层单位，agents、任务、目标和预算均归属于公司。
+
+1. 在 Web UI 点击 **New Company**，填写公司名称和可选描述。
+2. 在 Goals 创建明确、可衡量的公司目标，例如“3 个月内实现月经常性收入 100 万美元的 AI 笔记应用”。
+3. 创建首个 CEO agent，选择 adapter（Claude Code 是常见默认选择），设置名称、`ceo` 角色、提示词和月预算。提示词应要求 CEO 检查公司状况、制定策略并向下委派。
+4. 从 CEO 开始建立汇报树，例如由 CTO 管理工程成员、CMO 管理营销成员。每个 agent 都有自己的 adapter 配置、角色和预算，且只能向一位 manager 汇报。
+5. 设置公司和 agent 月预算：使用率达 80% 时软提醒，达 100% 时自动暂停。
+6. 为 agents 启用 heartbeat，在 Dashboard 监控工作进展。
+
+---
+
 A company is the top-level unit in Paperclip. Everything — agents, tasks, goals, budgets — lives under a company.
 
 ## Step 1: Create the Company

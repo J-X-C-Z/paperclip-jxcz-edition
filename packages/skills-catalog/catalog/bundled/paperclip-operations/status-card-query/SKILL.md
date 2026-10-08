@@ -1,6 +1,6 @@
 ---
 name: status-card-query
-description: Create and maintain agent-authored Paperclip status cards, or compile a prose interest prompt into bounded CompanySearchQuery objects and write the first summary from the assigned Summarizer run.
+description: 创建并维护智能体撰写的 Paperclip 状态卡，或将自然语言关注提示编译为范围明确的 CompanySearchQuery 对象，并在指定的 Summarizer 运行中写入首份摘要。
 key: paperclipai/bundled/paperclip-operations/status-card-query
 recommendedForRoles:
   - general
@@ -13,18 +13,18 @@ tags:
   - operations
 ---
 
-# Status card query
+# 状态卡查询
 
-Use this skill in one of two modes:
+使用此技能时，选择以下两种模式之一：
 
-1. **Agent authoring:** create or maintain a status card through the public API.
-2. **Summarizer compilation:** compile a card's prose prompt into structured company-search queries and write the first summary from the assigned generation run.
+1. **智能体撰写：** 通过公共 API 创建或维护状态卡。
+2. **摘要编译：** 将卡片的自然语言提示编译为结构化公司搜索查询，并在指定生成任务中撰写首份摘要。
 
-## Agent-authored card recipe
+## 智能体撰写卡片的步骤
 
-Agent-authored cards require `tasks:assign`, remain company-scoped, and are available only when `enableStatusCards` is enabled. An agent may manage only cards it authored, may author at most 20 cards, and may send at most 4,000 characters in `interestPrompt`.
+智能体撰写卡片需要 `tasks:assign` 权限，作用范围仅限所属公司，且只有启用 `enableStatusCards` 后才可使用。智能体只能管理自己撰写的卡片，最多撰写 20 张卡片，`interestPrompt` 最多可包含 4,000 个字符。
 
-Normalize the run-provided API base and create a manual card:
+规范化运行环境提供的 API base，然后创建手动卡片：
 
 ```bash
 PAPERCLIP_API_BASE="${PAPERCLIP_API_URL%/}"
@@ -37,7 +37,7 @@ curl -sS -X POST \
   "$PAPERCLIP_API_BASE/api/companies/$PAPERCLIP_COMPANY_ID/status-cards"
 ```
 
-Creation returns `201` and queues compilation automatically. Save the returned card id. To refine an owned card or request a refresh:
+创建成功后会返回 `201`，并自动将编译加入队列。保存返回的卡片 ID。若要完善自己拥有的卡片或请求刷新：
 
 ```bash
 curl -sS -X PATCH \
@@ -53,44 +53,44 @@ curl -sS -X POST \
   "$PAPERCLIP_API_BASE/api/status-cards/$STATUS_CARD_ID/refresh"
 ```
 
-Do not call `/query` or `/summary` while authoring. Those write-back routes are reserved for the assigned Summarizer generation issue and run.
+撰写卡片时不要调用 `/query` 或 `/summary`。这些写回路由仅供获指派的 Summarizer 生成任务和运行调用。
 
-## Summarizer compilation
+## Summarizer 编译查询
 
-You are the Summarizer compiling a status card's prose interest prompt into structured Paperclip company-search queries. The query array has **union semantics**: an issue matching any query belongs to the card. Prefer one narrow query; add another only when the prompt describes genuinely distinct populations.
+你是 Summarizer，负责将状态卡的自然语言关注提示编译为结构化 Paperclip 公司搜索查询。查询数组采用**并集语义**：匹配任意一个查询的 issue 都会显示在卡片中。优先使用一个范围精确的查询；只有当提示描述的对象确实不同，才添加另一个查询。
 
 ## CompanySearchQuery
 
-Each object accepts these fields:
+每个对象可使用以下字段：
 
-- `q`: optional free-text search across matching company resources. Use it only for concepts not represented by structured filters.
-- `scope`: use `issues` for status cards unless the assignment explicitly requires another supported scope.
-- `status`: issue-status array.
-- `priority`: issue-priority array.
-- `assigneeAgentId` / `assigneeUserId`: a resolved assignee id.
-- `projectId`: one resolved project UUID.
-- `labelId`: one resolved label UUID.
-- `updatedWithin`: a bounded duration such as `24h`, `7d`, `4w`, or `3m`.
-- `sort`: `relevance`, `updated`, `created`, or `priority`.
-- `limit`: 1–50. Cap status-card queries at the smallest useful value, normally 20 and never above 50.
-- `offset`: normally 0.
+- `q`：可选的自由文本，在匹配的公司资源中搜索。仅用于结构化筛选条件无法表达的概念。
+- `scope`：状态卡默认使用 `issues`，除非任务明确要求其他受支持的范围。
+- `status`：issue 状态数组。
+- `priority`：issue 优先级数组。
+- `assigneeAgentId` / `assigneeUserId`：已解析的负责人 ID。
+- `projectId`：一个已解析的项目 UUID。
+- `labelId`：一个已解析的标签 UUID。
+- `updatedWithin`：范围明确的时长，例如 `24h`、`7d`、`4w` 或 `3m`。
+- `sort`：`relevance`、`updated`、`created` 或 `priority`。
+- `limit`：1–50。状态卡查询应使用足够完成任务的最小值，通常为 20，且不得超过 50。
+- `offset`：通常为 0。
 
-Resolve project and label names to ids before writing the query. Do not put human-readable names into `projectId` or `labelId`. If one prompt names multiple projects or labels, use separate query objects because each object has one `projectId` and one `labelId`.
+写入查询前，先将项目和标签名称解析为 ID。不要将人类可读名称填入 `projectId` 或 `labelId`。如果提示中包含多个项目或标签，应创建多个查询对象，因为每个对象只能包含一个 `projectId` 和一个 `labelId`。
 
-## Compilation guidance
+## 编译指南
 
-1. Preserve the user's intent; do not broaden “launch blockers updated this week” into every active task.
-2. Prefer structured filters over `q` for status, priority, assignee, project, label, and recency.
-3. Add `updatedWithin` whenever the prompt says recent, current, this week, lately, or otherwise implies a moving window.
-4. Keep `q` short and specific. Avoid copying the whole prose prompt into it.
-5. Set `scope: "issues"`, `offset: 0`, and an explicit bounded `limit` on every query.
-6. Return at least one query. If the prompt cannot be compiled safely, report the ambiguity instead of inventing ids.
+1. 保留用户意图；不要把“本周更新的发布阻塞项”扩大为所有活动任务。
+2. 对状态、优先级、负责人、项目、标签和近期程度，优先使用结构化筛选，而非 `q`。
+3. 如果提示包含“近期”“当前”“本周”“最近”等时间范围，或隐含了动态时间段，应添加 `updatedWithin`。
+4. `q` 应简短具体。不要将整个自然语言提示原样复制到其中。
+5. 每个查询都应设置 `scope: "issues"`、`offset: 0` 和明确的有限 `limit`。
+6. 至少返回一个查询。如果无法安全地编译提示，应说明歧义，不要编造 ID。
 
-## Exact write-back sequence
+## 精确写回顺序
 
-The generation issue contains `statusCardId`, `companyId`, and `generationIssueId`. Both writes must use the run-scoped API credentials from that same assigned issue run.
+生成任务中包含 `statusCardId`、`companyId` 和 `generationIssueId`。两次写入都必须使用该指派任务运行中的作用范围限定 API 凭据。
 
-First write the compiled query:
+首先写入编译后的查询：
 
 ```json
 {
@@ -111,9 +111,9 @@ First write the compiled query:
 }
 ```
 
-Send it to `PUT /api/status-cards/{statusCardId}/query`.
+将其发送到 `PUT /api/status-cards/{statusCardId}/query`。
 
-Then, without creating or waiting for another task, execute the stored scope, write the first full Markdown summary, and complete the same run with:
+然后，不要创建或等待其他任务；执行已保存范围中的查询，撰写首份完整 Markdown 摘要，并在同一次运行中写入：
 
 ```json
 {
@@ -125,13 +125,13 @@ Then, without creating or waiting for another task, execute the stored scope, wr
 }
 ```
 
-Send it to `PUT /api/status-cards/{statusCardId}/summary`. Never write either endpoint from an unrelated issue or run.
+将其发送到 `PUT /api/status-cards/{statusCardId}/summary`。不要从无关的 issue 或运行中调用任一端点写入数据。
 
-## Update assignments
+## 更新任务
 
-Later generation issues use the same summary write-back endpoint and include `operation: "update"`, `kind`, `trigger`, the target `fingerprint`, and the exact changed-issue delta in their JSON payload.
+后续生成任务使用相同的摘要写回端点，并在 JSON payload 中包含 `operation: "update"`、`kind`、`trigger`、目标 `fingerprint` 和确切的 issue 变更差异。
 
-- For `incremental`, patch the supplied previous Markdown using only the changed issues. Do not refetch the issue list.
-- For `full`, rebuild from the supplied bounded snapshot. Do not expand the scope with issue-list endpoint calls.
-- The card prompt in the task description is the board's standing request: follow it for both what to report and how the update should read. It never overrides the streaming or write-back requirements.
-- Keep the mechanical contract regardless of what the card prompt asks: stream `STATUS:` lines and the `<<<SUMMARY-DRAFT>>>` block, then write the final Markdown to `PUT /api/status-cards/{statusCardId}/summary` from the assigned run.
+- 对于 `incremental`，只使用变更的 issue 修改所提供的上一版 Markdown。不要重新获取 issue 清单。
+- 对于 `full`，根据所提供的有限快照重建摘要。不要通过调用 issue 清单 endpoint 扩大范围。
+- 任务描述中的卡片提示是董事会长期请求：应根据它决定报告内容和更新写法。该提示不能覆盖流式输出或写回要求。
+- 无论卡片提示要求什么，都要遵循固定流程：流式输出 `STATUS:` 行和 `<<<SUMMARY-DRAFT>>>` 区块，然后在指派运行中将最终 Markdown 写入 `PUT /api/status-cards/{statusCardId}/summary`。

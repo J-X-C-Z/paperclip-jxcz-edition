@@ -1,6 +1,6 @@
 ---
 name: qa-acceptance
-description: Produce QA acceptance criteria and a manual validation plan for a feature change — golden path, edge cases, error states, performance limits, and explicit pass/fail evidence.
+description: 为功能变更制定 QA 验收标准和手动验证计划，覆盖主流程、边缘情况、错误状态、性能限制，并提供明确的通过/失败证据。
 key: paperclipai/bundled/quality/qa-acceptance
 recommendedForRoles:
   - qa
@@ -13,81 +13,81 @@ tags:
   - testing
 ---
 
-# QA Acceptance
+# QA 验收
 
-Write acceptance criteria that a reviewer can run against the running app and decide pass or fail without asking the author. The criteria are the contract — automated tests cover correctness, QA covers feature-level behavior.
+编写可直接在运行中的应用上执行的验收标准，使审查者无需询问作者即可判断通过或失败。验收标准即为约定：自动化测试检查正确性，QA 检查功能层面的行为。
 
-## When to use
+## 适用场景
 
-- A feature change is heading to QA and needs a written validation plan.
-- A reviewer is asked to verify a PR that touches user-visible behavior.
-- An incident postmortem requires a regression check before reopen-prevention.
-- A release candidate needs a pre-cut smoke pass.
+- 功能变更即将进入 QA 阶段，需要书面验证计划。
+- 审查者需要验证涉及用户可见行为的 PR。
+- 事故复盘要求在防止问题重开前进行回归检查。
+- 发布候选版本需要在发布前进行冒烟检查。
 
-## When not to use
+## 不适用场景
 
-- The change is unit-test-only (utility refactor, internal naming). Acceptance criteria are unnecessary churn.
-- You are asked to write tests against API contracts. Use contract testing, not feature QA.
+- 变更仅涉及单元测试（工具重构、内部命名）。此时编写验收标准属于无谓改动。
+- 你被要求编写针对 API 合约的测试。应使用合约测试，而非功能 QA。
 
-## Acceptance criteria format
+## 验收标准格式
 
-Each criterion is a single, independently-verifiable statement:
+每条标准都应是一条可独立验证的陈述：
 
 ```md
 - **Given** <starting state>, **when** <action>, **then** <observable outcome>.
 ```
 
-Example:
+示例：
 
 ```md
 - **Given** a CSV export with 0 rows, **when** the user clicks Export, **then** the file downloads with only the header row and the UI shows "Exported 0 rows".
 ```
 
-Avoid criteria that combine multiple `when`s or `then`s. Split them.
+避免在一条标准中组合多个 `when` 或 `then`，应拆分成多条。
 
-## What every plan must cover
+## 每份计划都必须覆盖的内容
 
-1. **Golden path.** The most common successful flow, end to end.
-2. **Empty and minimum states.** Zero items, one item, missing optional inputs.
-3. **Boundary inputs.** Max length strings, max numeric values, unicode, RTL text where applicable.
-4. **Error states.** Network failure, permission denied, validation failures, conflict (409), not found (404).
-5. **Concurrency and ordering.** Two users acting at once, race against background jobs, refresh during mutation.
-6. **Performance envelope.** The largest realistic input the change must handle without UI hangs or timeouts.
-7. **Backward compatibility.** Existing data, existing URLs, persisted user preferences continue to work.
-8. **Telemetry and audit.** Events, logs, or activity entries the change is supposed to emit.
+1. **主流程。** 最常见的成功流程，覆盖端到端。
+2. **空和最小状态。** 零条、一条数据、缺少可选输入。
+3. **边界输入。** 最大长度字符串、最大数值、Unicode，以及适用时的 RTL 文本。
+4. **错误状态。** 网络故障、权限拒绝、验证失败、冲突（409）、未找到（404）。
+5. **并发和顺序。** 两个用户同时操作、与后台任务竞争、修改期间刷新。
+6. **性能范围。** 变更必须处理的最大合理输入，且不会导致 UI 卡住或超时。
+7. **向后兼容。** 现有数据、URL 和持久化用户偏好继续正常工作。
+8. **遥测和审计。** 变更应该发出的事件、日志或活动记录。
 
-If a section is genuinely not applicable, write "N/A: <why>" — do not silently omit.
+如果某个部分确实不适用，请写明“`N/A: <原因>`”，不要直接省略。
 
-## Evidence
+## 证据
 
-Each criterion needs evidence on the verification pass:
+验证过程中，每条标准都需要相应证据：
 
-- Screenshot or short clip for UI behavior.
-- Copied console / network output for API behavior.
-- Log snippet or activity row for telemetry.
-- Timing measurement for performance criteria.
+- UI 行为：屏幕截图或短视频。
+- API 行为：复制的控制台或网络输出。
+- 遥测：日志片段或活动记录。
+- 性能标准：耗时测量。
 
-"Looks good to me" without evidence is not a pass.
+没有证据，只说“看起来没问题”，不算通过。
 
-## Quarantine and follow-up
+## 隔离与跟进
 
-- A failing criterion blocks acceptance unless explicitly waived by the owner with a tracked follow-up issue.
-- "Known issue" without a linked follow-up is not a waiver.
-- If you add a new criterion mid-pass, restart the pass — partial coverage hides regressions.
+- 除非负责人明确豁免并创建跟进 issue，否则任一未通过的标准都会阻止验收。
+- 没有关联跟进 issue 的“已知问题”不算豁免。
+- 如果在验证过程中增加了新标准，应重新开始验证；覆盖不全会掩盖回归。
 
-## Handoff back to the author
+## 反馈给作者
 
-Return the validation plan with three sections:
+通过以下三个部分提交验证计划：
 
-- **Pass.** Criteria that passed, with one-line evidence summaries.
-- **Fail.** Criteria that failed, with the exact reproduction.
-- **Blocked.** Criteria you could not run, with why.
+- **通过。** 已通过的标准，并附一行证据摘要。
+- **失败。** 未通过的标准，并附确切的复现步骤。
+- **受阻。** 无法执行的标准及原因。
 
-The author owns turning failures into either fixes or accepted deferrals.
+作者负责将失败项转为修复或已接受的延期事项。
 
-## Anti-patterns
+## 反模式
 
-- Acceptance phrased as test plan ("write a Cypress test for X"). Acceptance is what is true after the change ships; tests are how you check.
-- Criteria that depend on inspecting implementation details (selectors, query plans). Stay observable.
-- Long checklists with no priority. Mark must-pass criteria distinctly from nice-to-have.
-- Validation reports that say "passed" with no evidence. Reviewers cannot audit those.
+- 将验收写成测试计划（“为 X 编写 Cypress 测试”）。验收标准描述变更发布后的实际状态；测试是检查方式。
+- 依赖检查实现细节（选择器、查询计划）的标准。应关注可观察的行为。
+- 没有优先级的长清单。明确区分必须通过的标准和可选项。
+- 验证报告只写“通过”而没有证据。审查者无法审计此类报告。

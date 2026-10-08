@@ -124,7 +124,7 @@ function PostHogConfigurationSection({ connection }: { connection: ToolConnectio
     <section>
       <h2 className="text-sm font-bold text-foreground">{uiText("PostHog access scope")}</h2>
       <p className="mt-0.5 text-sm text-muted-foreground">
-        PostHog uses its normal account defaults unless you narrow the optional controls below.
+        {uiText("PostHog uses its normal account defaults unless you narrow the optional controls below.")}
       </p>
       <dl className="mt-4 divide-y divide-border">
         {rows.map(([label, value]) => (
@@ -167,7 +167,7 @@ function GoogleSheetsAllowlistSection({
       <div>
         <h2 className="text-sm font-bold text-foreground">{uiText("Sheets agents can use")}</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Agents can only use the sheets listed here.
+          {uiText("Agents can only use the sheets listed here.")}
         </p>
       </div>
 
@@ -190,7 +190,7 @@ function GoogleSheetsAllowlistSection({
                     {sheetUrl}
                   </span>
                   <span className="block truncate font-mono text-(length:--text-micro) font-normal text-muted-foreground/80">
-                    ID: {id}
+                    {uiText("ID:")} {id}
                   </span>
                 </a>
                 <Button
@@ -235,7 +235,7 @@ function GoogleSheetsAllowlistSection({
             setDraft("");
           }}
         >
-          Add sheet
+          {uiText("Add sheet")}
         </Button>
       </div>
       {error && <div className="mt-2 text-xs text-destructive">{error}</div>}
@@ -259,10 +259,10 @@ export function QuarantinedActionsReview({
     <section className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-amber-800 dark:text-amber-200"> {uiText("Review")} {count} new {count === 1 ? uiText("action") : uiText("actions")}
+          <div className="text-sm font-semibold text-amber-800 dark:text-amber-200"> {uiText("Review")} {count} {uiText("new")} {count === 1 ? uiText("action") : uiText("actions")}
           </div>
           <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-            Turn on the actions agents may use. Anything left off stays blocked when you save.
+            {uiText("Turn on the actions agents may use. Anything left off stays blocked when you save.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -272,7 +272,7 @@ export function QuarantinedActionsReview({
             disabled={disabled}
             onClick={() => setEnabledIds(new Set(entries.map((entry) => entry.id)))}
           >
-            Turn all on
+            {uiText("Turn all on")}
           </button>
           <button
             type="button"
@@ -280,7 +280,7 @@ export function QuarantinedActionsReview({
             disabled={disabled}
             onClick={() => setEnabledIds(new Set())}
           >
-            Turn all off
+            {uiText("Turn all off")}
           </button>
         </div>
       </div>
@@ -315,7 +315,7 @@ export function QuarantinedActionsReview({
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-amber-700 dark:text-amber-300">
-          {selectedIds.length} {uiText("of")} {count} will be on
+          {selectedIds.length} {uiText("of")} {count} {uiText("will be on")}
         </span>
         <Button size="sm" disabled={disabled} onClick={() => onSubmit(selectedIds)}>
           {disabled ? uiText("Saving…") : "Save choices"}

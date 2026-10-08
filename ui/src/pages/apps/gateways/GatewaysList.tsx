@@ -136,8 +136,7 @@ export function GatewaysList() {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{uiText("Apps")}</h1>
         <p className="text-sm text-muted-foreground">
-          A gateway is one safe MCP endpoint that exposes only the apps you assign. Hand it to a client
-          like Cursor or Claude Desktop.
+          {uiText("A gateway is one safe MCP endpoint that exposes only the apps you assign. Hand it to a client like Cursor or Claude Desktop.")}
         </p>
       </header>
 
@@ -165,7 +164,7 @@ export function GatewaysList() {
             </div>
             <Button onClick={() => setCreating(true)}>
               <Plus className="mr-1.5 h-4 w-4" />
-              New gateway
+              {uiText("New gateway")}
             </Button>
           </div>
 
@@ -201,7 +200,7 @@ export function GatewaysList() {
             );
             const empty = (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No gateways match “{search.trim()}”.
+                {uiText("No gateways match “")}{search.trim()}”.
               </div>
             );
             return (
@@ -233,7 +232,7 @@ export function GatewaysList() {
                           <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{scope}</td>
                           <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{appsLabel}</td>
                           <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                            {active} active{expiring > 0 ? ` · ${expiring} expiring` : ""}
+                            {active} {uiText("active")}{expiring > 0 ? ` · ${expiring} expiring` : ""}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                             {lastUsed ? <RelativeTime value={lastUsed} /> : "—"}
@@ -292,8 +291,7 @@ export function GatewaysList() {
           <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
             <div className="text-sm font-semibold text-foreground">{uiText("Why a gateway?")}</div>
             <p className="mt-1 text-sm text-muted-foreground">
-              You pick which apps go through it, who can use it, and how. Revoke the token, the whole
-              gateway goes silent — no app-by-app cleanup.
+              {uiText("You pick which apps go through it, who can use it, and how. Revoke the token, the whole gateway goes silent — no app-by-app cleanup.")}
             </p>
           </div>
         </div>
@@ -324,12 +322,11 @@ function EmptyGateways({ onCreate }: { onCreate: () => void }) {
     <div className="rounded-2xl border border-dashed border-border p-12 text-center">
       <h2 className="text-lg font-semibold text-foreground">{uiText("No gateways yet")}</h2>
       <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-        Group your connected apps into one safe endpoint you can hand to a client, then revoke it in one
-        move.
+        {uiText("Group your connected apps into one safe endpoint you can hand to a client, then revoke it in one move.")}
       </p>
       <Button className="mt-5" onClick={onCreate}>
         <Plus className="mr-1.5 h-4 w-4" />
-        New gateway
+        {uiText("New gateway")}
       </Button>
     </div>
   );

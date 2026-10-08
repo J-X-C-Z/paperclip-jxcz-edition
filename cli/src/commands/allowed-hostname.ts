@@ -8,7 +8,7 @@ export async function addAllowedHostname(host: string, opts: { config?: string }
   const config = readConfig(opts.config);
 
   if (!config) {
-    p.log.error(`No config found at ${configPath}. Run ${pc.cyan("paperclip onboard")} first.`);
+    p.log.error(`未找到配置文件：${configPath}。请先运行 ${pc.cyan("paperclip onboard")}。`);
     return;
   }
 
@@ -23,11 +23,11 @@ export async function addAllowedHostname(host: string, opts: { config?: string }
   writeConfig(config, opts.config);
 
   if (existed) {
-    p.log.info(`Hostname ${pc.cyan(normalized)} is already allowed.`);
+    p.log.info(`主机名 ${pc.cyan(normalized)} 已在允许列表中。`);
   } else {
-    p.log.success(`Added allowed hostname: ${pc.cyan(normalized)}`);
+    p.log.success(`已添加允许的主机名：${pc.cyan(normalized)}`);
     p.log.message(
-      pc.dim("Restart the Paperclip server for this change to take effect."),
+      pc.dim("请重启 Paperclip 服务器以使更改生效。"),
     );
   }
 
@@ -37,4 +37,3 @@ export async function addAllowedHostname(host: string, opts: { config?: string }
     );
   }
 }
-

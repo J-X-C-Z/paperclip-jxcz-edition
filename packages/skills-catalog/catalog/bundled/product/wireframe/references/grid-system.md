@@ -1,47 +1,47 @@
-# Grid, palette, and type scale
+# 网格、调色板与字号比例
 
-These are the only values you may use. Do not introduce new colours, sizes, or grid units.
+只能使用以下数值。不要引入新的颜色、尺寸或网格单位。
 
-## Canvas presets
+## 画布预设
 
-| Viewport | Width × Height | Use for                       |
+| 视口 | 宽 × 高 | 用途 |
 | -------- | -------------- | ----------------------------- |
 | Desktop  | 1280 × 800     | Default for web app screens   |
 | Wide     | 1440 × 900     | Marketing landing pages       |
 | Tablet   | 768 × 1024     | iPad-class screens            |
 | Mobile   | 375 × 812      | iPhone-class screens          |
 
-Always include `viewBox="0 0 W H"` matching the canvas so it scales when embedded.
+始终包含与画布尺寸匹配的 `viewBox="0 0 W H"`，以便嵌入时正确缩放。
 
-## Grid
+## 网格
 
-- Base unit: **8px**. All `x`, `y`, `width`, `height` values must be multiples of 8.
-- Outer page margin: **24px** on desktop/tablet, **16px** on mobile.
-- Column gutter: **24px** desktop, **16px** mobile.
-- Vertical rhythm: **24px** between sibling components.
+- 基本单位：**8px**。所有 `x`、`y`、`width`、`height` 值都必须是 8 的倍数。
+- 页面外边距：桌面/平板为 **24px**，手机为 **16px**。
+- 列间距：桌面为 **24px**，手机为 **16px**。
+- 垂直节奏：同级组件之间间隔 **24px**。
 
-### Desktop 12-column grid
+### 桌面端 12 列网格
 
 - Total width: 1280
 - Outer margin (each side): 48
 - Inner content width: 1184
 - Column width: 88, gutter 8 → 12 × (88 + 8) − 8 = 1144 + 40 = 1184 ✓
 
-In practice, snap to common widths:
+实际使用时，优先对齐常见宽度：
 - Sidebar: 240
 - Content max: 944 (after sidebar)
 - Card grid: 3 × 384 with 24 gutters or 4 × 280 with 24 gutters
 - Modal width: 480 (small), 640 (default), 800 (wide)
 
-### Mobile single column
+### 手机单列布局
 
 - Total width: 375
-- Outer margin: 16 each side → content 343
-- Tap targets: 44 minimum height (snap to 48)
+- 两侧外边距各为 16 → 内容区宽 343
+- 点击目标：最小高度 44（对齐到 48）
 
-## Palette (the only colours allowed)
+## 调色板（仅允许以下颜色）
 
-| Name             | Hex        | Use                                                      |
+| 名称 | Hex | 用途 |
 | ---------------- | ---------- | -------------------------------------------------------- |
 | Ink              | `#000`     | Strokes, primary text                                    |
 | Paper            | `#fff`     | Default fill                                             |
@@ -50,34 +50,34 @@ In practice, snap to common widths:
 | Subtle grey      | `#f4f4f4`  | Optional zebra rows in tables; nothing else              |
 | Annotation red   | `#d33`     | Annotation layer ONLY — dashed borders, callout numbers  |
 
-That's the entire palette. No hover states, no focus rings, no brand colours.
+调色板仅限这些颜色。不要添加悬停状态、焦点环或品牌色。
 
-## Type scale
+## 字号比例
 
-Single typeface: `font-family="-apple-system, system-ui, sans-serif"`.
+仅使用一种字体：`font-family="-apple-system, system-ui, sans-serif"`。
 
-| Role     | Size | Weight | Use                              |
+| 角色 | 大小 | 字重 | 用途 |
 | -------- | ---- | ------ | -------------------------------- |
 | Caption  | 12   | 400    | Help text, metadata, table footnotes |
 | Body     | 14   | 400    | Default text, button labels, list rows |
 | Heading  | 20   | 600    | Section headings, card titles    |
 | Title    | 28   | 700    | Page title (one per screen)      |
 
-Font-weight is the only typographic variation allowed beyond size. No italics, no underline (except links — see below).
+除字号外，只允许通过字重变化。不要使用斜体或下划线（链接除外，见下文）。
 
-### Link convention
+### 链接约定
 
-For text links, render as body 14, with `text-decoration="underline"`. No colour change.
+文本链接使用正文 14 号，并设置 `text-decoration="underline"`。不要改变颜色。
 
-### Strokes on text
+### 文本描边
 
-Always set `stroke="none"` on `<text>` elements. The wireframe SVG sets a default stroke at the `<svg>` root for boxes; text inherits it as an unwanted halo unless overridden.
+始终为 `<text>` 元素设置 `stroke="none"`。线框 SVG 会在 `<svg>` 根节点为方框设置默认描边；若不覆盖，文本会继承描边并产生多余的光晕。
 
-## Standard component sizes
+## 标准组件尺寸
 
-These appear so often you should memorise them.
+这些尺寸很常见，建议记住。
 
-| Component         | Size (W × H) |
+| 组件 | 尺寸（宽 × 高）|
 | ----------------- | ------------ |
 | Button (default)  | 120 × 40     |
 | Button (small)    | 80 × 32      |
@@ -96,12 +96,12 @@ These appear so often you should memorise them.
 | Card padding      | 24 inside    |
 | Modal             | 480 / 640 / 800 wide, height auto |
 
-## Coordinate conventions
+## 坐标约定
 
-- Place every primitive inside a `<g transform="translate(x, y)">` so its internal coordinates start at `(0, 0)`. This makes primitives copy-pastable across screens.
-- Use comments above each primitive: `<!-- 1: nav -->`, `<!-- 2: search -->` matching the annotation list you write below the SVG.
-- Group related primitives under a parent `<g>` with a `data-region="..."` attribute for searchability.
+- 将每个基本图形放入 `<g transform="translate(x, y)">`，使其内部坐标从 `(0, 0)` 开始。这样便于在不同屏幕间复制粘贴。
+- 在每个基本图形上方添加注释，例如 `<!-- 1: nav -->`、`<!-- 2: search -->`，并与 SVG 下方的标注列表对应。
+- 将相关基本图形归入带有 `data-region="..."` 属性的父级 `<g>`，方便搜索。
 
-## Negative space
+## 留白
 
-Empty space is part of the design. Do not fill the canvas. A wireframe with one card centered in the viewport is a valid wireframe if that's the screen's intent.
+留白也是设计的一部分。不要填满画布。如果屏幕意图如此，视口中央只有一张卡片的线框也是有效设计。

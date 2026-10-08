@@ -21,7 +21,7 @@ interface IncidentOptions extends CompanyOptions {
 }
 
 export function registerCostCommands(program: Command): void {
-  const cost = program.command("cost").description("Cost and finance operations");
+  const cost = program.command("cost").description("成本与财务操作");
 
   for (const [name, path] of [
     ["summary", "costs/summary"],
@@ -39,8 +39,8 @@ export function registerCostCommands(program: Command): void {
   addCommonClientOptions(
     cost
       .command("issue")
-      .description("Get cost summary for an issue")
-      .argument("<issueId>", "Issue ID")
+      .description("获取任务成本摘要")
+      .argument("<issueId>", "任务 ID")
       .action(async (issueId: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -54,23 +54,23 @@ export function registerCostCommands(program: Command): void {
 
   addCompanyPostJson(cost, "event:create", "Record a cost event", "cost-events");
 
-  const finance = program.command("finance").description("Finance event and summary operations");
+  const finance = program.command("finance").description("财务事件和摘要操作");
   addCompanyPostJson(finance, "event:create", "Record a finance event", "finance-events");
   addCompanyGet(finance, "events", "List finance events", "costs/finance-events");
   addCompanyGet(finance, "summary", "Get finance summary", "costs/finance-summary");
   addCompanyGet(finance, "by-biller", "Get finance summary by biller", "costs/finance-by-biller");
   addCompanyGet(finance, "by-kind", "Get finance summary by kind", "costs/finance-by-kind");
 
-  const budget = program.command("budget").description("Budget policy and incident operations");
+  const budget = program.command("budget").description("预算策略和事件操作");
   addCompanyGet(budget, "overview", "Get budget overview", "budgets/overview");
   addCompanyPostJson(budget, "policy:upsert", "Create or update a budget policy", "budgets/policies");
 
   addCommonClientOptions(
     budget
       .command("company:update")
-      .description("Update company budget")
-      .option("-C, --company-id <id>", "Company ID")
-      .requiredOption("--payload-json <json>", "UpdateBudget JSON payload")
+      .description("更新公司预算")
+      .option("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--payload-json <json>", "UpdateBudget JSON 请求数据")
       .action(async (opts: JsonPayloadOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -86,9 +86,9 @@ export function registerCostCommands(program: Command): void {
   addCommonClientOptions(
     budget
       .command("agent:update")
-      .description("Update agent budget")
-      .argument("<agentId>", "Agent ID")
-      .requiredOption("--payload-json <json>", "UpdateBudget JSON payload")
+      .description("更新智能体预算")
+      .argument("<agentId>", "智能体 ID")
+      .requiredOption("--payload-json <json>", "UpdateBudget JSON 请求数据")
       .action(async (agentId: string, opts: JsonPayloadOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -103,10 +103,10 @@ export function registerCostCommands(program: Command): void {
   addCommonClientOptions(
     budget
       .command("incident:resolve")
-      .description("Resolve a budget incident")
-      .argument("<incidentId>", "Budget incident ID")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--payload-json <json>", "ResolveBudgetIncident JSON payload", "{}")
+      .description("处理预算事件")
+      .argument("<incidentId>", "预算事件 ID")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--payload-json <json>", "ResolveBudgetIncident JSON 请求数据", "{}")
       .action(async (incidentId: string, opts: IncidentOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -128,7 +128,7 @@ function addCompanyGet(parent: Command, name: string, description: string, path:
     parent
       .command(name)
       .description(description)
-      .option("-C, --company-id <id>", "Company ID")
+      .option("-C, --company-id <id>", "公司 ID")
       .action(async (opts: CompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -147,8 +147,8 @@ function addCompanyPostJson(parent: Command, name: string, description: string, 
     parent
       .command(name)
       .description(description)
-      .option("-C, --company-id <id>", "Company ID")
-      .requiredOption("--payload-json <json>", "JSON payload")
+      .option("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--payload-json <json>", "JSON 请求数据")
       .action(async (opts: JsonPayloadOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });

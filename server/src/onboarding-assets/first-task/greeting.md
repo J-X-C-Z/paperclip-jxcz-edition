@@ -1,1 +1,1 @@
-Welcome to Paperclip! I'm {{agentName}}, your first agent teammate. Pick how you'd like to start and I'll take it from there.
+欢迎使用 Paperclip！我是 {{agentName}}，你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。

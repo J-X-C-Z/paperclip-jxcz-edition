@@ -507,6 +507,42 @@ describeEmbeddedPostgres("tool gateway service", () => {
     expect(wakeup).not.toHaveBeenCalled();
   });
 
+  it("uses the background pool for review sweeps and lifecycle reflection", async () => {
+    const { company, agent, run } = await createRunFixture(db);
+    await db.insert(toolPolicies).values({ companyId: company.id, name: "Ask first", policyType: "require_approval", selectors: { toolName: "mcp-remote-fixture:update_note" } });
+    const backgroundDb = createDb(tempDb!.connectionString, { maxConnections: 1 });
+    const gateway = createTestToolGatewayService(db, { backgroundDb });
+    try {
+      const session = await gateway.createSession({ companyId: company.id, agentId: agent.id, runId: run.id });
+      await expect(gateway.executeTool({ sessionToken: session.token, tool: "mcp-remote-fixture:update_note", parameters: { noteId: "background-expiry" } })).rejects.toMatchObject({ reasonCode: "approval_required" });
+      const [request] = await db.select().from(toolActionRequests);
+      await db.update(toolActionRequests).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(toolActionRequests.id, request.id));
+      const foregroundSelect = vi.spyOn(db, "select");
+      const foregroundUpdate = vi.spyOn(db, "update");
+      const foregroundTransaction = vi.spyOn(db, "transaction");
+      const backgroundSelect = vi.spyOn(backgroundDb, "select");
+      const backgroundTransaction = vi.spyOn(backgroundDb, "transaction");
+      try {
+        expect(await gateway.sweepActionReviews()).toEqual({ scanned: 1 });
+        expect(backgroundSelect).toHaveBeenCalled();
+        expect(backgroundTransaction).toHaveBeenCalled();
+        expect(foregroundSelect).not.toHaveBeenCalled();
+        expect(foregroundUpdate).not.toHaveBeenCalled();
+        expect(foregroundTransaction).not.toHaveBeenCalled();
+      } finally {
+        foregroundSelect.mockRestore();
+        foregroundUpdate.mockRestore();
+        foregroundTransaction.mockRestore();
+        backgroundSelect.mockRestore();
+        backgroundTransaction.mockRestore();
+      }
+      const [interaction] = await backgroundDb.select().from(issueThreadInteractions).where(eq(issueThreadInteractions.id, request.interactionId!));
+      expect(interaction.status).toBe("expired");
+    } finally {
+      await backgroundDb.$client.end({ timeout: 5 });
+    }
+  });
+
   it("recovers expired reviews beyond a full batch of approvals that cannot recover", async () => {
     const { company, agent, run } = await createRunFixture(db);
     await db.insert(toolPolicies).values({ companyId: company.id, name: "Ask first", policyType: "require_approval", selectors: { toolName: "mcp-remote-fixture:update_note" } });

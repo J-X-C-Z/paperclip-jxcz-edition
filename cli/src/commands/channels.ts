@@ -98,10 +98,10 @@ export async function channelsCommand(
     return;
   }
 
-  console.log(pc.bold("Paperclip release channels"));
+  console.log(pc.bold("Paperclip 发布通道"));
   console.log("");
   for (const entry of state) {
-    const version = entry.version ?? pc.yellow("unavailable");
+    const version = entry.version ?? pc.yellow("不可用");
     console.log(`  ${pc.bold(entry.channel.padEnd(8))} ${version}`);
     console.log(`  ${" ".repeat(8)} ${pc.dim(`${entry.cadence} — ${entry.audience}`)}`);
     console.log(`  ${" ".repeat(8)} ${pc.dim(`npx paperclipai@${entry.distTag} onboard`)}`);
@@ -110,10 +110,10 @@ export async function channelsCommand(
 
   if (currentChannel === "unknown") {
     console.log(
-      `This install reports version ${pc.bold(packageVersion)}, which does not map to a published channel (source checkouts report the repository placeholder).`,
+      `此安装的版本为 ${pc.bold(packageVersion)}，不对应任何已发布通道（源码检出会显示仓库占位版本）。`,
     );
   } else {
-    console.log(`This install is version ${pc.bold(packageVersion)} on the ${pc.bold(currentChannel)} channel.`);
+    console.log(`此安装的版本为 ${pc.bold(packageVersion)}，通道为 ${pc.bold(currentChannel)}。`);
   }
-  console.log(`Docker images use the same names: ghcr.io/paperclipai/paperclip:{latest,beta,nightly,canary}`);
+  console.log(`Docker 镜像使用相同名称：ghcr.io/paperclipai/paperclip:{latest,beta,nightly,canary}`);
 }

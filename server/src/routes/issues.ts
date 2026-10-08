@@ -6852,39 +6852,32 @@ export function issueRoutes(
 
   async function resolveActiveIssueRun(issue: {
     id: string;
+    companyId: string;
     assigneeAgentId: string | null;
     executionRunId?: string | null;
   }) {
+    const belongsToIssue = (run: Awaited<ReturnType<typeof heartbeat.getRun>> | null | undefined) => {
+      const runIssueId = readNonEmptyString(run?.contextSnapshot?.issueId);
+      return run?.status === "running" && run.companyId === issue.companyId && runIssueId === issue.id;
+    };
     let runToInterrupt = issue.executionRunId
       ? await heartbeat.getRun(issue.executionRunId)
       : null;
+    if (!belongsToIssue(runToInterrupt)) runToInterrupt = null;
 
     if (
-      (!runToInterrupt || runToInterrupt.status !== "running") &&
+      !runToInterrupt &&
       issue.assigneeAgentId
     ) {
       const activeRun = await heartbeat.getActiveRunForAgent(
         issue.assigneeAgentId,
       );
-      const activeIssueId =
-        activeRun &&
-        activeRun.contextSnapshot &&
-        typeof activeRun.contextSnapshot === "object" &&
-        typeof (activeRun.contextSnapshot as Record<string, unknown>)
-          .issueId === "string"
-          ? ((activeRun.contextSnapshot as Record<string, unknown>)
-              .issueId as string)
-          : null;
-      if (
-        activeRun &&
-        activeRun.status === "running" &&
-        activeIssueId === issue.id
-      ) {
+      if (belongsToIssue(activeRun)) {
         runToInterrupt = activeRun;
       }
     }
 
-    return runToInterrupt?.status === "running" ? runToInterrupt : null;
+    return runToInterrupt;
   }
 
   type IssueQueueDb = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -7860,6 +7853,7 @@ export function issueRoutes(
 
   router.get("/companies/:companyId/issues", async (req, res) => {
     const startedAt = Date.now();
+    const timing = createIssueReadTiming();
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (isTaskBridgeKeyActor(req)) {
@@ -8105,15 +8099,15 @@ export function issueRoutes(
       allowTtlCache: compactView,
       diagnostics: opts.issueListDiagnostics,
       compute: async () => {
-        const rawResult = await svc.list(companyId, listFilters);
-        const result = (await actorCanReadCompanyScope(req, companyId))
+        const rawResult = await timing.time("lookup", () => svc.list(companyId, listFilters));
+        const result = (await timing.time("authorization", () => actorCanReadCompanyScope(req, companyId)))
           ? rawResult
           : await filterIssuesForActor(req, rawResult);
         const issueIds = result.map((issue) => issue.id);
         if (compactView) {
           const [handoffStates, recoveryActionByIssue] = await Promise.all([
-            listSuccessfulRunHandoffStates(db, companyId, issueIds),
-            recoveryActionsSvc.listActiveForIssues(companyId, issueIds),
+            timing.time("handoff", () => listSuccessfulRunHandoffStates(db, companyId, issueIds)),
+            timing.time("recovery", () => recoveryActionsSvc.listActiveForIssues(companyId, issueIds)),
           ]);
           const actor = getActorInfo(req);
           await Promise.all(
@@ -8146,8 +8140,8 @@ export function issueRoutes(
           };
         }
         const [handoffStates, recoveryActionByIssue] = await Promise.all([
-          listSuccessfulRunHandoffStates(db, companyId, issueIds),
-          recoveryActionsSvc.listActiveForIssues(companyId, issueIds),
+          timing.time("handoff", () => listSuccessfulRunHandoffStates(db, companyId, issueIds)),
+          timing.time("recovery", () => recoveryActionsSvc.listActiveForIssues(companyId, issueIds)),
         ]);
         const actor = getActorInfo(req);
         await Promise.all(
@@ -8177,6 +8171,7 @@ export function issueRoutes(
     });
 
     res.setHeader("X-Paperclip-Request-Cache", coordinated.cacheStatus);
+    res.setHeader("Server-Timing", timing.header());
     if (!coordinated.response) {
       const body = {
         error: "Too many concurrent issue-list requests for this actor/client",
@@ -11697,6 +11692,11 @@ export function issueRoutes(
       )
         return;
       const normalizedAssigneeAgentId =
+        await normalizeIssueAssigneeAgentReference(
+          companyId,
+          rawCreateBody.assigneeAgentId as string | null | undefined,
+          { actorType: req.actor.type },
+        );
       if (
         req.actor.type === "agent" &&
         normalizedAssigneeAgentId &&
@@ -11710,11 +11710,6 @@ export function issueRoutes(
         });
         return;
       }
-        await normalizeIssueAssigneeAgentReference(
-          companyId,
-          rawCreateBody.assigneeAgentId as string | null | undefined,
-          { actorType: req.actor.type },
-        );
       await assertNoAgentDelegationCycle({
         actorType: req.actor.type,
         actorAgentId: req.actor.agentId,
@@ -14621,6 +14616,11 @@ export function issueRoutes(
           source: string;
           mutation: string;
         }) => {
+          if (input.dependentIssueId === issue.id && issue.unblockDescriptor) return;
+          // Dependency completion cannot resolve a pending question or confirmation.
+          // Its response owns the existing continuationPolicy wake.
+          if ((await issueThreadInteractionsSvc.listForIssue(input.dependentIssueId))
+            .some((interaction) => interaction.status === "pending")) return;
           const idempotencyKey = buildIssueBlockersResolvedWakeStateKey({
             dependentIssueId: input.dependentIssueId,
             blockerIssueIds: input.blockerIssueIds,
@@ -14939,7 +14939,8 @@ export function issueRoutes(
           const parent = await svc.getWakeableParentAfterChildCompletion(
             issue.parentId,
           );
-          if (parent) {
+          // Ordinary Done continuations are committed by issueService.update.
+          if (parent && (issue.status !== "done" || parent.onboardingCompletion)) {
             addWakeup(parent.assigneeAgentId, {
               source: "automation",
               triggerDetail: "system",
@@ -18084,6 +18085,11 @@ export function issueRoutes(
           blockerIssueIds: string[];
           blockedTransitionAt?: Date | string | null;
         }) => {
+          if (input.dependentIssueId === currentIssue.id && currentIssue.unblockDescriptor) return;
+          // Dependency completion cannot resolve a pending question or confirmation.
+          // Its response owns the existing continuationPolicy wake.
+          if ((await issueThreadInteractionsSvc.listForIssue(input.dependentIssueId))
+            .some((interaction) => interaction.status === "pending")) return;
           const idempotencyKey = buildIssueBlockersResolvedWakeStateKey({
             dependentIssueId: input.dependentIssueId,
             blockerIssueIds: input.blockerIssueIds,
@@ -18286,7 +18292,7 @@ export function issueRoutes(
           const parent = await svc.getWakeableParentAfterChildCompletion(
             currentIssue.parentId,
           );
-          if (parent) {
+          if (parent && (currentIssue.status !== "done" || parent.onboardingCompletion)) {
             addWakeup(parent.assigneeAgentId, {
               source: "automation",
               triggerDetail: "system",

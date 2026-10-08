@@ -76,7 +76,7 @@ export function OverviewPanel({
           {profile ? ` · ${allowedToolsLabel(profile)}` : ""}
         </StatCard>
         <StatCard label={uiText("Tokens")}>
-          {active} active{expiring > 0 ? ` · ${expiring} expiring` : ""}
+          {active} {uiText("active")}{expiring > 0 ? ` · ${expiring} expiring` : ""}
         </StatCard>
         <StatCard label={uiText("Health")}>
           {needsAttention.length === 0 ? uiText("All green") : `${needsAttention.length} needs attention`}
@@ -88,14 +88,14 @@ export function OverviewPanel({
           <div>
             <h3 className="text-sm font-semibold text-foreground">{uiText("Who can use it")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Anyone holding an active token below, restricted by the rules in the bound profile.
+              {uiText("Anyone holding an active token below, restricted by the rules in the bound profile.")}
             </p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Chip>Scope · {formatScope(gateway, projectNames, agentNames)}</Chip>
-          <Chip>Profile · {profile?.name ?? uiText("Unavailable")}</Chip>
-          <Chip>{active} active {active === 1 ? "token" : "tokens"}</Chip>
+          <Chip>{uiText("Scope ·")} {formatScope(gateway, projectNames, agentNames)}</Chip>
+          <Chip>{uiText("Profile ·")} {profile?.name ?? uiText("Unavailable")}</Chip>
+          <Chip>{active} {uiText("active")} {active === 1 ? "token" : "tokens"}</Chip>
         </div>
       </section>
 
@@ -103,7 +103,7 @@ export function OverviewPanel({
         <h3 className="text-sm font-semibold text-foreground">{uiText("Apps in this gateway")}</h3>
         {apps.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            This gateway’s profile doesn’t include any apps yet.
+            {uiText("This gateway’s profile doesn’t include any apps yet.")}
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-border">

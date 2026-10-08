@@ -51,24 +51,26 @@ export async function executionProjectionsForRuns(
 ) {
   const projections = new Map<string, ExecutionProjection>();
   if (!runIds.length) return projections;
-  const runs = await db
-    .select(executionRunColumns)
-    .from(heartbeatRuns)
-    .where(
-      and(
-        eq(heartbeatRuns.companyId, companyId),
-        inArray(heartbeatRuns.id, runIds),
+  const [runs, coordinators] = await Promise.all([
+    db
+      .select(executionRunColumns)
+      .from(heartbeatRuns)
+      .where(
+        and(
+          eq(heartbeatRuns.companyId, companyId),
+          inArray(heartbeatRuns.id, runIds),
+        ),
       ),
-    );
-  const coordinators = await db
-    .select()
-    .from(nativeRunFinalizations)
-    .where(
-      and(
-        eq(nativeRunFinalizations.companyId, companyId),
-        inArray(nativeRunFinalizations.runId, runIds),
+    db
+      .select()
+      .from(nativeRunFinalizations)
+      .where(
+        and(
+          eq(nativeRunFinalizations.companyId, companyId),
+          inArray(nativeRunFinalizations.runId, runIds),
+        ),
       ),
-    );
+  ]);
   const issueIds = [
     ...new Set(
       runs
@@ -76,44 +78,46 @@ export async function executionProjectionsForRuns(
         .filter((id): id is string => !!id),
     ),
   ];
-  const pending = issueIds.length
-    ? await db
-        .select({
-          issueId: issueThreadInteractions.issueId,
-          kind: issueThreadInteractions.kind,
-        })
-        .from(issueThreadInteractions)
-        .where(
-          and(
-            eq(issueThreadInteractions.companyId, companyId),
-            inArray(issueThreadInteractions.issueId, issueIds),
-            eq(issueThreadInteractions.status, "pending"),
-          ),
-        )
-    : [];
-  const recovery = issueIds.length
-    ? await db
-        .select({
-          issueId: issueRecoveryActions.sourceIssueId,
-          cause: issueRecoveryActions.cause,
-          nextAction: issueRecoveryActions.nextAction,
-          evidence: issueRecoveryActions.evidence,
-          status: issueRecoveryActions.status,
-        })
-        .from(issueRecoveryActions)
-        .where(
-          and(
-            eq(issueRecoveryActions.companyId, companyId),
-            inArray(issueRecoveryActions.sourceIssueId, issueIds),
-            inArray(issueRecoveryActions.status, [
-              "active",
-              "escalated",
-              "resolved",
-            ]),
-          ),
-        )
-        .orderBy(desc(issueRecoveryActions.updatedAt))
-    : [];
+  const [pending, recovery] = await Promise.all([
+    issueIds.length
+      ? db
+          .select({
+            issueId: issueThreadInteractions.issueId,
+            kind: issueThreadInteractions.kind,
+          })
+          .from(issueThreadInteractions)
+          .where(
+            and(
+              eq(issueThreadInteractions.companyId, companyId),
+              inArray(issueThreadInteractions.issueId, issueIds),
+              eq(issueThreadInteractions.status, "pending"),
+            ),
+          )
+      : [],
+    issueIds.length
+      ? db
+          .select({
+            issueId: issueRecoveryActions.sourceIssueId,
+            cause: issueRecoveryActions.cause,
+            nextAction: issueRecoveryActions.nextAction,
+            evidence: issueRecoveryActions.evidence,
+            status: issueRecoveryActions.status,
+          })
+          .from(issueRecoveryActions)
+          .where(
+            and(
+              eq(issueRecoveryActions.companyId, companyId),
+              inArray(issueRecoveryActions.sourceIssueId, issueIds),
+              inArray(issueRecoveryActions.status, [
+                "active",
+                "escalated",
+                "resolved",
+              ]),
+            ),
+          )
+          .orderBy(desc(issueRecoveryActions.updatedAt))
+      : [],
+  ]);
   const coordinatorByRun = new Map(coordinators.map((row) => [row.runId, row]));
   for (const run of runs) {
     const issueId = run.nativeIssueId ?? text(run.contextSnapshot?.issueId);

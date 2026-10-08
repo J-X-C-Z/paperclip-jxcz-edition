@@ -3,8 +3,8 @@ import { AGENT_TEMPLATES, agentTemplateSchema, getAgentTemplate } from "./agent-
 import { agentPermissionsSchema, createAgentHireSchema, createAgentSchema, updateAgentSchema, updateAgentPermissionsSchema } from "./validators/agent.js";
 
 describe("agent templates", () => {
-  it("ships four valid presets with distinct models and authority", () => {
-    expect(AGENT_TEMPLATES).toHaveLength(4);
+  it("ships five valid presets with distinct models and authority", () => {
+    expect(AGENT_TEMPLATES).toHaveLength(5);
     for (const template of AGENT_TEMPLATES) expect(agentTemplateSchema.safeParse(template).success).toBe(true);
     expect(getAgentTemplate("team-leader")).toMatchObject({ role: "leader", model: { modelId: "gpt-6.1-sol" }, permissions: { reviewTask: true } });
     expect(getAgentTemplate("team-member")).toMatchObject({ role: "member", model: { modelId: "gpt-6-luna" }, permissions: { createTask: false, assignTask: false, reviewTask: false, manageAgents: false } });

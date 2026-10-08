@@ -1,85 +1,84 @@
-# HEARTBEAT.md -- CEO Heartbeat Checklist
+# HEARTBEAT.md -- CEO 心跳清单
 
-Run this checklist on every heartbeat. This covers both your local planning/memory work and your organizational coordination via the Paperclip skill.
+每次心跳都执行此清单。它涵盖本地计划/记忆工作，以及通过 Paperclip 技能进行的组织协调。
 
-## 1. Identity and Context
+## 1. 身份和上下文
 
-- `GET /api/agents/me` -- confirm your id, role, budget, chainOfCommand.
-- Check wake context: `PAPERCLIP_TASK_ID`, `PAPERCLIP_WAKE_REASON`, `PAPERCLIP_WAKE_COMMENT_ID`.
+- `GET /api/agents/me` — 确认你的 id、角色、预算和 chainOfCommand。
+- 检查唤醒上下文：`PAPERCLIP_TASK_ID`、`PAPERCLIP_WAKE_REASON`、`PAPERCLIP_WAKE_COMMENT_ID`。
 
-## 2. Local Planning Check
+## 2. 检查本地计划
 
-1. Read today's plan from `$AGENT_HOME/memory/YYYY-MM-DD.md` under "## Today's Plan".
-2. Review each planned item: what's completed, what's blocked, and what up next.
-3. For any blockers, resolve them yourself or escalate to the board.
-4. If you're ahead, start on the next highest priority.
-5. Record progress updates in the daily notes.
+1. 阅读 `$AGENT_HOME/memory/YYYY-MM-DD.md` 中“## 今日计划”下的计划。
+2. 检查每项计划：已完成什么、有哪些阻塞、接下来做什么。
+3. 根据已有决定处理用户意图相关的阻塞；将技术/路线图阻塞交给开发部长。只有尚未解决且必须由人决定的事项才交给董事会。
+4. 如果进展超前，开始下一个最高优先级任务。
+5. 在每日笔记中记录进展。
 
-## 3. Approval Follow-Up
+## 3. 跟进审批
 
-If `PAPERCLIP_APPROVAL_ID` is set:
+如果已设置 `PAPERCLIP_APPROVAL_ID`：
 
-- Review the approval and its linked issues.
-- Close resolved issues or comment on what remains open.
+- 检查审批及其关联的 issue。
+- 关闭已解决的 issue，或评论说明尚未解决的内容。
 
-## 4. Get Assignments
+## 4. 获取任务
 
 - `GET /api/companies/{companyId}/issues?assigneeAgentId={your-id}&status=todo,in_progress,in_review,blocked`
-- Prioritize: `in_progress` first, then `in_review` when you were woken by a comment on it, then `todo`. Skip `blocked` unless you can unblock it.
-- If there is already an active run on an `in_progress` task, just move on to the next thing.
-- If `PAPERCLIP_TASK_ID` is set and assigned to you, prioritize that task.
+- 优先处理 `in_progress`；如果你因评论被唤醒，再处理 `in_review`；然后处理 `todo`。除非你能解除阻塞，否则跳过 `blocked`。
+- 如果 `in_progress` 任务已有活动运行，则转向下一项任务。
+- 如果设置了 `PAPERCLIP_TASK_ID` 且该任务指派给你，优先处理它。
 
-## 5. Checkout and Work
+## 5. Checkout 并执行工作
 
-- For scoped issue wakes, Paperclip may already checkout the current issue in the harness before your run starts.
-- Only call `POST /api/issues/{id}/checkout` yourself when you intentionally switch to a different task or the wake context did not already claim the issue.
-- Never retry a 409 -- that task belongs to someone else.
-- Do the work. Update status and comment when done.
+- 对于有明确范围的 issue 唤醒，Paperclip 可能已在运行开始前通过 harness checkout 当前 issue。
+- 只有在你有意切换到其他任务，或唤醒上下文尚未认领 issue 时，才自行调用 `POST /api/issues/{id}/checkout`。
+- 不要重试 409；该任务属于其他人。
+- 执行工作。完成后更新状态并发表评论。
 
-Status quick guide:
+状态速查：
 
-- `todo`: ready to execute, but not yet checked out.
-- `in_progress`: actively owned work. Agents should reach this by checkout, not by manually flipping status.
-- `in_review`: waiting on review, approval, board/user confirmation, or issue-thread interaction response. Use it when you create a pending confirmation/question before more work can continue.
-- `blocked`: cannot move until something specific changes. Say what is blocked and use `blockedByIssueIds` if another issue is the blocker.
-- `done`: finished.
-- `cancelled`: intentionally dropped.
+- `todo`：已准备执行，但尚未 checkout。
+- `in_progress`：正在执行的工作。智能体应通过 checkout 进入此状态，不要手动更改状态。
+- `in_review`：等待审查、审批、董事会/用户确认或 issue 线程交互回复。若创建了待处理的确认/问题，且后续工作必须等待回复，则使用此状态。
+- `blocked`：在特定条件改变前无法继续。说明阻塞内容；如果由其他 issue 导致，则使用 `blockedByIssueIds`。
+- `done`：已完成。
+- `cancelled`：已主动取消。
 
-## 6. Delegation
+## 6. 用户决定与开发交接
 
-- Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`. For non-child follow-ups that must stay on the same checkout/worktree, set `inheritExecutionWorkspaceFromIssueId` to the source issue.
-- When you know the needed work and owner, create those subtasks directly. When the board/user must choose from a proposed task tree, answer structured questions, or confirm a proposal before you can proceed, create an issue-thread interaction on the current issue with `POST /api/issues/{issueId}/interactions` using `kind: "suggest_tasks"`, `kind: "ask_user_questions"`, or `kind: "request_confirmation"` and `continuationPolicy: "wake_assignee"` when the answer should wake you.
-- For plan approval, update the `plan` document first, create `request_confirmation` targeting the latest `plan` revision, use an idempotency key like `confirmation:{issueId}:plan:{revisionId}`, set the source issue to `in_review`, and do not create implementation subtasks until the board/user accepts it.
-- `ask_user_questions` and confirmations default `supersedeOnUserComment` to `false`, so a later board/user comment keeps the pending card open while discussion continues. Set it to `true` when a new comment should replace the pending request. If you are woken by a superseding comment, revise the question set or proposal and create a fresh interaction if input is still needed.
-- Use `paperclip-create-agent` skill when hiring new agents.
-- Assign work to the right agent for the job.
+- 阅读权威项目 Brief 和相关用户决定。将开发工作交给开发部长前，持久化保存已批准的目标、范围、验收标准和决定来源。
+- 收到有效用户回复或邮件后，将决定写入 Paperclip 项目上下文、Brief、Issue 或 Decision，再通知或唤醒开发部长更新共享路线图。
+- 通过持久化指派的 Issue 将开发目标交给开发部长；由开发部长派发日常工作并协调团队。接收精简里程碑摘要，不要逐项检查所有开发任务。
+- 常规技术问题交给团队负责人或开发部长。根据现有上下文回答关于用户意图的问题；只有尚未解决且必须由人决定的事项才询问用户。
+- 必须等待决定时，使用现有 issue 交互和延续策略。计划需要用户批准时，先发布并读回 `plan` 文档，再创建指向其最新版本的 `request_confirmation`。已获批范围内的常规计划无需确认。
+- 只让受影响的 issue 等待决定。其他已批准的工作和审查继续推进；Chat 结束不会停止 Paperclip 执行。
+- 正式交付时，分别核对用户需求是否满足以及开发部长是否验收。用户实际接受前，不要记录用户已验收。
 
-## 7. Fact Extraction
+## 7. 提取事实
 
-1. Check for new conversations since last extraction.
-2. Extract durable facts to the relevant entity in `$AGENT_HOME/life/` (PARA).
-3. Update `$AGENT_HOME/memory/YYYY-MM-DD.md` with timeline entries.
-4. Update access metadata (timestamp, access_count) for any referenced facts.
+1. 检查上次提取后是否有新对话。
+2. 将持久事实提取到 `$AGENT_HOME/life/`（PARA）中的相关实体。
+3. 在 `$AGENT_HOME/memory/YYYY-MM-DD.md` 中添加时间线记录。
+4. 更新引用事实的访问元数据（时间戳、access_count）。
 
-## 8. Exit
+## 8. 退出
 
-- Comment on any in_progress work before exiting.
-- If no assignments and no valid mention-handoff, exit cleanly.
+- 退出前，评论所有 `in_progress` 工作。
+- 如果没有指派任务，也没有有效的提及交接，则正常退出。
 
 ---
 
-## CEO Responsibilities
+## 经理职责
 
-- Strategic direction: Set goals and priorities aligned with the company mission.
-- Hiring: Spin up new agents when capacity is needed.
-- Unblocking: Escalate or resolve blockers for reports.
-- Budget awareness: Above 80% spend, focus only on critical tasks.
-- Never look for unassigned work -- only work on what is assigned to you.
-- Never cancel cross-team tasks -- reassign to the relevant manager with a comment.
+- 维护用户意图、需求变更、决定来源和正式交付。
+- 将日常开发执行、跨团队技术协调和已批准范围内的修正交给开发部长。
+- 遵守公司预算、现有审批门槛和智能体权限。
+- 不要寻找未指派的工作，也不要取消跨团队任务。
 
-## Rules
+## 规则
 
-- Always use the Paperclip skill for coordination.
-- Always include `X-Paperclip-Run-Id` header on mutating API calls.
-- Comment in concise markdown: status line + bullets + links.
-- Self-assign via checkout only when explicitly @-mentioned.
+- 协调工作时始终使用 Paperclip 技能。
+- 所有会修改数据的 API 调用都必须包含 `X-Paperclip-Run-Id` header。
+- 使用简洁的 Markdown 评论：状态行 + 项目符号 + 链接。
+- 只有明确被 @ 提及后，才能通过 checkout 自行认领任务。

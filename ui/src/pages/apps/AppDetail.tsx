@@ -225,7 +225,7 @@ export function AppDetail({ renderActions, onReconnect }: {
       : null;
     pushToast({
       title: `${appName} connected`,
-      body: skillSourcePath ? "Choose a repository to import your skills." : uiText("The connection is ready. Review permissions or test an action below."),
+      body: skillSourcePath ? uiText("Choose a repository to import your skills.") : uiText("The connection is ready. Review permissions or test an action below."),
       tone: "success",
     });
     navigate(skillSourcePath ?? appTabHref(connection.id, "permissions"), { replace: true });
@@ -344,7 +344,7 @@ export function AppDetail({ renderActions, onReconnect }: {
     onError: (error) =>
       pushToast({
         title: uiText("Couldn't start sign-in"),
-        body: error instanceof Error ? error.message : uiText("Please try again."),
+        body: error instanceof Error ? uiText(error.message) : uiText("Please try again."),
         tone: "error",
       }),
   });
@@ -378,7 +378,7 @@ export function AppDetail({ renderActions, onReconnect }: {
       } catch (error) {
         pushToast({
           title: uiText("Couldn't start sign-in"),
-          body: error instanceof Error ? error.message : uiText("Please try again."),
+          body: error instanceof Error ? uiText(error.message) : uiText("Please try again."),
           tone: "error",
         });
       }
@@ -520,10 +520,10 @@ export function AppDetail({ renderActions, onReconnect }: {
     return <div className="max-w-4xl space-y-6 pb-12">
       <h1 className="text-xl font-semibold">{appName}</h1>
       <section role="status" className="space-y-3 rounded-lg border border-border bg-muted p-4">
-        <h2 className="text-sm font-semibold">Connection retired</h2>
-        <p className="text-sm text-muted-foreground">{RETIRED_COMPOSIO_MESSAGE}</p>
-        <p className="text-sm text-muted-foreground">Remove each obsolete connection separately. Removing this one does not remove other connections.</p>
-        <Button variant="outline" onClick={() => navigate("/apps/connect?source=composio")}>Add Composio MCP connection</Button>
+        <h2 className="text-sm font-semibold">{uiText("Connection retired")}</h2>
+        <p className="text-sm text-muted-foreground">{uiText(RETIRED_COMPOSIO_MESSAGE)}</p>
+        <p className="text-sm text-muted-foreground">{uiText("Remove each obsolete connection separately. Removing this one does not remove other connections.")}</p>
+        <Button variant="outline" onClick={() => navigate("/apps/connect?source=composio")}>{uiText("Add Composio MCP connection")}</Button>
       </section>
       {grantsQuery.data?.capabilities.canConfigure === true && <DangerZone
         appName={appName}

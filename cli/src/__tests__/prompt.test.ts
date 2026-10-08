@@ -66,7 +66,7 @@ describe("prompt handoff", () => {
     await expect(runAgentPrompt("other-agent", "Do the work", {
       apiBase: "http://localhost:3100",
       apiKey: "agent-token",
-    })).rejects.toThrow(/Agent key belongs to Worker/);
+    })).rejects.toThrow(/智能体密钥属于 Worker/);
   });
 
   it("creates an assigned issue and wakes the authenticated agent", async () => {

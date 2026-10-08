@@ -942,7 +942,7 @@ export function ConnectorCard({
                       })}
                     >
                       <Trash2 />
-                      Remove connection
+                      {uiText("Remove connection")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

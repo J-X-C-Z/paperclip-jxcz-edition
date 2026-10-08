@@ -630,6 +630,8 @@ export interface ToolMcpGatewayAuthConfig {
   version: 1;
   bearer: ToolMcpGatewayBearerAuthConfig;
   oauth: ToolMcpGatewayOAuthReservedConfig;
+  /** Explicit owner consent to use one personal grant through a company gateway. */
+  sharedAuthorization?: { connectionId: string; grantId: string; targetCompanyId: string; profileScopeHash?: string } | null;
 }
 
 export interface ToolMcpGatewayStaticHeaderPolicy {

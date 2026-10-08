@@ -117,16 +117,50 @@ If your hosted database requires transaction-pooling-only connections (pgbouncer
 
 ### Client tuning (optional)
 
-All of these are optional; when unset, the driver defaults apply and behavior is unchanged — typical self-hosted setups need none of them:
+All of these are optional. Unset values use the defaults below; typical self-hosted setups need none of them:
 
 ```sh
 DATABASE_PREPARED_STATEMENTS=false   # required for transaction-mode poolers; default: enabled
 DATABASE_POOL_MAX=25                 # connection pool size; default: 10
+DATABASE_BACKGROUND_POOL_MAX=6      # separate periodic-work pool; default: 6
+DATABASE_POOL_WARM_CONNECTIONS=20   # distinct API connections opened before startup; default: 0
+DATABASE_BACKGROUND_POOL_WARM_CONNECTIONS=6 # background connections opened before startup; default: 0
 DATABASE_IDLE_TIMEOUT_SECONDS=60     # close idle pooled connections; default: 60 (0 = keep open)
 DATABASE_CONNECT_TIMEOUT_SECONDS=10  # default: 30
 DATABASE_MAX_LIFETIME_SECONDS=1800   # recycle a pooled connection after this long; default: 30-60 min (random)
 DATABASE_APPLICATION_NAME=paperclip  # application_name in pg_stat_activity; default: paperclip
 ```
+
+These settings apply to runtime pools, utility connections (including schema
+inspection), and JavaScript backup/restore connections. Defined options supplied
+by a caller override the corresponding environment setting; omitted or
+`undefined` options inherit it. Utility and backup connections keep a pool size
+of one, and backup/restore retains its own connection timeout. Native `pg_dump`
+and `psql` use their existing command-specific settings.
+
+Periodic services use a separate pool controlled by
+`DATABASE_BACKGROUND_POOL_MAX`, inheriting the same prepared-statement, idle,
+connection-timeout, and lifetime settings. Its application name is
+`paperclip-background`. Optional `DATABASE_BACKGROUND_URL` can route this pool
+through another transport endpoint to the same database and PostgreSQL cluster.
+It defaults to the primary URL. This helps isolate background traffic when the
+primary endpoint is an SSH tunnel. Server-managed backups also use this endpoint
+so bulk dump traffic does not share the API transport. The database name must match; the operator
+must also verify both endpoints reach the same cluster. Never point it at a
+replica or a separate database. The URL is a secret and should be stored with
+the same protection as the primary connection string.
+
+Dedicated finalization-lock connections inherit the
+originating pool's resolved configuration, keep a pool size of one, use
+`paperclip-workspace-finalization-lock`, and close after the operation finishes.
+Allow capacity for both pools and dedicated connections when sizing PostgreSQL's
+connection limit.
+
+Startup warmup holds distinct connection slots until every read-only `SELECT 1`
+probe finishes, then releases all reservations before opening the listener.
+Warmup counts must be non-negative integers within the corresponding pool limit.
+Use it for remote databases to avoid building the pool during the first request
+burst. It does not reserve slots permanently or remove network latency.
 
 ### Push the schema
 
@@ -183,6 +217,16 @@ is read-only and rebuilds its query for each attempt. A failed read
 does not replay completed reads or the budget workflow. Missing companies,
 authentication errors, and other database errors propagate without retry.
 This does not enable general SQL replay.
+
+The attention feed loads independent source queries concurrently through the
+existing connection pool to avoid serial remote-database round trips. Related
+issue enrichment still waits for source IDs; queue materialization and retention
+writes still follow collection and deduplication. This introduces no response
+cache, additional pool, or change to company/user visibility.
+
+Health endpoints refresh Git metadata asynchronously and coalesce concurrent
+refreshes within the existing three-second cache. A slow worktree scan therefore
+does not block session, company, or database API requests on the Node event loop.
 
 ## Execution identity row locks
 

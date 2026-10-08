@@ -3,6 +3,46 @@ title: Architecture
 summary: Stack overview, request flow, and adapter model
 ---
 
+## 简体中文
+
+Paperclip 是一个包含四个主要层次的 monorepo。
+
+### 技术栈与仓库结构
+
+| 层 | 技术 |
+|---|---|
+| 前端 | React 19、Vite 6、React Router 7、Radix UI、Tailwind CSS 4、TanStack Query |
+| 后端 | Node.js 24.11+、Express.js 5、TypeScript |
+| 数据库 | PostgreSQL 17（或内嵌 PGlite）、Drizzle ORM |
+| 身份验证 | Better Auth（sessions + API keys）|
+| Adapters | Claude Code CLI、Codex CLI、shell process、HTTP webhook |
+| 包管理器 | pnpm 9 workspaces |
+
+主要目录：`ui/` 是 React 前端；`server/` 提供 Express API；`packages/db/`、`packages/shared/` 和 `packages/adapters/` 分别维护数据库、共享类型和 adapter；`skills/` 存放 agent 技能；`cli/` 是命令行客户端；`doc/` 是内部文档。
+
+### Heartbeat 请求流程
+
+1. Scheduler、人工调用或事件（分配任务、收到反馈）触发 heartbeat；
+2. 服务端调用配置的 adapter `execute()`；
+3. Adapter 启动 agent，并传入 Paperclip 环境变量和提示词；
+4. Agent 调用 REST API 获取任务、checkout、执行工作并更新状态；
+5. Adapter 捕获标准输出、用量/成本和 session 状态；
+6. 服务端保存运行结果和 session 状态，供审计、排障及下一次 heartbeat 恢复。
+
+### Adapter 模型
+
+Adapter 连接 Paperclip 与 agent 运行时，通常由三部分组成：服务端执行模块、供 UI 使用的输出解析器和配置字段、以及 CLI 终端格式化器。内置 adapter 为 `claude_local`、`codex_local`、`process` 和 `http`；也可为其他运行时创建自定义 adapter。
+
+### 关键设计
+
+- Paperclip 是控制平面，不是执行平面；
+- 所有实体严格归属于一家公司；
+- 任务只有一个负责人，通过原子 checkout 防止并发执行；
+- 运行时与 provider 无关，能调用 HTTP API 即可接入；
+- 本地模式默认使用内嵌数据库，实现零配置启动。
+
+---
+
 Paperclip is a monorepo with four main layers.
 
 ## Stack Overview

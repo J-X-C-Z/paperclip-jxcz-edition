@@ -1,3 +1,4 @@
+import { OrgChart } from "./OrgChart";
 import { Agents as ScopedAgents } from "./Agents";
 import { useProjectWorkspaceEnabled } from "../hooks/useProjectWorkspaceEnabled";
 import { useAgentOrganizationFilter } from "../hooks/useAgentOrganizationFilter";
@@ -564,25 +565,7 @@ function CompanyAgents() {
 
       {/* Org chart view */}
       {effectiveView === "org" && filteredOrg.length > 0 && (
-        <div className="py-1">
-          {filteredOrg.map((node) => (
-            <OrgTreeNode
-              key={node.id}
-              node={node}
-              depth={0}
-              agentMap={agentMap}
-              liveRunByAgent={liveRunByAgent}
-              environmentByAgentId={environmentByAgentId}
-              environmentDataLoading={environmentDataLoading}
-              showEnvironment={showEnvironmentColumn}
-              tab={tab}
-              memberships={membershipsQuery.data}
-              membershipMutation={membershipMutation}
-              builtInByAgentId={builtInByAgentId}
-              onConfigureBuiltIn={setConfigureState}
-            />
-          ))}
-        </div>
+        <OrgChart embedded orgTree={filteredOrg} agents={agents ?? []} />
       )}
 
       {effectiveView === "org" && orgTree && orgTree.length > 0 && filteredOrg.length === 0 && (

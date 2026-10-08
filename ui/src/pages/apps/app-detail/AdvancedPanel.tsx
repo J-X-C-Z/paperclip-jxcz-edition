@@ -230,7 +230,7 @@ export function ReconnectCard({
         ) : methodUnavailable ? (
           <Button size="sm" variant="outline" asChild>
             <Link to={`/apps/connect?source=${encodeURIComponent(galleryEntry!.slug)}`}>
-              Add supported connection
+              {uiText("Add supported connection")}
             </Link>
           </Button>
         ) : onReconnect ? (
@@ -239,7 +239,7 @@ export function ReconnectCard({
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" variant="outline" asChild>
               <a href="https://vercel.com/connect" target="_blank" rel="noreferrer">
-                Manage in Vercel <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                {uiText("Manage in Vercel")} <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
               </a>
             </Button>
             <Button
@@ -249,7 +249,7 @@ export function ReconnectCard({
               onClick={() => verifyVercel.mutate()}
             >
               {verifyVercel.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              Check again
+              {uiText("Check again")}
             </Button>
           </div>
         ) : oauth ? (
@@ -345,7 +345,7 @@ function ReconnectForm({
   if (connection.credentialSource === "vercel_connect") {
     return (
       <p className="text-sm text-muted-foreground">
-        Credentials for this connection are managed in Vercel Connect.
+        {uiText("Credentials for this connection are managed in Vercel Connect.")}
       </p>
     );
   }
@@ -372,7 +372,7 @@ function ReconnectForm({
                 rel="noreferrer"
                 className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-foreground underline underline-offset-2"
               >
-                Where do I find this? <ArrowUpRight className="h-3 w-3" />
+                {uiText("Where do I find this?")} <ArrowUpRight className="h-3 w-3" />
               </a>
             )}
           </div>
@@ -380,8 +380,7 @@ function ReconnectForm({
       ) : (
         <Input
           type="password"
-          aria-label="App key"
-          autoComplete="off"
+          aria-label={uiText("App key")}          autoComplete="off"
           value={single}
           onChange={(e) => setSingle(e.target.value)}
           placeholder={uiText("Paste your new key")}
@@ -550,7 +549,7 @@ export function DangerZone({
                   <div>
                     <p className="text-sm font-medium text-foreground">{uiText("Revoke identity")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Disconnect the identity currently used by this app.
+                      {uiText("Disconnect the identity currently used by this app.")}
                     </p>
                   </div>
                   <Button
@@ -573,12 +572,12 @@ export function DangerZone({
                   <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={removing}> {uiText("Cancel")} </Button>
                   <Button variant="destructive" size="sm" onClick={onRemove} disabled={removing}>
                     {removing && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    Yes, remove it
+                    {uiText("Yes, remove it")}
                   </Button>
                 </div>
               ) : (
                 <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
-                  Remove app
+                  {uiText("Remove app")}
                 </Button>
               )}
             </div>

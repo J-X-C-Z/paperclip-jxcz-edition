@@ -376,6 +376,8 @@ export function toolGatewayRoutes(db: Db, toolGateway: ToolGatewayService) {
         res.status(422).json({ error: "Invalid gateway payload", issues: parsed.error.issues });
         return;
       }
+      if (parsed.data.authConfig?.sharedAuthorization)
+        await assertBoardPermission(req, parsed.data.authConfig.sharedAuthorization.targetCompanyId, "tools:admin");
       const actor = getActorInfo(req);
       const gateway = await toolGateway.createNamedGateway({
         companyId: req.params.companyId,
@@ -403,7 +405,17 @@ export function toolGatewayRoutes(db: Db, toolGateway: ToolGatewayService) {
         return;
       }
       const { companyId: _companyId, ...body } = parsed.data as typeof parsed.data & { companyId?: string };
-      res.json(await toolGateway.updateNamedGateway({ companyId, gatewayId: req.params.gatewayId, body }));
+      const existing = (await toolGateway.listNamedGateways(companyId)).find(gateway => gateway.id === req.params.gatewayId);
+      const targetCompanyIds = new Set([
+        existing?.authConfig?.sharedAuthorization?.targetCompanyId,
+        body.authConfig?.sharedAuthorization?.targetCompanyId,
+      ].filter((id): id is string => Boolean(id)));
+      for (const targetCompanyId of targetCompanyIds)
+        await assertBoardPermission(req, targetCompanyId, "tools:admin");
+      const actor = getActorInfo(req);
+      res.json(await toolGateway.updateNamedGateway({ companyId, gatewayId: req.params.gatewayId, body,
+        actor: { agentId: actor.agentId, userId: req.actor.type === "board" ? req.actor.userId : null },
+      }));
     } catch (err) {
       sendGatewayError(res, err);
     }

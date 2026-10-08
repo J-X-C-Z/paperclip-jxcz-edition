@@ -8,6 +8,7 @@ import type {
 import { slackToolsApi } from "@/api/slackTools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { uiText } from "@/i18n";
 
 export function SlackCapabilitiesView({
   capabilities,
@@ -18,16 +19,12 @@ export function SlackCapabilitiesView({
 }) {
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold">Slack tools</h3>
+      <h3 className="text-sm font-semibold">{uiText("Slack tools")}</h3>
       <p className="text-sm">
-        Invite the bot to a channel, then ask it to read the discussion and act
-        on it. Only linked people can direct these tools.
+        {uiText("Invite the bot to a channel, then ask it to read the discussion and act on it. Only linked people can direct these tools.")}
       </p>
       <p className="text-sm text-muted-foreground">
-        The agent can read channels shared by the bot and the requester, even
-        when responses are disabled there. Allowed Channels below controls
-        replies and writes. Private research stays in its source channel or your
-        DM with the bot.
+        {uiText("The agent can read channels shared by the bot and the requester, even when responses are disabled there. Allowed Channels below controls replies and writes. Private research stays in its source channel or your DM with the bot.")}
       </p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
@@ -36,42 +33,38 @@ export function SlackCapabilitiesView({
       )}
       {!capabilities && !error && (
         <p role="status" className="text-sm text-muted-foreground">
-          Checking Slack permissions…
+          {uiText("Checking Slack permissions…")}
         </p>
       )}
       {capabilities && (
         <>
           <ul className="space-y-2 text-sm">
             <li>
-              Read channels, threads, messages, files and source links; search
-              available channel history.
+              {uiText("Read channels, threads, messages, files and source links; search available channel history.")}
             </li>
             <li>
-              Send messages and files, react, pin, bookmark, and work with
-              canvases and lists.
+              {uiText("Send messages and files, react, pin, bookmark, and work with canvases and lists.")}
             </li>
             <li>
-              Creating channels, inviting people and destructive changes require
-              approval.
+              {uiText("Creating channels, inviting people and destructive changes require approval.")}
             </li>
           </ul>
           {capabilities.missingScopes.length > 0 && (
             <div className="rounded-lg border border-border bg-muted p-3 space-y-2">
               <p className="text-sm font-medium">
-                Add permissions to unlock more tools
+                {uiText("Add permissions to unlock more tools")}
               </p>
               <p className="text-sm">
-                Your existing connection still works. In{" "}
+                {uiText("Your existing connection still works. In")}{" "}
                 <a
                   className="underline underline-offset-4"
                   href="https://api.slack.com/apps"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Slack app settings
+                  {uiText("Slack app settings")}
                 </a>
-                , choose your app, open OAuth &amp; Permissions, add these Bot
-                Token Scopes, then reinstall the app to your workspace.
+                {uiText(", choose your app, open OAuth & Permissions, add these Bot Token Scopes, then reinstall the app to your workspace.")}
               </p>
               <p className="text-xs font-mono break-words">
                 {capabilities.missingScopes.join(", ")}
@@ -80,7 +73,7 @@ export function SlackCapabilitiesView({
           )}
           <details className="text-sm">
             <summary className="cursor-pointer text-muted-foreground">
-              Tool permissions and availability
+              {uiText("Tool permissions and availability")}
             </summary>
             <ul className="mt-3 divide-y divide-border">
               {capabilities.tools.map((tool) => (
@@ -105,9 +98,7 @@ export function SlackCapabilitiesView({
             </ul>
           </details>
           <p className="text-xs text-muted-foreground">
-            Slack plan, membership and per-action permissions still apply.
-            Native search availability depends on the app and runtime; history
-            scans report what they inspected.
+            {uiText("Slack plan, membership and per-action permissions still apply. Native search availability depends on the app and runtime; history scans report what they inspected.")}
           </p>
         </>
       )}
@@ -149,11 +140,9 @@ export function SlackSearchView({
   };
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold">Your Slack search access</h3>
+      <h3 className="text-sm font-semibold">{uiText("Your Slack search access")}</h3>
       <p className="text-sm text-muted-foreground">
-        Optional personal authorization enables private search on supported
-        runtimes. It cannot read channels the bot hasn’t joined or let the bot
-        write as you. Basic channel reading works without it.
+        {uiText("Optional personal authorization enables private search on supported runtimes. It cannot read channels the bot hasn’t joined or let the bot write as you. Basic channel reading works without it.")}
       </p>
       {!status.nativeSearchAvailable && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -162,14 +151,14 @@ export function SlackSearchView({
       )}
       {status.connected ? (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm">Slack search connected</span>
+          <span className="text-sm">{uiText("Slack search connected")}</span>
           <Button
             variant="outline"
             size="sm"
             disabled={pending}
             onClick={() => void perform(onDisconnect)}
           >
-            Disconnect search
+            {uiText("Disconnect search")}
           </Button>
         </div>
       ) : (
@@ -178,19 +167,18 @@ export function SlackSearchView({
           disabled={pending || !status.configured}
           onClick={() => void perform(onConnect)}
         >
-          Connect Slack search
+          {uiText("Connect Slack search")}
         </Button>
       )}
       {!status.configured && (
         <p className="text-sm text-muted-foreground">
-          A connection manager needs to configure your Slack app’s OAuth
-          credentials first.
+          {uiText("A connection manager needs to configure your Slack app’s OAuth credentials first.")}
         </p>
       )}
       {status.canConfigure && (
         <details className="text-sm">
           <summary className="cursor-pointer text-muted-foreground">
-            OAuth app configuration for connection managers
+            {uiText("OAuth app configuration for connection managers")}
           </summary>
           <form
             className="mt-3 space-y-3"
@@ -203,17 +191,15 @@ export function SlackSearchView({
             }}
           >
             <p className="text-sm">
-              In Slack app settings, add this redirect URL under OAuth &amp;
-              Permissions. Add user scopes <code>search:read.public</code>,{" "}
-              <code>search:read.private</code> and{" "}
-              <code>search:read.files</code>. Find Client ID and Client Secret
-              under Basic Information.
+              {uiText("In Slack app settings, add this redirect URL under OAuth & Permissions. Add user scopes")} <code>search:read.public</code>{uiText(",")}{" "}
+              <code>search:read.private</code> {uiText("and")}{" "}
+              <code>search:read.files</code>{uiText(". Find Client ID and Client Secret under Basic Information.")}
             </p>
             <p className="text-xs font-mono break-all">
               {status.redirectUri ?? "Configure a public HTTPS URL first."}
             </p>
             <div className="space-y-2">
-              <label htmlFor={`${id}-client`}>Client ID</label>
+              <label htmlFor={`${id}-client`}>{uiText("Client ID")}</label>
               <Input
                 id={`${id}-client`}
                 value={clientId}
@@ -221,7 +207,7 @@ export function SlackSearchView({
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor={`${id}-secret`}>Client Secret</label>
+              <label htmlFor={`${id}-secret`}>{uiText("Client Secret")}</label>
               <Input
                 id={`${id}-secret`}
                 type="password"
@@ -236,7 +222,7 @@ export function SlackSearchView({
                 size="sm"
                 disabled={pending || !clientId || !clientSecret}
               >
-                Save OAuth configuration
+                {uiText("Save OAuth configuration")}
               </Button>
             </div>
           </form>
@@ -275,7 +261,7 @@ export function SlackToolsSettings({
           className="text-sm underline underline-offset-4"
           to={`/apps/${connectionId}/permissions`}
         >
-          Manage action permissions
+          {uiText("Manage action permissions")}
         </Link>
       )}
     </div>
@@ -301,7 +287,7 @@ export function SlackSearchAccess({
   if (!query.data)
     return (
       <p role="status" className="text-sm text-muted-foreground">
-        Loading search access…
+        {uiText("Loading search access…")}
       </p>
     );
   return (

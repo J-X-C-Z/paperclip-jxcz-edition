@@ -98,7 +98,7 @@ interface PluginCompanyOptions extends PluginJsonOptions {
 function requireCompanyId(ctx: { companyId?: string }): string {
   if (!ctx.companyId) {
     throw new Error(
-      "Company ID is required. Pass --company-id, set PAPERCLIP_COMPANY_ID, or set context profile companyId via `paperclipai context set`.",
+      "必须提供公司 ID。请传入 --company-id、设置 PAPERCLIP_COMPANY_ID，或通过 `paperclipai context set` 设置上下文配置的 companyId。",
     );
   }
   return ctx.companyId;
@@ -164,7 +164,7 @@ export function buildPluginInstallRequest(
     (opts.version ? false : isExistingRelativePath(packageArg, cwd, pathExists));
 
   if (isLocal && opts.version) {
-    throw new Error("--version is only supported for npm package installs, not local plugin paths.");
+    throw new Error("--version 仅适用于 npm 包安装，不适用于本地插件路径。");
   }
 
   return {
@@ -319,7 +319,7 @@ export function runPluginInitCommand(packageName: string, opts: PluginInitOption
 // ---------------------------------------------------------------------------
 
 export function registerPluginCommands(program: Command): void {
-  const plugin = program.command("plugin").description("Plugin lifecycle management");
+  const plugin = program.command("plugin").description("插件生命周期管理");
 
   // -------------------------------------------------------------------------
   // plugin init <package-name>
@@ -327,8 +327,8 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("init <packageName>")
-      .description("Scaffold a local Paperclip plugin project")
-      .option("--output <dir>", "Directory to create the plugin folder in")
+      .description("创建本地 Paperclip 插件项目脚手架")
+      .option("--output <dir>", "创建插件目录的位置")
       .addOption(
         new Option("--template <template>", "Starter template")
           .choices(["default", "connector", "workspace", "environment"])
@@ -338,10 +338,10 @@ export function registerPluginCommands(program: Command): void {
         new Option("--category <category>", "Manifest category")
           .choices(["connector", "workspace", "automation", "ui", "environment"]),
       )
-      .option("--display-name <name>", "Manifest display name")
-      .option("--description <description>", "Manifest description")
-      .option("--author <author>", "Manifest author")
-      .option("--sdk-path <path>", "Local @paperclipai/plugin-sdk package path")
+      .option("--display-name <name>", "清单显示名称")
+      .option("--description <description>", "清单说明")
+      .option("--author <author>", "清单作者")
+      .option("--sdk-path <path>", "本地 @paperclipai/plugin-sdk 软件包路径")
       .action((packageName: string, opts: PluginInitOptions) => {
         try {
           const result = runPluginInitCommand(packageName, opts);
@@ -364,8 +364,8 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("list")
-      .description("List installed plugins")
-      .option("--status <status>", "Filter by status (ready, error, disabled, installed, upgrade_pending)")
+      .description("列出已安装插件")
+      .option("--status <status>", "按状态筛选（ready、error、disabled、installed、upgrade_pending）")
       .action(async (opts: PluginListOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -379,7 +379,7 @@ export function registerPluginCommands(program: Command): void {
 
           const rows = plugins ?? [];
           if (rows.length === 0) {
-            console.log(pc.dim("No plugins installed."));
+            console.log(pc.dim("未安装插件。"));
             return;
           }
 
@@ -405,8 +405,8 @@ export function registerPluginCommands(program: Command): void {
           "    paperclipai plugin install @acme/plugin-linear      # npm package\n" +
           "    paperclipai plugin install @acme/plugin-linear@1.2  # pinned version",
       )
-      .option("-l, --local", "Treat <package> as a local filesystem path", false)
-      .option("--version <version>", "Specific npm version to install (npm packages only)")
+      .option("-l, --local", "将 <package> 视为本地文件系统路径", false)
+      .option("--version <version>", "要安装的指定 npm 版本（仅适用于 npm 软件包）")
       .option(
         "--no-verify-target",
         "Skip the pre-install probe that reports which Paperclip instance the plugin installs into",
@@ -450,7 +450,7 @@ export function registerPluginCommands(program: Command): void {
           }
 
           if (!installedPlugin) {
-            console.log(pc.dim("Install returned no plugin record."));
+            console.log(pc.dim("安装操作未返回插件记录。"));
             return;
           }
 
@@ -512,7 +512,7 @@ export function registerPluginCommands(program: Command): void {
         "Uninstall a plugin by its plugin key or database ID.\n" +
           "  Use --force to hard-purge all state and config.",
       )
-      .option("--force", "Purge all plugin state and config (hard delete)", false)
+      .option("--force", "清除所有插件状态和配置（彻底删除）", false)
       .action(async (pluginKey: string, opts: PluginUninstallOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -551,7 +551,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("enable <pluginKey>")
-      .description("Enable a disabled or errored plugin")
+      .description("启用已禁用或发生错误的插件")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -577,7 +577,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("disable <pluginKey>")
-      .description("Disable a running plugin without uninstalling it")
+      .description("禁用运行中的插件，但不卸载")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -603,7 +603,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("inspect <pluginKey>")
-      .description("Show full details for an installed plugin")
+      .description("显示已安装插件的完整详情")
       .action(async (pluginKey: string, opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -637,7 +637,7 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("examples")
-      .description("List bundled example plugins available for local install")
+      .description("列出可在本地安装的内置示例插件")
       .action(async (opts: BaseClientOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -659,7 +659,7 @@ export function registerPluginCommands(program: Command): void {
 
           const rows = examples ?? [];
           if (rows.length === 0) {
-            console.log(pc.dim("No bundled examples available."));
+            console.log(pc.dim("没有可用的内置示例。"));
             return;
           }
 
@@ -695,10 +695,10 @@ export function registerPluginCommands(program: Command): void {
   addCommonClientOptions(
     plugin
       .command("bridge:stream")
-      .description("Stream a plugin bridge channel")
-      .argument("<pluginId>", "Plugin ID or key")
-      .argument("<channel>", "Stream channel")
-      .option("--duration-ms <ms>", "Stop streaming after this many milliseconds")
+      .description("流式读取插件桥接通道")
+      .argument("<pluginId>", "插件 ID 或键")
+      .argument("<channel>", "流通道")
+      .option("--duration-ms <ms>", "经过指定毫秒数后停止读取")
       .action(async (pluginId: string, channel: string, opts: PluginStreamOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -728,7 +728,7 @@ function addPluginGet(parent: Command, name: string, description: string, path: 
 }
 
 function addPluginPost(parent: Command, name: string, description: string, path: string): void {
-  addCommonClientOptions(parent.command(name).description(description).option("--payload-json <json>", "JSON payload", "{}").action(async (opts: PluginJsonOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).option("--payload-json <json>", "JSON 请求数据", "{}").action(async (opts: PluginJsonOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.post(path, parseJson(opts.payloadJson ?? "{}")), { json: ctx.json });
@@ -739,7 +739,7 @@ function addPluginPost(parent: Command, name: string, description: string, path:
 }
 
 function addPluginSubGet(parent: Command, name: string, description: string, suffix: string): void {
-  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "Plugin ID or key").action(async (pluginId: string, opts: BaseClientOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "插件 ID 或键").action(async (pluginId: string, opts: BaseClientOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.get(`/api/plugins/${encodeURIComponent(pluginId)}/${suffix}`), { json: ctx.json });
@@ -750,7 +750,7 @@ function addPluginSubGet(parent: Command, name: string, description: string, suf
 }
 
 function addPluginSubPost(parent: Command, name: string, description: string, suffix: string): void {
-  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "Plugin ID or key").option("--payload-json <json>", "JSON payload", "{}").action(async (pluginId: string, opts: PluginJsonOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "插件 ID 或键").option("--payload-json <json>", "JSON 请求数据", "{}").action(async (pluginId: string, opts: PluginJsonOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.post(`/api/plugins/${encodeURIComponent(pluginId)}/${suffix}`, parseJson(opts.payloadJson ?? "{}")), { json: ctx.json });
@@ -765,8 +765,8 @@ function addPluginConfigGet(parent: Command, name: string, description: string):
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .option("-C, --company-id <id>", "Company ID")
+      .argument("<pluginId>", "插件 ID 或键")
+      .option("-C, --company-id <id>", "公司 ID")
       .action(async (pluginId: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -788,9 +788,9 @@ function addPluginConfigPost(parent: Command, name: string, description: string,
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .option("-C, --company-id <id>", "Company ID")
-      .option("--payload-json <json>", "JSON payload", "{}")
+      .argument("<pluginId>", "插件 ID 或键")
+      .option("-C, --company-id <id>", "公司 ID")
+      .option("--payload-json <json>", "JSON 请求数据", "{}")
       .action(async (pluginId: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -811,7 +811,7 @@ function addPluginConfigPost(parent: Command, name: string, description: string,
 }
 
 function addPluginJobGet(parent: Command, name: string, description: string, suffix: string): void {
-  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "Plugin ID or key").argument("<jobId>", "Job ID").action(async (pluginId: string, jobId: string, opts: BaseClientOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "插件 ID 或键").argument("<jobId>", "任务 ID").action(async (pluginId: string, jobId: string, opts: BaseClientOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.get(`/api/plugins/${encodeURIComponent(pluginId)}/jobs/${encodeURIComponent(jobId)}/${suffix}`), { json: ctx.json });
@@ -822,7 +822,7 @@ function addPluginJobGet(parent: Command, name: string, description: string, suf
 }
 
 function addPluginJobPost(parent: Command, name: string, description: string, suffix: string): void {
-  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "Plugin ID or key").argument("<jobId>", "Job ID").option("--payload-json <json>", "JSON payload", "{}").action(async (pluginId: string, jobId: string, opts: PluginJsonOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "插件 ID 或键").argument("<jobId>", "任务 ID").option("--payload-json <json>", "JSON 请求数据", "{}").action(async (pluginId: string, jobId: string, opts: PluginJsonOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.post(`/api/plugins/${encodeURIComponent(pluginId)}/jobs/${encodeURIComponent(jobId)}/${suffix}`, parseJson(opts.payloadJson ?? "{}")), { json: ctx.json });
@@ -833,7 +833,7 @@ function addPluginJobPost(parent: Command, name: string, description: string, su
 }
 
 function addPluginKeyPost(parent: Command, name: string, description: string, suffix: string): void {
-  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "Plugin ID or key").argument("<key>", "Endpoint or data/action key").option("--payload-json <json>", "JSON payload", "{}").action(async (pluginId: string, key: string, opts: PluginJsonOptions) => {
+  addCommonClientOptions(parent.command(name).description(description).argument("<pluginId>", "插件 ID 或键").argument("<key>", "端点或数据/操作键").option("--payload-json <json>", "JSON 请求数据", "{}").action(async (pluginId: string, key: string, opts: PluginJsonOptions) => {
     try {
       const ctx = resolveCommandContext(opts);
       printOutput(await ctx.api.post(`/api/plugins/${encodeURIComponent(pluginId)}/${suffix}/${encodeURIComponent(key)}`, parseJson(opts.payloadJson ?? "{}")), { json: ctx.json });
@@ -848,8 +848,8 @@ function addPluginLocalFolderGet(parent: Command, name: string, description: str
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .argument("<pluginId>", "插件 ID 或键")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (pluginId: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -867,9 +867,9 @@ function addPluginLocalFolderKeyGet(parent: Command, name: string, description: 
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .argument("<folderKey>", "Local folder key")
-      .requiredOption("-C, --company-id <id>", "Company ID")
+      .argument("<pluginId>", "插件 ID 或键")
+      .argument("<folderKey>", "本地目录键")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
       .action(async (pluginId: string, folderKey: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -890,10 +890,10 @@ function addPluginLocalFolderKeyPost(parent: Command, name: string, description:
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .argument("<folderKey>", "Local folder key")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .option("--payload-json <json>", "JSON payload", "{}")
+      .argument("<pluginId>", "插件 ID 或键")
+      .argument("<folderKey>", "本地目录键")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .option("--payload-json <json>", "JSON 请求数据", "{}")
       .action(async (pluginId: string, folderKey: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -917,10 +917,10 @@ function addPluginLocalFolderKeyPut(parent: Command, name: string, description: 
     parent
       .command(name)
       .description(description)
-      .argument("<pluginId>", "Plugin ID or key")
-      .argument("<folderKey>", "Local folder key")
-      .requiredOption("-C, --company-id <id>", "Company ID")
-      .requiredOption("--payload-json <json>", "JSON payload")
+      .argument("<pluginId>", "插件 ID 或键")
+      .argument("<folderKey>", "本地目录键")
+      .requiredOption("-C, --company-id <id>", "公司 ID")
+      .requiredOption("--payload-json <json>", "JSON 请求数据")
       .action(async (pluginId: string, folderKey: string, opts: PluginCompanyOptions) => {
         try {
           const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -947,7 +947,7 @@ function parseOptionalInt(value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`Invalid integer value: ${value}`);
+    throw new Error(`整数值无效：${value}`);
   }
   return parsed;
 }

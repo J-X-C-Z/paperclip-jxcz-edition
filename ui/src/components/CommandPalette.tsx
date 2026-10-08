@@ -173,14 +173,14 @@ export function CommandPalette() {
   const quickSearchQuery = parsedQuery.query.trim();
 
   const { data: issues = [] } = useQuery({
-    queryKey: projectId ? queryKeys.issues.listByProject(selectedCompanyId!, projectId) : queryKeys.issues.list(selectedCompanyId!),
-    queryFn: () => issuesApi.list(selectedCompanyId!, projectId ? { projectId } : undefined),
+    queryKey: [...(projectId ? queryKeys.issues.listByProject(selectedCompanyId!, projectId) : queryKeys.issues.list(selectedCompanyId!)), "compact", "command-palette", TASK_LIMIT],
+    queryFn: () => issuesApi.listCompact(selectedCompanyId!, { limit: TASK_LIMIT, sortField: "updated", sortDir: "desc", ...(projectId ? { projectId } : {}) }),
     enabled: !!selectedCompanyId && open && workScope.ready && searchQuery.length === 0,
   });
 
   const { data: searchedIssues = [] } = useQuery({
-    queryKey: queryKeys.issues.search(selectedCompanyId!, quickSearchQuery, projectId ?? undefined, 10),
-    queryFn: () => issuesApi.list(selectedCompanyId!, { q: quickSearchQuery, limit: 10, includeRoutineExecutions: true, ...(projectId ? { projectId } : {}) }),
+    queryKey: [...queryKeys.issues.search(selectedCompanyId!, quickSearchQuery, projectId ?? undefined, 10), "compact", "command-palette"],
+    queryFn: () => issuesApi.listCompact(selectedCompanyId!, { q: quickSearchQuery, limit: 10, includeRoutineExecutions: true, ...(projectId ? { projectId } : {}) }),
     enabled: !!selectedCompanyId && open && workScope.ready && quickSearchQuery.length > 0,
   });
 

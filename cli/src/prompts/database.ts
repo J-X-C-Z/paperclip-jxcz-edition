@@ -23,7 +23,7 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   };
 
   const mode = await p.select({
-    message: "Database mode",
+    message: "数据库模式",
     options: [
       { value: "embedded-postgres" as const, label: "Embedded PostgreSQL (managed locally)", hint: "recommended" },
       { value: "postgres" as const, label: "PostgreSQL (external server)" },
@@ -32,7 +32,7 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   });
 
   if (p.isCancel(mode)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
@@ -47,48 +47,48 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
     // that will actually be submitted — the typed input, or the default.
     const connectionStringDefault = base.connectionString ?? "";
     const value = await p.text({
-      message: "PostgreSQL connection string",
+      message: "PostgreSQL 连接字符串",
       defaultValue: connectionStringDefault,
       placeholder: "postgres://user:pass@localhost:5432/paperclip",
       validate: (val) => {
         const candidate = val || connectionStringDefault;
-        if (!candidate) return "Connection string is required for PostgreSQL mode";
-        if (!candidate.startsWith("postgres")) return "Must be a postgres:// or postgresql:// URL";
+        if (!candidate) return "PostgreSQL 模式必须填写连接字符串";
+        if (!candidate.startsWith("postgres")) return "必须使用 postgres:// 或 postgresql:// URL";
       },
     });
 
     if (p.isCancel(value)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       process.exit(0);
     }
 
     connectionString = value;
   } else {
     const dataDir = await p.text({
-      message: "Embedded PostgreSQL data directory",
+      message: "嵌入式 PostgreSQL 数据目录",
       defaultValue: base.embeddedPostgresDataDir || defaultEmbeddedDir,
       placeholder: defaultEmbeddedDir,
     });
 
     if (p.isCancel(dataDir)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       process.exit(0);
     }
 
     embeddedPostgresDataDir = dataDir || defaultEmbeddedDir;
 
     const portValue = await p.text({
-      message: "Embedded PostgreSQL port",
+      message: "嵌入式 PostgreSQL 端口",
       defaultValue: embeddedPortDefault,
       placeholder: "54329",
       validate: (val) => {
         const n = Number(val || embeddedPortDefault);
-        if (!Number.isInteger(n) || n < 1 || n > 65535) return "Port must be an integer between 1 and 65535";
+        if (!Number.isInteger(n) || n < 1 || n > 65535) return "端口必须是 1 到 65535 之间的整数";
       },
     });
 
     if (p.isCancel(portValue)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       process.exit(0);
     }
 
@@ -97,57 +97,57 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   }
 
   const backupEnabled = await p.confirm({
-    message: "Enable automatic database backups?",
+    message: "启用数据库自动备份吗？",
     initialValue: base.backup.enabled,
   });
   if (p.isCancel(backupEnabled)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
   const backupDirDefault = base.backup.dir || defaultBackupDir;
   const backupDirInput = await p.text({
-    message: "Backup directory",
+    message: "备份目录",
     defaultValue: backupDirDefault,
     placeholder: defaultBackupDir,
     validate: (val) => ((val || backupDirDefault).trim().length === 0 ? "Backup directory is required" : undefined),
   });
   if (p.isCancel(backupDirInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
   const backupIntervalDefault = String(base.backup.intervalMinutes || 60);
   const backupRetentionDefault = String(base.backup.retentionDays || 30);
   const backupIntervalInput = await p.text({
-    message: "Backup interval (minutes)",
+    message: "备份间隔（分钟）",
     defaultValue: backupIntervalDefault,
     placeholder: "60",
     validate: (val) => {
       const n = Number(val || backupIntervalDefault);
-      if (!Number.isInteger(n) || n < 1) return "Interval must be a positive integer";
-      if (n > 10080) return "Interval must be 10080 minutes (7 days) or less";
+      if (!Number.isInteger(n) || n < 1) return "间隔必须是正整数";
+      if (n > 10080) return "间隔不能超过 10080 分钟（7 天）";
       return undefined;
     },
   });
   if (p.isCancel(backupIntervalInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 
   const backupRetentionInput = await p.text({
-    message: "Backup retention (days)",
+    message: "备份保留天数",
     defaultValue: backupRetentionDefault,
     placeholder: "30",
     validate: (val) => {
       const n = Number(val || backupRetentionDefault);
-      if (!Number.isInteger(n) || n < 1) return "Retention must be a positive integer";
-      if (n > 3650) return "Retention must be 3650 days or less";
+      if (!Number.isInteger(n) || n < 1) return "保留天数必须是正整数";
+      if (n > 3650) return "保留天数不能超过 3650 天";
       return undefined;
     },
   });
   if (p.isCancel(backupRetentionInput)) {
-    p.cancel("Setup cancelled.");
+    p.cancel("设置已取消。");
     process.exit(0);
   }
 

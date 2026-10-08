@@ -23,22 +23,22 @@ requiredSkills:
   - paperclipai/bundled/paperclip-operations/task-planning
 ---
 
-# Product Design
+# 产品设计
 
-A minimal design team built around a single Principal Product Designer. Install alongside an existing engineering team to add wireframing, design critique, and UX-quality review capacity.
+由一位首席产品设计师组成的精简设计团队。与现有工程团队一同安装，可增加线框图设计、设计评审和 UX 质量审查能力。
 
-## Contents
+## 团队成员
 
-- `UXDesigner` — Principal Product Designer and team root. Produces wireframes, runs design critiques, and reviews UX-visible PRs.
-- `product-design` project — rolling backlog for design specs, reviews, and system updates.
-- `weekly-design-review` routine — recurring designer-owned check-in to triage open design work and catch UX regressions early.
+- `UXDesigner` — 首席产品设计师和团队负责人。负责制作线框图、开展设计评审，并审查涉及 UX 的 PR。
+- `product-design` 项目 — 用于持续管理设计规范、评审和系统更新的待办事项。
+- `weekly-design-review` 例行任务 — 由设计师定期检查未完成的设计工作，并及早发现 UX 回归问题。
 
-## Skill rationale
+## 技能说明
 
-- `wireframe` (bundled) — structured low-fidelity wireframing for new flows.
-- `design-critique` (optional skill catalog) — structured visual/UX critique format. Installs from the skill catalog as a prerequisite at team install time.
-- `task-planning` — breaks larger design asks into reviewable child issues.
+- `wireframe`（内置）— 为新流程制作结构化的低保真线框图。
+- `design-critique`（可选技能 catalog）— 采用结构化格式评审视觉设计和 UX。安装团队时，会从技能 catalog 安装此先决技能。
+- `task-planning` — 将较大的设计需求拆分为可审查的子 issue。
 
-## Migration notes
+## 迁移说明
 
-Derived from the `UXDesigner` template in `skills/paperclip-create-agent/references/agents/uxdesigner.md`. The full visual-quality and design-lens documentation lives in the template's `AGENTS.md` body rather than as `references/` files so the catalog manifest stays at trust level `markdown_only`. Adapter type is intentionally omitted from frontmatter; the import preview lets operators pick `claude_local`, `codex_local`, or another adapter at install time.
+改编自 `skills/paperclip-create-agent/references/agents/uxdesigner.md` 中的 `UXDesigner` 模板。完整的视觉质量和设计视角说明保留在模板的 `AGENTS.md` 正文中，而非拆成 `references/` 文件，使 catalog 清单保持 `markdown_only` 信任级别。frontmatter 中有意省略适配器类型；安装时，导入预览允许操作员选择 `claude_local`、`codex_local` 或其他适配器。

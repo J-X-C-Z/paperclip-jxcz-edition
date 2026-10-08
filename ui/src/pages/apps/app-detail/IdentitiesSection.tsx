@@ -167,7 +167,7 @@ export function IdentitiesSection({
       <section className="space-y-5">
         <IdentitiesHeading />
         <InlineBanner tone="warning" compact>
-          We couldn't load who this connection acts as. Reload the page to try again.
+          {uiText("We couldn't load who this connection acts as. Reload the page to try again.")}
         </InlineBanner>
       </section>
     );
@@ -192,7 +192,7 @@ export function IdentitiesSection({
           actions={!agentGrant && dedicatedAgent && capabilities?.canConfigure ? (
             <Button size="sm" disabled={connectPending} onClick={() => onConnectAgent(dedicatedAgent.id)}>
               {connectPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Connect dedicated account
+              {uiText("Connect dedicated account")}
             </Button>
           ) : null}
         />
@@ -239,7 +239,7 @@ export function IdentitiesSection({
               actions={capabilities?.canConnectAsCurrentUser ? (
                   <Button size="sm" disabled={connectPending} onClick={onConnectAsMe}>
                     {connectPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                    Connect as me
+                    {uiText("Connect as me")}
                   </Button>
                 ) : null}
             />
@@ -249,7 +249,7 @@ export function IdentitiesSection({
             orgGrant.capabilities?.canEditAudience ? (
               <div className="flex justify-end">
                   <Button size="sm" variant="outline" onClick={() => onOpenAudience(orgGrant.id)}>
-                    Manage access
+                    {uiText("Manage access")}
                   </Button>
               </div>
             ) : null
@@ -260,7 +260,7 @@ export function IdentitiesSection({
               detail={uiText("Organization identity")}
               actions={capabilities?.canCreateOrganizationGrant ? (
                   <Button size="sm" disabled={connectPending} onClick={onConnectOrganization}>
-                    Connect organization identity
+                    {uiText("Connect organization identity")}
                   </Button>
                 ) : null}
             />
@@ -348,7 +348,7 @@ function GitHubConnectionSummary({
             ) : onRefreshAccess ? (
               <Button size="sm" variant="outline" disabled={refreshPending} onClick={onRefreshAccess}>
                 {refreshPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-                Load GitHub configuration
+                {uiText("Load GitHub configuration")}
               </Button>
             ) : null}
           </div>
@@ -365,13 +365,13 @@ function GitHubConnectionSummary({
               </li>
             ))}
           </ul> : <p role="status" className="text-sm text-muted-foreground">
-            No accessible repositories.
+            {uiText("No accessible repositories.")}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">{uiText("Refresh access to load the current repository list.")}</p>
         )}
         {configurationUrl ? <p className="text-xs text-muted-foreground">
-          Missing an organization or repository? <a href={configurationUrl} target="_blank" rel="noreferrer" className="text-foreground hover:underline">{uiText("Configure access on GitHub")}</a>, then refresh this list.
+          {uiText("Missing an organization or repository?")} <a href={configurationUrl} target="_blank" rel="noreferrer" className="text-foreground hover:underline">{uiText("Configure access on GitHub")}</a>{uiText(", then refresh this list.")}
         </p> : null}
       </div>
     </div>
@@ -551,8 +551,7 @@ export function AudienceDialog({
           ) : null}
 
           <p className="text-xs text-muted-foreground">
-            This controls whose work can use the identity. It does not change which agents have the
-            connection.
+            {uiText("This controls whose work can use the identity. It does not change which agents have the connection.")}
           </p>
 
           {error ? (
@@ -569,7 +568,7 @@ export function AudienceDialog({
             onClick={() => onSave(scope === "all" ? [] : [...selected])}
           >
             {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save audience
+            {uiText("Save audience")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -635,7 +634,7 @@ export function RevokeGrantDialog({
               onConfirm();
             }}
           >
-            Revoke identity
+            {uiText("Revoke identity")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

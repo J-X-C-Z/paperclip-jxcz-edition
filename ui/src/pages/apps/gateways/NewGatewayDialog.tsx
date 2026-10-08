@@ -95,8 +95,7 @@ export function NewGatewayDialog({
         <DialogHeader>
           <DialogTitle>{uiText("New gateway")}</DialogTitle>
           <DialogDescription>
-            One safe MCP endpoint that exposes only the apps in its access profile. Hand it to a client
-            like Cursor or Claude Desktop.
+            {uiText("One safe MCP endpoint that exposes only the apps in its access profile. Hand it to a client like Cursor or Claude Desktop.")}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
@@ -124,12 +123,12 @@ export function NewGatewayDialog({
               </option>
               {activeProfiles.map((profile) => (
                 <option key={profile.id} value={profile.id}>
-                  {profile.name} — {allowedToolsLabel(profile)}
+                  {profile.name} {uiText("—")} {allowedToolsLabel(profile)}
                 </option>
               ))}
             </select>
             <span className="text-xs text-muted-foreground">
-              The profile decides which tools this gateway allows. You can change it later.
+              {uiText("The profile decides which tools this gateway allows. You can change it later.")}
             </span>
           </label>
           <label className="block space-y-1.5">
@@ -143,7 +142,7 @@ export function NewGatewayDialog({
           </label>
           {noProfiles ? (
             <p className="text-xs text-destructive">
-              Create an access profile under Advanced before adding a gateway.
+              {uiText("Create an access profile under Advanced before adding a gateway.")}
             </p>
           ) : null}
           <DialogFooter>

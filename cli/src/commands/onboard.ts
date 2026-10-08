@@ -376,13 +376,13 @@ function printManagedInstallHint(): void {
   if (manifest && isManagedExecutable(process.argv[1], manifest)) return;
   if (!isEphemeralNpxExecution()) return;
   p.log.info(
-    `This npx run is temporary. Use ${pc.cyan("paperclipai install")} for atomic updates, rollback, and service support.`,
+    `此 npx 运行仅为临时方式。使用 ${pc.cyan("paperclipai install")} 可获得原子更新、回滚和服务支持。`,
   );
 }
 
 export async function onboard(opts: OnboardOptions): Promise<void> {
   if (opts.bind && !["loopback", "lan", "tailnet"].includes(opts.bind)) {
-    throw new Error(`Unsupported bind preset for onboard: ${opts.bind}. Use loopback, lan, or tailnet.`);
+    throw new Error(`onboard 的绑定预设无效：${opts.bind}。可使用 loopback、lan 或 tailnet。`);
   }
 
   printPaperclipCliBanner();
@@ -391,24 +391,24 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   const instance = describeLocalInstancePaths(resolvePaperclipInstanceId());
   p.log.message(
     pc.dim(
-      `Local home: ${instance.homeDir} | instance: ${instance.instanceId} | config: ${configPath}`,
+      `本地目录：${instance.homeDir} | 实例：${instance.instanceId} | 配置：${configPath}`,
     ),
   );
 
   let existingConfig: PaperclipConfig | null = null;
   let invalidBackupPath: string | undefined;
   if (configExists(opts.config)) {
-    p.log.message(pc.dim(`${configPath} exists`));
+    p.log.message(pc.dim(`${configPath} 已存在`));
 
     try {
       existingConfig = readConfig(opts.config);
       for (const warning of findPaperclipConfigKeyWarnings(existingConfig)) {
-        p.log.warn(`Unknown config key ${warning.path}; did you mean ${warning.suggestion}? It will be preserved.`);
+        p.log.warn(`未知配置项 ${warning.path}；是否想输入 ${warning.suggestion}？该配置项将予以保留。`);
       }
     } catch (err) {
       const backupPath = backupInvalidConfig(opts.config);
       p.log.warn(
-        `Existing config is invalid. Preserved the original bytes at ${backupPath}.\n${err instanceof Error ? err.message : String(err)}`,
+        `现有配置无效。原始内容已保存在 ${backupPath}。\n${err instanceof Error ? err.message : String(err)}`,
       );
 
       const canConfirmRepair =
@@ -418,7 +418,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
         process.stdout.isTTY === true;
       if (!canConfirmRepair) {
         p.log.error(
-          `Refusing to replace ${configPath} without confirmation. Rerun interactively to repair from defaults; the original and ${backupPath} are unchanged.`,
+          `未获确认，拒绝替换 ${configPath}。请在交互终端中重新运行，以使用默认值修复；原文件及备份 ${backupPath} 均未更改。`,
         );
         p.outro("");
         process.exitCode = 1;
@@ -426,11 +426,11 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
       }
 
       const repair = await p.confirm({
-        message: `Repair from defaults? The invalid original is backed up at ${backupPath}.`,
+        message: `是否使用默认值修复？无效的原始配置已备份至 ${backupPath}。`,
         initialValue: false,
       });
       if (p.isCancel(repair) || !repair) {
-        p.cancel(`Configuration left unchanged. Invalid backup: ${backupPath}`);
+        p.cancel(`配置未更改。无效配置备份：${backupPath}`);
         process.exitCode = 1;
         return;
       }
@@ -440,42 +440,42 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
   if (existingConfig) {
     p.log.message(
-      pc.dim("Existing Paperclip install detected; keeping the current configuration unchanged."),
+      pc.dim("检测到现有 Paperclip 安装；保留当前配置不变。"),
     );
-    p.log.message(pc.dim(`Use ${pc.cyan("paperclipai configure")} if you want to change settings.`));
+    p.log.message(pc.dim(`如需更改设置，请使用 ${pc.cyan("paperclipai configure")}。`));
 
     const jwtSecret = ensureAgentJwtSecret(configPath);
     const envFilePath = resolveAgentJwtEnvFile(configPath);
     if (jwtSecret.created) {
-      p.log.success(`Created ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+      p.log.success(`已在 ${pc.dim(envFilePath)} 中创建 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
     } else if (process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim()) {
-      p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} from environment`);
+      p.log.info(`使用环境变量中已有的 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
     } else {
-      p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+      p.log.info(`使用 ${pc.dim(envFilePath)} 中已有的 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
     }
     const toolActionSigningSecret = ensureToolActionSigningSecret(configPath);
     if (toolActionSigningSecret.created) {
-      p.log.success(`Created ${pc.cyan("PAPERCLIP_TOOL_ACTION_SIGNING_SECRET")} in ${pc.dim(envFilePath)}`);
+      p.log.success(`已在 ${pc.dim(envFilePath)} 中创建 ${pc.cyan("PAPERCLIP_TOOL_ACTION_SIGNING_SECRET")}`);
     }
 
     const keyResult = ensureLocalSecretsKeyFile(existingConfig, configPath);
     if (keyResult.status === "created") {
-      p.log.success(`Created local secrets key file at ${pc.dim(keyResult.path)}`);
+      p.log.success(`已创建本地密钥文件：${pc.dim(keyResult.path)}`);
     } else if (keyResult.status === "existing") {
-      p.log.message(pc.dim(`Using existing local secrets key file at ${keyResult.path}`));
+      p.log.message(pc.dim(`使用已有的本地密钥文件：${keyResult.path}`));
     }
 
     p.note(
       [
         "Existing config preserved",
-        `Database: ${existingConfig.database.mode}`,
+        `数据库: ${existingConfig.database.mode}`,
         existingConfig.llm ? `LLM: ${existingConfig.llm.provider}` : "LLM: not configured",
-        `Logging: ${existingConfig.logging.mode} -> ${existingConfig.logging.logDir}`,
-        `Server: ${existingConfig.server.deploymentMode}/${existingConfig.server.exposure} @ ${describeServerBinding(existingConfig.server)}`,
+        `日志: ${existingConfig.logging.mode} -> ${existingConfig.logging.logDir}`,
+        `服务器: ${existingConfig.server.deploymentMode}/${existingConfig.server.exposure} @ ${describeServerBinding(existingConfig.server)}`,
         `Allowed hosts: ${existingConfig.server.allowedHostnames.length > 0 ? existingConfig.server.allowedHostnames.join(", ") : "(loopback only)"}`,
         `Auth URL mode: ${existingConfig.auth.baseUrlMode}${existingConfig.auth.publicBaseUrl ? ` (${existingConfig.auth.publicBaseUrl})` : ""}`,
-        `Storage: ${existingConfig.storage.provider}`,
-        `Secrets: ${existingConfig.secrets.provider} (strict mode ${existingConfig.secrets.strictMode ? "on" : "off"})`,
+        `存储: ${existingConfig.storage.provider}`,
+        `密钥: ${existingConfig.secrets.provider} (strict mode ${existingConfig.secrets.strictMode ? "on" : "off"})`,
         "Agent auth: PAPERCLIP_AGENT_JWT_SECRET configured",
       ].join("\n"),
       "Configuration ready",
@@ -483,11 +483,11 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
     p.note(
       [
-        `Run: ${pc.cyan("paperclipai run")}`,
-        `Reconfigure later: ${pc.cyan("paperclipai configure")}`,
-        `Diagnose setup: ${pc.cyan("paperclipai doctor")}`,
+        `运行：${pc.cyan("paperclipai run")}`,
+        `稍后重新配置：${pc.cyan("paperclipai configure")}`,
+        `诊断设置：${pc.cyan("paperclipai doctor")}`,
       ].join("\n"),
-      "Next commands",
+      "后续命令",
     );
 
     printManagedInstallHint();
@@ -499,7 +499,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
     let shouldRunNow = !serviceInstalled && (opts.run === true || opts.yes === true);
     if (shouldOfferForegroundStart({ serviceInstalled, startAlreadyDecided: shouldRunNow, invokedByRun: opts.invokedByRun === true, interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY) })) {
       const answer = await p.confirm({
-        message: "Start Paperclip now?",
+        message: "现在启动 Paperclip 吗？",
         initialValue: true,
       });
       if (!p.isCancel(answer)) {
@@ -512,7 +512,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
       return;
     }
 
-    p.outro("Existing Paperclip setup is ready.");
+    p.outro("现有 Paperclip 设置已就绪。");
     return;
   }
 
@@ -521,29 +521,29 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
     p.log.message(
       pc.dim(
         opts.bind
-          ? `\`--yes\` enabled: using Quickstart defaults with bind=${opts.bind}.`
-          : "`--yes` enabled: using Quickstart defaults.",
+          ? `\`--yes\` enabled: using 快速开始 defaults with bind=${opts.bind}.`
+          : "已启用 `--yes`：使用快速开始默认设置。",
       ),
     );
   } else {
     const setupModeChoice = await p.select({
-      message: "Choose setup path",
+      message: "选择设置方式",
       options: [
         {
           value: "quickstart" as const,
-          label: "Quickstart",
-          hint: "Recommended: local defaults + ready to run",
+          label: "快速开始",
+          hint: "推荐：使用本地默认值并立即运行",
         },
         {
           value: "advanced" as const,
-          label: "Advanced setup",
-          hint: "Customize database, server, storage, and more",
+          label: "高级设置",
+          hint: "自定义数据库、服务器、存储等设置",
         },
       ],
       initialValue: "quickstart",
     });
     if (p.isCancel(setupModeChoice)) {
-      p.cancel("Setup cancelled.");
+      p.cancel("设置已取消。");
       return;
     }
     setupMode = setupModeChoice as SetupMode;
@@ -579,28 +579,28 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   }
 
   if (setupMode === "advanced") {
-    p.log.step(pc.bold("Database"));
+    p.log.step(pc.bold("数据库"));
     database = await promptDatabase(database);
 
     if (database.mode === "postgres" && database.connectionString) {
       const s = p.spinner();
-      s.start("Testing database connection...");
+      s.start("正在测试数据库连接……");
       try {
         const { createDb } = await import("@paperclipai/db");
         const db = createDb(database.connectionString);
         await db.execute("SELECT 1");
-        s.stop("Database connection successful");
+        s.stop("数据库连接成功");
       } catch {
-        s.stop(pc.yellow("Could not connect to database — you can fix this later with `paperclipai doctor`"));
+        s.stop(pc.yellow("无法连接数据库；稍后可运行 `paperclipai doctor` 修复"));
       }
     }
 
-    p.log.step(pc.bold("LLM Provider"));
+    p.log.step(pc.bold("LLM 提供方"));
     llm = await promptLlm();
 
     if (llm?.apiKey) {
       const s = p.spinner();
-      s.start("Validating API key...");
+      s.start("正在验证 API 密钥……");
       try {
         if (llm.provider === "claude") {
           const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -617,39 +617,39 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
             }),
           });
           if (res.ok || res.status === 400) {
-            s.stop("API key is valid");
+            s.stop("API 密钥有效");
           } else if (res.status === 401) {
-            s.stop(pc.yellow("API key appears invalid — you can update it later"));
+            s.stop(pc.yellow("API 密钥似乎无效；稍后可更新"));
           } else {
-            s.stop(pc.yellow("Could not validate API key — continuing anyway"));
+            s.stop(pc.yellow("无法验证 API 密钥，将继续"));
           }
         } else {
           const res = await fetch("https://api.openai.com/v1/models", {
             headers: { Authorization: `Bearer ${llm.apiKey}` },
           });
           if (res.ok) {
-            s.stop("API key is valid");
+            s.stop("API 密钥有效");
           } else if (res.status === 401) {
-            s.stop(pc.yellow("API key appears invalid — you can update it later"));
+            s.stop(pc.yellow("API 密钥似乎无效；稍后可更新"));
           } else {
-            s.stop(pc.yellow("Could not validate API key — continuing anyway"));
+            s.stop(pc.yellow("无法验证 API 密钥，将继续"));
           }
         }
       } catch {
-        s.stop(pc.yellow("Could not reach API — continuing anyway"));
+        s.stop(pc.yellow("无法连接 API，将继续"));
       }
     }
 
-    p.log.step(pc.bold("Logging"));
+    p.log.step(pc.bold("日志"));
     logging = await promptLogging();
 
-    p.log.step(pc.bold("Server"));
+    p.log.step(pc.bold("服务器"));
     ({ server, auth } = await promptServer({ currentServer: server, currentAuth: auth }));
 
-    p.log.step(pc.bold("Storage"));
+    p.log.step(pc.bold("存储"));
     storage = await promptStorage(storage);
 
-    p.log.step(pc.bold("Secrets"));
+    p.log.step(pc.bold("密钥"));
     const secretsDefaults = defaultSecretsConfig();
     secrets = {
       provider: secrets.provider ?? secretsDefaults.provider,
@@ -664,38 +664,38 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
       ),
     );
   } else {
-    p.log.step(pc.bold("Quickstart"));
+    p.log.step(pc.bold("快速开始"));
     p.log.message(
       pc.dim(
         opts.bind
-          ? `Using quickstart defaults with bind=${opts.bind}.`
+          ? `使用快速开始默认设置，绑定方式为 ${opts.bind}。`
           : `Using quickstart defaults: ${server.deploymentMode}/${server.exposure} @ ${describeServerBinding(server)}.`,
       ),
     );
     if (usedEnvKeys.length > 0) {
-      p.log.message(pc.dim(`Environment-aware defaults active (${usedEnvKeys.length} env var(s) detected).`));
+      p.log.message(pc.dim(`已启用基于环境变量的默认值（检测到 ${usedEnvKeys.length} 个环境变量）。`));
     } else {
       p.log.message(
-        pc.dim("No environment overrides detected: embedded database, file storage, local encrypted secrets."),
+        pc.dim("未检测到环境变量覆盖：使用内嵌数据库、文件存储和本地加密密钥。"),
       );
     }
     for (const ignored of ignoredEnvKeys) {
-      p.log.message(pc.dim(`Ignored ${ignored.key}: ${ignored.reason}`));
+      p.log.message(pc.dim(`已忽略 ${ignored.key}：${ignored.reason}`));
     }
   }
 
   const jwtSecret = ensureAgentJwtSecret(configPath);
   const envFilePath = resolveAgentJwtEnvFile(configPath);
   if (jwtSecret.created) {
-    p.log.success(`Created ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+    p.log.success(`已在 ${pc.dim(envFilePath)} 中创建 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
   } else if (process.env.PAPERCLIP_AGENT_JWT_SECRET?.trim()) {
-    p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} from environment`);
+    p.log.info(`使用环境变量中已有的 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
   } else {
-    p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
+    p.log.info(`使用 ${pc.dim(envFilePath)} 中已有的 ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")}`);
   }
   const toolActionSigningSecret = ensureToolActionSigningSecret(configPath);
   if (toolActionSigningSecret.created) {
-    p.log.success(`Created ${pc.cyan("PAPERCLIP_TOOL_ACTION_SIGNING_SECRET")} in ${pc.dim(envFilePath)}`);
+    p.log.success(`已在 ${pc.dim(envFilePath)} 中创建 ${pc.cyan("PAPERCLIP_TOOL_ACTION_SIGNING_SECRET")}`);
   }
 
   const config: PaperclipConfig = {
@@ -718,9 +718,9 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
   const keyResult = ensureLocalSecretsKeyFile(config, configPath);
   if (keyResult.status === "created") {
-    p.log.success(`Created local secrets key file at ${pc.dim(keyResult.path)}`);
+    p.log.success(`已创建本地密钥文件：${pc.dim(keyResult.path)}`);
   } else if (keyResult.status === "existing") {
-    p.log.message(pc.dim(`Using existing local secrets key file at ${keyResult.path}`));
+    p.log.message(pc.dim(`使用已有的本地密钥文件：${keyResult.path}`));
   }
 
   writeConfig(config, opts.config, {
@@ -733,32 +733,32 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
   p.note(
     [
-      `Database: ${database.mode}`,
+      `数据库: ${database.mode}`,
       llm ? `LLM: ${llm.provider}` : "LLM: not configured",
-      `Logging: ${logging.mode} -> ${logging.logDir}`,
-      `Server: ${server.deploymentMode}/${server.exposure} @ ${describeServerBinding(server)}`,
+      `日志: ${logging.mode} -> ${logging.logDir}`,
+      `服务器: ${server.deploymentMode}/${server.exposure} @ ${describeServerBinding(server)}`,
       `Allowed hosts: ${server.allowedHostnames.length > 0 ? server.allowedHostnames.join(", ") : "(loopback only)"}`,
       `Auth URL mode: ${auth.baseUrlMode}${auth.publicBaseUrl ? ` (${auth.publicBaseUrl})` : ""}`,
-      `Storage: ${storage.provider}`,
-      `Secrets: ${secrets.provider} (strict mode ${secrets.strictMode ? "on" : "off"})`,
+      `存储: ${storage.provider}`,
+      `密钥: ${secrets.provider} (strict mode ${secrets.strictMode ? "on" : "off"})`,
       "Agent auth: PAPERCLIP_AGENT_JWT_SECRET configured",
     ].join("\n"),
-    "Configuration saved",
+    "配置已保存",
   );
 
   p.note(
     [
-      `Run: ${pc.cyan("paperclipai run")}`,
-      `Reconfigure later: ${pc.cyan("paperclipai configure")}`,
-      `Diagnose setup: ${pc.cyan("paperclipai doctor")}`,
+      `运行：${pc.cyan("paperclipai run")}`,
+      `稍后重新配置：${pc.cyan("paperclipai configure")}`,
+      `诊断设置：${pc.cyan("paperclipai doctor")}`,
     ].join("\n"),
-    "Next commands",
+    "后续命令",
   );
 
   printManagedInstallHint();
 
   if (canCreateBootstrapInviteImmediately({ database, server })) {
-    p.log.step("Generating bootstrap CEO invite");
+    p.log.step("正在生成 CEO 初始邀请");
     await bootstrapCeoInvite({ config: configPath });
   }
 
@@ -770,7 +770,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   let shouldRunNow = !serviceInstalled && (opts.run === true || opts.yes === true);
   if (shouldOfferForegroundStart({ serviceInstalled, startAlreadyDecided: shouldRunNow, invokedByRun: opts.invokedByRun === true, interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY) })) {
     const answer = await p.confirm({
-      message: "Start Paperclip now?",
+      message: "现在启动 Paperclip 吗？",
       initialValue: true,
     });
     if (!p.isCancel(answer)) {
@@ -786,12 +786,12 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   if (server.deploymentMode === "authenticated" && database.mode === "embedded-postgres") {
     p.log.info(
       [
-        "Bootstrap CEO invite will be created after the server starts.",
-        `Next: ${pc.cyan("paperclipai run")}`,
-        `Then: ${pc.cyan("paperclipai auth bootstrap-ceo")}`,
+        "服务器启动后将创建 CEO 初始邀请。",
+        `下一步：${pc.cyan("paperclipai run")}`,
+        `然后：${pc.cyan("paperclipai auth bootstrap-ceo")}`,
       ].join("\n"),
     );
   }
 
-  p.outro("You're all set!");
+  p.outro("全部设置完成！");
 }

@@ -39,7 +39,7 @@ export function registerEmailCommands(program: Command) {
       );
       if ((verb === "reply") !== Boolean(input.conversationId))
         throw new Error(
-          `${verb} requires ${verb === "reply" ? "an existing conversation" : "a parent task and a new conversation"}`,
+          `${verb} 需要${verb === "reply" ? "现有会话" : "父任务和新会话"}`,
         );
       printOutput(
         await ctx.api.post(`/api/companies/${ctx.companyId}/email/send`, input),
@@ -48,7 +48,7 @@ export function registerEmailCommands(program: Command) {
     });
   }
   addCommonClientOptions(
-    email.command("thread").argument("<issueId>", "Email task ID"),
+    email.command("thread").argument("<issueId>", "邮件任务 ID"),
     { includeCompany: true },
   ).action(async (issueId: string, opts: BaseClientOptions) => {
     const ctx = resolveCommandContext(opts, { requireCompany: true });
@@ -62,7 +62,7 @@ export function registerEmailCommands(program: Command) {
   addCommonClientOptions(
     email
       .command("delivery")
-      .argument("<publicationId>", "Publication ID returned by send"),
+      .argument("<publicationId>", "send 命令返回的发布 ID"),
     { includeCompany: true },
   ).action(async (publicationId: string, opts: BaseClientOptions) => {
     const ctx = resolveCommandContext(opts, { requireCompany: true });

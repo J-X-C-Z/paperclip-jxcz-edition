@@ -37,7 +37,7 @@ function resolveConnectionString(configPath?: string): { value: string; source: 
 function normalizeRetentionDays(value: number | undefined, fallback: number): number {
   const candidate = value ?? fallback;
   if (!Number.isInteger(candidate) || candidate < 1) {
-    throw new Error(`Invalid retention days '${String(candidate)}'. Use a positive integer.`);
+    throw new Error(`保留天数无效：'${String(candidate)}'。请输入正整数。`);
   }
   return candidate;
 }
@@ -62,13 +62,13 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
   );
   const filenamePrefix = opts.filenamePrefix?.trim() || "paperclip";
 
-  p.log.message(pc.dim(`Config: ${configPath}`));
-  p.log.message(pc.dim(`Connection source: ${connection.source}`));
-  p.log.message(pc.dim(`Backup dir: ${backupDir}`));
-  p.log.message(pc.dim(`Retention: ${retentionDays} day(s)`));
+  p.log.message(pc.dim(`配置：${configPath}`));
+  p.log.message(pc.dim(`连接来源：${connection.source}`));
+  p.log.message(pc.dim(`备份目录：${backupDir}`));
+  p.log.message(pc.dim(`保留天数：${retentionDays}`));
 
   const spinner = p.spinner();
-  spinner.start("Creating database backup...");
+  spinner.start("正在创建数据库备份……");
   try {
     const result = await runDatabaseBackup({
       connectionString: connection.value,
@@ -76,7 +76,7 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
       retention: { dailyDays: retentionDays, weeklyWeeks: 4, monthlyMonths: 1 },
       filenamePrefix,
     });
-    spinner.stop(`Backup saved: ${formatDatabaseBackupResult(result)}`);
+    spinner.stop(`备份已保存：${formatDatabaseBackupResult(result)}`);
 
     if (opts.json) {
       console.log(
@@ -94,9 +94,9 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
         ),
       );
     }
-    p.outro(pc.green("Backup completed."));
+    p.outro(pc.green("备份已完成。"));
   } catch (err) {
-    spinner.stop(pc.red("Backup failed."));
+    spinner.stop(pc.red("备份失败。"));
     throw err;
   }
 }

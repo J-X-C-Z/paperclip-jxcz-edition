@@ -1,16 +1,16 @@
 export function normalizeHostnameInput(raw: string): string {
   const input = raw.trim();
   if (!input) {
-    throw new Error("Hostname is required");
+    throw new Error("必须提供主机名");
   }
 
   try {
     const url = input.includes("://") ? new URL(input) : new URL(`http://${input}`);
     const hostname = url.hostname.trim().toLowerCase();
-    if (!hostname) throw new Error("Hostname is required");
+    if (!hostname) throw new Error("必须提供主机名");
     return hostname;
   } catch {
-    throw new Error(`Invalid hostname: ${raw}`);
+  throw new Error(`主机名无效：${raw}`);
   }
 }
 
@@ -23,4 +23,3 @@ export function parseHostnameCsv(raw: string): string[] {
   }
   return Array.from(unique);
 }
-

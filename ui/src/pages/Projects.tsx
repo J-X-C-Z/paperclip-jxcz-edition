@@ -1,11 +1,12 @@
 import { uiText } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
 import { projectsApi } from "../api/projects";
 import { useCompany } from "../context/CompanyContext";
 import { useDialogActions } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useToastActions } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { EntityRow } from "../components/EntityRow";
 import { ProjectTile } from "../components/ProjectTile";
@@ -23,7 +24,7 @@ import {
 } from "../hooks/useResourceMemberships";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowUpDown, Check, Hexagon, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowUpDown, Check, Hexagon, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useUiTranslator } from "@/i18n";
 
@@ -83,23 +84,26 @@ export function Projects() {
   const { selectedCompanyId } = useCompany();
   const { openNewProject } = useDialogActions();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { pushToast } = useToastActions();
+  const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<ProjectSortField>("name");
   const [sortDir, setSortDir] = useState<ProjectSortDir>("asc");
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     setBreadcrumbs([{ label: tr("Projects") }]);
   }, [setBreadcrumbs, tr]);
 
   const { data: allProjects, isLoading, error } = useQuery({
-    queryKey: queryKeys.projects.list(selectedCompanyId!),
-    queryFn: () => projectsApi.list(selectedCompanyId!),
+    queryKey: queryKeys.projects.list(selectedCompanyId!, { includeArchived: true }),
+    queryFn: () => projectsApi.list(selectedCompanyId!, { includeArchived: true }),
     enabled: !!selectedCompanyId,
   });
   const membershipsQuery = useResourceMemberships(selectedCompanyId);
   const membershipMutation = useResourceMembershipMutation(selectedCompanyId);
   const projects = useMemo(
-    () => allProjects ?? [],
-    [allProjects],
+    () => (allProjects ?? []).filter((project) => showArchived ? !!project.archivedAt : !project.archivedAt),
+    [allProjects, showArchived],
   );
   const sortedProjects = useMemo(
     () => sortProjects(projects, sortField, sortDir),
@@ -117,8 +121,19 @@ export function Projects() {
       else groups.mine.push(project);
     }
 
+    groups.mine.sort((left, right) => Number(isStarred(membershipsQuery.data, "project", right.id)) - Number(isStarred(membershipsQuery.data, "project", left.id)));
+
     return groups;
   }, [membershipsQuery.data, sortedProjects]);
+  const archiveProject = useMutation({
+    mutationFn: ({ project, archived }: { project: Project; archived: boolean }) =>
+      projectsApi.update(project.id, { archivedAt: archived ? new Date().toISOString() : null }, selectedCompanyId!),
+    onSuccess: (project, { archived }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all(selectedCompanyId!) });
+      pushToast({ title: `"${project.name}" ${tr(archived ? "has been archived" : "has been unarchived")}`, tone: "success" });
+    },
+    onError: (_, { archived }) => pushToast({ title: tr(archived ? "Failed to archive project" : "Failed to unarchive project"), tone: "error" }),
+  });
   const sortLabel = tr(PROJECT_SORT_OPTIONS.find((option) => option.field === sortField)?.label ?? "Name");
 
   if (!selectedCompanyId) {
@@ -171,6 +186,10 @@ export function Projects() {
             </div>
           </PopoverContent>
         </Popover>
+        <Button size="sm" variant="ghost" onClick={() => setShowArchived((value) => !value)}>
+          {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+          {tr(showArchived ? "Show active projects" : "Show archived projects")}
+        </Button>
         <Button size="sm" variant="outline" onClick={openNewProject}>
           <Plus className="h-4 w-4 mr-1" />
           {tr("Add Project")}
@@ -182,9 +201,8 @@ export function Projects() {
       {!isLoading && projects.length === 0 && (
         <EmptyState
           icon={Hexagon}
-          message={tr("No projects yet.")}
-          action={tr("Add Project")}
-          onAction={openNewProject}
+          message={tr(showArchived ? "No archived projects." : "No projects yet.")}
+          {...(!showArchived ? { action: tr("Add Project"), onAction: openNewProject } : {})}
         />
       )}
 
@@ -213,6 +231,7 @@ export function Projects() {
                     const starPending = pending && membershipMutation.variables?.starred !== undefined;
                     const joinLeavePending = pending && membershipMutation.variables?.starred === undefined;
                     const starred = isStarred(membershipsQuery.data, "project", project.id);
+                    const archivePending = archiveProject.isPending && archiveProject.variables?.project.id === project.id;
                     return (
                       <EntityRow
                         key={project.id}
@@ -222,6 +241,22 @@ export function Projects() {
                         reserveSubtitleSpace
                         to={projectUrl(project)}
                         className={state === "left" ? "group text-foreground/55" : "group"}
+                        actions={(
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={tr(showArchived ? "Unarchive" : "Archive")}
+                            aria-label={`${tr(showArchived ? "Unarchive" : "Archive")} ${project.name}`}
+                            disabled={archivePending}
+                            onClick={() => {
+                              if (!showArchived && !window.confirm(tr("Archive this project to hide it from the sidebar and project selectors."))) return;
+                              archiveProject.mutate({ project, archived: !showArchived });
+                            }}
+                          >
+                            {showArchived ? <ArchiveRestore /> : <Archive />}
+                          </Button>
+                        )}
                         trailing={
                           <div className="flex items-center gap-3">
                             <span

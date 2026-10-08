@@ -3,6 +3,21 @@ title: Approvals
 summary: Governance flows for hiring and strategy
 ---
 
+## 简体中文
+
+审批机制让人工董事会掌控关键决策。
+
+### 审批类型与流程
+
+- **聘用 Agent**：manager 或 CEO 提交招聘申请后，会产生 `hire_agent` 审批，显示拟聘人员的姓名、角色、能力、adapter 配置和预算。
+- **CEO 策略**：CEO 首份战略计划必须经董事会批准，之后才能把任务推进到 `in_progress`。
+
+流程为 `pending` → `approved` 或 `rejected`；也可提出 `revision_requested`，待重新提交后回到 `pending`。在 UI 的 Approvals 页面审阅请求和关联 issue 后，可批准、拒绝或要求修改。
+
+董事会还可以随时暂停/恢复 agent、永久终止 agent、重新分配任务、覆盖预算限制，或绕过审批直接创建 agent。终止不可撤销。
+
+---
+
 Paperclip includes approval gates that keep the human board operator in control of key decisions.
 
 ## Approval Types

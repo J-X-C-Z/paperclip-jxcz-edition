@@ -36,14 +36,14 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InlineBanner } from "../components/InlineBanner";
-import type { Agent, Issue } from "@paperclipai/shared";
+import type { Agent, CompactIssue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { SmokeLabDashboardCard } from "../components/SmokeLabDashboardCard";
 import { useUiTranslator } from "@/i18n";
 
 const DASHBOARD_ACTIVITY_LIMIT = 10;
 
-function getRecentIssues(issues: Issue[]): Issue[] {
+function getRecentIssues(issues: CompactIssue[]): CompactIssue[] {
   return [...issues]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 }
@@ -201,8 +201,8 @@ export function Dashboard() {
   usePublishSharedQueryData(sharedActivity, activity, activityUpdatedAt);
 
   const { data: issues } = useQuery({
-    queryKey: projectId ? queryKeys.issues.listByProject(selectedCompanyId!, projectId) : queryKeys.issues.list(selectedCompanyId!),
-    queryFn: () => issuesApi.list(selectedCompanyId!, projectId ? { projectId } : undefined),
+    queryKey: [...(projectId ? queryKeys.issues.listByProject(selectedCompanyId!, projectId) : queryKeys.issues.list(selectedCompanyId!)), "compact", "dashboard-charts"],
+    queryFn: () => issuesApi.listCompact(selectedCompanyId!, projectId ? { projectId } : undefined),
     enabled: !!selectedCompanyId && workScope.ready,
   });
 

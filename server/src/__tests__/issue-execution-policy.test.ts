@@ -1390,6 +1390,52 @@ describe("issue execution policy transitions", () => {
       });
     });
 
+    it("resubmitting a new candidate restarts all completed review and approval stages", () => {
+      const policy = threeStagePolicy();
+      const reviewRequest = { instructions: "Review the revised candidate" };
+      const result = applyIssueExecutionPolicyTransition({
+        issue: {
+          status: "in_progress",
+          assigneeAgentId: coderAgentId,
+          executionPolicy: policy,
+          executionState: {
+            status: "completed",
+            currentStageId: null,
+            currentStageIndex: null,
+            currentStageType: null,
+            currentParticipant: null,
+            returnAssignee: { type: "agent", agentId: coderAgentId },
+            completedStageIds: policy.stages.map((stage) => stage.id),
+            lastDecisionId: "99999999-9999-4999-8999-999999999999",
+            lastDecisionOutcome: "approved",
+            changesRequestedCount: 2,
+          },
+        },
+        policy,
+        requestedStatus: "in_review",
+        requestedAssigneePatch: {},
+        actor: { agentId: coderAgentId },
+        reviewRequest,
+      });
+
+      expect(result.workflowControlledAssignment).toBe(true);
+      expect(result.patch).toMatchObject({
+        status: "in_review",
+        assigneeAgentId: policy.stages[0].participants[0].agentId,
+        executionState: {
+          status: "pending",
+          currentStageId: policy.stages[0].id,
+          returnAssignee: { type: "agent", agentId: coderAgentId },
+          reviewRequest,
+          completedStageIds: [],
+          lastDecisionId: null,
+          lastDecisionOutcome: null,
+          changesRequestedCount: 0,
+        },
+      });
+      expect(result.decision).toBeUndefined();
+    });
+
     it("a completed execution state does not restart the workflow on done", () => {
       const policy = threeStagePolicy();
       // Completed state whose stage ids no longer match the current policy

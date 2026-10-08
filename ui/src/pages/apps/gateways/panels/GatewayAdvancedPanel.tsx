@@ -97,7 +97,7 @@ export function GatewayAdvancedPanel({
           <h3 className="text-sm font-semibold text-foreground">{uiText("Raw configuration")}</h3>
           <Button variant="outline" size="sm" onClick={() => void copy(rawConfig, uiText("Gateway config JSON"))}>
             <Copy className="mr-1 h-3.5 w-3.5" />
-            Copy JSON
+            {uiText("Copy JSON")}
           </Button>
         </div>
         <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 font-mono text-xs text-muted-foreground">
@@ -108,8 +108,7 @@ export function GatewayAdvancedPanel({
       <section className="space-y-2 rounded-lg border border-destructive/40 p-4">
         <h3 className="text-sm font-semibold text-destructive">{uiText("Danger zone")}</h3>
         <p className="text-sm text-muted-foreground">
-          Archiving takes the gateway offline for every client. Existing tokens stop working. Type the
-          gateway name to confirm.
+          {uiText("Archiving takes the gateway offline for every client. Existing tokens stop working. Type the gateway name to confirm.")}
         </p>
         {confirming ? (
           <div className="space-y-2">
@@ -133,7 +132,7 @@ export function GatewayAdvancedPanel({
           </div>
         ) : (
           <Button variant="outline" size="sm" className="text-destructive" onClick={() => setConfirming(true)}>
-            Archive gateway
+            {uiText("Archive gateway")}
           </Button>
         )}
       </section>
