@@ -24,6 +24,7 @@ const mockAgentsApi = vi.hoisted(() => ({
 }));
 
 const mockProjectsApi = vi.hoisted(() => ({
+  listAgentMemberships: vi.fn(),
   list: vi.fn(),
 }));
 
@@ -67,6 +68,7 @@ vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
     selectedCompanyId: "company-1",
   }),
+  useOptionalCompany: () => ({ selectedCompanyId: "company-1" }),
 }));
 
 vi.mock("../context/SidebarContext", () => ({
@@ -589,6 +591,7 @@ describe("IssueProperties", () => {
     mockAgentsApi.list.mockResolvedValue([]);
     mockAgentsApi.adapterModels.mockResolvedValue([]);
     mockProjectsApi.list.mockResolvedValue([]);
+    mockProjectsApi.listAgentMemberships.mockResolvedValue([]);
     mockExecutionWorkspacesApi.list.mockResolvedValue([]);
     mockExecutionWorkspacesApi.controlRuntimeCommands.mockReset();
     mockIssuesApi.list.mockResolvedValue([]);

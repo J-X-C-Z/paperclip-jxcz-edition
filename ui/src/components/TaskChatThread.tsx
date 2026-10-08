@@ -484,7 +484,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
   const { enabled: streamlinedUiEnabled } = useStreamlinedUiEnabled();
   const {
     initialHistoryPending = false,
-    initialMessagesPending = initialHistoryPending,
+    initialMessagesPending,
     initialHistoryError = false,
     onRetryInitialHistory,
     comments,
@@ -2875,8 +2875,9 @@ export function TaskChatThread(props: TaskChatThreadProps) {
           (logTranscriptByRun.get(run.id)?.length ?? 0) === 0
         : Boolean(logErrorsByRun?.has(run.id)),
     );
+  const initialRevealPending = initialMessagesPending ?? (initialHistoryPending || planLoading || (comments.length > 0 && transcriptHistoryPending));
   const [revealedIssue, setRevealedIssue] = useState<string | null | undefined>(
-    () => (initialMessagesPending ? undefined : issueId),
+    () => (initialRevealPending ? undefined : issueId),
   );
   const historyRevealed = revealedIssue === issueId;
   const [expiredHistoryWait, setExpiredHistoryWait] = useState<{ issueId: typeof issueId } | null>(null);
@@ -2896,10 +2897,10 @@ export function TaskChatThread(props: TaskChatThreadProps) {
   // commit. A frame also lets ancestor navigation scroll restoration finish.
   // Readiness is latched per issue: refetches never hide existing conversation.
   useEffect(() => {
-    if (historyRevealed || initialMessagesPending) return;
+    if (historyRevealed || initialRevealPending) return;
     const frame = requestAnimationFrame(() => setRevealedIssue(issueId));
     return () => cancelAnimationFrame(frame);
-  }, [initialMessagesPending, historyRevealed, issueId]);
+  }, [initialRevealPending, historyRevealed, issueId]);
   useEffect(() => {
     if (!historyRevealed || !issueId) return;
     scheduleIssueDetailPaintMeasure(ISSUE_DETAIL_CONTENT_PAINT_MARK, ISSUE_DETAIL_CONTENT_MEASURE);
@@ -2913,7 +2914,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
 
   return (
     <TaskChatExpansionState.Provider value={expansionState.current}>
-      <TaskChatScrollReady.Provider value={!historyPending || historyWaitExpired}>
+      <TaskChatScrollReady.Provider value={!initialRevealPending || historyWaitExpired}>
         <TaskChatWindowScroll
           contentKey={isMobile ? autoFollowContentKey : 0}
           enabled={isMobile && historyRevealed}
@@ -2936,6 +2937,7 @@ export function TaskChatThread(props: TaskChatThreadProps) {
               )}
               aria-busy={!historyRevealed}
             >
+              {historyRevealed && historyPending && !historyWaitExpired && !historyError ? <p role="status" className="shrink-0 px-4 py-2 text-xs text-muted-foreground">{uiText("Loading execution details. Messages are ready to read.")}</p> : null}
               {historyError || (historyPending && historyWaitExpired) ? (
                 <div
                   role="status"

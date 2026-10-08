@@ -97,8 +97,11 @@ describe("execution projection read retries", () => {
     const errors = [disconnected(), disconnected(), disconnected()];
     const test = fixture({ failures: { [table]: errors } });
     await expect(executionProjectionsForRuns(test.db, companyId, [runId], now, { retryDatabaseReads: true })).rejects.toBe(errors[2]);
+    // Each read stage starts both independent SELECTs; a failure must not
+    // start the dependent stage or retry its successful sibling.
     for (const [index, name] of tables.entries()) {
-      expect(test.count(name)).toBe(index < tables.indexOf(table) ? 1 : name === table ? 3 : 0);
+      const failedStage = Math.floor(tables.indexOf(table) / 2);
+      expect(test.count(name)).toBe(name === table ? 3 : Math.floor(index / 2) <= failedStage ? 1 : 0);
     }
   });
 
@@ -115,7 +118,7 @@ describe("execution projection read retries", () => {
       const test = fixture({ failures: { issue_thread_interactions: [error] } });
       await expect(executionProjectionsForRuns(test.db, companyId, [runId], now, { retryDatabaseReads: true })).rejects.toBe(error);
       expect(test.count("issue_thread_interactions")).toBe(1);
-      expect(test.count("issue_recovery_actions")).toBe(0);
+      expect(test.count("issue_recovery_actions")).toBe(1);
     },
   );
 

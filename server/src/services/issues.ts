@@ -11385,7 +11385,9 @@ export function issueService(db: Db) {
         // Commit the parent continuation with the child's status. The existing
         // heartbeat intent dispatcher supplies retry, admission and coalescing.
         // The child row lock makes repeated Done writes produce only one intent.
-        if (updated.parentId && updated.status === "done" && receiptExisting.status !== "done") {
+        // Native status decisions persist their own parent summaries and wake identity.
+        if (updated.parentId && updated.status === "done" && receiptExisting.status !== "done" &&
+            !issueData.lastStatusDecisionId) {
           const [parent] = await tx.select().from(issues).where(and(
             eq(issues.id, updated.parentId), eq(issues.companyId, updated.companyId),
           ));

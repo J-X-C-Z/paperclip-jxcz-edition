@@ -665,15 +665,55 @@ function buildWorkspaceTarExtractCommand(input: {
 function buildRemoveDeletedPathsCommand(input: { remoteDir: string; manifestPath: string }): string {
   // NUL input plus bounded xargs batches preserve whitespace and never create
   // one argument list for the full snapshot. Refuse symlink ancestors.
-  const remove = `for entry do
-    parent=$entry
+  // The dot sentinel preserves trailing newlines in directory names; remove
+  // that sentinel and only pwd's own final separator.
+  const rootCheck = `workspace_root=$(pwd -P && printf .) || exit
+  workspace_root=\${workspace_root%.}
+  workspace_root=\${workspace_root%?}
+  [ ! -L ${shellQuote(input.remoteDir)} ] || exit 42
+  expected_root=$(cd -P -- ${shellQuote(input.remoteDir)} && pwd -P && printf .) || exit
+  expected_root=\${expected_root%.}
+  expected_root=\${expected_root%?}
+  [ "$workspace_root" = "$expected_root" ] || exit 42`;
+  const remove = `workspace_root=$1
+  shift
+  [ ! -L ${shellQuote(input.remoteDir)} ] || exit 42
+  remove_group() (
+    # Every entry in this group has the same parent, checked below before
+    # calling this function. Validate that shared ancestor chain once.
+    parent=$1
     while [ "\${parent#*/}" != "$parent" ]; do
       parent=\${parent%/*}
       if [ -L "$parent" ] || { [ -e "$parent" ] && [ ! -d "$parent" ]; }; then exit 42; fi
     done
-    rm -rf -- "$entry" || exit
-  done`;
-  return `cd ${shellQuote(input.remoteDir)} && xargs -0 -r -n 64 sh -c ${shellQuote(remove)} sh < ${shellQuote(input.manifestPath)} && rm -f -- ${shellQuote(input.manifestPath)}`;
+    parent=\${1%/*}
+    if [ "$parent" = "$1" ]; then parent=.; fi
+    expected=$workspace_root
+    if [ "$parent" != . ]; then expected=$workspace_root/$parent; fi
+    [ -e "$parent" ] || exit 0
+    # Pin the physical directory before deleting only basenames. A replaced
+    # ancestor cannot redirect rm after this check through a new symlink.
+    cd -P -- "$parent" || exit
+    # cd -P updates PWD to the physical directory and preserves trailing LF.
+    [ "$PWD" = "$expected" ] || exit 42
+    count=$#
+    for entry do set -- "$@" "\${entry##*/}"; done
+    shift "$count"
+    rm -rf -- "$@"
+  )
+  first_parent=\${1%/*}
+  if [ "$first_parent" = "$1" ]; then first_parent=.; fi
+  same_parent=true
+  for entry do
+    parent=\${entry%/*}
+    if [ "$parent" = "$entry" ]; then parent=.; fi
+    if [ "$parent" != "$first_parent" ]; then same_parent=false; break; fi
+  done
+  if [ "$same_parent" = true ]; then remove_group "$@" || exit
+  else for entry do remove_group "$entry" || exit; done; fi`;
+
+  return `cd -P -- ${shellQuote(input.remoteDir)} && ${rootCheck}
+  xargs -0 -r -n 64 sh -c ${shellQuote(remove)} sh "$workspace_root" < ${shellQuote(input.manifestPath)} && rm -f -- ${shellQuote(input.manifestPath)}`;
 }
 
 function buildUniqueStagingPath(input: { targetPath: string; suffix: string }): string {

@@ -84,7 +84,7 @@ export async function executionProjectionsForRuns(
     ),
   ];
   const [pending, recovery] = await Promise.all([issueIds.length
-    ? await read(async () => db
+    ? read(async () => db
         .select({
           issueId: issueThreadInteractions.issueId,
           kind: issueThreadInteractions.kind,
@@ -99,7 +99,7 @@ export async function executionProjectionsForRuns(
         ))
     : [],
   issueIds.length
-    ? await read(async () => db
+    ? read(async () => db
         .select({
           issueId: issueRecoveryActions.sourceIssueId,
           cause: issueRecoveryActions.cause,

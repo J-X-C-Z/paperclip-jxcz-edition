@@ -2146,7 +2146,7 @@ function IssueChatUserMessage({
                 variant="outline"
                 className="h-6 border-amber-300 px-2 text-(length:--text-micro) text-amber-900 hover:bg-amber-100/80 hover:text-amber-950 dark:border-amber-500/40 dark:text-amber-100 dark:hover:bg-amber-500/10"
                 onClick={() => onCancelQueued(commentId)}
-              > {uiText("Cancel")} </Button>
+              >{uiText("Cancel")}</Button>
             ) : null}
           </div>
         ) : null}
@@ -2284,7 +2284,7 @@ function IssueChatUserMessage({
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-            > {uiText("Cancel")} </Button>
+            >{uiText("Cancel")}</Button>
             <Button variant="destructive" onClick={confirmDeleteComment}>
               {uiText("Delete comment")}
             </Button>

@@ -43,6 +43,7 @@ function fixture(options: {
         innerJoin() { return query; },
         orderBy(...values: SQL[]) { order = values; return query; },
         limit(value: number) { limit = value; return query; },
+        offset() { return query; },
         then(resolve: (value: unknown[]) => unknown, reject: (error: unknown) => unknown) {
           // A failed query object stays failed. Recovery must build another one.
           result ??= Promise.resolve().then(() => {
@@ -92,7 +93,7 @@ describe("heartbeat list connection recovery", () => {
     for (const attempt of test.attempts) {
       expect(attempt.params).toEqual(options.agent ? [companyId, agentId] : [companyId]);
       expect(attempt.limit).toBe(options.limit);
-      expect(attempt.order).toEqual(['"heartbeat_runs"."created_at" desc']);
+      expect(attempt.order).toEqual(['"heartbeat_runs"."created_at" desc', '"heartbeat_runs"."id" desc']);
       expect("resultSummary" in attempt.fields).toBe(!options.summary && options.encoding === "UTF8");
       expect(attempt.fields).toEqual(test.attempts[0].fields);
     }

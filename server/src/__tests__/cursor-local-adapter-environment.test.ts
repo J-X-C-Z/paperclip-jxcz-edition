@@ -5,9 +5,11 @@ import path from "node:path";
 import { runChildProcess } from "@paperclipai/adapter-utils/server-utils";
 import { testEnvironment } from "@paperclipai/adapter-cursor-local/server";
 
+// The simulated remote PATH intentionally excludes host tools; the fixture
+// CLI uses this test runtime rather than requiring Node in that sandbox PATH.
 async function writeFakeAgentCommand(binDir: string, argsCapturePath: string): Promise<string> {
   const commandPath = path.join(binDir, "agent");
-  const script = `#!/usr/bin/env node
+  const script = `#!${process.execPath}
 const fs = require("node:fs");
 const outPath = process.env.PAPERCLIP_TEST_ARGS_PATH;
 if (outPath) {
@@ -29,7 +31,7 @@ console.log(JSON.stringify({
 }
 
 async function writeFakeCursorAgentCommand(commandPath: string): Promise<void> {
-  const script = `#!/usr/bin/env node
+  const script = `#!${process.execPath}
 const fs = require("node:fs");
 const outPath = process.env.PAPERCLIP_TEST_ARGS_PATH;
 if (outPath) {

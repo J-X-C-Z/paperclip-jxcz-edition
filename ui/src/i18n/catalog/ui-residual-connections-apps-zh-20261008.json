@@ -411,5 +411,7 @@
   ", then scroll to": "，然后向下滚动到",
   "Display Information": "显示信息",
   "GitHub conversations run as Paperclip tasks on one assigned agent.": "GitHub 对话会作为 Paperclip 任务交由一名指定智能体处理。",
-  "This assignment is permanent. The agent works through its existing permissions, budgets, and tools.": "此分配不可更改。智能体将使用其现有权限、预算和工具执行工作。"
+  "This assignment is permanent. The agent works through its existing permissions, budgets, and tools.": "此分配不可更改。智能体将使用其现有权限、预算和工具执行工作。",
+  "{count} selected agents": "已选择 {count} 个智能体",
+  "{count} actions on": "已启用 {count} 项操作"
 }

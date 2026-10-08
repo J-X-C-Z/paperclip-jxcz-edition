@@ -4364,7 +4364,9 @@ export function recoveryService(
     return (
       readNonEmptyString(monitor.serviceName) ===
         PROVIDER_QUOTA_MONITOR_SERVICE_NAME &&
-      readNonEmptyString(monitor.externalRef) === latestRun.id
+      // External references are redacted; the run retains its retry deadline.
+      readNonEmptyString(parseObject(latestRun.resultJson).providerQuotaRetryNotBefore) ===
+        issue.monitorNextCheckAt.toISOString()
     );
   }
 

@@ -1,6 +1,6 @@
 import { beforeAll, afterAll, it, expect, vi } from "vitest";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, mkdir, rm, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { eq, sql } from "drizzle-orm";
@@ -12,6 +12,12 @@ import { prepareManagedAiRuntime, managedAiSessionFingerprintConfig } from "../s
 import { localAiLoginService } from "../services/local-ai-login.js";
 import { readVerifiedLocalAiCredential } from "../services/local-ai-credentials.js";
 import { resolvePaperclipInstanceRoot } from "../home-paths.js";
+
+const codexRpc = vi.hoisted(() => ({ quota: vi.fn().mockResolvedValue({}) }));
+vi.mock("@paperclipai/adapter-codex-local/server", async () => ({
+  ...await vi.importActual<typeof import("@paperclipai/adapter-codex-local/server")>("@paperclipai/adapter-codex-local/server"),
+  fetchCodexRpcQuota: codexRpc.quota,
+}));
 
 const browserLogin = vi.hoisted(() => ({ submitCode: vi.fn(), abort: vi.fn() }));
 vi.mock("../services/local-ai-browser-login.js", () => ({
@@ -135,6 +141,7 @@ it("isolates sign-in and refresh from the host, survives restart, and completes 
   expect((await aiConnectionService(db).list(companyId, owner)).filter(c => c.provider === "openai")).toHaveLength(0);
   await writeFile(path.join(directory, "auth.json"), auth("independent-login"));
   expect(await login.check(companyId, owner, loginIntent(), attempt.sessionId)).toEqual({ status: "ready" });
+  expect(codexRpc.quota).toHaveBeenCalledWith(await realpath(directory));
   expect((await aiConnectionService(db).list(companyId, owner)).filter(c => c.provider === "openai")).toHaveLength(0);
   await expect(login.check(companyId, "another-owner", loginIntent(), attempt.sessionId)).rejects.toThrow("not found");
   await expect(login.check(randomUUID(), owner, loginIntent(), attempt.sessionId)).rejects.toThrow("not found");

@@ -4429,13 +4429,13 @@ export function accessSummaryLines(input: {
       : uiText("Organization identity");
   const availableTo = input.installChoice === "all"
     ? uiText("Any agent")
-    : `已选择 ${input.installCount} 个代理`;
+    : uiText("{count} selected agents", { count: input.installCount });
   return [
     { label: uiText("Identity"), value: identity },
     { label: uiText("Available to"), value: availableTo },
     {
       label: uiText("Actions"),
-      value: `已启用 ${input.enabledCount} 项操作`,
+      value: uiText("{count} actions on", { count: input.enabledCount }),
     },
   ];
 }

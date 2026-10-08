@@ -928,7 +928,7 @@ describeEmbeddedPostgres("issue recovery actions", () => {
     expect(updatedIssue?.executionPolicy).toMatchObject({
       monitor: {
         serviceName: "AI provider quota",
-        externalRef: runId,
+        externalRef: "[redacted]",
         maxAttempts: null,
         recoveryPolicy: "wake_owner",
       },
@@ -970,7 +970,7 @@ describeEmbeddedPostgres("issue recovery actions", () => {
     expect(updatedIssue?.executionPolicy).toMatchObject({
       monitor: {
         maxAttempts: null,
-        externalRef: runId,
+        externalRef: "[redacted]",
       },
     });
   });
@@ -1170,7 +1170,7 @@ describeEmbeddedPostgres("issue recovery actions", () => {
     expect(monitoredIssue?.executionPolicy).toMatchObject({
       monitor: {
         serviceName: "AI provider quota",
-        externalRef: participantRunId,
+        externalRef: "[redacted]",
       },
     });
 
@@ -1195,7 +1195,7 @@ describeEmbeddedPostgres("issue recovery actions", () => {
     expect(unchangedIssue?.executionPolicy).toMatchObject({
       monitor: {
         serviceName: "AI provider quota",
-        externalRef: participantRunId,
+        externalRef: "[redacted]",
       },
     });
     expect(await db.select().from(issueRecoveryActions)).toHaveLength(0);

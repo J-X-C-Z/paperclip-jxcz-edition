@@ -412,7 +412,7 @@ describe("gemini_local ACP lane", () => {
     expect(runtime.ensureInputs[0]).toMatchObject({
       agent: "gemini",
       mode: "persistent",
-      cwd: root,
+      cwd: await fs.realpath(root),
     });
     expect(runtime.startInputs[0]?.text).toContain("Do the assigned work.");
     expect(result).toMatchObject({
@@ -425,7 +425,7 @@ describe("gemini_local ACP lane", () => {
     expect(result.sessionParams).toMatchObject({
       agent: "gemini",
       acpSessionId: "acp-1",
-      cwd: root,
+      cwd: await fs.realpath(root),
     });
     expect(metas[0]).toMatchObject({
       adapterType: "gemini_local",

@@ -18,8 +18,10 @@ vi.mock("@paperclipai/adapter-utils/execution-target", async () => {
   };
 });
 
+// The simulated remote PATH intentionally excludes host tools; the fixture
+// CLI uses this test runtime rather than requiring Node in that sandbox PATH.
 async function writeFakeCursorCommand(commandPath: string): Promise<void> {
-  const script = `#!/usr/bin/env node
+  const script = `#!${process.execPath}
 const fs = require("node:fs");
 
 const capturePath = process.env.PAPERCLIP_TEST_CAPTURE_PATH;
@@ -55,7 +57,7 @@ console.log(JSON.stringify({
 }
 
 async function writeFakeSandboxCursorAgent(commandPath: string, capturePath: string): Promise<void> {
-  const script = `#!/usr/bin/env node
+  const script = `#!${process.execPath}
 const fs = require("node:fs");
 
 const payload = {

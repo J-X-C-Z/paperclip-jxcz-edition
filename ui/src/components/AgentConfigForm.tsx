@@ -1588,6 +1588,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
             <Field label={uiText("Environment override")}>
               <div className="space-y-2">
                 <select
+                  aria-label={uiText("Environment override")}
                   className={inputClass}
                   value={currentDefaultEnvironmentId}
                   onChange={(event) => {

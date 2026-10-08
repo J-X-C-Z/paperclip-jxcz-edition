@@ -218,7 +218,8 @@ vi.mock("detect-port", () => ({
   default: detectPortMock,
 }));
 
-vi.mock("@paperclipai/db", () => ({
+vi.mock("@paperclipai/db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@paperclipai/db")>()),
   createDb: createDbMock,
   ensurePostgresDatabase: vi.fn(),
   getPostgresDataDirectory: vi.fn(),
@@ -231,6 +232,18 @@ vi.mock("@paperclipai/db", () => ({
   companies: {},
   companyMemberships: {},
   instanceUserRoles: {},
+}));
+
+vi.mock("../services/bridge-importer.js", () => ({
+  bridgeImporter: () => ({ sweepPending: vi.fn(async () => ({ completed: 0 })) }),
+}));
+
+vi.mock("../services/cost-accounting-outbox.js", () => ({
+  costAccountingOutboxService: () => ({ sweepPending: vi.fn(async () => ({ delivered: 0 })) }),
+}));
+
+vi.mock("../services/heartbeat.js", () => ({
+  startTaskDrain: vi.fn(),
 }));
 
 vi.mock("../app.js", () => ({

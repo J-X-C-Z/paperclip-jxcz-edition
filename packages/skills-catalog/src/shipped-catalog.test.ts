@@ -94,14 +94,14 @@ describe("shipped skills catalog", () => {
       "utf8",
     );
 
-    expect(skill).toContain("Post the first status update immediately, before doing anything else.");
-    expect(skill).toContain('STATUS: considering "Fix login redirect loop"…');
+    expect(skill).toMatch(/Post the first status update immediately, before doing anything else\.|在执行任何操作前，立即发布第一条状态更新/);
+    expect(skill).toMatch(/STATUS: considering "Fix login redirect loop"…|STATUS: 正在考虑“修复登录重定向循环”…/);
     expect(skill).toContain("<<<SUMMARY-DRAFT>>>");
     expect(skill).toContain("<<<END-SUMMARY-DRAFT>>>");
-    expect(skill).toContain("tool-call arguments don't stream; assistant text does");
-    expect(skill).toContain("falls back to its spinner");
-    expect(skill).toContain("Open with what the reader needs to do.");
-    expect(skill).toContain("1–3 specific, concrete, actionable items");
+    expect(skill).toMatch(/tool-call arguments don't stream; assistant text does|工具调用参数不会流式显示，助手文本会/);
+    expect(skill).toMatch(/falls back to its spinner|UI 会继续显示加载动画/);
+    expect(skill).toMatch(/Open with what the reader needs to do\.|开头说明读者需要采取的操作/);
+    expect(skill).toMatch(/1–3 specific, concrete, actionable items|1–3 项具体、可执行操作/);
   });
 
   it("keeps repo and catalog skill descriptions within the prompt budget cap", () => {
@@ -196,9 +196,9 @@ describe("shipped skills catalog", () => {
   it("keeps the Ramp wrapper fail-closed on mixed-provenance playbooks", () => {
     const rampSkill = readFileSync(new URL("../catalog/optional/finance/ramp/SKILL.md", import.meta.url), "utf8");
 
-    expect(rampSkill).toContain("mixes Official and Community playbooks");
-    expect(rampSkill).toContain("do not execute them inside Paperclip unless a Paperclip approval explicitly names the playbook");
-    expect(rampSkill).toContain("third-party browser automation, MCP server, CLI, or connector");
+    expect(rampSkill).toMatch(/mixes Official and Community playbooks|混合了 Official 和 Community 操作指南/);
+    expect(rampSkill).toMatch(/do not execute them inside Paperclip unless a Paperclip approval explicitly names the playbook|除非 Paperclip 审批明确列出该指南[\s\S]*否则不要在 Paperclip 中执行/);
+    expect(rampSkill).toMatch(/third-party browser automation, MCP server, CLI, or connector|第三方浏览器自动化、MCP server、CLI 或 connector/);
   });
 
   it("keeps the Ramp wrapper clear of remote-fetch execution hard-stop patterns", () => {

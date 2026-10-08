@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { uiText } from "@/i18n";
+import { i18n, uiText } from "@/i18n";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,7 +30,8 @@ async function choose(select: HTMLSelectElement, value: string) {
   await act(async () => { select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });
 }
 describe("organization groups", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("zh-CN");
     host = document.createElement("div"); document.body.append(host); root = createRoot(host);
     cache = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     mock.list.mockResolvedValue(data); mock.save.mockResolvedValue({ teamId: "team", leadAgentId: "lead" });

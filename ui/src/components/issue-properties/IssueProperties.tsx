@@ -3061,7 +3061,7 @@ export function IssueProperties({
                     STREAMLINED_PANE_TAB_CLASS,
                     "inline-flex flex-none items-center bg-muted px-3",
                   )}
-                > {uiText("Properties")} </button>
+                >{uiText("Properties")}</button>
               </div>,
               paneHeaderSlot,
             ) : createPortal(<span className="text-sm font-medium">{uiText("Properties")}</span>, paneHeaderSlot)

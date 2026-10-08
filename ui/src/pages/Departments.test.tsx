@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DepartmentWorkspace } from "./Departments";
-import { uiText } from "@/i18n";
+import { i18n, uiText } from "@/i18n";
 const mock = vi.hoisted(() => ({ list: vi.fn(), saveDepartment: vi.fn() }));
 vi.mock("@/api/improvementTeams", async original => ({ ...await original<typeof import("@/api/improvementTeams")>(), improvementTeamsApi: mock }));
 vi.mock("@/lib/router", () => ({ Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a> }));
@@ -31,7 +31,8 @@ async function inputValue(input: HTMLInputElement, value: string) {
   });
 }
 describe("department management", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("zh-CN");
     host = document.createElement("div"); document.body.append(host); root = createRoot(host);
     cache = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     mock.list.mockResolvedValue(data); mock.saveDepartment.mockResolvedValue({ departmentId: "dev" });

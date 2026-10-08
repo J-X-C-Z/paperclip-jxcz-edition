@@ -2076,8 +2076,7 @@ export async function commitNativeStatusDecision(input: {
             summary: completedResultSummary,
           })
         : null;
-      // Ordinary child completion is already durable in issueService.update.
-      const parent = completionParent?.onboardingCompletion ? completionParent : null;
+      const parent = completionParent;
       const parentIsDependent = parent
         ? dependents.some((dependent) => dependent.id === parent.id)
         : false;

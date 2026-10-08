@@ -436,7 +436,7 @@ export function ProviderSubscriptionCard({
             target="_blank"
             rel="noreferrer noopener"
             className="underline underline-offset-2 hover:text-foreground"
-          > {uiText("Sign in to")} {providerName}
+          >{uiText("Sign in to")} {providerName}
           </a>
           {mode === "submitted_code"
             ? " then come back and enter authorization code"
