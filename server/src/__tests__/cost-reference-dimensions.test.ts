@@ -9,9 +9,11 @@ describe("cost reference dimensions", () => {
       { ...base, costCents: 0.002, estimatedCostCents: 0.002 },
       { ...base, agentId: "b", costCents: 5, reportedCostCents: 5, estimatedCostCents: 0 },
     ], row => row.agentId, row => row.agentId);
-    expect(rows[0]).toMatchObject({ agentId: "b", costCents: 5, reportedCostCents: 5, estimatedCostCents: 0 });
-    expect(rows[1].costCents).toBeCloseTo(0.004);
-    expect(rows[1].reportedCostCents).toBe(0);
+    expect(rows.map(({ agentId, costCents }) => [agentId, costCents])).toEqual([["b", 5], ["a", 0]]);
+    expect(rows[0]).toMatchObject({ agentId: "b", costCents: 5, reportedCostCents: 5, estimatedCostCents: 0, referenceCostCents: 5 });
+    expect(rows[1]).toMatchObject({ agentId: "a", costCents: 0, reportedCostCents: 0 });
+    expect(rows[1].estimatedCostCents).toBeCloseTo(0.004);
+    expect(rows[1].referenceCostCents).toBeCloseTo(0.004);
   });
   it("keeps billing dimensions distinct for an agent using several models", () => {
     const base = { agentId: "a", projectId: null, projectName: null, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, reportedCostCents: 0, unpricedEventCount: 0, estimatedCostCents: 0 };
@@ -19,6 +21,8 @@ describe("cost reference dimensions", () => {
       { ...base, model: "one", costCents: 15, estimatedCostCents: 15 },
       { ...base, model: "two", costCents: 20, estimatedCostCents: 20 },
     ], row => row.model, row => row.model ?? "unknown");
-    expect(rows.map(row => [row.model, row.costCents])).toEqual([["two", 20], ["one", 15]]);
+    expect(rows.map(({ model, costCents, referenceCostCents, reportedCostCents, estimatedCostCents }) =>
+      [model, costCents, referenceCostCents, reportedCostCents, estimatedCostCents]))
+      .toEqual([["one", 0, 15, 0, 15], ["two", 0, 20, 0, 20]]);
   });
 });

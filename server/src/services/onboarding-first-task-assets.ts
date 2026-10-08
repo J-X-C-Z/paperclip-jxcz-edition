@@ -78,6 +78,7 @@ export function fillFirstTaskPlaceholders(
     out = out.split("{{agentName}}").join(name);
   } else {
     out = out
+      .replace(/[ \t]*\{\{agentName\}\}，[ \t]*/g, "")
       .split("{{agentName}}, ").join("")
       .split("{{agentName}} ").join("")
       .split("{{agentName}}").join("");

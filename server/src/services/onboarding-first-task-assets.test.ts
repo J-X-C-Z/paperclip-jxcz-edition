@@ -37,9 +37,12 @@ describe("fillFirstTaskPlaceholders", () => {
 describe("renderOnboardingFirstTaskGreeting", () => {
   it("renders the board-approved greeting with the agent name", async () => {
     const greeting = await renderOnboardingFirstTaskGreeting({ agentName: "Ada" });
-    expect(greeting).toContain("欢迎使用 Paperclip！我是 Ada，你的首位智能体队友。");
-    // The "what would you like to do" question moved onto the opening card.
-    expect(greeting).not.toContain("What would you like to do?");
+    expect(greeting).toBe("欢迎使用 Paperclip！我是 Ada，你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。");
+  });
+
+  it.each([null, "   "])("omits a missing agent name cleanly (%s)", async (agentName) => {
+    const greeting = await renderOnboardingFirstTaskGreeting({ agentName });
+    expect(greeting).toBe("欢迎使用 Paperclip！我是你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。");
   });
 });
 

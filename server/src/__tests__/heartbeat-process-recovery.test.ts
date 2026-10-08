@@ -676,6 +676,8 @@ describeEmbeddedPostgres("heartbeat orphaned process recovery", () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
     }
+    // Shutdown preparation deliberately keeps this process-wide gate active.
+    heartbeatService(db).stopTaskDrain();
   });
 
   afterAll(async () => {

@@ -8,15 +8,7 @@ describe("renderOnboardingGreeting", () => {
       organizationName: "Acme",
     });
 
-    expect(greeting).toContain(
-      "Welcome to Paperclip! I'm Nova, your first agent teammate.",
-    );
-    // No goal quote and no "give me one moment" — the agent is not about to run.
-    expect(greeting).not.toContain("aiming for");
-    expect(greeting).not.toContain("one moment");
-    // The "what would you like to do" ask moved to the opening card; the
-    // greeting only points at it.
-    expect(greeting).toContain("Pick how you'd like to start");
+    expect(greeting).toBe("欢迎使用 Paperclip！我是 Nova，你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。");
   });
 
   it("drops the name gracefully when no agent name is set", async () => {
@@ -25,15 +17,12 @@ describe("renderOnboardingGreeting", () => {
       organizationName: "Acme",
     });
 
-    expect(greeting).toContain(
-      "Welcome to Paperclip! I'm your first agent teammate.",
-    );
-    expect(greeting).not.toContain("{{agentName}}");
+    expect(greeting).toBe("欢迎使用 Paperclip！我是你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。");
   });
 
   it("trims whitespace/blank names to the no-name phrasing", async () => {
     const greeting = await renderOnboardingGreeting({ agentName: "   " });
 
-    expect(greeting).toContain("I'm your first agent teammate.");
+    expect(greeting).toBe("欢迎使用 Paperclip！我是你的首位智能体队友。选择你想采用的开始方式，接下来交给我处理。");
   });
 });
