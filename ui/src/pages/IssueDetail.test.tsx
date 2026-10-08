@@ -1540,6 +1540,26 @@ describe("IssueDetail", () => {
     expect(ensureIssue).not.toHaveBeenCalled();
   });
 
+  it("does not offer an indefinitely pending related tasks panel for a draft conversation", async () => {
+    mockSidebarState.isMobile = true;
+    mockLocation.state = createIssueDetailLocationState("Inbox", "/inbox/mine", "inbox");
+    const agent = createAgent();
+    const ensureIssue = vi.fn();
+    await act(async () => {
+      root.render(<QueryClientProvider client={queryClient}><TaskDetailSurface conversation={{ agent, issue: null, ensureIssue }} /></QueryClientProvider>);
+    });
+    await flushReact();
+    const toolbar = mockSetMobileToolbar.mock.calls.map(([node]) => node).filter(Boolean).at(-1);
+    expect(toolbar).toBeDefined();
+    await act(async () => { toolbar.props.onProperties(); });
+    await flushReact();
+    const panelProps = mockTaskSidePanelRender.mock.calls.at(-1)?.[0];
+    expect(panelProps?.issue.id).toMatch(/^chat:/);
+    expect(panelProps?.tasksTab).toBeUndefined();
+    expect(mockIssuesApi.listAll.mock.calls.some(([, filters]) => filters?.createdFromIssueId?.startsWith("chat:"))).toBe(false);
+    expect(ensureIssue).not.toHaveBeenCalled();
+  });
+
   it.each(["message", "attachment"])("creates an unused conversation only for the first %s and updates its canonical cache", async (kind) => {
     mockIssuesApi.markRead.mockClear();
     const agent = createAgent();
