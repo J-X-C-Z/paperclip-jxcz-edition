@@ -176,7 +176,7 @@ const support = await getEmbeddedPostgresTestSupport();
     const create = async (path: string, fields: Record<string, unknown>) => {
       const response = await fetch(`${server.apiUrl}${path}`, {
         method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ title: `Boundary test ${randomUUID()}`, status: "backlog", assigneeAgentId: f.agentId, ...fields }),
+        body: JSON.stringify({ title: `Boundary test ${randomUUID()}`, status: "backlog", parentId: f.issueId, assigneeAgentId: f.agentId, ...fields }),
       });
       return { status: response.status, body: await response.json() };
     };

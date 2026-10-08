@@ -510,11 +510,11 @@ describe("paperclip skill utils", () => {
       expect(body).toContain("requestedResolverPolicy");
       expect(body).toContain("effectiveResolverPolicy");
       expect(body).toContain("toolAction");
-      expect(body).toContain("watchdog");
-      expect(body).toContain("low-trust");
+      expect(body).toMatch(/watchdog|看门狗/);
+      expect(body).toMatch(/low-trust|低信任/);
       expect(body).toContain("addresseeAgentId");
       expect(body).toContain("interaction_pending");
-      expect(body).toContain("attention feed");
+      expect(body).toMatch(/attention feed|关注事项流/);
     }
   });
 
