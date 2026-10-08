@@ -122,7 +122,7 @@ describe("config store", () => {
     expect(open).toHaveBeenCalledWith(backupPath, "r");
     expect(open).toHaveBeenCalledWith(path.dirname(configPath), "r");
     expect(sync).toHaveBeenCalled();
-    expect(() => writeConfig(defaultConfig(), configPath)).toThrow(/Refusing to overwrite invalid config/);
+    expect(() => writeConfig(defaultConfig(), configPath)).toThrow(/Refusing to overwrite invalid config|拒绝覆盖无效配置文件/);
     expect(fs.readFileSync(configPath)).toEqual(invalidBytes);
 
     open.mockClear();

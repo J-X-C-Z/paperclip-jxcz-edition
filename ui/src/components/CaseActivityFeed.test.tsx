@@ -70,7 +70,7 @@ describe("CaseActivityFeed", () => {
       }),
     ]);
     const text = container.textContent ?? "";
-    expect(text).toContain("document revised");
+    expect(text).toContain("Document revised");
     expect(text).toContain("Cases Agent");
     expect(text).toContain("via");
     // The issue chip links to the issue detail.
@@ -89,9 +89,9 @@ describe("CaseActivityFeed", () => {
       }),
     ]);
     const text = container.textContent ?? "";
-    expect(text).toContain("issue linked");
+    expect(text).toContain("Task linked");
     expect(text).toContain("System");
-    expect(text).toContain("issue");
+    expect(text).toContain("task");
     expect(container.querySelector('a[href="/issues/PAP-9"]')).not.toBeNull();
     act(() => root.unmount());
   });
@@ -112,7 +112,7 @@ describe("CaseActivityFeed", () => {
     expect(filterButton).toBeTruthy();
     act(() => filterButton!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
     const createdItem = Array.from(document.body.querySelectorAll('[role="menuitemcheckbox"]')).find(
-      (item) => item.textContent === "created",
+      (item) => item.textContent === "Created",
     );
     expect(createdItem).toBeTruthy();
     act(() => createdItem!.dispatchEvent(new MouseEvent("click", { bubbles: true })));

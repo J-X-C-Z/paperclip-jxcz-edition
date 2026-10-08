@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "@paperclipai/db/test-migrations";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import express from "express";
@@ -189,7 +190,7 @@ if (!support.supported) console.warn(`Primary agent database tests unavailable: 
       companyId: c, actorId, actorType, entityId, entityType: "agent", action: "agent.created", createdAt: new Date(2020, 0, day + 1),
     });
     await request(app(actor(c, "explicit"))).put(url(c)).send({ primaryAgentId: later.id }).expect(200);
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0322_rapid_emma_frost.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('rapid_emma_frost'), "utf8");
     // Replay the whole migration twice: an already migrated preview instance
     // must retain its explicit preferences when upgrading to the merged build.
     for (let replay = 0; replay < 2; replay++) {

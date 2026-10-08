@@ -190,8 +190,8 @@ export function buildRoutineGroups(
         const positionCompare = leftPosition - rightPosition;
         if (positionCompare !== 0) return positionCompare;
 
-        const labelCompare = (leftFolder?.name ?? "未知文件夹").localeCompare(
-          rightFolder?.name ?? "未知文件夹",
+        const labelCompare = (leftFolder?.name ?? uiText("Unknown folder")).localeCompare(
+          rightFolder?.name ?? uiText("Unknown folder"),
           undefined,
           { sensitivity: "base" },
         );
@@ -199,7 +199,7 @@ export function buildRoutineGroups(
       })
       .map((key) => ({
         key,
-        label: key === "__unfiled" ? "未归档" : (folderById.get(key)?.name ?? "未知文件夹"),
+        label: key === "__unfiled" ? uiText("Unfiled") : (folderById.get(key)?.name ?? uiText("Unknown folder")),
         items: groups[key]!,
       }));
   }

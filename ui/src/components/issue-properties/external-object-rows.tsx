@@ -186,7 +186,7 @@ export function ExternalObjectRows({
                 type="button"
                 className="text-primary underline-offset-2 hover:underline"
                 onClick={onRetryExternalObjects}
-              > {uiText("Retry")} </button>
+              >{uiText("Retry")}</button>
             </>
           ) : null}
         </span>

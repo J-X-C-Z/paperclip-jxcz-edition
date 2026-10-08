@@ -301,7 +301,7 @@ export function PasteConfigTab({ companyId }: { companyId: string }) {
           <div className="space-y-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              {uiText("We found {count} apps in that config", { count: drafts.length })}
+              {uiText(drafts.length === 1 ? "We found {count} app in that config" : "We found {count} apps in that config", { count: drafts.length })}
             </h3>
             {drafts.map((draft, index) => {
               const url = draftConnectUrl(draft);

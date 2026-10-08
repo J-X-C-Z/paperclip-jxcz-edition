@@ -207,7 +207,7 @@ export function StatusCardTile({
             className="flex w-full items-center justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-amber-500/10 disabled:opacity-60"
           >
             <span>
-              {card.pendingChangeCount} {card.pendingChangeCount === 1 ? uiText("change") : uiText("changes")}{uiText("since last update")}</span>
+              {card.pendingChangeCount} {card.pendingChangeCount === 1 ? uiText("change") : uiText("changes")}{" "}{uiText("since last update")}</span>
             <span className="shrink-0 font-medium text-amber-700 dark:text-amber-400">{uiText("Refresh")}</span>
           </button>
         ) : null}

@@ -191,7 +191,7 @@ function MarkdownWorkProductRow({
               ensure.reset();
               ensure.mutate();
             }}
-          > {uiText("Retry")} </button>
+          >{uiText("Retry")}</button>
         ) : null}
       </div>
     );

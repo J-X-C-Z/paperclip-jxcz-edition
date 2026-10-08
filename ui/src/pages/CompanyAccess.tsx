@@ -400,7 +400,7 @@ export function CompanyAccess() {
                     </td>
                     <td className="px-3 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => setEditingMemberId(member.id)}> {uiText("Edit")} </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingMemberId(member.id)}>{uiText("Edit")}</Button>
                         <span
                           className="inline-flex"
                           title={!canArchive ? removalReason ?? undefined : undefined}
@@ -412,7 +412,7 @@ export function CompanyAccess() {
                             disabled={!canArchive}
                             title={!canArchive ? removalReason ?? undefined : undefined}
                           >
-                            <Trash2 className="mr-1 h-3.5 w-3.5" /> {uiText("Remove")} </Button>
+                            <Trash2 className="mr-1 h-3.5 w-3.5" />{uiText("Remove")}</Button>
                         </span>
                       </div>
                     </td>
@@ -469,7 +469,7 @@ export function CompanyAccess() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingMemberId(null)}> {uiText("Cancel")} </Button>
+            <Button variant="outline" onClick={() => setEditingMemberId(null)}>{uiText("Cancel")}</Button>
             <Button
               onClick={() => {
                 if (!editingMember) return;
@@ -551,7 +551,7 @@ export function CompanyAccess() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemovingMemberId(null)}> {uiText("Cancel")} </Button>
+            <Button variant="outline" onClick={() => setRemovingMemberId(null)}>{uiText("Cancel")}</Button>
             <Button
               variant="destructive"
               onClick={() => {

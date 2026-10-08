@@ -2550,7 +2550,7 @@ export function CompanyEnvironments({ mode = "list" }: CompanyEnvironmentsProps)
                           value={reassignEnvironmentTargetId}
                           onChange={(event) => setReassignEnvironmentTargetId(event.target.value)}
                         >
-                          <option value="">{uiText("Default:")}{instanceDefaultEnvironment
+                          <option value="">{uiText("Default:")}{" "}{instanceDefaultEnvironment
                               ? `${instanceDefaultEnvironment.name} · ${instanceDefaultEnvironment.driver}`
                               : uiText("Local")}
                           </option>

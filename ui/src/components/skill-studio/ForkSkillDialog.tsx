@@ -132,7 +132,7 @@ export function ForkSkillDialog({
   const busy = forkMutation.isPending;
   const forkLabel =
     reassign && agentCount > 0
-      ? uiText("Create copy & switch {count} agent(s)", { count: agentCount })
+      ? uiText(agentCount === 1 ? "Create copy & switch {count} agent" : "Create copy & switch {count} agents", { count: agentCount })
       : uiText("Create copy");
 
   const openExisting = () => {
@@ -183,7 +183,7 @@ export function ForkSkillDialog({
             <Users className="h-4 w-4 shrink-0" />
             <span>{agentCount <= 0
               ? uiText("No agents currently use this skill")
-              : uiText("{count} agent(s) currently use this skill", { count: agentCount })}</span>
+              : uiText(agentCount === 1 ? "{count} agent currently uses this skill" : "{count} agents currently use this skill", { count: agentCount })}</span>
           </div>
 
           {agentCount > 0 ? (

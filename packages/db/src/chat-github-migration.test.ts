@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
@@ -17,7 +18,7 @@ describePostgres("GitHub preview migration replay", () => {
       const beforeConstraints = await constraints();
       expect(beforeRelations).toHaveLength(3);
       expect(beforeConstraints.some((row) => row.definition.includes("FOREIGN KEY (company_id, endpoint_id)"))).toBe(true);
-      const migration = await readFile(new URL("./migrations/0286_jittery_psynapse.sql", import.meta.url), "utf8");
+      const migration = await readFile(migrationFileUrl('jittery_psynapse'), "utf8");
       for (let attempt = 0; attempt < 2; attempt += 1) {
         for (const statement of migration.split("--> statement-breakpoint")) {
           if (statement.trim()) await sql.unsafe(statement);

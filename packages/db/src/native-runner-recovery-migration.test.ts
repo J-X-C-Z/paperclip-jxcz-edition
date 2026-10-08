@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import postgres from "postgres";
@@ -30,10 +31,7 @@ describeEmbeddedPostgres("native runner recovery migration", () => {
       cleanups.push(async () => sql.end());
 
       const migration = await readFile(
-        new URL(
-          "./migrations/0238_graceful_infant_terrible.sql",
-          import.meta.url,
-        ),
+        migrationFileUrl('graceful_infant_terrible'),
         "utf8",
       );
       const statements = migration

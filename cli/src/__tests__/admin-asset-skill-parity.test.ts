@@ -137,7 +137,7 @@ describe("admin, asset, and skill parity commands", () => {
   });
 
   it("rejects portable export paths outside the output directory", async () => {
-    expect(() => resolveExportOutputPath(tempDir, "../outside.md")).toThrow("outside output directory");
+    expect(() => resolveExportOutputPath(tempDir, "../outside.md")).toThrow(/outside output directory|输出目录之外/);
   });
 
   it("wraps company skill endpoints", async () => {

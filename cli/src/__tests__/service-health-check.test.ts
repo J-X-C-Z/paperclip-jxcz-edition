@@ -142,9 +142,9 @@ describe("service health doctor checks", () => {
 
     expect(results).toContainEqual(
       expect.objectContaining({
-        name: "Service runtime",
+        name: "服务运行状态",
         status: "fail",
-        message: expect.stringContaining("another Paperclip process"),
+        message: expect.stringContaining("另一个 Paperclip 进程"),
       }),
     );
   });
@@ -198,9 +198,9 @@ describe("service runtime shim awareness", () => {
       probe: vi.fn(async () => ({ ok: false, version: null, error: "fetch failed" })),
       shimPresent: vi.fn(async () => false),
     });
-    const runtime = results.find((r) => r.name === "Service runtime");
+    const runtime = results.find((r) => r.name === "服务运行状态");
     expect(runtime?.status).toBe("fail");
-    expect(runtime?.message).toContain("no executable exists at");
+    expect(runtime?.message).toContain("可执行文件不存在于");
     expect(runtime?.repairHint).toContain("paperclipai install");
   });
 
@@ -213,7 +213,7 @@ describe("service runtime shim awareness", () => {
       probe: vi.fn(async () => ({ ok: false, version: null, error: "fetch failed" })),
       shimPresent,
     });
-    const runtime = results.find((r) => r.name === "Service runtime");
+    const runtime = results.find((r) => r.name === "服务运行状态");
     expect(shimPresent).toHaveBeenCalledWith("/custom/bin/paperclipai");
     expect(runtime?.message).toContain("/custom/bin/paperclipai");
     expect(runtime?.repairHint).toContain("/custom/bin/paperclipai");
@@ -227,11 +227,11 @@ describe("service runtime shim awareness", () => {
       probe: vi.fn(async () => ({ ok: true, version: "9.9.9" })),
       shimPresent: vi.fn(async () => true),
     });
-    const healthResult = results.find((r) => r.name === "Service health");
+    const healthResult = results.find((r) => r.name === "服务健康状态");
     expect(healthResult?.status).toBe("warn");
-    expect(healthResult?.message).toContain("but not from ing.paperclip.paperclipai");
-    const runtime = results.find((r) => r.name === "Service runtime");
-    expect(runtime?.message).toContain("serving another Paperclip process");
+    expect(healthResult?.message).toContain("但响应进程不是 ing.paperclip.paperclipai");
+    const runtime = results.find((r) => r.name === "服务运行状态");
+    expect(runtime?.message).toContain("由另一个 Paperclip 进程提供服务");
   });
 });
 

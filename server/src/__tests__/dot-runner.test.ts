@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "@paperclipai/db/test-migrations";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { execFileSync } from "node:child_process";
@@ -162,7 +163,7 @@ describe("durable Dot Runner integration", () => {
   }
 
   it("reapplies the Dot-only migration after the merged gateway schema", async () => {
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0324_messy_famine.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('messy_famine'), "utf8");
     for (const statement of migration.split("--> statement-breakpoint")) {
       if (statement.trim()) await db.execute(sql.raw(statement));
     }

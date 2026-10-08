@@ -96,7 +96,7 @@ describe("managed-agent CLI registration", () => {
 describe("managed-agent CLI validation", () => {
   it("requires the Anthropic key only through the CLI environment", () => {
     expect(() => validateManagedAgentSetup(setupOptions(), {})).toThrow(
-      "ANTHROPIC_API_KEY is required in the CLI process environment",
+      /ANTHROPIC_API_KEY is required in the CLI process environment|CLI 进程环境中必须设置 ANTHROPIC_API_KEY/,
     );
   });
 
@@ -113,7 +113,7 @@ describe("managed-agent CLI validation", () => {
       validateManagedAgentSetup(setupOptions({ model: "claude-opus-5" }), {
         ANTHROPIC_API_KEY: "sk-ant-test",
       }),
-    ).toThrow("qualified Managed Agents model claude-sonnet-5");
+    ).toThrow(/qualified Managed Agents model claude-sonnet-5|完整的 Managed Agents 模型名称：claude-sonnet-5/);
   });
 
   it("requires a positive spend ceiling that rounds to at least one cent", () => {
@@ -121,12 +121,12 @@ describe("managed-agent CLI validation", () => {
       validateManagedAgentSetup(setupOptions({ maxSessionListCostUsd: "0.001" }), {
         ANTHROPIC_API_KEY: "sk-ant-test",
       }),
-    ).toThrow("at least one cent");
+    ).toThrow(/at least one cent|必须至少为 0\.01 美元/);
     expect(() =>
       validateManagedAgentSetup(setupOptions({ maxSessionListCostUsd: "NaN" }), {
         ANTHROPIC_API_KEY: "sk-ant-test",
       }),
-    ).toThrow("at least one cent");
+    ).toThrow(/at least one cent|必须至少为 0\.01 美元/);
   });
 
   it("rejects an invalid company secret reference before provisioning", () => {
@@ -134,7 +134,7 @@ describe("managed-agent CLI validation", () => {
       validateManagedAgentSetup(setupOptions({ apiKeySecretId: "not-a-uuid" }), {
         ANTHROPIC_API_KEY: "sk-ant-test",
       }),
-    ).toThrow("--api-key-secret-id must be a UUID");
+    ).toThrow(/--api-key-secret-id must be a UUID|--api-key-secret-id 必须是 UUID/);
   });
 
   it("rejects environment and agent capabilities outside the locked profile", () => {

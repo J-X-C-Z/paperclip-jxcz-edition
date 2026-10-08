@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
@@ -8,7 +9,7 @@ const support = await getEmbeddedPostgresTestSupport();
 const migrations = [
   "0240_pink_fantastic_four.sql", "0241_conscious_adam_destine.sql",
   "0242_wide_lightspeed.sql", "0243_sleepy_metal_master.sql", "0244_organic_meltdown.sql", "0245_misty_nightshade.sql",
-].map((name) => readFileSync(new URL(`./migrations/${name}`, import.meta.url), "utf8"));
+].map((name) => readFileSync(migrationFileUrl(name), "utf8"));
 
 (support.supported ? describe : describe.skip)("execution identity migration", () => {
   it("can replay without inventing historical authorship or losing accepted contexts", async () => {

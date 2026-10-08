@@ -534,10 +534,10 @@ export function GatewaysTab({ companyId }: { companyId: string }) {
                                 <div className="flex shrink-0 items-center gap-2">
                                   <span className="text-xs text-muted-foreground">
                                     {token.revokedAt ? (
-                                      <>{uiText("revoked")}<RelativeTime value={token.revokedAt} />
+                                      <>{uiText("revoked")}{" "}<RelativeTime value={token.revokedAt} />
                                       </>
                                     ) : token.expiresAt ? (
-                                      <>{uiText("expires")}<RelativeTime value={token.expiresAt} />
+                                      <>{uiText("expires")}{" "}<RelativeTime value={token.expiresAt} />
                                       </>
                                     ) : (
                                       "no expiry"

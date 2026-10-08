@@ -2,7 +2,7 @@
 
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Agent, ResourceMemberships } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SidebarAgents } from "./SidebarAgents";
@@ -68,6 +68,9 @@ vi.mock("@/lib/router", () => ({
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
+    selectedCompanyId: "company-1",
+  }),
+  useOptionalCompany: () => ({
     selectedCompanyId: "company-1",
   }),
 }));
@@ -157,10 +160,13 @@ function makeAgent(overrides: Partial<Agent>): Agent {
 }
 
 async function flushReact() {
-  await act(async () => {
-    await Promise.resolve();
-    await vi.advanceTimersByTimeAsync(0);
-  });
+  // Flush both settings and agent queries without moving linger deadlines.
+  for (let pass = 0; pass < 2; pass++) {
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+  }
 }
 
 async function openAgentMenu(label = "Open actions for Alpha") {
@@ -218,6 +224,7 @@ describe("SidebarAgents", () => {
   let memberships: ResourceMemberships;
 
   beforeEach(() => {
+    notifyManager.setScheduler(queueMicrotask);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     mockSidebarState.collapsed = false;
     mockSidebarState.peeking = false;
@@ -294,6 +301,7 @@ describe("SidebarAgents", () => {
     try {
       await unmountSidebarAgents();
     } finally {
+      notifyManager.setScheduler((callback) => setTimeout(callback, 0));
       vi.useRealTimers();
       container.remove();
       document.body.innerHTML = "";

@@ -275,7 +275,7 @@ export function SummarySlotCard({
               size="sm"
               variant="outline"
               onClick={() => setSelectedRevisionId(null)}
-            > {uiText("Latest")} </Button>
+            >{uiText("Latest")}</Button>
           ) : null}
           {latestDocument && !generationFailed ? (
             <Button

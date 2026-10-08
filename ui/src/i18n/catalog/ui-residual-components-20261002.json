@@ -616,5 +616,9 @@
   "Add a note to request changes": "请添加备注后再请求修改",
   "Unlock {document} document": "解锁文档 {document}",
   "Lock {document} document": "锁定文档 {document}",
-  "Filter by {label}": "按{label}筛选"
+  "Filter by {label}": "按{label}筛选",
+  "{count} agents currently use this skill": "目前有 {count} 个智能体使用此技能",
+  "{count} agent currently uses this skill": "目前有 {count} 个智能体使用此技能",
+  "Create copy & switch {count} agent": "创建副本并切换 {count} 个智能体",
+  "Create copy & switch {count} agents": "创建副本并切换 {count} 个智能体"
 }

@@ -147,7 +147,7 @@ describe("test-drive data isolation", () => {
         undefined,
         { [variable]: "postgres://external-database" },
         readConfigFile,
-      )).toThrow(/requires its isolated embedded database/);
+      )).toThrow(/需要使用隔离的内嵌数据库/);
       expect(readConfigFile).not.toHaveBeenCalled();
     },
   );
@@ -160,7 +160,7 @@ describe("test-drive data isolation", () => {
       "/tmp/reused/config.json",
       {},
       () => externalConfig,
-    )).toThrow(/cannot reuse.*external PostgreSQL database/);
+    )).toThrow(/不能复用.*外部 PostgreSQL 数据库/);
   });
 
   it("accepts an embedded configuration", () => {
@@ -211,12 +211,12 @@ describe("test-drive bootstrap validation", () => {
     expect(() => resolveTestDriveBootstrap(
       { harness: "opencode" },
       { OPENROUTER_API_KEY: "secret" },
-    )).toThrow(/require --model openrouter/);
+    )).toThrow(/要求 --model 使用 openrouter/);
     for (const model of ["anthropic/claude", "openrouter/", "openrouter//claude", "openrouter/a/"]) {
       expect(() => resolveTestDriveBootstrap(
         { harness: "opencode", model },
         { OPENROUTER_API_KEY: "secret" },
-      )).toThrow(/require --model openrouter/);
+      )).toThrow(/要求 --model 使用 openrouter/);
     }
 
     const model = "openrouter/publisher/family/model";
@@ -253,13 +253,13 @@ describe("test-drive bootstrap validation", () => {
     expect(() => resolveTestDriveBootstrap({
       apiKey: "literal-secret",
       apiKeyEnv: "ANTHROPIC_API_KEY",
-    }, { ANTHROPIC_API_KEY: "environment-secret" })).toThrow(/mutually exclusive/);
+    }, { ANTHROPIC_API_KEY: "environment-secret" })).toThrow(/不能同时使用/);
   });
 
   it("rejects invalid key variable names and redacts credentials", () => {
     expect(() => resolveTestDriveBootstrap({
       apiKeyEnv: "NOT-A-VALID-NAME",
-    }, { ANTHROPIC_API_KEY: "env-secret" })).toThrow(/valid environment variable/);
+    }, { ANTHROPIC_API_KEY: "env-secret" })).toThrow(/有效的环境变量名称/);
     expect(redactTestDriveText(
       "literal-secret, custom-secret, and env-secret must never appear",
       ["literal-secret", "custom-secret", "env-secret"],
@@ -337,7 +337,7 @@ describe("test-drive API bootstrap", () => {
       linkedWorktree: false,
       instanceId: "default",
       env: { OPENROUTER_API_KEY: "secret" },
-    })).rejects.toThrow(/require --model openrouter/);
+    })).rejects.toThrow(/要求 --model 使用 openrouter/);
     expect(calls).toEqual([{ method: "GET", path: "/api/companies" }]);
   });
 
@@ -443,7 +443,7 @@ describe("test-drive worktree setting reconciliation", () => {
       delete: vi.fn(),
     } as unknown as TestDriveApi;
     await expect(reconcileTestDriveWorktreeExecution(api, "test-instance"))
-      .rejects.toThrow(/Could not arm/);
+      .rejects.toThrow(/无法为 Paperclip 实例/);
   });
 });
 

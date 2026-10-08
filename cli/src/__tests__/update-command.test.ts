@@ -108,7 +108,7 @@ describe("update command", () => {
     const manifest = { channel: "pinned", version: "1.2.3" } as InstallManifest;
     expect(resolveUpdateRequest(manifest, {})).toEqual({ spec: "1.2.3", channel: "pinned", explicit: false });
     expect(resolveUpdateRequest(manifest, { latest: true })).toEqual({ spec: "latest", channel: "latest", explicit: true });
-    expect(() => resolveUpdateRequest(manifest, { latest: true, canary: true })).toThrow("only one");
+    expect(() => resolveUpdateRequest(manifest, { latest: true, canary: true })).toThrow("只能选择一个");
   });
 
   it("re-resolves a moving git branch and activates the new SHA payload", async () => {
@@ -130,7 +130,7 @@ describe("update command", () => {
     const restartActiveService = vi.fn(async () => true);
     const runCommand = vi.fn(async (file: string) => file === "curl" ? { stdout: JSON.stringify({ sha: newSha }), stderr: "" } : { stdout: "0.3.1\n", stderr: "" });
     await updateCommand({}, { paths, executablePath: executable, runCommand, backup, confirm, restartActiveService, hasInstanceData: () => true, now: () => new Date("2026-07-22T12:00:00Z") });
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining(`commit ${newSha.slice(0, 12)}`));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining(`提交 ${newSha.slice(0, 12)}`));
     expect(fs.readFileSync(paths.shimPath, "utf8")).toContain(`export PATH='${path.dirname(process.execPath)}'`);
     expect(backup).toHaveBeenCalledOnce();
     expect(restartActiveService).toHaveBeenCalledWith("0.3.1");
@@ -153,14 +153,14 @@ describe("update command", () => {
     const payload = payloadPathFor(paths, "npm", "2.0.0"); const entrypoint = createPayload(payload, "2.0.0"); flipCurrentAtomic(payload, paths);
     writeInstallManifestAtomic({ schemaVersion: 1, ...record(payload, "2.0.0"), previous: [] }, paths);
     const runCommand = vi.fn(async () => ({ stdout: '"1.0.0"\n', stderr: "" }));
-    await expect(updateCommand({ version: "1.0.0", dryRun: true }, { paths, executablePath: entrypoint, runCommand, confirm: async () => false })).rejects.toThrow("Downgrade cancelled");
+    await expect(updateCommand({ version: "1.0.0", dryRun: true }, { paths, executablePath: entrypoint, runCommand, confirm: async () => false })).rejects.toThrow("降级已取消");
   });
 
   it("requires explicit confirmation before a global npm downgrade", async () => {
     const paths = resolveInstallStorePaths();
     const executable = path.join(root, "lib", "node_modules", "paperclipai", "dist", "index.js");
     const runCommand = vi.fn(async () => ({ stdout: '"0.2.0"\n', stderr: "" }));
-    await expect(updateCommand({ version: "0.2.0" }, { paths, executablePath: executable, runCommand, confirm: async () => false })).rejects.toThrow("Downgrade cancelled");
+    await expect(updateCommand({ version: "0.2.0" }, { paths, executablePath: executable, runCommand, confirm: async () => false })).rejects.toThrow("降级已取消");
     expect(runCommand).toHaveBeenCalledTimes(1);
   });
 
@@ -218,7 +218,7 @@ describe("update command", () => {
     const runCommand = vi.fn(async () => ({ stdout: '"2.0.0"\n', stderr: "" }));
 
     await expect(updateCommand({}, { paths, executablePath: executable, runCommand, backup, hasInstanceData: () => true })).rejects.toThrow(
-      "Start the service with `paperclipai service start` and retry, or skip the backup with `paperclipai update --no-backup`.",
+      "请使用 `paperclipai service start` 启动服务后重试，或使用 `paperclipai update --no-backup` 跳过备份。",
     );
     expect(backup).toHaveBeenCalledOnce();
     expect(readInstallManifest(paths)?.version).toBe("1.0.0");
@@ -263,7 +263,7 @@ describe("update command", () => {
       return { stdout: "2.0.0\n", stderr: "" };
     });
     const restartActiveService = vi.fn(async (version: string) => { if (version === "2.0.0") throw new Error("health timeout"); return true; });
-    await expect(updateCommand({}, { paths, executablePath: executable, runCommand, backup: async () => undefined, restartActiveService })).rejects.toThrow("rolled back to 1.0.0");
+    await expect(updateCommand({}, { paths, executablePath: executable, runCommand, backup: async () => undefined, restartActiveService })).rejects.toThrow("已回滚到 1.0.0");
     expect(readInstallManifest(paths)?.version).toBe("1.0.0");
     expect(fs.realpathSync(paths.currentPath)).toBe(fs.realpathSync(oldPayload));
     expect(restartActiveService).toHaveBeenLastCalledWith("1.0.0");
@@ -288,7 +288,7 @@ describe("update command", () => {
       runCommand,
       backup: async () => undefined,
       restartActiveService,
-    })).rejects.toThrow("rolled-back service also failed to restart");
+    })).rejects.toThrow("回滚后的服务也未能重启");
     expect(readInstallManifest(paths)?.version).toBe("1.0.0");
     expect(fs.realpathSync(paths.currentPath)).toBe(fs.realpathSync(oldPayload));
     expect(restartActiveService).toHaveBeenNthCalledWith(1, "2.0.0");

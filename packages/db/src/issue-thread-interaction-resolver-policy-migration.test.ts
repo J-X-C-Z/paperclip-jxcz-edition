@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -18,7 +19,7 @@ afterEach(async () => {
 
 async function resolverPolicyMigrationStatements(): Promise<string[]> {
   const migrationSql = await readFile(
-    fileURLToPath(new URL("./migrations/0218_mushy_jack_murdock.sql", import.meta.url)),
+    fileURLToPath(migrationFileUrl('mushy_jack_murdock')),
     "utf8",
   );
   return migrationSql

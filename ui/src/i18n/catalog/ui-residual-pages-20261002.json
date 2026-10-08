@@ -516,5 +516,11 @@
   "Run": "运行",
   "Connection": "连接",
   "Local git checkout": "本地 Git 检出",
-  "Local non-git path": "本地非 Git 路径"
+  "Local non-git path": "本地非 Git 路径",
+  "We found {count} app in that config": "在此配置中找到 {count} 个应用",
+  "Unfiled": "未归档",
+  "Unknown folder": "未知文件夹",
+  "{app} still has {count} active connection available to agents.": "{app} 仍有 {count} 个可供智能体使用的连接。",
+  "{app} still has {count} active connections available to agents.": "{app} 仍有 {count} 个可供智能体使用的连接。",
+  "{app} is no longer available to agents and its credentials are deleted. Connecting it again needs a new sign-in or key.": "{app} 已无法供智能体使用，其凭据已删除。再次连接时需要重新登录或提供密钥。"
 }

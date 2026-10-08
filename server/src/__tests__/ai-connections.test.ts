@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "@paperclipai/db/test-migrations";
 import { connectionIntentService } from "../services/connection-intents.js";
 import { connectionIntentDeliveryService } from "../services/connection-intent-delivery.js";
 import { issueRecoveryActionService } from "../services/issue-recovery-actions.js";
@@ -792,7 +793,7 @@ console.log(JSON.stringify({ type: "result", subtype: "success", result: "hello"
       provider: "google", method: "api_key", ownership: "personal", name: "Google migration",
       apiKey: "fixture", allAgents: true, agentIds: [],
     }, "google-migration-key");
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0313_familiar_titania.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('familiar_titania'), "utf8");
     for (let attempt = 0; attempt < 2; attempt += 1) {
       await db.transaction(async (tx) => {
         for (const statement of migration.split("--> statement-breakpoint")) {
@@ -1145,7 +1146,7 @@ console.log(JSON.stringify({ type: "result", subtype: "success", result: "hello"
     await db.update(aiConnectionDefaults).set({ updatedAt: new Date("2030-01-01") }).where(eq(aiConnectionDefaults.grantId, api.grantId));
     await db.delete(aiProviderDefaults).where(and(eq(aiProviderDefaults.companyId, companyId), eq(aiProviderDefaults.userId, userId)));
     const legacyRows = await db.select().from(aiConnectionDefaults).where(eq(aiConnectionDefaults.userId, userId));
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0277_uneven_lady_deathstrike.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('uneven_lady_deathstrike'), "utf8");
     for (let pass = 0; pass < 2; pass++) for (const statement of migration.split("--> statement-breakpoint").filter(value => value.trim())) await db.execute(sql.raw(statement));
     expect(await db.select().from(aiConnectionDefaults).where(eq(aiConnectionDefaults.userId, userId))).toEqual(legacyRows);
     await expect(service.select({ ...input, userId })).rejects.toThrow("Reconnect");
@@ -1303,7 +1304,7 @@ console.log(JSON.stringify({ type: "result", subtype: "success", result: "hello"
     const definition = await vault.createUserSecretDefinition(companyId, { key: "legacy_claude", name: "Existing owned Claude key", provider: "local_encrypted" }, { userId: "alice" });
     const secret = await vault.createCurrentUserSecretValue(companyId, "alice", { definitionId: definition.id, value: "fixture-legacy" }, { userId: "alice" });
     await vault.syncUserSecretDeclarationsForTarget(companyId, { targetType: "agent", targetId: agentId }, [{ definitionKey: definition.key, configPath: "env.ANTHROPIC_API_KEY", envKey: "ANTHROPIC_API_KEY", required: true }]);
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0276_hard_mandroid.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('hard_mandroid'), "utf8");
     const adoption = migration.slice(migration.indexOf("DO $$", migration.indexOf("-- Only declared")));
     await db.execute(sql.raw(adoption));
     const before = await service.list(companyId, "alice");

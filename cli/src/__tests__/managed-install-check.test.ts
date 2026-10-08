@@ -55,7 +55,7 @@ describe("managed install doctor checks", () => {
     fs.writeFileSync(paths.markerPath, MANAGED_STORE_MARKER);
 
     expect(managedInstallChecks(paths)).toEqual([
-      expect.objectContaining({ name: "Managed install manifest", status: "fail" }),
+      expect.objectContaining({ name: expect.stringMatching(/^(Managed install manifest|托管安装清单)$/), status: "fail" }),
     ]);
   });
 
@@ -69,7 +69,7 @@ describe("managed install doctor checks", () => {
     fs.writeFileSync(path.join(paths.cliRoot, "update-check.json"), "{}\n");
 
     expect(managedInstallChecks(paths)).toEqual([
-      expect.objectContaining({ name: "Managed install", status: "pass" }),
+      expect.objectContaining({ name: expect.stringMatching(/^(Managed install|托管安装)$/), status: "pass" }),
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("managed install doctor checks", () => {
     fs.mkdirSync(paths.installsRoot, { recursive: true });
 
     expect(managedInstallChecks(paths)).toEqual([
-      expect.objectContaining({ name: "Managed install", status: "pass" }),
+      expect.objectContaining({ name: expect.stringMatching(/^(Managed install|托管安装)$/), status: "pass" }),
     ]);
   });
 });

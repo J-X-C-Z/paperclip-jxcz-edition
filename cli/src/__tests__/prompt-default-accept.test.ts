@@ -59,7 +59,20 @@ function queueSelects(values: unknown[]) {
 }
 
 function validatorFor(message: string): NonNullable<CapturedTextOptions["validate"]> {
-  const call = capturedText.find((options) => options.message === message);
+  const localizedLabels: Record<string, string> = {
+    "Embedded PostgreSQL port": "嵌入式 PostgreSQL 端口",
+    "Backup interval (minutes)": "备份间隔（分钟）",
+    "Backup retention (days)": "备份保留天数",
+    "Backup directory": "备份目录",
+    "PostgreSQL connection string": "PostgreSQL 连接字符串",
+    "Server port": "服务端口",
+    "Public base URL": "公开基础 URL",
+    "Local storage base directory": "本地存储根目录",
+    "S3 bucket": "S3 存储桶",
+    "S3 region": "S3 区域",
+    "Local encrypted key file path": "本地加密密钥文件路径",
+  };
+  const call = capturedText.find((options) => options.message === message || options.message === localizedLabels[message]);
   if (!call?.validate) throw new Error(`no validator captured for "${message}"`);
   return call.validate;
 }
@@ -139,7 +152,7 @@ describe("promptDatabase accepts defaults", () => {
   it("still requires a connection string when no saved default exists", async () => {
     queueSelects(["postgres"]);
 
-    await expect(promptDatabase()).rejects.toThrow(/Connection string is required/);
+    await expect(promptDatabase()).rejects.toThrow(/Connection string is required|PostgreSQL 模式必须填写连接字符串/);
 
     const connection = validatorFor("PostgreSQL connection string");
     expect(connection("postgres://user:pass@localhost:5432/paperclip")).toBeUndefined();
@@ -198,7 +211,7 @@ describe("promptServer accepts defaults", () => {
   it("still requires a public base URL when no saved default exists", async () => {
     queueSelects(["custom", "authenticated", "public"]);
 
-    await expect(promptServer()).rejects.toThrow(/Public base URL is required/);
+    await expect(promptServer()).rejects.toThrow(/Public base URL is required|公开访问时必须填写基础 URL/);
 
     const url = validatorFor("Public base URL");
     expect(url("https://paperclip.example.com")).toBeUndefined();
@@ -259,7 +272,7 @@ describe("invalid saved or derived defaults are still validated", () => {
 
     await expect(
       promptServer({ currentServer: { port: 70000 as never } }),
-    ).rejects.toThrow(/integer between 1 and 65535/);
+    ).rejects.toThrow(/integer between 1 and 65535|1 到 65535 之间的整数/);
   });
 
   it("rejects accepting a non-integer saved embedded PostgreSQL port", async () => {
@@ -267,7 +280,7 @@ describe("invalid saved or derived defaults are still validated", () => {
 
     await expect(
       promptDatabase({ ...dbFixture, mode: "embedded-postgres", embeddedPostgresPort: 12.5 as never }),
-    ).rejects.toThrow(/Port must be an integer/);
+    ).rejects.toThrow(/Port must be an integer|端口必须是 1 到 65535 之间的整数/);
   });
 
   it("rejects accepting an invalid saved public base URL", async () => {
@@ -278,7 +291,7 @@ describe("invalid saved or derived defaults are still validated", () => {
         currentServer: { host: "0.0.0.0", port: 8443 },
         currentAuth: { publicBaseUrl: "not a url" },
       }),
-    ).rejects.toThrow(/valid URL/);
+    ).rejects.toThrow(/valid URL|有效 URL/);
   });
 
   it("rejects accepting a whitespace-only saved S3 bucket", async () => {
@@ -290,6 +303,6 @@ describe("invalid saved or derived defaults are still validated", () => {
         localDisk: { baseDir: "" },
         s3: { bucket: "   ", region: "us-east-1", endpoint: "", forcePathStyle: false },
       } as never),
-    ).rejects.toThrow(/Bucket is required/);
+    ).rejects.toThrow(/Bucket is required|必须填写存储桶名称/);
   });
 });

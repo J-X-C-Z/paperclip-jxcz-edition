@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "react";
+import { CUSTOM_AGENT_TEMPLATE } from "@paperclipai/shared";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -23,6 +24,7 @@ vi.mock("@/lib/router", () => ({ useNavigate: () => state.navigate }));
 vi.mock("../context/DialogContext", () => ({
   useDialog: () => ({ newAgentOpen: true, closeNewAgent: state.close }),
 }));
+vi.mock("@/api/agents", () => ({ agentsApi: { templates: async () => [CUSTOM_AGENT_TEMPLATE] } }));
 vi.mock("@/api/adapters", () => ({
   adaptersApi: { list: async () => state.adapters },
 }));
@@ -62,6 +64,10 @@ beforeEach(async () => {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
   });
+  const customTemplate = [...document.querySelectorAll("button")].find(button => button.textContent?.includes(CUSTOM_AGENT_TEMPLATE.name));
+  expect(customTemplate).toBeTruthy();
+  await act(async () => customTemplate!.click());
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
 });
 afterEach(async () => {
   await act(async () => root.unmount());

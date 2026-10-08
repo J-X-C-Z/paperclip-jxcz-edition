@@ -646,7 +646,7 @@ function RepairWorkspace({
   const dirtyLabel =
     dirtyCount === null
       ? uiText("Uncommitted changes")
-      : uiText("{count} uncommitted changes", { count: dirtyCount });
+      : uiText(dirtyCount === 1 ? "{count} uncommitted change" : "{count} uncommitted changes", { count: dirtyCount });
   const trigger = (
     <Button
       type="button"

@@ -1179,7 +1179,7 @@ describe("CompanyImport", () => {
     });
     await settle();
     expect(container.textContent).toContain("Allow externally billed provider");
-    expect(container.textContent).not.toContain("Harness");
+    expect(select.closest(".divide-y")?.querySelector('[aria-label="Harness"]')).toBeNull();
     await clickButton((text) => text.startsWith("Import 3 file"));
     await settle();
     expect(mockCompaniesApi.importBundleAsync).not.toHaveBeenCalled();

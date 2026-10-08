@@ -67,7 +67,7 @@ describe("configure invalid-config repair", () => {
       await configure({ config: configPath, section: "server" });
 
       expect(prompts.confirm).toHaveBeenCalledWith({
-        message: `Repair from defaults? The invalid original is backed up at ${configPath}.invalid-1.`,
+        message: `是否使用默认值修复？无效的原始配置已备份至 ${configPath}.invalid-1。`,
         initialValue: false,
       });
       expect(fs.readFileSync(`${configPath}.invalid-1`)).toEqual(invalidBytes);

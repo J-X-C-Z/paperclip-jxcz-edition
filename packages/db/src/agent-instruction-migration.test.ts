@@ -1,5 +1,8 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
+import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { applyPendingMigrations, inspectMigrations } from "./client.js";
@@ -69,7 +72,7 @@ ALTER TABLE "agent_instruction_working_copies" ADD CONSTRAINT "agent_instruction
 CREATE INDEX "agent_instruction_copies_pending_idx" ON "agent_instruction_working_copies" USING btree ("state","next_attempt_at");--> statement-breakpoint
 CREATE INDEX "agent_instruction_copies_agent_idx" ON "agent_instruction_working_copies" USING btree ("company_id","agent_id","created_at");` },
 ];
-const migration = await readFile(new URL("./migrations/0290_serious_tinkerer.sql", import.meta.url), "utf8");
+const migration = await readFile(migrationFileUrl('serious_tinkerer'), "utf8");
 const migrationHash = createHash("sha256").update(migration).digest("hex");
 
 const support = await getEmbeddedPostgresTestSupport();
@@ -118,7 +121,7 @@ describePostgres("instruction revision migrations", () => {
       const before = await snapshot();
       expect(before.relations).toHaveLength(3);
       expect(await inspectMigrations(database.connectionString)).toMatchObject({
-        status: "needsMigrations", pendingMigrations: ["0290_serious_tinkerer.sql"],
+        status: "needsMigrations", pendingMigrations: [basename(fileURLToPath(migrationFileUrl("serious_tinkerer")))],
       });
       await applyPendingMigrations(database.connectionString);
       const upgraded = await snapshot();

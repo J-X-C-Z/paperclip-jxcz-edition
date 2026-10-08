@@ -205,7 +205,7 @@ export function InvitesSection() {
                     <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{uiText(option.label)}</span>
                       {option.value === "operator" ? (
-                        <Badge variant="outline" className="border-border text-muted-foreground"> {uiText("Default")} </Badge>
+                        <Badge variant="outline" className="border-border text-muted-foreground">{uiText("Default")}</Badge>
                       ) : null}
                     </span>
                     <span className="block max-w-2xl text-sm text-muted-foreground">{uiText(option.description)}</span>
@@ -235,7 +235,7 @@ export function InvitesSection() {
                 <div className="text-sm font-medium">{uiText('Latest invite link')}</div>
                 {latestInviteCopied ? (
                   <div className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
-                    <Check className="h-3.5 w-3.5" /> {uiText("Copied")} </div>
+                    <Check className="h-3.5 w-3.5" />{uiText("Copied")}</div>
                 ) : null}
               </div>
               <div className="text-sm text-muted-foreground">
@@ -337,7 +337,7 @@ export function InvitesSection() {
                             variant="outline"
                             onClick={() => revokeMutation.mutate(invite.id)}
                             disabled={revokeMutation.isPending}
-                          > {uiText("Revoke")} </Button>
+                          >{uiText("Revoke")}</Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">{uiText('Inactive')}</span>
                         )}

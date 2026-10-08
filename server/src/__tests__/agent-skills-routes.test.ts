@@ -244,7 +244,7 @@ function makeAgent(adapterType: string) {
     adapterConfig: {},
     runtimeConfig: {},
     defaultEnvironmentId: null,
-    permissions: null,
+    permissions: {},
     updatedAt: new Date(),
   };
 }
@@ -337,7 +337,7 @@ describe("agent skill routes", () => {
         adapterConfig: input.adapterConfig ?? {},
         runtimeConfig: input.runtimeConfig ?? {},
         budgetMonthlyCents: Number(input.budgetMonthlyCents ?? 0),
-        permissions: null,
+        permissions: input.permissions ?? {},
       };
       return persistedAgent;
     });
@@ -1196,6 +1196,7 @@ describe("agent skill routes", () => {
 
     expect([200, 201], JSON.stringify(res.body)).toContain(res.status);
     const createdAgentId = expectResponseId(res.body.id);
+    const defaultInstructions = await readFile(new URL("../onboarding-assets/default/AGENTS.md", import.meta.url), "utf8");
     await vi.waitFor(() => {
       expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1204,7 +1205,7 @@ describe("agent skill routes", () => {
           adapterType: "claude_local",
         }),
         expect.objectContaining({
-          "AGENTS.md": "You are an agent in a Paperclip company.\n",
+          "AGENTS.md": defaultInstructions,
         }),
         { entryFile: "AGENTS.md", replaceExisting: false },
       );
@@ -1228,7 +1229,7 @@ describe("agent skill routes", () => {
       expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
         expect.objectContaining({ id: createdAgentId, role: "general" }),
         expect.objectContaining({
-          "AGENTS.md": expect.stringContaining("You are Ada, chief of staff for"),
+          "AGENTS.md": expect.stringContaining("你是 your organization 的幕僚长 Ada。"),
         }),
         { entryFile: "AGENTS.md", replaceExisting: false },
       );
@@ -1236,7 +1237,7 @@ describe("agent skill routes", () => {
     // The generic default persona must NOT be what was seeded over the entry file.
     const seededCalls = mockAgentInstructionsService.materializeManagedBundle.mock.calls;
     const entrySeed = seededCalls.at(-1)?.[1] as Record<string, string> | undefined;
-    expect(entrySeed?.["AGENTS.md"]).toContain("chief of staff");
+    expect(entrySeed?.["AGENTS.md"]).toContain("幕僚长 Ada");
     // The normal onboarding flow has beta skill version selection disabled.
     expect(mockAgentService.create.mock.calls[0][1].adapterConfig.paperclipSkillSync.desiredSkills)
       .toContain("paperclipai/paperclip/first-task");
@@ -1297,8 +1298,9 @@ describe("agent skill routes", () => {
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentService.create.mock.calls[0][1].adapterConfig.paperclipSkillSync).toBeUndefined();
     await vi.waitFor(() => expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalled());
-    expect(mockAgentInstructionsService.materializeManagedBundle.mock.calls[0][1]["AGENTS.md"])
-      .not.toContain("chief of staff");
+    const seededInstructions = mockAgentInstructionsService.materializeManagedBundle.mock.calls[0][1]["AGENTS.md"];
+    expect(seededInstructions).toBe(await readFile(new URL("../onboarding-assets/default/AGENTS.md", import.meta.url), "utf8"));
+    expect(seededInstructions).not.toMatch(/chief of staff|幕僚长/);
   });
 
   it("creates nothing for rejected Biff payloads and exactly one approval-gated hire after correction", async () => {

@@ -31,6 +31,8 @@ import type { RuntimeSpanRunner } from "./acpx-engine/startup-timing.js";
 import type { RunProcessResult } from "./server-utils.js";
 
 const execFile = promisify(execFileCallback);
+// Match the real producer: a poller must not see a partially written envelope.
+const writeRequestFile = createFileSystemSandboxCallbackBridgeQueueClient().writeTextFile;
 
 describe("sandbox callback bridge", () => {
   const cleanupDirs: string[] = [];
@@ -322,7 +324,7 @@ describe("sandbox callback bridge", () => {
       { method: "GET", path: "/api/secrets" },
     ];
     for (const [index, request] of requests.entries()) {
-      await writeFile(path.join(directories.requestsDir, `schema-${index}.json`), JSON.stringify({
+      await writeRequestFile(path.join(directories.requestsDir, `schema-${index}.json`), JSON.stringify({
         id: `schema-${index}`, ...request, query: "", headers: {}, body: "", createdAt: new Date().toISOString(),
       }));
     }
@@ -355,7 +357,7 @@ describe("sandbox callback bridge", () => {
       },
     });
 
-    await writeFile(
+    await writeRequestFile(
       path.posix.join(directories.requestsDir, "req-1.json"),
       `${JSON.stringify({
         id: "req-1",
@@ -365,8 +367,7 @@ describe("sandbox callback bridge", () => {
         headers: {},
         body: "",
         createdAt: new Date().toISOString(),
-      })}\n`,
-      "utf8",
+      })}\n`
     );
 
     await worker.stop({ drainTimeoutMs: 1_000 });
@@ -403,7 +404,7 @@ describe("sandbox callback bridge", () => {
       },
     });
 
-    await writeFile(
+    await writeRequestFile(
       path.posix.join(directories.requestsDir, "req-a.json"),
       `${JSON.stringify({
         id: "req-a",
@@ -413,10 +414,9 @@ describe("sandbox callback bridge", () => {
         headers: {},
         body: "",
         createdAt: new Date().toISOString(),
-      })}\n`,
-      "utf8",
+      })}\n`
     );
-    await writeFile(
+    await writeRequestFile(
       path.posix.join(directories.requestsDir, "req-b.json"),
       `${JSON.stringify({
         id: "req-b",
@@ -426,8 +426,7 @@ describe("sandbox callback bridge", () => {
         headers: {},
         body: "",
         createdAt: new Date().toISOString(),
-      })}\n`,
-      "utf8",
+      })}\n`
     );
 
     await worker.stop({ drainTimeoutMs: 1_000 });
@@ -447,8 +446,9 @@ describe("sandbox callback bridge", () => {
     let signalStarted!: () => void;
     const started = new Promise<void>(resolve => { signalStarted = resolve; });
 
+    const client = createFileSystemSandboxCallbackBridgeQueueClient();
     const worker = await startSandboxCallbackBridgeWorker({
-      client: createFileSystemSandboxCallbackBridgeQueueClient(),
+      client,
       queueDir,
       authorizeRequest: async () => null,
       handleRequest: async (request) => {
@@ -462,7 +462,7 @@ describe("sandbox callback bridge", () => {
       },
     });
 
-    await writeFile(
+    await client.writeTextFile(
       path.posix.join(directories.requestsDir, "req-a.json"),
       `${JSON.stringify({
         id: "req-a",
@@ -473,9 +473,8 @@ describe("sandbox callback bridge", () => {
         body: "",
         createdAt: new Date().toISOString(),
       })}\n`,
-      "utf8",
     );
-    await writeFile(
+    await client.writeTextFile(
       path.posix.join(directories.requestsDir, "req-b.json"),
       `${JSON.stringify({
         id: "req-b",
@@ -486,7 +485,6 @@ describe("sandbox callback bridge", () => {
         body: "",
         createdAt: new Date().toISOString(),
       })}\n`,
-      "utf8",
     );
 
     // Begin the short drain deadline only after the first handler has started.
@@ -592,7 +590,7 @@ describe("sandbox callback bridge", () => {
     });
 
     const requestId = "transient-recovery-1";
-    await writeFile(
+    await writeRequestFile(
       path.join(directories.requestsDir, `${requestId}.json`),
       JSON.stringify({
         id: requestId,
@@ -601,8 +599,7 @@ describe("sandbox callback bridge", () => {
         query: "",
         headers: {},
         body: "",
-      }),
-      "utf8",
+      })
     );
 
     const responseFile = await waitForJsonFile(directories.responsesDir, 10_000);
@@ -982,7 +979,7 @@ describe("sandbox callback bridge", () => {
       await bridge.stop();
     });
 
-    await writeFile(
+    await writeRequestFile(
       path.posix.join(directories.requestsDir, "existing.json"),
       `${JSON.stringify({
         id: "existing",
@@ -992,8 +989,7 @@ describe("sandbox callback bridge", () => {
         headers: {},
         body: "",
         createdAt: new Date().toISOString(),
-      })}\n`,
-      "utf8",
+      })}\n`
     );
 
     const queueFullResponse = await fetch(`${bridge.baseUrl}/api/agents/me`, {
@@ -1823,7 +1819,7 @@ describe("sandbox callback bridge", () => {
     const queueDir = path.posix.join(rootDir, "queue");
     const directories = sandboxCallbackBridgeDirectories(queueDir);
     await mkdir(directories.requestsDir, { recursive: true });
-    await writeFile(path.posix.join(directories.requestsDir, "req-a.json"), bridgeRequestJson("req-a"), "utf8");
+    await writeRequestFile(path.posix.join(directories.requestsDir, "req-a.json"), bridgeRequestJson("req-a"));
 
     const { runtimeSpan, workerErrors } = createWorkerErrorCapture();
 
@@ -2872,7 +2868,7 @@ describe("sandbox callback bridge", () => {
     const queueDir = path.posix.join(rootDir, "queue");
     const directories = sandboxCallbackBridgeDirectories(queueDir);
     await mkdir(directories.requestsDir, { recursive: true });
-    await writeFile(path.posix.join(directories.requestsDir, "req-w.json"), bridgeRequestJson("req-w"), "utf8");
+    await writeRequestFile(path.posix.join(directories.requestsDir, "req-w.json"), bridgeRequestJson("req-w"));
 
     const base = createFileSystemSandboxCallbackBridgeQueueClient();
     let listCalls = 0;
@@ -2919,7 +2915,7 @@ describe("sandbox callback bridge", () => {
     const queueDir = path.posix.join(rootDir, "queue");
     const directories = sandboxCallbackBridgeDirectories(queueDir);
     await mkdir(directories.requestsDir, { recursive: true });
-    await writeFile(path.posix.join(directories.requestsDir, "req-ok.json"), bridgeRequestJson("req-ok"), "utf8");
+    await writeRequestFile(path.posix.join(directories.requestsDir, "req-ok.json"), bridgeRequestJson("req-ok"));
 
     const { runtimeSpan, workerErrors } = createWorkerErrorCapture();
     const processed: string[] = [];

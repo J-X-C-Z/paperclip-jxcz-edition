@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "@paperclipai/db/test-migrations";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -38,7 +39,7 @@ describe("persisted agent personas", () => {
   it("backfills legacy IDs with exactly the same persisted identity as the runtime fallback", async () => {
     const ids = Array.from({ length: 20 }, () => randomUUID());
     await db.insert(agents).values(ids.map((id, i) => ({ id, companyId, name: `Legacy ${i}`, role: "engineer", appearance: null, icon: "bot" })));
-    const migration = await readFile(new URL("../../../packages/db/src/migrations/0280_unique_genesis.sql", import.meta.url), "utf8");
+    const migration = await readFile(migrationFileUrl('unique_genesis'), "utf8");
     // Replaying the entire migration must preserve saved choices and tolerate
     // an already-created column from an earlier worktree migration number.
     for (let replay = 0; replay < 2; replay++) {

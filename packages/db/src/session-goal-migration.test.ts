@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
@@ -5,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { getEmbeddedPostgresTestSupport, startEmbeddedPostgresTestDatabase } from "./test-embedded-postgres.js";
 
 const support = await getEmbeddedPostgresTestSupport();
-const migration = readFileSync(new URL("./migrations/0248_small_manta.sql", import.meta.url), "utf8");
+const migration = readFileSync(migrationFileUrl('small_manta'), "utf8");
 
 (support.supported ? describe : describe.skip)("session goal migration", () => {
   it("preserves preview goals, tombstone revisions, and pending actions on replay", async () => {

@@ -961,7 +961,7 @@ function Setup({
                       <section className="space-y-5">
                         <h3 className="text-sm font-semibold">{tr("Runtime")}</h3>
                         {aiProviderForAdapter(brandType) && (
-                          connection && !aiBinding ? (
+                          connectionAdapter && connection ? (
                             <div className="space-y-3">
                               <p className="text-sm text-muted-foreground">
                                 {tr("Using the connection selected in the Connect step.")}

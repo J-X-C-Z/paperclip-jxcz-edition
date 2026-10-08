@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "react";
+import { CUSTOM_AGENT_TEMPLATE } from "@paperclipai/shared";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,7 +9,9 @@ import { queryKeys } from "@/lib/queryKeys";
 import { NewAgent } from "./NewAgent";
 import { ApiError } from "@/api/client";
 
+const customTemplate = { ...CUSTOM_AGENT_TEMPLATE, model: { ...CUSTOM_AGENT_TEMPLATE.model, modelId: "" } };
 const api = vi.hoisted(() => ({
+  templates: vi.fn(),
   get: vi.fn(),
   adapterModels: vi.fn(),
   list: vi.fn(),
@@ -44,6 +47,7 @@ const managedApi = vi.hoisted(() => ({
   create: vi.fn(async () => ({ connectionId: "managed-connection", grantId: "managed-grant" })),
   setDefault: vi.fn(async () => ({})),
 }));
+vi.mock("@/api/companySkills", () => ({ companySkillsApi: { catalogList: async () => [], list: async () => [] } }));
 vi.mock("@/api/ai-connections", () => ({ aiConnectionsApi: managedApi }));
 vi.mock("@/api/agents", () => ({ agentsApi: api }));
 vi.mock("@/api/environments", () => ({ environmentsApi: envApi }));
@@ -131,6 +135,7 @@ async function fill(label: string, value: string) {
 async function render(adapter = "pi_local", runnerProvider = "codex") {
   state.params = new URLSearchParams({
     name: "Atlas",
+    templateId: "custom",
     adapterType: adapter,
     runnerProvider,
   });
@@ -157,6 +162,7 @@ const pass = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  api.templates.mockResolvedValue([customTemplate]);
   managedApi.list.mockResolvedValue({ currentUserId: "user-1", canManageConnections: true, connections: [] });
   container = document.createElement("div");
   document.body.append(container);
@@ -164,6 +170,7 @@ beforeEach(() => {
   cache = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  cache.setQueryData(["agent-templates", "company-1"], [customTemplate]);
   state.adapters = [
     "claude_local",
     "codex_local",
@@ -172,7 +179,7 @@ beforeEach(() => {
     "paperclip_runner", "cursor_cloud", "cursor", "gemini_local", "kimi_local", "grok_local", "hermes_local", "hermes_gateway",
   ].map((type) => ({ type, loaded: true, disabled: false }));
   api.adapterModels.mockResolvedValue([]);
-  api.list.mockResolvedValue([{ id: "ceo", role: "ceo", status: "idle" }]);
+  api.list.mockResolvedValue([{ id: "ceo", companyId: "company-1", role: "ceo", status: "idle" }]);
   api.getAdapterAuthSignal.mockResolvedValue({ status: "present" });
   api.getClaudeOAuthTokenStatus.mockRejectedValue(new ApiError("Not found", 404, null));
   api.testEnvironment.mockResolvedValue(pass);
@@ -510,6 +517,9 @@ describe("New agent setup", () => {
         adapter,
         expect.objectContaining({ environmentId: "local-1" }),
       );
+      const manager = container.querySelector<HTMLSelectElement>('select[aria-label="汇报上级"]')!;
+      expect(manager.querySelector('option[value="ceo"]')).not.toBeNull();
+      await act(async () => { manager.value = "ceo"; manager.dispatchEvent(new Event("change", { bubbles: true })); });
       await click("Finish setup");
       expect(api.hire).toHaveBeenCalledTimes(1);
       expect(api.hire.mock.calls[0][1]).toMatchObject({

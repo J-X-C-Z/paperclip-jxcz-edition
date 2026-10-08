@@ -30,7 +30,7 @@ describe("confirmOverwriteExportDirectory (non-interactive)", () => {
   it("throws non-interactively when the output directory is non-empty and --force is not set", async () => {
     await writeFile(path.join(dir, "BACKUP-README.md"), "keep me");
     await mkdir(path.join(dir, ".git"));
-    await expect(confirmOverwriteExportDirectory(dir)).rejects.toThrow(/already contains files/);
+    await expect(confirmOverwriteExportDirectory(dir)).rejects.toThrow(/already contains files|已包含文件/);
   });
 
   it("resolves on a non-empty output directory when --force is set", async () => {
@@ -45,7 +45,7 @@ describe("confirmOverwriteExportDirectory (non-interactive)", () => {
     const filePath = path.join(dir, "not-a-dir");
     await writeFile(filePath, "x");
     await expect(confirmOverwriteExportDirectory(filePath, { force: true })).rejects.toThrow(
-      /exists and is not a directory/,
+      /exists and is not a directory|已存在且不是目录/,
     );
   });
 });

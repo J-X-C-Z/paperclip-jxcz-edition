@@ -328,7 +328,7 @@ export function BuiltInBundlePanel({
           chips={<ResourceStatusChip variant={adapterChip} />}
           detail={adapterDetail}
           actions={
-            <Button variant="outline" size="sm" onClick={onConfigure}> {uiText("Configure")} </Button>
+            <Button variant="outline" size="sm" onClick={onConfigure}>{uiText("Configure")}</Button>
           }
         />
 

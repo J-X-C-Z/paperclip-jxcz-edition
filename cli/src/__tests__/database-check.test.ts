@@ -45,7 +45,7 @@ describe("databaseCheck — embedded postgres temp-dir guard", () => {
     const result = await databaseCheck(embeddedConfig(persistentDataDir), path.join(base, "config.json"));
 
     expect(result.status).toBe("pass");
-    expect(result.message).toContain("Embedded PostgreSQL configured at");
+    expect(result.message).toMatch(/Embedded PostgreSQL configured at|已配置内嵌 PostgreSQL/);
   });
 
   it("warns when a worktree-mode data dir lives inside the OS temp directory", async () => {

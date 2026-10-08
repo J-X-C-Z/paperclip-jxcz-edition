@@ -680,7 +680,7 @@ function StandardAppDetail({ renderActions, renderAgentSettings, renderConnectio
                 {uiText("These permissions apply to all apps available through this Composio connection. Manage app accounts and sign-in in Composio.")}
               </p> : null}
               {connection.config?.sourceTemplateKey !== "composio" && isRemoteMcpConnectorMethod(connection.config?.sourceTemplateKey, connection.config?.connectionMethodKey) && <p className="text-sm text-muted-foreground">{uiText("Paperclip controls access to the tools listed here. App and action permissions inside these tools are managed in {app}.", { app: baseAppName })}</p>}
-              {connection.authKind === "oauth" && (
+              {connection.authKind === "oauth" && connection.config?.sourceTemplateKey !== "composio" && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     {uiText("Provider permissions come from your last sign-in. Reconnect to grant missing write access, then enable the actions you need here.")}

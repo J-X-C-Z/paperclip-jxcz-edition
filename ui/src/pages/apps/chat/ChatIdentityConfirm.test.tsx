@@ -14,6 +14,7 @@ vi.mock("@/api/auth", () => ({ authApi: { getSession: mocks.getSession } }));
 vi.mock("@/api/health", () => ({ healthApi: { get: async () => ({ deploymentMode: "authenticated" }) } }));
 vi.mock("@/lib/router", () => ({
   useSearchParams: () => [new URLSearchParams({ token: "synthetic-token-that-is-at-least-32-characters" })],
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
   Navigate: (props: { to: string }) => { mocks.navigate(props.to); return null; },
 }));
 
@@ -47,7 +48,7 @@ describe("self-service Slack identity confirmation", () => {
     button("Confirm identity").click();
     await vi.waitFor(() => expect(container.textContent).toContain("Identity linked"));
     expect(container.textContent).toContain("current Paperclip permissions");
-    expect(container.querySelector('a')?.textContent).toBe("Return to Slack");
+    expect(container.querySelector('a[href="https://app.slack.com/"]')?.textContent).toBe("Return to Slack");
   });
   it("keeps other providers out of the Slack return flow", async () => {
     mocks.previewIdentityLink.mockResolvedValue({ ...identity, provider: "github", selfService: false });

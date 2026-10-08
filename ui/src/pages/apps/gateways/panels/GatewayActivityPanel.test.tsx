@@ -122,9 +122,9 @@ describe("GatewayActivityPanel", () => {
       limit: 25,
       cursor: undefined,
     });
-    expect(container.textContent).toContain("Client used Send Email in Gmail");
+    expect(container.textContent).toContain("Client Used Send Email in Gmail");
 
-    await clickButton("used Send Email");
+    await clickButton("Used Send Email");
     expect(container.textContent).toContain("gmail:send_email");
     expect(container.textContent).toContain("Arguments (redacted)");
     expect(container.textContent).toContain("***REDACTED***");

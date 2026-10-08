@@ -261,5 +261,6 @@
   "On behalf of": "代表",
   "Transcript ({count})": "运行记录（{count}）",
   "Showing the first {size} KB": "显示前 {size} KB",
-  "Create API Key": "创建 API 密钥"
+  "Create API Key": "创建 API 密钥",
+  "{count} uncommitted change": "{count} 项未提交更改"
 }

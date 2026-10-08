@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,7 +19,7 @@ afterEach(async () => {
 async function migrationStatements(): Promise<string[]> {
   const migrationSql = await readFile(
     fileURLToPath(
-      new URL("./migrations/0228_nasty_grim_reaper.sql", import.meta.url),
+      migrationFileUrl('nasty_grim_reaper'),
     ),
     "utf8",
   );

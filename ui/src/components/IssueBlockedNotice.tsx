@@ -224,7 +224,7 @@ function SuccessfulRunHandoffInFlightNotice({
                 <Link
                   to={`/agents/${assigneeAgentId}/runs/${liveRunId}`}
                   className="font-mono underline underline-offset-2 hover:text-foreground"
-                > {uiText("run")} {shortRunId}
+                >{uiText("run")} {shortRunId}
                 </Link>
               ) : (
                 <span className="font-mono">{uiText("run")} {shortRunId}</span>
@@ -630,10 +630,10 @@ export function IssueBlockedNotice({
                   <Link
                     to={`/agents/${successfulRunHandoff.assigneeAgentId}/runs/${successfulRunHandoff.sourceRunId}`}
                     className="rounded-md border border-amber-300/70 bg-background/80 px-2 py-1 font-mono text-amber-950 hover:border-amber-500 hover:bg-amber-100 hover:underline dark:border-amber-500/40 dark:bg-background/40 dark:text-amber-100 dark:hover:bg-amber-500/15"
-                  > {uiText("run")} {successfulRunHandoff.sourceRunId.slice(0, 8)}
+                  >{uiText("run")} {successfulRunHandoff.sourceRunId.slice(0, 8)}
                   </Link>
                 ) : successfulRunHandoff.sourceRunId ? (
-                  <span className="rounded-md border border-amber-300/70 bg-background/80 px-2 py-1 font-mono text-amber-950 dark:border-amber-500/40 dark:bg-background/40 dark:text-amber-100"> {uiText("run")} {successfulRunHandoff.sourceRunId.slice(0, 8)}
+                  <span className="rounded-md border border-amber-300/70 bg-background/80 px-2 py-1 font-mono text-amber-950 dark:border-amber-500/40 dark:bg-background/40 dark:text-amber-100">{uiText("run")} {successfulRunHandoff.sourceRunId.slice(0, 8)}
                   </span>
                 ) : null}
                 <span className="rounded-md border border-amber-300/70 bg-background/80 px-2 py-1 text-amber-900 dark:border-amber-500/40 dark:bg-background/40 dark:text-amber-100">

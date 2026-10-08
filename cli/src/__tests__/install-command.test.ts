@@ -79,14 +79,14 @@ describe("managed install commands", () => {
   it("supports fork overrides and classifies SHA refs as pinned", () => {
     expect(resolveGitInstallRequest({ ref: "feature/test", repo: "HenkDz/paperclip" })).toEqual({ repo: "HenkDz/paperclip", ref: "feature/test", pinned: false });
     expect(resolveGitInstallRequest({ ref: "abcdef1" })).toEqual({ repo: "paperclipai/paperclip", ref: "abcdef1", pinned: true });
-    expect(() => resolveGitInstallRequest({ repo: "HenkDz/paperclip" })).toThrow("requires --ref");
+    expect(() => resolveGitInstallRequest({ repo: "HenkDz/paperclip" })).toThrow(/requires --ref|使用 --repo 时必须同时提供 --ref/);
   });
 
   it("requires explicit non-interactive consent before resolving git refs", async () => {
     const runCommand = vi.fn();
 
     await expect(installCommand({ ref: "master", repo: "HenkDz/paperclip" }, { runCommand }))
-      .rejects.toThrow("Re-run with --yes");
+      .rejects.toThrow(/Re-run with --yes|请使用 --yes 重新运行以确认/);
 
     expect(runCommand).not.toHaveBeenCalled();
   });
@@ -283,7 +283,7 @@ describe("managed install commands", () => {
       })),
       platform: "linux",
       userHomeDir: process.env.HOME!,
-    })).rejects.toThrow("other instance services are installed");
+    })).rejects.toThrow(/other instance services are installed|仍有其他实例服务已安装/);
 
     expect(fs.existsSync(paths.cliRoot)).toBe(false);
     expect(fs.existsSync(otherUnitPath)).toBe(true);
@@ -310,7 +310,7 @@ describe("managed install commands", () => {
       })),
       platform: "linux",
       userHomeDir: process.env.HOME!,
-    })).rejects.toThrow("Cannot verify or remove the background service");
+    })).rejects.toThrow(/Cannot verify or remove the background service|无法验证或移除后台服务/);
 
     expect(fs.existsSync(paths.shimPath)).toBe(true);
     expect(fs.existsSync(unitPath)).toBe(true);
@@ -324,7 +324,7 @@ describe("managed install commands", () => {
     fs.symlinkSync(outside, paths.installsRoot, "dir");
     const runCommand = vi.fn(async () => ({ stdout: JSON.stringify("2026.720.0"), stderr: "" }));
 
-    await expect(installCommand({}, { runCommand })).rejects.toThrow("non-directory install-store path");
+    await expect(installCommand({}, { runCommand })).rejects.toThrow(/non-directory install-store path|非目录的安装存储路径/);
     expect(runCommand).toHaveBeenCalledTimes(1);
     expect(fs.readdirSync(outside)).toEqual([]);
   });
@@ -335,7 +335,7 @@ describe("managed install commands", () => {
     fs.mkdirSync(paths.cliRoot, { recursive: true });
     fs.writeFileSync(unrelatedFile, "keep");
 
-    await expect(uninstallCommand()).rejects.toThrow("unverified install store");
+    await expect(uninstallCommand()).rejects.toThrow(/unverified install store|未经验证的安装存储目录/);
     expect(fs.readFileSync(unrelatedFile, "utf8")).toBe("keep");
   });
 
@@ -357,7 +357,7 @@ describe("managed install commands", () => {
 
     await withInstallStoreLock(
       async () => {
-        await expect(uninstallCommand()).rejects.toThrow("already running");
+        await expect(uninstallCommand()).rejects.toThrow(/already running|另一个托管安装进程正在运行/);
       },
       paths,
     );
@@ -369,7 +369,7 @@ describe("managed install commands", () => {
     const outside = path.join(root, "outside-git"); fs.mkdirSync(outside);
     fs.symlinkSync(outside, path.join(paths.installsRoot, "git"));
     const runCommand = vi.fn(async () => ({ stdout: "", stderr: "" }));
-    await expect(installGitPayload("paperclipai/paperclip", "4".repeat(40), runCommand, paths)).rejects.toThrow("unsafe payload root");
+    await expect(installGitPayload("paperclipai/paperclip", "4".repeat(40), runCommand, paths)).rejects.toThrow(/unsafe payload root|安装包根目录.*不安全/);
     expect(runCommand).not.toHaveBeenCalled();
   });
 

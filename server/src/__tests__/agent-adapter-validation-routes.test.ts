@@ -1,3 +1,4 @@
+import { AGENT_TEMPLATES } from "@paperclipai/shared";
 import express from "express";
 import os from "node:os";
 import path from "node:path";
@@ -405,7 +406,7 @@ describe("agent routes adapter validation", () => {
     const app = await createApp();
     const listed = await requestApp(app, baseUrl => request(baseUrl).get("/api/companies/company-1/agent-templates"));
     expect(listed.status).toBe(200);
-    expect(listed.body.map((entry: { id: string }) => entry.id)).toEqual(["department-head", "team-leader", "team-member", "secretary", "custom"]);
+    expect(listed.body.map((entry: { id: string }) => entry.id)).toEqual(AGENT_TEMPLATES.map((template) => template.id));
     const rejected = await requestApp(app, baseUrl => request(baseUrl).post("/api/companies/company-1/agents").send({ name: "Unknown", templateId: "invalid", adapterType: "codex_local" }));
     expect(rejected.status).toBe(422);
     expect(mockAgentService.create).not.toHaveBeenCalled();

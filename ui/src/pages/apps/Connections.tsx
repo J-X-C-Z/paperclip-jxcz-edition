@@ -192,8 +192,8 @@ export function Connections() {
       pushToast({
         title: tr("Connection deleted"),
         body: target.remainingConnectionCount > 0
-          ? `${target.appName} 仍有 ${target.remainingConnectionCount} 个可供智能体使用的连接。`
-          : `${target.appName} 已无法供智能体使用，其凭据已删除。再次连接时需要重新登录或提供密钥。`,
+          ? uiText(target.remainingConnectionCount === 1 ? "{app} still has {count} active connection available to agents." : "{app} still has {count} active connections available to agents.", { app: target.appName, count: target.remainingConnectionCount })
+          : uiText("{app} is no longer available to agents and its credentials are deleted. Connecting it again needs a new sign-in or key.", { app: target.appName }),
         tone: "success",
       });
       setConnectionToDelete(null);

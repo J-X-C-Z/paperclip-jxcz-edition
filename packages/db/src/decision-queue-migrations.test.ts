@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "./test-migrations.js";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,7 +19,7 @@ const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
 const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
 
 async function readMigration(fileName: string): Promise<string> {
-  return fs.promises.readFile(new URL(`./migrations/${fileName}`, import.meta.url), "utf8");
+  return fs.promises.readFile(migrationFileUrl(fileName), "utf8");
 }
 
 async function reapplyDecisionQueueMigrations(sql: ReturnType<typeof postgres>): Promise<void> {

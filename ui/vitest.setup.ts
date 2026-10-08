@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 const storageEntries = new Map<string, string>();
 
 function installStorageMock(target: Record<string, unknown>) {
@@ -33,6 +35,12 @@ if (typeof window !== "undefined" && window.localStorage !== globalThis.localSto
 
 // Upstream UI fixtures use English; locale-specific suites select their language.
 localStorage.setItem("paperclip.locale", "en");
+
+// Node-rendered fixtures have no window from which to read the stored locale.
+if (typeof window === "undefined") {
+  const { i18n } = await vi.importActual<typeof import("./src/i18n")>("./src/i18n");
+  await i18n.changeLanguage("en");
+}
 
 // jsdom does not implement Element.prototype.scrollIntoView. Several surfaces
 // (e.g. IssueChatThread's auto-scroll-to-latest) call it during normal render,

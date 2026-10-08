@@ -1,3 +1,4 @@
+import { migrationFileUrl } from "@paperclipai/db/test-migrations";
 import { budgetService } from "../services/budgets.js";
 import { buildPaperclipRuntimeMcpServers } from "../services/heartbeat.js";
 import { resolveNativeRuntimeMcpSnapshot } from "../services/native-runtime/runtime-context.js";
@@ -391,9 +392,7 @@ const actor = { actorType: "user" as const, actorId: "browser-reviewer" };
       const legacyCost = { provider: "browser-use", biller: "browser-use", billingCode: `browser-use:${previous[0].id}` };
       await db.update(costEvents).set(legacyCost).where(eq(costEvents.companyId, f.company.id));
       await db.update(financeEvents).set(legacyCost).where(eq(financeEvents.companyId, f.company.id));
-      const migration = await readFile(new URL(
-        "../../../packages/db/src/migrations/0293_browser_use_cloud.sql", import.meta.url,
-      ), "utf8");
+      const migration = await readFile(migrationFileUrl('browser_use_cloud'), "utf8");
       for (let attempt = 0; attempt < 2; attempt++) {
         for (const statement of migration.split("--> statement-breakpoint")) {
           if (statement.trim()) await db.execute(sql.raw(statement));

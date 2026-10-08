@@ -313,8 +313,8 @@ describe("Connections table (M1b / PAP-13254 door 2)", () => {
     expect(text).toContain("Personal");
     expect(text).toContain("Organization");
     // 4. Actions column reflects enabled catalog entries per account; missing profile => 0 on.
-    expect(text).toContain("3 on");
-    expect(text).toContain("0 on");
+    expect(text).toContain("3 actions enabled");
+    expect(text).toContain("0 actions enabled");
     // 5. Last used renders a relative timestamp when present, dash when absent.
     expect(text).toContain("—");
     // 6. Multi-account apps appear once per connection and edit the selected account directly.

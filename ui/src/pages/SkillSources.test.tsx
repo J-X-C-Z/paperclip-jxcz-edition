@@ -66,7 +66,7 @@ describe('GitHub skill source import', () => {
       return new Promise(resolve => { finish = resolve; });
     });
     await mount();
-    await act(async () => button('... or add public repo by URL').click());
+    await act(async () => button('…or add a public repository by URL').click());
     await input('input[placeholder="https://github.com/owner/repository"]', 'https://github.com/public/skills');
     await act(async () => button('Find skills').click()); await flush();
     expect(document.body.textContent).toContain('Downloading repository');
@@ -152,7 +152,7 @@ describe('GitHub skill source import', () => {
   });
   it('recognizes pasted branch URLs and does not reuse their branch or credentials for another repository', async () => {
     await mount();
-    await act(async () => button('... or add public repo by URL').click());
+    await act(async () => button('…or add a public repository by URL').click());
     await input('input[placeholder="https://github.com/owner/repository"]', 'https://github.com/ACME/team-skills/tree/feature/new-skills');
     await act(async () => button('Find skills').click());
     expect(skillSourcesApi.discoverStream).toHaveBeenLastCalledWith('company-1', { repositoryUrl: 'https://github.com/ACME/team-skills/tree/feature/new-skills', connectionId: 'personal' }, expect.any(Function), expect.any(AbortSignal));
@@ -170,7 +170,7 @@ describe('GitHub skill source import', () => {
     expect(link?.getAttribute('href')).toBe('/apps/connect?source=github');
     expect(document.querySelector('input[placeholder="https://github.com/owner/repository"]')).toBeNull();
     expect(document.querySelector('[role="dialog"]')?.textContent).not.toContain('Imported skills will be available');
-    await act(async () => button('... or add public repo by URL').click());
+    await act(async () => button('…or add a public repository by URL').click());
     expect(document.body.textContent).not.toContain('Uses the default branch');
     await input('input[placeholder="https://github.com/owner/repository"]', 'https://github.com/acme/team-skills/tree/release');
     await act(async () => root.unmount());

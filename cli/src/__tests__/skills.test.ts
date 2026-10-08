@@ -116,7 +116,7 @@ describe("skills CLI helpers", () => {
       skill({ id: "skill-b", key: "paperclip/b", slug: "same", name: "B" }),
     ];
 
-    expect(() => resolveCompanySkillReference(rows, "same")).toThrow(/Ambiguous skill slug/);
+    expect(() => resolveCompanySkillReference(rows, "same")).toThrow(/Ambiguous skill slug|技能标识.*不唯一/);
   });
 });
 

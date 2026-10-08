@@ -2070,7 +2070,7 @@ export function CompanyImport() {
           previewMutation.variables === previewGenerationRef.current && (
           <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5">
             <p className="text-xs text-destructive">
-              {uiText("Preview failed:")} {" "}
+              {uiText("Preview failed:")}{" "}
               {previewMutation.error instanceof Error
                 ? previewMutation.error.message
                 : uiText("the request did not complete.")}{" "}
@@ -2166,7 +2166,7 @@ export function CompanyImport() {
           {importMutation.isError && !importMutation.isPending && (
             <div className="mx-5 mt-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5">
               <p className="text-xs text-destructive">
-                {uiText("Import failed:")} {" "}
+                {uiText("Import failed:")}{" "}
                 {importMutation.error instanceof Error
                   ? importMutation.error.message
                   : uiText("the request did not complete.")}{" "}

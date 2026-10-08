@@ -54,16 +54,16 @@ describe("resolveCompanyForDeletion", () => {
   });
 
   it("throws when selector is not found", () => {
-    expect(() => resolveCompanyForDeletion(companies, "MISSING", "auto")).toThrow(/No company found/);
+    expect(() => resolveCompanyForDeletion(companies, "MISSING", "auto")).toThrow(/No company found|未找到与选择器/);
   });
 
   it("respects explicit id mode", () => {
-    expect(() => resolveCompanyForDeletion(companies, "PAP", "id")).toThrow(/No company found by ID/);
+    expect(() => resolveCompanyForDeletion(companies, "PAP", "id")).toThrow(/No company found by ID|未找到 ID 为/);
   });
 
   it("respects explicit prefix mode", () => {
     expect(() => resolveCompanyForDeletion(companies, "22222222-2222-2222-2222-222222222222", "prefix"))
-      .toThrow(/No company found by shortname/);
+      .toThrow(/No company found by shortname|未找到简称\/前缀为/);
   });
 });
 
@@ -74,7 +74,7 @@ describe("assertDeleteConfirmation", () => {
   });
 
   it("requires --yes", () => {
-    expect(() => assertDeleteConfirmation(company, { confirm: "PAP" })).toThrow(/requires --yes/);
+    expect(() => assertDeleteConfirmation(company, { confirm: "PAP" })).toThrow(/requires --yes|删除操作必须传入 --yes/);
   });
 
   it("accepts matching prefix confirmation", () => {
@@ -91,6 +91,6 @@ describe("assertDeleteConfirmation", () => {
 
   it("rejects mismatched confirmation", () => {
     expect(() => assertDeleteConfirmation(company, { yes: true, confirm: "nope" }))
-      .toThrow(/does not match target company/);
+      .toThrow(/does not match target company|与目标公司不匹配/);
   });
 });

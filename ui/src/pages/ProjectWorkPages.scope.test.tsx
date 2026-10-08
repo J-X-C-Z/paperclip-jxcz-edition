@@ -68,7 +68,7 @@ describe("project work page boundaries", () => {
     expect(cost.mock.calls[0]?.[3]).toBe("project-a");
     expect(finance).not.toHaveBeenCalled(); expect(budget).not.toHaveBeenCalled();
     expect(host.textContent).not.toContain("财务净额");
-    expect(client.getQueryCache().findAll({ queryKey: ["costs", "company-a"] })[0]?.queryKey).toContain("project-a");
+    expect(client.getQueryCache().findAll({ queryKey: ["costs", "company-a"] }).find((query) => query.queryKey.includes("project"))?.queryKey).toContain("project-a");
   });
   it("guards cached company cost while scope loads or fails", async () => {
     const client = new QueryClient();
@@ -77,7 +77,7 @@ describe("project work page boundaries", () => {
     const { host, root } = await render(<Costs />, client);
     expect(cost).not.toHaveBeenCalled(); expect(host.textContent).toContain("Loading scope");
     Object.assign(scope, { loading: false, error: new Error("Project unavailable") });
-    await act(async () => { root.render(<QueryClientProvider client={client}><Costs /></QueryClientProvider>); });
+    await act(async () => { root.render(<QueryClientProvider client={client}><MemoryRouter><Costs /></MemoryRouter></QueryClientProvider>); });
     expect(cost).not.toHaveBeenCalled(); expect(host.querySelector('[role="alert"]')?.textContent).toBe("Project unavailable");
   });
   it("scopes global search and provides an explicit company escape", async () => {
