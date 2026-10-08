@@ -1,6 +1,6 @@
 ---
-title: Activity Log
-summary: Audit trail for all mutations
+title: 活动日志
+summary: 所有变更的审计记录
 ---
 
 ## 简体中文

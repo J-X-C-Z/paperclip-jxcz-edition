@@ -1,10 +1,10 @@
-# Worked examples
+# 完整示例
 
-Four complete wireframes you can copy and modify. Each one is a valid standalone SVG file. The annotation list under each example is what you should reproduce in your reply when emitting a wireframe.
+以下是四份可复制并修改的完整线框图。每份都是有效的独立 SVG 文件。生成线框图并回复用户时，应提供每个示例下方对应的标注列表。
 
 ---
 
-## 1. Login screen (mobile, 375×812)
+## 1. 登录屏幕（手机，375×812）
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812"
@@ -70,20 +70,20 @@ Four complete wireframes you can copy and modify. Each one is a valid standalone
 </svg>
 ```
 
-**Annotations:**
-1. Status bar placeholder
-2. Brand mark
-3. Page title + subtitle
-4. Email input
-5. Password input + reveal control + forgot link
-6. Primary CTA (sign in)
-7. SSO divider
-8. Secondary CTA (SSO)
-9. Sign-up link
+**标注：**
+1. 状态栏占位内容
+2. 品牌标记
+3. 页面标题和副标题
+4. 邮箱输入框
+5. 密码输入框、显示/隐藏控件和忘记密码链接
+6. 主要操作按钮（登录）
+7. SSO 分隔线
+8. 次要操作按钮（SSO）
+9. 注册链接
 
 ---
 
-## 2. Admin dashboard (desktop, 1280×800)
+## 2. 管理后台（桌面，1280×800）
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800"
@@ -187,17 +187,17 @@ Four complete wireframes you can copy and modify. Each one is a valid standalone
 </svg>
 ```
 
-**Annotations:**
-1. Sidebar nav with active "Dashboard"
-2. Top bar with global search and account menu
-3. Page header with title, subtitle, and primary CTA
-4. Four KPI metric tiles
-5. Activity chart panel (chart area shown as placeholder)
-6. Recent items list (right rail)
+**标注：**
+1. 侧边栏导航，当前项为“Dashboard”
+2. 顶栏，含全局搜索和账户菜单
+3. 页面标题区，含标题、副标题和主要操作按钮
+4. 四个 KPI 指标卡片
+5. 活动图表面板（图表区域以占位内容显示）
+6. 最近项目列表（右侧栏）
 
 ---
 
-## 3. Settings page with form (desktop, 1280×800)
+## 3. 设置表单页（桌面，1280×800）
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800"
@@ -288,14 +288,14 @@ Four complete wireframes you can copy and modify. Each one is a valid standalone
 </svg>
 ```
 
-**Annotations:**
-1. Top bar with section name
-2. Settings sub-nav (Personal / Workspace groups)
-3. Form: avatar with upload, display name, email + help text, role dropdown, save / cancel actions
+**标注：**
+1. 顶栏，显示分区名称
+2. 设置子导航（个人/工作区分组）
+3. 表单：头像上传、显示名称、邮箱和帮助文本、角色下拉框，以及保存/取消操作
 
 ---
 
-## 4. Modal confirmation overlay (desktop, 1280×800)
+## 4. 模态确认浮层（桌面，1280×800）
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800"
@@ -350,13 +350,13 @@ Four complete wireframes you can copy and modify. Each one is a valid standalone
 </svg>
 ```
 
-**Annotations:**
-1. Backdrop dims the underlying page
-2. Confirmation modal: title, body copy, type-to-confirm field, Cancel + destructive Confirm
-3. Reviewer note (red dashed): the destructive button must remain disabled until the typed input matches
+**标注：**
+1. 背景遮罩使底层页面变暗
+2. 确认模态框：标题、正文、输入文本确认字段，以及取消和破坏性确认操作
+3. 审核备注（红色虚线）：输入内容与要求匹配前，破坏性按钮必须保持禁用
 
 ---
 
-## Multi-screen flow
+## 多屏流程
 
-When emitting a flow, render each screen as its own `<g transform="translate(x,0)">` inside one SVG, separated by 80px gutters and connected with arrow primitives from `components.md`. Or emit one SVG per screen and a `flow.svg` summary that arranges thumbnails (scaled with `transform="scale(0.25)"`) left-to-right. Either is acceptable; pick whichever the reviewer can scan faster.
+输出流程图时，可以在一个 SVG 中将每个屏幕放入独立的 `<g transform="translate(x,0)">`，屏幕之间留出 80px 间距，并使用 `components.md` 中的箭头基本图形连接。也可以每屏输出一个 SVG，再生成 `flow.svg` 汇总图，将缩略图（通过 `transform="scale(0.25)"` 缩放）从左至右排列。两种方式都可以，选择更便于审核者快速浏览的一种。

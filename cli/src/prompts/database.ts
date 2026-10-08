@@ -25,8 +25,8 @@ export async function promptDatabase(current?: DatabaseConfig): Promise<Database
   const mode = await p.select({
     message: "数据库模式",
     options: [
-      { value: "embedded-postgres" as const, label: "Embedded PostgreSQL (managed locally)", hint: "recommended" },
-      { value: "postgres" as const, label: "PostgreSQL (external server)" },
+      { value: "embedded-postgres" as const, label: "内嵌 PostgreSQL（本地管理）", hint: "推荐" },
+      { value: "postgres" as const, label: "PostgreSQL（外部服务器）" },
     ],
     initialValue: base.mode,
   });

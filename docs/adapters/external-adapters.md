@@ -1,39 +1,32 @@
 ---
-title: External Adapters
-summary: Build, package, and distribute adapters as plugins without modifying Paperclip source
+title: 外部适配器
+summary: 无需修改 Paperclip 源码，即可将适配器构建、打包并作为插件分发
 ---
 
-Paperclip supports external adapter plugins that can be installed from npm packages or local directories. External adapters work exactly like built-in adapters — they execute agents, parse output, and render transcripts — but they live in their own package and don't require changes to Paperclip's source code.
+Paperclip 支持从 npm 包或本地目录安装外部适配器插件。外部适配器的工作方式与内置适配器完全相同：运行 agent、解析输出并渲染对话记录；区别在于它们位于独立的软件包中，无需修改 Paperclip 源码。
 
-## Built-in vs External
+## 内置适配器与外部适配器
 
-| | Built-in | External |
+| | 内置 | 外部 |
 |---|---|---|
-| Source location | Inside `paperclip-fork/packages/adapters/` | Separate npm package or local directory |
-| Registration | Hardcoded in three registries | Loaded at startup via plugin system |
-| UI parser | Static import at build time | Dynamically loaded from API (see [UI Parser](/adapters/adapter-ui-parser)) |
-| Distribution | Ships with Paperclip | Published to npm or linked via `file:` |
-| Updates | Requires Paperclip release | Independent versioning |
+| 源码位置 | `paperclip-fork/packages/adapters/` 内 | 独立 npm 包或本地目录 |
+| 注册方式 | 写入三个注册表 | 启动时通过插件系统加载 |
+| UI 解析器 | 构建时静态导入 | 通过 API 动态加载（参见 [UI 解析器](/adapters/adapter-ui-parser)） |
+| 分发方式 | 随 Paperclip 一起发布 | 发布到 npm 或通过 `file:` 链接 |
+| 更新方式 | 需要发布 Paperclip 新版本 | 独立管理版本 |
 
-### Built-in Hermes compatibility note
+### 内置 Hermes 兼容性说明
 
-Hermes is built in with two stable adapter type keys:
+内置 Hermes 使用两个稳定的适配器类型键：
 
-- `hermes_local` starts the local Hermes CLI from
-  `@paperclipai/hermes-paperclip-adapter`.
-- `hermes_gateway` calls an already-running Hermes API server through
-  `@paperclipai/hermes-paperclip-adapter/gateway`.
+- `hermes_local` 使用 `@paperclipai/hermes-paperclip-adapter` 启动本地 Hermes CLI。
+- `hermes_gateway` 通过 `@paperclipai/hermes-paperclip-adapter/gateway` 调用已运行的 Hermes API 服务。
 
-The legacy `@paperclipai/adapter-hermes-gateway` package is a deprecated
-compatibility shim for one release. It preserves the old gateway exports while
-forwarding to the unified Hermes package. New external override packages should
-depend on or link `@paperclipai/hermes-paperclip-adapter` and declare the type
-they override (`hermes_local` or `hermes_gateway`); the type keys did not
-change.
+旧版 `@paperclipai/adapter-hermes-gateway` 包将在一个版本周期内作为已弃用的兼容垫片保留。它会保留旧的 gateway 导出，同时转发到统一的 Hermes 包。新的外部覆盖包应依赖或链接 `@paperclipai/hermes-paperclip-adapter`，并声明要覆盖的类型（`hermes_local` 或 `hermes_gateway`）；类型键没有变化。
 
-## Quick Start
+## 快速开始
 
-### Minimal Package Structure
+### 最小软件包结构
 
 ```
 my-adapter/
@@ -80,14 +73,14 @@ my-adapter/
 }
 ```
 
-Key fields:
+关键字段：
 
-| Field | Purpose |
+| 字段 | 用途 |
 |-------|---------|
-| `exports["."]` | Entry point — must export `createServerAdapter` |
-| `exports["./ui-parser"]` | Self-contained UI parser module (optional but recommended) |
-| `paperclip.adapterUiParser` | Contract version for the UI parser (`"1.0.0"`) |
-| `files` | Limits what gets published — only `dist/` |
+| `exports["."]` | 入口点，必须导出 `createServerAdapter` |
+| `exports["./ui-parser"]` | 独立的 UI 解析器模块（可选，但建议提供） |
+| `paperclip.adapterUiParser` | UI 解析器的契约版本（`"1.0.0"`） |
+| `files` | 限定发布内容，仅包含 `dist/` |
 
 ### tsconfig.json
 
@@ -108,9 +101,9 @@ Key fields:
 }
 ```
 
-## Server Module
+## 服务端模块
 
-The plugin loader calls `createServerAdapter()` from your package root. This function must return a `ServerAdapterModule`.
+插件加载器会从软件包根目录调用 `createServerAdapter()`。此函数必须返回 `ServerAdapterModule`。
 
 ### src/index.ts
 
@@ -152,7 +145,7 @@ export function createServerAdapter(): ServerAdapterModule {
 
 ### src/server/execute.ts
 
-The core execution function. Receives an `AdapterExecutionContext` and returns an `AdapterExecutionResult`.
+核心执行函数。接收 `AdapterExecutionContext` 并返回 `AdapterExecutionResult`。
 
 ```ts
 import type {
@@ -212,18 +205,18 @@ export async function execute(
 }
 ```
 
-#### Available Helpers from `@paperclipai/adapter-utils`
+#### `@paperclipai/adapter-utils` 提供的辅助函数
 
-| Helper | Purpose |
+| 辅助函数 | 用途 |
 |--------|---------|
-| `runChildProcess(command, opts)` | Spawn a child process with timeout, grace period, and streaming callbacks |
-| `buildPaperclipEnv(agent)` | Inject `PAPERCLIP_*` environment variables |
-| `renderTemplate(template, data)` | `{{variable}}` substitution in prompt templates |
-| `asString(v)`, `asNumber(v)`, `asBoolean(v)` | Safe config value extraction |
+| `runChildProcess(command, opts)` | 启动子进程，并支持超时、宽限期和流式回调 |
+| `buildPaperclipEnv(agent)` | 注入 `PAPERCLIP_*` 环境变量 |
+| `renderTemplate(template, data)` | 替换提示词模板中的 `{{variable}}` |
+| `asString(v)`、`asNumber(v)`、`asBoolean(v)` | 安全地提取配置值 |
 
 ### src/server/test.ts
 
-Validates the adapter configuration before running. Returns structured diagnostics.
+运行前验证适配器配置，并返回结构化诊断信息。
 
 ```ts
 import type {
@@ -263,17 +256,17 @@ export async function testEnvironment(
 }
 ```
 
-Check levels:
+检查级别：
 
-| Level | Meaning | Effect |
+| 级别 | 含义 | 影响 |
 |-------|---------|--------|
-| `info` | Informational | Shown in test results |
-| `warn` | Non-blocking issue | Shown with yellow indicator |
-| `error` | Blocks execution | Prevents agent from running |
+| `info` | 提示信息 | 显示在测试结果中 |
+| `warn` | 非阻断问题 | 以黄色标记显示 |
+| `error` | 阻止执行 | agent 无法运行 |
 
-## Installation
+## 安装
 
-### From npm
+### 从 npm 安装
 
 ```sh
 # Via the Paperclip UI
@@ -286,7 +279,7 @@ curl -X POST http://localhost:3102/api/adapters \
   -d '{"packageName": "my-paperclip-adapter"}'
 ```
 
-### From local directory
+### 从本地目录安装
 
 ```sh
 curl -X POST http://localhost:3102/api/adapters \
@@ -295,11 +288,11 @@ curl -X POST http://localhost:3102/api/adapters \
   -d '{"localPath": "/home/user/my-adapter"}'
 ```
 
-Local adapters are symlinked into Paperclip's adapter directory. Changes to the source are picked up on server restart.
+本地适配器会以符号链接的形式加入 Paperclip 的适配器目录。服务器重启后会加载源目录中的更改。
 
-### Via adapter-plugins.json
+### 通过 adapter-plugins.json 安装
 
-For development, you can also edit `~/.paperclip/adapter-plugins.json` directly:
+开发时，也可以直接编辑 `~/.paperclip/adapter-plugins.json`：
 
 ```json
 [
@@ -312,9 +305,9 @@ For development, you can also edit `~/.paperclip/adapter-plugins.json` directly:
 ]
 ```
 
-## Optional: Session Persistence
+## 可选：会话持久化
 
-If your agent runtime supports sessions (conversation continuity across heartbeats), implement a session codec:
+如果 agent runtime 支持会话（可在多个 heartbeat 之间延续对话），请实现会话编解码器：
 
 ```ts
 import type { AdapterSessionCodec } from "@paperclipai/adapter-utils";
@@ -334,15 +327,15 @@ export const sessionCodec: AdapterSessionCodec = {
 };
 ```
 
-Include it in `createServerAdapter()`:
+在 `createServerAdapter()` 中包含它：
 
 ```ts
 return { type, execute, testEnvironment, sessionCodec, /* ... */ };
 ```
 
-## Optional: Skills Sync
+## 可选：Skills 同步
 
-If your agent runtime supports skills/plugins, implement `listSkills` and `syncSkills`:
+如果 agent runtime 支持 skills 或插件，请实现 `listSkills` 和 `syncSkills`：
 
 ```ts
 return {
@@ -366,9 +359,9 @@ return {
 };
 ```
 
-## Optional: Model Detection
+## 可选：模型检测
 
-If your runtime has a local config file that specifies the default model:
+如果 runtime 有指定默认模型的本地配置文件：
 
 ```ts
 async function detectModel() {
@@ -384,25 +377,25 @@ async function detectModel() {
 return { type, execute, testEnvironment, detectModel: () => detectModel() };
 ```
 
-## Publishing
+## 发布
 
 ```sh
 npm run build
 npm publish
 ```
 
-Other Paperclip users can then install your adapter by package name from the UI or API.
+之后，其他 Paperclip 用户可以在 UI 或通过 API 按包名安装你的适配器。
 
-## Security
+## 安全
 
-- Treat agent output as untrusted — parse defensively, never `eval()` agent output
-- Inject secrets via environment variables, not in prompts
-- Configure network access controls if the runtime supports them
-- Always enforce timeout and grace period — don't let agents run forever
-- The UI parser module runs in a browser sandbox — it must have zero runtime imports and no side effects
+- 将 agent 输出视为不可信内容：谨慎解析，绝不对 agent 输出调用 `eval()`
+- 通过环境变量注入密钥，不要将其放入提示词
+- 如果 runtime 支持网络访问控制，请进行配置
+- 始终设置超时和宽限期，避免 agent 无限运行
+- UI 解析器模块运行在浏览器沙箱中，因此不能有任何 runtime 导入或副作用
 
-## Next Steps
+## 后续步骤
 
-- [UI Parser Contract](/adapters/adapter-ui-parser) — add a custom run-log parser so the UI renders your adapter's output correctly
-- [Creating an Adapter](/adapters/creating-an-adapter) — full walkthrough of adapter internals
-- [How Agents Work](/guides/agent-developer/how-agents-work) — understand the heartbeat lifecycle your adapter serves
+- [UI 解析器契约](/adapters/adapter-ui-parser) — 添加自定义运行日志解析器，让 UI 正确呈现适配器输出
+- [创建适配器](/adapters/creating-an-adapter) — 完整了解适配器内部机制
+- [Agent 的工作方式](/guides/agent-developer/how-agents-work) — 了解适配器所服务的 heartbeat 生命周期

@@ -1,6 +1,7 @@
 import type {
   CostSummary,
   CostByAgent,
+  CostByUserReport,
   CostByProviderModel,
   CostByBiller,
   CostByAgentModel,
@@ -18,6 +19,7 @@ import { api } from "./client";
 
 function dateParams(from?: string, to?: string, projectId?: string | null): string {
   const params = new URLSearchParams();
+  if (!from && !to) params.set("period", "all");
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (projectId) params.set("projectId", projectId);
@@ -53,6 +55,8 @@ export const costsApi = {
     api.get<CostByProviderModel[]>(`/companies/${companyId}/costs/by-provider${dateParams(from, to, projectId)}`),
   byBiller: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
     api.get<CostByBiller[]>(`/companies/${companyId}/costs/by-biller${dateParams(from, to, projectId)}`),
+  byUser: (companyId: string, from?: string, to?: string, projectId?: string | null) =>
+    api.get<CostByUserReport>(`/companies/${companyId}/costs/by-user${dateParams(from, to, projectId)}`),
   financeSummary: (companyId: string, from?: string, to?: string) =>
     api.get<FinanceSummary>(`/companies/${companyId}/costs/finance-summary${dateParams(from, to)}`),
   financeByBiller: (companyId: string, from?: string, to?: string) =>
@@ -69,6 +73,7 @@ export const costsApi = {
 
 function dateParamsWithLimit(from?: string, to?: string, limit?: number): string {
   const params = new URLSearchParams();
+  if (!from && !to) params.set("period", "all");
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   if (limit) params.set("limit", String(limit));

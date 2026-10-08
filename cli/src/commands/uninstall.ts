@@ -86,5 +86,5 @@ export async function uninstallCommand(
     console.log(pc.yellow(`Left ${paths.shimPath} unchanged because it is not a Paperclip-managed shim.`));
   }
   console.log(pc.green("已移除托管的 Paperclip CLI 安装。"));
-  console.log(pc.dim(`User data was left untouched under ${paths.paperclipHome}.`));
+  console.log(pc.dim(`用户数据仍保留在 ${paths.paperclipHome}。`));
 }

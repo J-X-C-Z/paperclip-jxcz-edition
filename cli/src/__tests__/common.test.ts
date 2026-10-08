@@ -193,9 +193,9 @@ describe("apiPath", () => {
   });
 
   it("rejects empty dynamic path segments", () => {
-    expect(() => apiPath`/api/issues/${""}`).toThrow("Cannot build API path with an empty path segment.");
-    expect(() => apiPath`/api/issues/${undefined}`).toThrow("Cannot build API path with an empty path segment.");
-    expect(() => apiPath`/api/issues/${null}`).toThrow("Cannot build API path with an empty path segment.");
-    expect(() => apiPath`/api/issues/${" "}`).toThrow("Cannot build API path with an empty path segment.");
+    expect(() => apiPath`/api/issues/${""}`).toThrow("API 路径段不能为空。");
+    expect(() => apiPath`/api/issues/${undefined}`).toThrow("API 路径段不能为空。");
+    expect(() => apiPath`/api/issues/${null}`).toThrow("API 路径段不能为空。");
+    expect(() => apiPath`/api/issues/${" "}`).toThrow("API 路径段不能为空。");
   });
 });

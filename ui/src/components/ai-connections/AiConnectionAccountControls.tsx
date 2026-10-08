@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CheckCircle2, RefreshCw, Star, TriangleAlert, Unplug } from "lucide-react";
+import { RefreshCw, Star, Unplug } from "lucide-react";
 import type { ConnectionGrant } from "@paperclipai/shared";
 import { RevokeGrantDialog } from "@/pages/apps/app-detail/IdentitiesSection";
 import { Button } from "@/components/ui/button";
@@ -29,32 +29,23 @@ export function AiConnectionAccountControls({
   const activeDefault = account.isDefault && available;
   return (
     <section className="space-y-4" aria-label={tr("AI account settings")}>
-      {ownPersonal && (
+      {ownPersonal && !account.routing && (
         <div className={cn(
           "flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3",
           activeDefault && "border-(--status-task-done)/30 bg-(--status-task-done)/5",
         )}>
           <div className="flex items-center gap-3">
             <Star aria-hidden className={cn("size-5 shrink-0", activeDefault ? "fill-current text-(--status-task-icon-done)" : "text-muted-foreground")} />
-            <div>
-              <h3 className="text-sm font-semibold">{tr("Personal default")}</h3>
-              <p className="text-xs text-muted-foreground">{tr("For your")} {AI_PROVIDERS[account.provider].name} {tr("tasks")}</p>
-            </div>
+            <h3 role={account.isDefault ? "status" : undefined} className={cn("text-sm font-semibold", account.isDefault && !available && "text-destructive")}>{account.isDefault && !available ? tr("Default unavailable") : tr("Personal default")}</h3>
           </div>
-          {account.isDefault ? (
-            <span role="status" className={cn("inline-flex items-center gap-1.5 text-sm font-medium", available ? "text-(--status-task-icon-done)" : "text-destructive")}>
-              {available ? <CheckCircle2 className="size-4" aria-hidden /> : <TriangleAlert className="size-4" aria-hidden />}
-              {available ? tr("Your default") : tr("Default unavailable")}
-            </span>
-          ) : !readOnly ? (
+          {!account.isDefault && (!readOnly ? (
             <Button variant="outline" size="sm" disabled={!available} onClick={onMakeDefault}>{tr("Make default")}</Button>
-          ) : <span className="text-xs text-muted-foreground">{tr("Not your default")}</span>}
+          ) : <span className="text-xs text-muted-foreground">Not default</span>)}
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 text-sm">
-          <p className="font-medium">{aiMethodLabel(account.provider, account.method)}</p>
-          {account.accountLabel && <p className="break-words text-xs text-muted-foreground">{account.accountLabel}</p>}
+          <p className="break-words text-xs text-muted-foreground">{account.method === "subscription" ? "Subscription" : "API key"}{account.accountLabel ? ` · ${account.accountLabel}` : ""}</p>
         </div>
         {!readOnly && grant.capabilities?.canRevoke && (
           <div className="flex flex-wrap items-center gap-2">

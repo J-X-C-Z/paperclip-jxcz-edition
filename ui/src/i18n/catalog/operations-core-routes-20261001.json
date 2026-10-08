@@ -200,7 +200,7 @@
   "This is the only stage. Deletion succeeds only if it has no items.": "这是唯一阶段。只有其中没有事项时才能删除。",
   "Archiving hides this pipeline from everyday views. Its stages and items are kept and can be restored later.": "归档后，此流水线不会显示在日常视图中。其阶段和事项会保留，之后可以恢复。",
   "under {value0}": "上级：{value0}",
-  "Working": "处理中",
+  "Working": "工作中",
   "This changed": "此项已更改",
   "Breaks into {value0}": "拆分为 {value0}",
   "Ready to move to {value0}?": "准备好移至 {value0} 了吗？",

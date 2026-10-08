@@ -29,7 +29,7 @@ export interface AgentPermissions extends Record<string, unknown> {
 }
 
 export type AgentRuntimeConfig = Record<string, unknown> & {
-  aiConnection?: import("../ai-connections.js").AiConnectionBinding;
+  aiConnection?: import("../ai-connection-router.js").AiRuntimeConnectionBinding;
 };
 
 export type AgentInstructionsBundleMode = "managed" | "external";
@@ -418,4 +418,12 @@ export interface AgentInstructionCandidate {
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Public cryptographic identity; private material is runtime-only. */
+export interface AgentPublicIdentity {
+  algorithm: "Ed25519";
+  keyId: string;
+  publicKeyPem: string;
+  createdAt: string;
 }

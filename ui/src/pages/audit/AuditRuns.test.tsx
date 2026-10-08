@@ -1,12 +1,18 @@
 // @vitest-environment jsdom
 
-import type { ReactNode } from "react";
+import { act, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { HeartbeatRun, RoutineRunSummary } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuditRuns } from "./AuditRuns";
+
+vi.mock("@/i18n", async (original) => ({
+  ...await original<typeof import("@/i18n")>(),
+  uiText: (text: string) => text,
+  useUiTranslator: () => (text: string) => text,
+}));
 
 const listAgentsMock = vi.hoisted(() => vi.fn());
 const listRunsMock = vi.hoisted(() => vi.fn());
@@ -122,7 +128,7 @@ describe("AuditRuns", () => {
   it("renders a filterable flat run list with existing run-detail links", async () => {
     await render();
 
-    expect(listRunsMock).toHaveBeenCalledWith("company-1", undefined, 200, { summary: true });
+    expect(listRunsMock).toHaveBeenCalledWith("company-1", undefined, 25, { summary: true, offset: 0 });
     expect(container.textContent).toContain("Agent");
     expect(container.textContent).toContain("Status");
     expect(container.textContent).toContain("Reviewed the release checklist");
@@ -137,8 +143,21 @@ describe("AuditRuns", () => {
     currentSearch = "agentId=agent-1&runStatus=succeeded";
     await render();
 
-    expect(listRunsMock).toHaveBeenCalledWith("company-1", "agent-1", 200, { summary: true });
+    expect(listRunsMock).toHaveBeenCalledWith("company-1", "agent-1", 25, { summary: true, offset: 0 });
     expect(container.textContent).toContain("Clear filters");
+  });
+
+  it("loads the next 25 rows only after an explicit request", async () => {
+    const rows = Array.from({ length: 26 }, (_, index) => run({ id: `run-${index}` }));
+    listRunsMock.mockImplementation(async (_company, _agent, limit, { offset }) => rows.slice(offset, offset + limit));
+    await render();
+    await vi.waitFor(() => expect(container.querySelectorAll("li")).toHaveLength(25));
+    const loadMore = Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Load more");
+    expect(loadMore).toBeTruthy();
+    await act(async () => loadMore!.click());
+    await vi.waitFor(() => expect(container.querySelectorAll("li")).toHaveLength(26));
+    expect(listRunsMock).toHaveBeenLastCalledWith("company-1", undefined, 25, { summary: true, offset: 25 });
+    expect(container.textContent).not.toContain("Load more");
   });
 
   it("loads routine runs directly when the Audit scope is a routine", async () => {

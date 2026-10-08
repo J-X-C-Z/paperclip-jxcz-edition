@@ -1,5 +1,6 @@
 import { useUiTranslator } from "@/i18n";
-import type { Issue, IssueStatus } from "@paperclipai/shared";
+import type { Issue, IssueStatus, IssueLockedStub } from "@paperclipai/shared";
+import { isLockedIssueStub, LockedIssueChip } from "@/components/LockedIssueChip";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IssueRow } from "@/components/IssueRow";
@@ -23,7 +24,7 @@ export function RelationNavigationList({
   ariaLabel,
   issueLinkState,
 }: {
-  items: TaskDetailRelationItem[];
+  items: (TaskDetailRelationItem | IssueLockedStub)[];
   emptyMessage: string;
   ariaLabel: string;
   issueLinkState?: unknown;
@@ -35,6 +36,9 @@ export function RelationNavigationList({
   return (
     <ul className="flex flex-col gap-0.5" aria-label={ariaLabel}>
       {items.map((item) => {
+        if (isLockedIssueStub(item)) {
+          return <li key={item.id} className="px-2 py-2"><LockedIssueChip identifier={item.identifier} /></li>;
+        }
         const pathId = item.identifier ?? item.id;
         return (
           <li key={item.id}>

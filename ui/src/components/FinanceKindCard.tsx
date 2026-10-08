@@ -22,7 +22,7 @@ export function FinanceKindCard({ rows }: FinanceKindCardProps) {
         ) : (
           rows.map((row) => (
             <div
-              key={row.eventKind}
+              key={`${row.eventKind}:${row.currency}`}
               className="flex items-center justify-between gap-3 border border-border px-3 py-2"
             >
               <div className="min-w-0">
@@ -32,9 +32,9 @@ export function FinanceKindCard({ rows }: FinanceKindCardProps) {
                 </div>
               </div>
               <div className="text-right tabular-nums">
-                <div className="text-sm font-medium">{formatCents(row.netCents)}</div>
+                <div className="text-sm font-medium">{formatCents(row.netCents, 0, row.currency)}</div>
                 <div className="text-xs text-muted-foreground">
-                  {uiText("{amount} debits", { amount: formatCents(row.debitCents) })}
+                  {formatCents(row.debitCents, 0, row.currency)} debits
                 </div>
               </div>
             </div>

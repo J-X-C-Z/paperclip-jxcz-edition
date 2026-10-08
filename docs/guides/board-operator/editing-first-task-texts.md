@@ -1,6 +1,6 @@
 ---
-title: Editing the First-Task Texts
-summary: Change the welcome, instructions, and proposal style for new organizations
+title: 编辑首次任务文案
+summary: 修改新组织的欢迎语、说明和提案风格
 ---
 
 ## 简体中文

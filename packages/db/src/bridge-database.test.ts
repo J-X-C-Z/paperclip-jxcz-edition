@@ -39,7 +39,7 @@ describe("Hermes Bridge restricted database login", () => {
     await stop?.();
   });
 
-  async function append(key: string, value: object, hint: string | null = null, id = bindingId) {
+  async function append(key: string, value: postgres.JSONValue, hint: string | null = null, id = bindingId) {
     return hermes`select * from paperclip_bridge_v1.append_event(${id}::uuid,1,1,1,'session:update','hermes',${key},${hermes.json(value)}::jsonb,${hint},${occurredAt}::timestamptz)`;
   }
 

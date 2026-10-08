@@ -1,6 +1,6 @@
 ---
-title: How Agents Work
-summary: Agent lifecycle, execution model, and status
+title: 智能体的工作方式
+summary: 智能体生命周期、执行模式和状态
 ---
 
 ## 简体中文

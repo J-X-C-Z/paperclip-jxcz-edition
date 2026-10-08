@@ -130,21 +130,21 @@ export function SlackAvatarContent({
                 rel="noopener noreferrer"
                 className="underline underline-offset-4"
               >
-                Open Slack app Settings{" "}
+                {uiText("Open Slack app Settings")}{" "}
                 <ExternalLink className="inline size-3" />
               </a>{" "}
               {uiText("and choose")} <strong>{appName}</strong>{uiText(".")}
             </li>
             <li>
-              {uiText("Choose")} <strong>Basic Information</strong>, then scroll to{" "}
-              <strong>Display Information</strong>{uiText(".")}
+              {uiText("Choose")} <strong>{uiText("Basic Information")}</strong>{uiText(", then scroll to")}{" "}
+              <strong>{uiText("Display Information")}</strong>{uiText(".")}
             </li>
             <li>
-              {uiText("Under")} <strong>App icon &amp; Preview</strong>{uiText(", click the app icon and upload")}{" "}
+              {uiText("Under")} <strong>{uiText("App icon & Preview")}</strong>{uiText(", click the app icon and upload")}{" "}
               <span className="break-all font-mono text-xs">{filename}</span>{uiText(".")}
             </li>
             <li>
-              {uiText("Confirm the crop, then click")} <strong>Save Changes</strong> {uiText("in Slack.")}
+              {uiText("Confirm the crop, then click")} <strong>{uiText("Save Changes")}</strong> {uiText("in Slack.")}
             </li>
           </ol>
         </section>

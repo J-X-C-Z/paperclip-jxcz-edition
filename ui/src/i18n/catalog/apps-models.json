@@ -9,7 +9,7 @@
   "Apply to all agents": "一键应用到全部",
   "Applying {done}/{total}…": "应用中 {done}/{total}…",
   "By title": "按头衔",
-  "{count} agents": "{count} 个 Agent",
+  "{count} agents": "{count} 个智能体",
   "(no model)": "（未设模型）",
   "Replace this title": "替换本头衔",
   "Captures every title's current adapter and model as a reusable configuration file.": "把当前每个头衔的适配器与模型保存为可复用的配置文件。",

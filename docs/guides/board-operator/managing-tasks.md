@@ -1,6 +1,6 @@
 ---
-title: Managing Tasks
-summary: Creating issues, assigning work, and tracking progress
+title: 管理任务
+summary: 创建任务、指派工作和跟踪进展
 ---
 
 ## 简体中文

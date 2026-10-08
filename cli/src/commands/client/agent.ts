@@ -856,7 +856,7 @@ export function registerAgentCommands(program: Command): void {
             }
           }
           console.log("");
-          console.log("# Run this in your shell before launching codex/claude:");
+          console.log("# 启动 codex/claude 前，请在 shell 中运行以下命令：");
           console.log(exportsText);
         } catch (err) {
           handleCommandError(err);

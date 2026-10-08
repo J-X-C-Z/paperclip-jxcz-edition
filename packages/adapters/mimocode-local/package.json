@@ -6,6 +6,6 @@
   "exports": { ".": "./src/index.ts", "./server": "./src/server/index.ts" },
   "scripts": { "build": "tsc", "typecheck": "tsc --noEmit" },
   "dependencies": { "@paperclipai/adapter-utils": "workspace:*" },
-  "devDependencies": { "@types/node": "^24.0.0", "typescript": "^7.0.2" },
+  "devDependencies": { "@types/node": "^24.13.3", "typescript": "^7.0.2" },
   "engines": { "node": ">=24.11.0" }
 }

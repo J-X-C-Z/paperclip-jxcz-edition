@@ -1,6 +1,6 @@
 ---
-title: Costs and Budgets
-summary: Budget caps, cost tracking, and auto-pause enforcement
+title: 费用与预算
+summary: 预算上限、费用跟踪和自动暂停
 ---
 
 ## 简体中文

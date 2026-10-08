@@ -30,13 +30,13 @@ export async function promptStorage(current?: StorageConfig): Promise<StorageCon
     options: [
       {
         value: "local_disk" as const,
-        label: "Local disk (recommended)",
-        hint: "best for single-user local deployments",
+        label: "本地磁盘（推荐）",
+        hint: "适合单用户本地部署",
       },
       {
         value: "s3" as const,
-        label: "S3 compatible",
-        hint: "for cloud/object storage backends",
+        label: "兼容 S3 的存储",
+        hint: "适用于云端或对象存储后端",
       },
     ],
     initialValue: base.provider,

@@ -59,7 +59,7 @@ export function SlackIdentityStep({ endpointId, command, testStartedAt, onConnec
       </div>
       {copyError && <p role="alert" className="text-sm text-destructive">{uiText("Couldn't copy the command. Select and copy it above.")}</p>}
       <p className="text-sm">
-        <a href="https://app.slack.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Open Slack <ExternalLink className="inline size-3" /></a>{uiText(", send the command in your workspace, then return here.")}
+        <a href="https://app.slack.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{uiText("Open Slack")} <ExternalLink className="inline size-3" /></a>{uiText(", send the command in your workspace, then return here.")}
       </p>
       {identities.isError ? (
         <p role="alert" className="text-sm text-destructive">{uiText("Couldn't check for your Slack account. We'll keep trying.")}</p>

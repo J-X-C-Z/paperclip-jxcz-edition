@@ -1,14 +1,14 @@
-import { uiText } from "@/i18n";
+import { uiText, useUiTranslator } from "@/i18n";
+import { useConnectionModels } from "../ai-connections/useConnectionModels";
 import { AgentCharacter } from "../AgentCharacter";
 import { useAgentAppearanceDraft } from "../../hooks/useAgentAppearanceDraft";
 import { AiConnectionField, aiProviderForAdapter } from "../ai-connections/AiConnectionField";
-import { useUiTranslator } from "@/i18n";
-import { AGENT_TITLES, type AgentTemplate } from "@paperclipai/shared";
+import { AGENT_TITLES, type AgentTemplate, ADAPTER_AUTH_MISSING_CHECK_CODE } from "@paperclipai/shared";
 import { AgentTemplateSelection, availableTemplateManagers, templatePermissionDefaults } from "./AgentTemplateSelection";
 import { TemplateSkillsField } from "./TemplateSkillsField";
 import { Textarea } from "../ui/textarea";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
-import type { AiConnectionBinding } from "@paperclipai/shared";
+import type { AiConnectionBinding, AdapterEnvironmentTestResult, Agent, EnvBinding } from "@paperclipai/shared";
 import { DEFAULT_CODEX_LOCAL_MODEL } from "@paperclipai/adapter-codex-local";
 import { DEFAULT_MIMOCODE_MODEL } from "@paperclipai/adapter-mimocode-local";
 import {
@@ -24,12 +24,6 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Settings2 } from "lucide-react";
-import type {
-  AdapterEnvironmentTestResult,
-  Agent,
-  EnvBinding,
-} from "@paperclipai/shared";
-import { ADAPTER_AUTH_MISSING_CHECK_CODE } from "@paperclipai/shared";
 import { useNavigate, useSearchParams } from "@/lib/router";
 import { agentsApi } from "@/api/agents";
 import { adaptersApi } from "@/api/adapters";
@@ -57,10 +51,11 @@ import {
 } from "@/lib/provider-credential";
 import { defaultCreateValues } from "../agent-config-defaults";
 import { ModelDropdown } from "../AgentConfigForm";
-import { Field } from "../agent-config-primitives";
+import { Field, ToggleField } from "../agent-config-primitives";
 import { SecretPicker } from "../environment-variables-editor/SecretPicker";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { NativeSelect, nativeSelectClassName } from "../ui/select";
 import {
   OnboardingCard,
   OnboardingHeading,
@@ -72,9 +67,9 @@ import {
   AgentProviderConnection,
   type ProviderConnection,
 } from "./AgentProviderConnection";
+import { adapterCuratesModelOrder } from "../../lib/model-utils";
 
-const controlClass =
-  "w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const controlClass = nativeSelectClassName;
 const blocking = (result: AdapterEnvironmentTestResult) =>
   result.status === "fail" ||
   result.checks.some((check) => check.code === ADAPTER_AUTH_MISSING_CHECK_CODE);
@@ -141,7 +136,8 @@ function Setup({
   const { openNewIssue } = useDialogActions();
   const appearanceDraft = useAgentAppearanceDraft(`${companyId}:new-agent`);
   const isRunner = adapterType === "paperclip_runner";
-  const brandType = isRunner
+  const isDot = isRunner && runnerProvider === "openai_dot";
+  const brandType = isDot ? "openai_dot" : isRunner
     ? runnerProvider === "grok"
       ? "grok_local"
       : runnerProvider === "claude"
@@ -160,7 +156,8 @@ function Setup({
   const chooseProvider = multiProvider || brandType === "hermes_local";
   const hasCredentialField =
     chooseProvider || Boolean(SETUP_CREDENTIAL_KEYS[adapterType]);
-  const showModel = !["cursor_cloud", "hermes_gateway"].includes(adapterType);
+  const showModel = !isDot && !["cursor_cloud", "hermes_gateway"].includes(adapterType);
+  const [allowUnmeteredProvider, setAllowUnmeteredProvider] = useState(false);
   const [gatewayUrl, setGatewayUrl] = useState("");
   const [kimiModel, setKimiModel] = useState("");
   const [kimiBaseUrl, setKimiBaseUrl] = useState("");
@@ -194,6 +191,7 @@ function Setup({
   );
   const [connection, setConnection] = useState<ProviderConnection | null>(null);
   const aiBinding = runtimeAiBinding ?? connection?.aiConnection;
+  const connectionModels = useConnectionModels(companyId, aiBinding, brandType);
   const [repository, setRepository] = useState("");
   const [branch, setBranch] = useState("");
   const [createdInSession, setCreated] = useState<Agent | null>(null);
@@ -225,6 +223,12 @@ function Setup({
     setResult(null);
     setTestState("idle");
     setError(null);
+  };
+  const editConnection = () => {
+    setConnection(null);
+    setRuntimeAiBinding(undefined);
+    resetTest();
+    setScreen("connect");
   };
   const adapters = useQuery({
     queryKey: queryKeys.adapters.all,
@@ -260,7 +264,7 @@ function Setup({
   const models = useQuery({
     queryKey: queryKeys.agents.adapterModels(companyId, brandType, null, aiBinding?.provider),
     queryFn: () => agentsApi.adapterModels(companyId, brandType, { provider: aiBinding?.provider }),
-    enabled: Boolean(brandType) && showModel,
+    enabled: Boolean(brandType) && showModel && !connectionModels,
     retry: false,
   });
   const companySecrets = useQuery({
@@ -343,6 +347,8 @@ function Setup({
     isNewAgentAdapterAllowed(adapterType, {
       cloud,
       nativeRunnerEnabled: experimental.data?.enableNativeRunner === true,
+      openAiDotEnabled: experimental.data?.enableOpenAiDot === true,
+      runnerProvider,
     }) &&
     adapters.data?.some(
       (adapter) =>
@@ -386,6 +392,7 @@ function Setup({
         ? {
             adapterSchemaValues: {
               provider: (runnerProvider === "claude" || runnerProvider === "grok") ? "acpx" : runnerProvider,
+              ...(isDot ? { allowUnmeteredProvider } : {}),
               ...((runnerProvider === "claude" || runnerProvider === "grok") ? { acpxAgent: runnerProvider } : {}),
             },
           }
@@ -426,6 +433,7 @@ function Setup({
     return config;
   }
   function preparedConfig(nextConnection = connection) {
+    if (isDot && !allowUnmeteredProvider) throw new Error("Acknowledge external provider billing before creating your Dot agent.");
     if (multiProvider && (!model.trim() || !model.includes("/")))
       throw new Error(tr("Choose or enter a model in provider/model format."));
     if (
@@ -712,7 +720,7 @@ function Setup({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <AdapterMark type={brandType} />
               <span>{getAdapterDisplay(brandType).label}</span>
-              {isRunner && (
+              {isRunner && !isDot && (
                 <span>
                   ·{" "}
                   {runnerProvider === "codex"
@@ -754,9 +762,9 @@ function Setup({
                     type="button"
                     aria-current={step === screen ? "step" : undefined}
                     disabled={
-                      busy || Boolean(created) || index > steps.indexOf(screen)
+                      busy || Boolean(created) || step === "saved"
                     }
-                    onClick={() => setScreen(step)}
+                    onClick={() => step === "connect" && screen !== "connect" ? editConnection() : setScreen(step)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm",
                       step === screen
@@ -788,38 +796,42 @@ function Setup({
                     <div className="mb-8">
                       <OnboardingHeading
                         title={tr("Connect a model")}
-                        lede={`${tr("Connect")} ${name} ${tr("to")} ${connectionAdapter === "claude_local" ? "Claude" : connectionAdapter === "grok_local" ? "Grok" : connectionAdapter === "mimocode_local" ? "Xiaomi MiMo" : "OpenAI"}.`}
                         center
                       />
                     </div>
-                    <div className="mb-5">
-                      <Field label="Environment">
-                        <select
-                          aria-label="Environment"
-                          className={controlClass}
-                          value={environmentOverride}
-                          disabled={busy || forced.forced}
-                          onChange={(event) => {
-                            setEnvironmentOverride(event.target.value);
-                            setConnection(null);
-                            resetTest();
-                          }}
-                        >
-                          <option value="">Default: {environmentLabel}</option>
-                          {(envs.data ?? []).filter((env) => env.status === "active" && (!managedOnly || env.driver !== "local")).map((env) => (
-                            <option key={env.id} value={env.id}>{environmentDisplayLabel(env)}</option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                    <AgentProviderConnection
+                    {ready ? <AgentProviderConnection
                       key={environmentId ?? "local"}
                       companyId={companyId}
                       adapterType={connectionAdapter}
                       environmentId={environmentId}
                       canLogin={canLogin}
                       localEnvironment={environment?.driver === "local"}
+                      advancedConnection={{
+                        value: aiBinding,
+                        content: (
+                          <AiConnectionField
+                            companyId={companyId}
+                            agentName={name}
+                            adapterType={brandType}
+                            model={model}
+                            environmentId={environmentId ?? undefined}
+                            value={aiBinding}
+                            preferAdvanced
+                            onChange={binding => {
+                              if (binding.mode === "router") return;
+                              setConnection(null);
+                              setRuntimeAiBinding(binding);
+                              resetTest();
+                            }}
+                          />
+                        ),
+                      }}
                       onBack={() => navigate("/agents/all")}
+                      onDraftChanged={() => {
+                        setConnection(null);
+                        setRuntimeAiBinding(undefined);
+                        resetTest();
+                      }}
                       testConnection={runTest}
                       testError={
                         error ??
@@ -829,10 +841,11 @@ function Setup({
                       testErrorHint={error ? null : connectionTestCheck?.hint}
                       onConnected={(next) => {
                         setConnection(next);
+                        setRuntimeAiBinding(undefined);
                         resetTest();
                         setScreen("runtime");
                       }}
-                    />
+                    /> : <p role="status" className="text-sm text-muted-foreground">Loading connection settings…</p>}
                   </OnboardingCard>
                 ) : screen === "saved" && created ? (
                   <div className="space-y-6">
@@ -841,11 +854,11 @@ function Setup({
                         <Check className="size-5" />
                         {created.status === "pending_approval"
                           ? tr("Agent submitted for approval")
-                          : tr("Your agent is ready")}
+                          : isDot ? "Your Dot agent has been created" : tr("Your agent is ready")}
                       </h2>
                       <dl className="grid grid-cols-2 gap-4 text-sm">
                         <dt className="text-muted-foreground">{tr("Adapter")}</dt>
-                        <dd>{getAdapterDisplay(adapterType).label}</dd>
+                        <dd>{getAdapterDisplay(isDot ? "openai_dot" : adapterType).label}</dd>
                         {showModel && (
                           <>
                             <dt className="text-muted-foreground">{tr("Model")}</dt>
@@ -860,27 +873,25 @@ function Setup({
                       <p className="text-sm text-muted-foreground">
                         {created.status === "pending_approval"
                           ? tr("An organization administrator must approve this agent before it can work.")
-                          : tr("Assign a task when you’re ready for this agent to work.")}
+                          : isDot ? "Pair your Dot and test event delivery in configuration before assigning work." : tr("Assign a task when you’re ready for this agent to work.")}
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-between gap-3">
                       <Button
                         variant="outline"
-                        onClick={() => navigate(`${agentUrl(created)}/runtime`)}
+                        onClick={() => navigate(isDot ? "/agents/all" : `${agentUrl(created)}/runtime`)}
                       >
                         <Settings2 className="size-4" />
-                        {tr("Edit configuration")}
+                        {isDot ? "Back to Agents" : tr("Edit configuration")}
                       </Button>
                       <Button
                         disabled={created.status === "pending_approval"}
-                        onClick={() =>
-                          openNewIssue({
-                            assigneeAgentId: created.id,
-                            status: "todo",
-                          })
+                        onClick={() => isDot
+                          ? navigate(`${agentUrl(created)}/runtime`)
+                          : openNewIssue({ assigneeAgentId: created.id, status: "todo" })
                         }
                       >
-                        {tr("Assign")} {created.name} {tr("a Task")}
+                        {isDot ? "Pair Dot" : `Assign ${created.name} a Task`}
                         <ArrowRight className="size-4" />
                       </Button>
                     </div>
@@ -961,19 +972,29 @@ function Setup({
                             </div>
                           ) : (
                             <AiConnectionField companyId={companyId} agentName={name} adapterType={brandType} model={model} environmentId={environmentId ?? undefined} value={aiBinding}
-                              onChange={binding => { setRuntimeAiBinding(binding); resetTest(); }} />
+                              onChange={binding => { if (binding.mode === "router") return; setRuntimeAiBinding(binding); resetTest(); }} />
                           )
                         )}
-                        {models.error && <p role="alert" className="text-sm text-destructive">{tr("Could not load models. Retry or enter a model ID manually.")}</p>}
+                        {isDot && <>
+                          <p className="text-sm text-muted-foreground">Create this agent, then copy its pairing prompt to your Dot.</p>
+                          {experimental.data?.enablePublicMcp !== true && <p className="text-sm text-muted-foreground">Enable Assistant connections (MCP) in Experimental settings before pairing.</p>}
+                          <ToggleField label="Allow externally billed provider" hint="Dot does not report token usage or cost. Paperclip cannot enforce a provider spend ceiling; known company and agent budget limits still apply."
+                            checked={allowUnmeteredProvider} onChange={value => { setAllowUnmeteredProvider(value); resetTest(); }} />
+                        </>}
+                        {(connectionModels ? connectionModels.error : models.error) && <p role="alert" className="text-sm text-destructive">Could not load models. Retry or enter a model ID manually.</p>}
                         {((showModel && !usingKimiApi) ||
                           efforts.length > 0) && (
                           <div className="grid items-start gap-5 sm:grid-cols-2">
                             {showModel && !usingKimiApi && (
                               <ModelDropdown
-                                models={models.data ?? []}
+                                presentation="native"
+                                models={connectionModels?.models ?? models.data ?? []}
+                                loadingModels={connectionModels?.isLoading ?? models.isLoading}
+                                onRefreshModels={connectionModels?.refreshModels}
+                                refreshingModels={connectionModels?.refreshing}
                                 value={model}
                                 onChange={(value) => {
-                                  setModel(value);
+                                  setModel(connectionModels?.resolveModel(value) ?? value);
                                   if (
                                     effort &&
                                     !setupEfforts(adapterType, value).includes(
@@ -998,14 +1019,14 @@ function Setup({
                                 allowDefault={!multiProvider}
                                 required={multiProvider}
                                 creatable
-                                groupByProvider={multiProvider}
+                                groupByProvider={multiProvider && !connectionModels}
+                                preserveOrder={Boolean(connectionModels) || adapterCuratesModelOrder(brandType)}
                               />
                             )}
                             {efforts.length > 0 && (
                               <Field label={tr("Thinking effort")}>
-                                <select
+                                <NativeSelect
                                   aria-label={tr("Thinking effort")}
-                                  className={controlClass}
                                   value={effort}
                                   onChange={(event) => {
                                     setEffort(event.target.value);
@@ -1018,19 +1039,14 @@ function Setup({
                                       {value}
                                     </option>
                                   ))}
-                                </select>
+                                </NativeSelect>
                               </Field>
                             )}
                           </div>
                         )}
-                        {SETUP_LOGIN_HINTS[adapterType] && (
+                        {!aiBinding && SETUP_LOGIN_HINTS[adapterType] && (
                           <p className="text-sm text-muted-foreground">
                             {SETUP_LOGIN_HINTS[adapterType]}
-                          </p>
-                        )}
-                        {showModel && models.error && (
-                          <p className="text-xs text-muted-foreground">
-                            {tr("Couldn’t load models. You can enter a model ID manually.")}
                           </p>
                         )}
                         {hasCredentialField && !aiBinding && (
@@ -1265,10 +1281,11 @@ function Setup({
                       )}
                     </fieldset>
                     <RuntimeTestCard
+                      variant={isDot ? "prerequisites" : "connection"}
                       state={testState}
                       result={result}
-                      error={error ? tr(error) : null}
-                      disabled={!ready || busy}
+                      error={error}
+                      disabled={!ready || busy || Boolean(connectionAdapter && !connection)}
                       onTest={() => void runTest()}
                     />
                     {error && testState !== "fail" && (
@@ -1282,7 +1299,7 @@ function Setup({
                           type="button"
                           variant="ghost"
                           disabled={busy}
-                          onClick={() => setScreen("connect")}
+                          onClick={editConnection}
                         >
                           <ArrowLeft className="size-4" />
                           {tr("Connection")}
@@ -1290,7 +1307,14 @@ function Setup({
                       ) : (
                         <span />
                       )}
-                      <Button
+                      {connectionAdapter && !connection ? <Button
+                        type="button"
+                        disabled={!ready || busy}
+                        onClick={() => setScreen("connect")}
+                      >
+                        Connect model
+                        <ArrowRight className="size-4" />
+                      </Button> : <Button
                         type="submit"
                         disabled={
                           !ready ||
@@ -1303,7 +1327,7 @@ function Setup({
                       >
                         {saving ? "Creating…" : uiText("Finish setup")}
                         <Check className="size-4" />
-                      </Button>
+                      </Button>}
                     </div>
                   </form>
                 )}

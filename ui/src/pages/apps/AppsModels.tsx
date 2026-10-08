@@ -242,7 +242,7 @@ export function AppsModels() {
               return (
                 <div
                   key={group.title}
-                  className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.6fr)_auto] items-center gap-3 p-4"
+                  className="grid grid-cols-(--gtc-model-routing) items-center gap-3 p-4"
                 >
                   <div>
                     <div className="font-medium">{group.title}</div>
@@ -332,7 +332,7 @@ function AdapterModelPicker({
         value={value.adapterType}
         onValueChange={(adapterType) => onChange({ adapterType, model: "" })}
       >
-        <SelectTrigger className="w-[10.5rem]">
+        <SelectTrigger className="w-(--sz-10_5rem)">
           <SelectValue placeholder={uiText("Adapter")} />
         </SelectTrigger>
         <SelectContent>
@@ -347,7 +347,7 @@ function AdapterModelPicker({
         value={value.model}
         onValueChange={(model) => onChange({ ...value, model })}
       >
-        <SelectTrigger className="w-[13rem]">
+        <SelectTrigger className="w-(--sz-208px)">
           <SelectValue placeholder={uiText("Model")} />
         </SelectTrigger>
         <SelectContent>

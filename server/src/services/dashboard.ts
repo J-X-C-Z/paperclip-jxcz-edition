@@ -1,5 +1,5 @@
 import { projectRunCondition } from "./project-scope.js";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { agents, approvals, companies, costEvents, heartbeatRuns, issues, projectAgentMemberships, issueApprovals } from "@paperclipai/db";
 import { notFound } from "../errors.js";
@@ -87,7 +87,7 @@ export function dashboardService(db: Db) {
       // test below. Unbounded, the seed walks every run the company ever had.
       // Counts, spend and run history are independent once the company exists.
       const [agentRows, taskRows, pendingApprovals, spendRows, runActivityResult] = await Promise.all([
-        db
+        retryIdempotentDatabaseOperation(() => db
           .select({ status: agents.status, count: sql<number>`count(*)` })
           .from(agents)
           .where(and(eq(agents.companyId, companyId), projectId ? sql`EXISTS (
@@ -96,7 +96,7 @@ export function dashboardService(db: Db) {
               AND ${projectAgentMemberships.projectId} = ${projectId}
               AND ${projectAgentMemberships.agentId} = ${agents.id}
           )` : undefined))
-          .groupBy(agents.status),
+          .groupBy(agents.status)),
         retryIdempotentDatabaseOperation(() => db
           .select({ status: issues.status, count: sql<number>`count(*)` })
           .from(issues)
@@ -121,10 +121,11 @@ export function dashboardService(db: Db) {
             and(
               eq(costEvents.companyId, companyId),
               gte(costEvents.occurredAt, monthStart),
+              lte(costEvents.occurredAt, now),
               projectId ? eq(costEvents.projectId, projectId) : undefined,
             ),
           )),
-        db.execute(sql`
+        retryIdempotentDatabaseOperation(() => db.execute(sql`
           WITH RECURSIVE recovered_runs(id) AS (
             SELECT parent.id
             FROM ${heartbeatRuns} AS child
@@ -151,7 +152,7 @@ export function dashboardService(db: Db) {
             AND ${projectId ? projectRunCondition(companyId, projectId, sql`run`) : sql`true`}
             AND run.created_at >= ${runActivityStart.toISOString()}::timestamptz
           GROUP BY date, run.status, run.error_code, recovered
-        `),
+        `)),
       ]);
       const [{ monthSpend }] = spendRows;
       const runActivityRows = runActivityResult as unknown as Iterable<{

@@ -1,8 +1,9 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { bridgeBindingRevisions, bridgeConversationIndex, bridgeEvents, bridgeReceipts, bridgeUsageProjection } from "@paperclipai/db";
-import { costService } from "./costs.js";
-import { publishActivity, type ActivityPublication } from "./activity-log.js";
+import { unitsToCents } from "@paperclipai/shared";
+import { createCostEventInTransaction } from "./costs.js";
+import { withAccountingTransaction } from "./accounting-transaction.js";
 
 const CONSUMER = "paperclip";
 type Event = typeof bridgeEvents.$inferSelect;
@@ -16,8 +17,7 @@ const integer = (value: unknown) => Number.isSafeInteger(Number(value)) && Numbe
  * the ordinary system accounting activity after transaction commit. */
 export function bridgeImporter(db: Db) {
   async function importEvent(event: Event) {
-    const publications: ActivityPublication[] = [];
-    const result = await db.transaction(async (tx) => {
+    const result = await withAccountingTransaction(db, event.companyId, async (tx, publications) => {
       await tx.insert(bridgeReceipts).values({ companyId: event.companyId, eventId: event.id, consumer: CONSUMER }).onConflictDoNothing();
       const [receipt] = await tx.select().from(bridgeReceipts).where(and(eq(bridgeReceipts.eventId, event.id), eq(bridgeReceipts.consumer, CONSUMER))).for("update").limit(1);
       if (!receipt || receipt.state === "completed" || receipt.state === "quarantined") return false;
@@ -71,17 +71,16 @@ export function bridgeImporter(db: Db) {
           amountMicroUsd: verifiedBilled ? amount! : "0", inputTokens, outputTokens, occurredAt: event.occurredAt })
           .onConflictDoNothing({ target: [bridgeUsageProjection.bindingId, bridgeUsageProjection.sourceKind, bridgeUsageProjection.sourceKey] }).returning();
         if (projection && verifiedBilled && owner) {
-          await costService(db).createEvent(event.companyId, { id: event.id, agentId: owner, projectId: revision.projectId, issueId: revision.issueId,
-            goalId: revision.goalId, provider, model, biller: provider, billingType: "metered_api", costCents: 0, inputTokens, outputTokens, occurredAt: event.occurredAt }, {
-            tx, billedUsdMicros: amount, precisionSource: "bridge_micro_usd", accountingBinding: `${event.bindingId}:${owner}`,
-            actor: { actorType: "system", actorId: "bridge_importer", agentId: null, runId: null }, postCommitPublications: publications,
-          });
+          await createCostEventInTransaction(tx, event.companyId, { id: event.id, agentId: owner, projectId: revision.projectId, issueId: revision.issueId,
+            goalId: revision.goalId, provider, model, biller: provider, billingType: "metered_api", costCents: unitsToCents(BigInt(amount!) * 1000n),
+            billedUsdMicros: BigInt(amount!), costPrecisionSource: "bridge_micro_usd", idempotencyKey: `bridge:${event.id}`,
+            inputTokens, outputTokens, occurredAt: event.occurredAt }, publications,
+            { actorType: "system", actorId: "bridge_importer", agentId: null });
         }
       }
       await tx.update(bridgeReceipts).set({ state: "completed", attempt: sql`${bridgeReceipts.attempt} + 1`, completedAt: new Date(), lastError: null, retryAt: null, updatedAt: new Date() }).where(eq(bridgeReceipts.id, receipt.id));
       return true;
     });
-    for (const publication of publications) publishActivity(publication);
     return result;
   }
 

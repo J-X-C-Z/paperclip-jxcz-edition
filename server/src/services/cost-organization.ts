@@ -1,19 +1,22 @@
 import { sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
+import { addCents } from "@paperclipai/shared";
 import type { CostByDepartment, CostByProject, CostByTeam } from "@paperclipai/shared";
 import { derivePluginDatabaseNamespace } from "./plugin-database.js";
 import { estimateTokenCostUsd } from "./cost-estimation.js";
 import type { CostDateRange } from "./costs.js";
 
-type Totals = { reportedCostCents?: number; estimatedCostCents?: number; unpricedEventCount?: number } & Pick<CostByProject, "costCents" | "inputTokens" | "cachedInputTokens" | "outputTokens">;
+type Totals = { costCentsExact?: string; referenceCostCents?: number; reportedCostCents?: number; estimatedCostCents?: number; unpricedEventCount?: number } & Pick<CostByProject, "costCents" | "inputTokens" | "cachedInputTokens" | "outputTokens">;
 export type AttributedCost = Totals & { provider?: string; model?: string; biller?: string; billingType?: string; costStatus?: string; agentId: string; projectId: string | null; projectName: string | null };
 export type CostMembership = { agentId: string; teamId: string; teamName: string; projectId: string; projectName: string | null; departmentId: string | null; departmentName: string | null };
-const zero = (): Totals => ({ costCents: 0, inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, reportedCostCents: 0, estimatedCostCents: 0, unpricedEventCount: 0 });
+const zero = (): Totals => ({ costCents: 0, costCentsExact: "0.0000000", inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, referenceCostCents: 0, reportedCostCents: 0, estimatedCostCents: 0, unpricedEventCount: 0 });
 const add = (target: Totals, value: Totals) => {
+  target.referenceCostCents = (target.referenceCostCents ?? 0) + (value.referenceCostCents ?? Number(value.reportedCostCents ?? 0) + Number(value.estimatedCostCents ?? 0));
   target.reportedCostCents = (target.reportedCostCents ?? 0) + Number(value.reportedCostCents ?? 0);
   target.estimatedCostCents = (target.estimatedCostCents ?? 0) + Number(value.estimatedCostCents ?? 0);
   target.unpricedEventCount = (target.unpricedEventCount ?? 0) + Number(value.unpricedEventCount ?? 0);
-  target.costCents += Number(value.costCents);
+  target.costCentsExact = addCents(target.costCentsExact ?? target.costCents, value.costCentsExact ?? value.costCents);
+  target.costCents = Number(target.costCentsExact);
   target.inputTokens += Number(value.inputTokens);
   target.cachedInputTokens += Number(value.cachedInputTokens);
   target.outputTokens += Number(value.outputTokens);
@@ -69,6 +72,7 @@ export async function attributedCosts(db: Db, companyId: string, range?: CostDat
     )
     SELECT c.provider, c.model, c.pricing_model AS "pricingModel", c.biller, c.billing_type AS "billingType", c.cost_status AS "costStatus", c.agent_id AS "agentId", p.id AS "projectId", p.name AS "projectName",
       coalesce(sum(c.cost_cents), 0)::double precision AS "costCents",
+      coalesce(sum(c.cost_cents), 0)::text AS "costCentsExact",
       coalesce(sum(case when c.cost_status = 'reported' then c.cost_cents else 0 end), 0)::double precision AS "reportedCostCents",
       coalesce(sum(case when c.cost_status::text = 'estimated' then c.cost_cents else 0 end), 0)::double precision AS "estimatedCostCents",
       count(*) filter (where c.cost_status = 'unpriced')::int AS "unpricedEventCount",
@@ -84,7 +88,7 @@ export async function attributedCosts(db: Db, companyId: string, range?: CostDat
     const estimate = needsEstimate ? estimateTokenCostUsd({ ...row, model: row.pricingModel ?? row.model }) : null;
     const estimatedCostCents = estimate ? estimate.costUsd * 100 : Number(row.estimatedCostCents ?? 0);
     const reportedCostCents = Number(row.reportedCostCents ?? 0);
-    return { ...row, reportedCostCents, estimatedCostCents, costCents: reportedCostCents + estimatedCostCents, unpricedEventCount: needsEstimate && !estimate ? 1 : 0 };
+    return { ...row, reportedCostCents, estimatedCostCents, costCents: Number(row.costCents), referenceCostCents: reportedCostCents + estimatedCostCents, unpricedEventCount: needsEstimate && !estimate ? 1 : 0 };
   });
 }
 

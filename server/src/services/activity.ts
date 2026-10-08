@@ -1,6 +1,6 @@
 import { projectActivityCondition } from "./project-scope.js";
 import { executionProjectionsForRuns } from "./execution-projection.js";
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import {
   activityLog,
@@ -29,6 +29,7 @@ export interface ActivityFilters {
   entityType?: string;
   entityId?: string;
   limit?: number;
+  readCondition?: SQL<boolean>;
 }
 
 const DEFAULT_ACTIVITY_LIMIT = 100;
@@ -369,7 +370,7 @@ export function activityService(db: Db) {
             ...conditions,
             or(
               sql`${activityLog.entityType} != 'issue'`,
-              visibleIssueCondition(),
+              and(visibleIssueCondition(), filters.readCondition ?? sql<boolean>`true`),
             ),
           ),
         )
@@ -406,6 +407,9 @@ export function activityService(db: Db) {
           invocationSource: heartbeatRuns.invocationSource,
           responsibleUserId: heartbeatRuns.responsibleUserId,
           errorCode: heartbeatRuns.errorCode,
+          error: sql<string | null>`case when ${heartbeatRuns.status} = 'failed'
+            and ${heartbeatRuns.errorCode} = 'native_provider_model_rejected'
+            then left(${heartbeatRuns.error}, 2000) else null end`,
           usageJson: summarizedUsageJson,
           resultJson: summarizedResultJson,
           logBytes: heartbeatRuns.logBytes,
@@ -435,7 +439,7 @@ export function activityService(db: Db) {
           and(
             eq(heartbeatRuns.companyId, companyId),
             or(
-              sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issueId}`,
+              eq(heartbeatRuns.issueId, issueId),
               sql`exists (
                 select 1
                 from ${activityLog}
@@ -500,7 +504,7 @@ export function activityService(db: Db) {
       const [exhaustionRows, leaseRows, executionByRunId, [savedPlan]] = await Promise.all([
         exhaustionRowsQuery,
         leaseRowsQuery,
-        executionProjectionsForRuns(db, companyId, runIds),
+        executionProjectionsForRuns(db, companyId, runIds, new Date(), { retryDatabaseReads: true }),
         savedPlanQuery,
       ]);
       const retryExhaustedReasonByRunId = new Map<string, string>();
@@ -568,7 +572,7 @@ export function activityService(db: Db) {
       const run = await db
         .select({
           companyId: heartbeatRuns.companyId,
-          contextSnapshot: heartbeatRuns.contextSnapshot,
+          issueId: heartbeatRuns.issueId,
         })
         .from(heartbeatRuns)
         .where(eq(heartbeatRuns.id, runId))
@@ -595,11 +599,7 @@ export function activityService(db: Db) {
         )
         .orderBy(issueIdAsText);
 
-      const context = run.contextSnapshot;
-      const contextIssueId =
-        context && typeof context === "object" && typeof (context as Record<string, unknown>).issueId === "string"
-          ? ((context as Record<string, unknown>).issueId as string)
-          : null;
+      const contextIssueId = run.issueId;
       if (!contextIssueId) return fromActivity;
       if (fromActivity.some((issue) => issue.issueId === contextIssueId)) return fromActivity;
 

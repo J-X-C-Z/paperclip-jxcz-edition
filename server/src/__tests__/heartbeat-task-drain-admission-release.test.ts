@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
+  costEvents,
+  budgetReservations,
   activityLog,
   agents,
   agentRuntimeState,
@@ -18,6 +20,7 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { heartbeatService, getTaskDrainStatus, startTaskDrain, stopTaskDrain } from "../services/heartbeat.ts";
+import { getServerAdapter, registerServerAdapter, unregisterServerAdapter } from "../adapters/index.js";
 import { subscribeCompanyLiveEvents } from "../services/live-events.ts";
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
@@ -51,6 +54,7 @@ describeEmbeddedPostgres("heartbeat task-drain admission release", () => {
       await db.delete(heartbeatRunEvents);
       await db.delete(activityLog);
       try {
+        await db.delete(costEvents);
         await db.delete(heartbeatRuns);
         return;
       } catch (error) {
@@ -326,6 +330,44 @@ describeEmbeddedPostgres("heartbeat task-drain admission release", () => {
       },
     }) as typeof db;
   }
+
+  it("releases an undispatched legacy reservation during drain and accounts the resumed run", async () => {
+    const { companyId, agentId, issueId, runId } = await seedQueuedRun();
+    await db.update(issues).set({ status: "in_progress" }).where(eq(issues.id, issueId));
+    const adapterType = "drain_metered_fixture";
+    registerServerAdapter({ ...getServerAdapter("process")!, type: adapterType,
+      execute: async () => ({ exitCode: 0, signal: null, timedOut: false, errorMessage: null,
+        summary: "Completed after drain", provider: "fixture", model: "fixture", billingType: "api", costUsd: 0.25,
+        usage: { inputTokens: 1, outputTokens: 1 } }),
+    });
+    await db.update(agents).set({ adapterType }).where(eq(agents.id, agentId));
+    await db.update(heartbeatRuns).set({ contextSnapshot: { issueId, wakeReason: "issue_commented", interactionId: randomUUID(),
+      interactionKind: "connection_intent", interactionStatus: "accepted", interactionResolvedAt: new Date().toISOString(),
+      mutation: "interaction", source: "connection_intent.resolved" } }).where(eq(heartbeatRuns.id, runId));
+    let holdOnce = true;
+    const heartbeat = heartbeatService(db, { beforeResolvedInteractionContinuationDispatchCheck: async () => {
+      if (holdOnce) { holdOnce = false; startTaskDrain({}); }
+    } });
+    try {
+      await heartbeat.resumeQueuedRuns();
+      await heartbeat.drainActiveRunExecutions();
+      const [held] = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, runId));
+      expect(held).toMatchObject({ status: "queued", costAccountingPending: false, costAccountedAt: null });
+      expect(held.usageJson?.accountingProviderWorkStarted).not.toBe(false);
+      expect(await db.select().from(budgetReservations).where(eq(budgetReservations.runId, runId))).toHaveLength(0);
+      stopTaskDrain();
+      await heartbeat.resumeQueuedRuns();
+      await heartbeat.drainActiveRunExecutions();
+      const [finished] = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, runId));
+      expect(finished).toMatchObject({ status: "succeeded", costAccountingPending: false });
+      expect(finished.costAccountedAt).toBeInstanceOf(Date);
+      const charges = await db.select().from(costEvents).where(eq(costEvents.heartbeatRunId, runId));
+      expect(charges).toHaveLength(1);
+      expect(charges[0].costCents).toBe(25);
+      const [reservation] = await db.select().from(budgetReservations).where(eq(budgetReservations.runId, runId));
+      expect(reservation.state).toBe("settled");
+    } finally { stopTaskDrain(); unregisterServerAdapter(adapterType); }
+  }, 30_000);
 
   it("leaves the run row running for the orphan reaper when the atomic release fails", async () => {
     const { companyId, issueId, runId, wakeupRequestId } = await seedQueuedRun();

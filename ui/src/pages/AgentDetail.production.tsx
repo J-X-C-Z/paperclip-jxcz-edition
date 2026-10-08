@@ -5,7 +5,7 @@ import { mergeRunLogChunks, readChunkSeq } from "../lib/run-log-chunks";
 import { getPageVisibility, usePageVisibility } from "../lib/page-visibility";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, Link, Navigate, useBeforeUnload, type NavigateFunction } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   agentsApi,
   type AgentKey,
@@ -15,7 +15,7 @@ import {
 import { builtInAgentsApi, type BuiltInManagedResourceKind } from "../api/builtInAgents";
 import { companySkillsApi } from "../api/companySkills";
 import { budgetsApi } from "../api/budgets";
-import { heartbeatsApi } from "../api/heartbeats";
+import { heartbeatsApi, type HeartbeatRunStat } from "../api/heartbeats";
 import { instanceSettingsApi } from "../api/instanceSettings";
 import { ApiError } from "../api/client";
 import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
@@ -65,7 +65,7 @@ import { SourceResolvedFoldBadge } from "../components/SourceResolvedFoldBadge";
 import { readSourceResolvedWatchdogFold } from "../lib/source-resolved-watchdog-fold";
 import { buildSameOriginWebSocketUrl } from "../lib/websocket-url";
 import { tryCreateWebSocket } from "../lib/websocket";
-import { formatCents, formatDate, relativeTime, formatTokens, visibleRunCostUsd } from "../lib/utils";
+import { formatCents, formatDate, relativeTime, formatTokens, visibleRunCostUsd, visibleRunTokenTotal } from "../lib/utils";
 import { cn } from "../lib/utils";
 import { describeRunRetryState } from "../lib/runRetryState";
 import { Button } from "@/components/ui/button";
@@ -381,7 +381,7 @@ function runMetrics(run: HeartbeatRun) {
     output,
     cached,
     cost,
-    totalTokens: input + output,
+    totalTokens: visibleRunTokenTotal(usage),
     provider,
     model,
   };
@@ -772,8 +772,6 @@ export function AgentDetail() {
   const activeView = urlRunId ? "runs" as AgentDetailView
     : urlTab === "channels" && !chatConnectorsEnabled ? "dashboard" : parseAgentDetailView(urlTab ?? null);
   const needsDashboardData = activeView === "dashboard";
-  const needsRunData = activeView === "runs" || Boolean(urlRunId);
-  const shouldLoadHeartbeats = needsDashboardData || needsRunData;
   const [configDirty, setConfigDirty] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const saveConfigActionRef = useRef<(() => void) | null>(null);
@@ -889,9 +887,15 @@ export function AgentDetail() {
   });
 
   const { data: heartbeats } = useQuery({
-    queryKey: queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined),
-    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined),
-    enabled: !!resolvedCompanyId && !!agent?.id && shouldLoadHeartbeats,
+    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), "overview"],
+    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined, 25, { summary: false }),
+    enabled: !!resolvedCompanyId && !!agent?.id && needsDashboardData,
+  });
+
+  const { data: runStats } = useQuery({
+    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), "stats"],
+    queryFn: () => heartbeatsApi.stats(resolvedCompanyId!, agent?.id),
+    enabled: !!resolvedCompanyId && !!agent?.id && needsDashboardData,
   });
 
   const { data: allIssues } = useQuery({
@@ -934,6 +938,8 @@ export function AgentDetail() {
       metric: "billed_cents",
       windowKind: "calendar_month_utc",
       amount: budgetMonthlyCents,
+      unpricedEventCount: 0, pendingRunCount: 0,
+      unpricedUsagePolicy: "block",
       observedAmount: spentMonthlyCents,
       remainingAmount: Math.max(0, budgetMonthlyCents - spentMonthlyCents),
       utilizationPercent:
@@ -1474,6 +1480,7 @@ export function AgentDetail() {
         <AgentOverview
           agent={agent}
           runs={heartbeats ?? []}
+          runStats={runStats ?? []}
           assignedIssues={assignedIssues}
           runtimeState={runtimeState}
           agentId={agent.id}
@@ -1537,7 +1544,6 @@ export function AgentDetail() {
 
       {activeView === "runs" && (
         <RunsTab
-          runs={heartbeats ?? []}
           companyId={resolvedCompanyId!}
           agentId={agent.id}
           agentRouteId={canonicalAgentRef}
@@ -1760,6 +1766,7 @@ function LatestRunCard({
 function AgentOverview({
   agent,
   runs,
+  runStats,
   assignedIssues,
   runtimeState,
   agentId,
@@ -1767,6 +1774,7 @@ function AgentOverview({
 }: {
   agent: AgentDetailRecord;
   runs: HeartbeatRun[];
+  runStats: HeartbeatRunStat[];
   assignedIssues: { id: string; title: string; status: string; priority: string; identifier?: string | null; createdAt: Date }[];
   runtimeState?: AgentRuntimeState;
   agentId: string;
@@ -1786,7 +1794,7 @@ function AgentOverview({
       {/* Charts */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <ChartCard title={uiText("Run Activity")} subtitle={uiText("Last 14 days")}>
-          <RunActivityChart runs={runs} />
+          <RunActivityChart stats={runStats} />
         </ChartCard>
         {/* PAP-411: "Tasks by Priority" chart hidden behind SHOW_TASK_PRIORITY_UI. */}
         {SHOW_TASK_PRIORITY_UI && (
@@ -1798,7 +1806,7 @@ function AgentOverview({
           <IssueStatusChart issues={assignedIssues} />
         </ChartCard>
         <ChartCard title={uiText("Success Rate")} subtitle={uiText("Last 14 days")}>
-          <SuccessRateChart runs={runs} />
+          <SuccessRateChart stats={runStats} />
         </ChartCard>
       </div>
 
@@ -1885,6 +1893,7 @@ function CostsSection({
       )}
       {runsWithCost.length > 0 && (
         <div className="border border-border rounded-lg overflow-hidden">
+          <p className="px-3 py-2 text-xs text-muted-foreground">{uiText("Recent 25 runs")}</p>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border bg-accent/20">
@@ -3123,8 +3132,7 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
   );
 }
 
-function RunsTab({
-  runs,
+export function RunsTab({
   companyId,
   agentId,
   agentRouteId,
@@ -3132,7 +3140,6 @@ function RunsTab({
   adapterType,
   adapterConfig,
 }: {
-  runs: HeartbeatRun[];
   companyId: string;
   agentId: string;
   agentRouteId: string;
@@ -3142,8 +3149,27 @@ function RunsTab({
 }) {
   const { isMobile } = useSidebar();
 
-  if (runs.length === 0) {
-    return <p className="text-sm text-muted-foreground">{uiText("No runs yet.")}</p>;
+  const history = useInfiniteQuery({
+    queryKey: [...queryKeys.heartbeats(companyId, agentId), "pages"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => heartbeatsApi.list(companyId, agentId, 25, { offset: pageParam, summary: true }),
+    getNextPageParam: (lastPage, pages) => lastPage.length === 25 ? pages.length * 25 : undefined,
+  });
+  const runs = Array.from(new Map((history.data?.pages.flat() ?? []).map((run) => [run.id, run])).values());
+  const selected = useQuery({
+    queryKey: queryKeys.runDetail(selectedRunId ?? ""),
+    queryFn: () => heartbeatsApi.get(selectedRunId!),
+    enabled: Boolean(selectedRunId),
+  });
+  const loadMore = history.hasNextPage ? (
+    <Button variant="ghost" className="w-full" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+      {uiText(history.isFetchingNextPage ? "Loading…" : "Load more")}
+    </Button>
+  ) : null;
+  const listError = history.error ? <p role="alert" className="text-sm text-destructive">{history.error.message}</p> : null;
+
+  if (runs.length === 0 && !selected.data) {
+    return <p role={history.error || selected.error ? "alert" : "status"} className="text-sm text-muted-foreground">{history.error?.message ?? selected.error?.message ?? uiText(history.isPending || selected.isFetching ? "Loading…" : "No runs yet.")}</p>;
   }
 
   // Sort by created descending
@@ -3153,7 +3179,7 @@ function RunsTab({
 
   // On mobile, don't auto-select so the list shows first; on desktop, auto-select latest
   const effectiveRunId = isMobile ? selectedRunId : (selectedRunId ?? sorted[0]?.id ?? null);
-  const selectedRun = sorted.find((r) => r.id === effectiveRunId) ?? null;
+  const selectedRun = selected.data?.agentId === agentId ? selected.data : sorted.find((r) => r.id === effectiveRunId) ?? null;
 
   // Mobile: show either run list OR run detail with back button
   if (isMobile) {
@@ -3174,6 +3200,8 @@ function RunsTab({
         {sorted.map((run) => (
           <RunListItem key={run.id} run={run} isSelected={false} agentId={agentRouteId} />
         ))}
+        {listError}
+        {loadMore}
       </div>
     );
   }
@@ -3190,6 +3218,8 @@ function RunsTab({
         {sorted.map((run) => (
           <RunListItem key={run.id} run={run} isSelected={run.id === effectiveRunId} agentId={agentRouteId} />
         ))}
+        {listError}
+        {loadMore}
         </div>
       </div>
 

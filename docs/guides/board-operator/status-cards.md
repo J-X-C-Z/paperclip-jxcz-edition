@@ -1,6 +1,6 @@
 ---
-title: Status Cards
-summary: Experimental watched-query summaries, refresh policies, costs, and agent authoring
+title: 状态卡片
+summary: 实验性查询摘要、刷新策略、费用和智能体编辑
 ---
 
 ## 简体中文

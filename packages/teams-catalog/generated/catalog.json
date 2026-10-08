@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "packageName": "@paperclipai/teams-catalog",
   "packageVersion": "0.1.0",
-  "generatedAt": "2026-10-08T09:28:46.807Z",
+  "generatedAt": "2026-10-08T09:50:29.019Z",
   "teams": [
     {
       "id": "paperclipai:bundled:company-defaults:core-exec-team",

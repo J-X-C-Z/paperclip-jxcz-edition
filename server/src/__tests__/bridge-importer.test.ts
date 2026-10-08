@@ -43,7 +43,7 @@ describe("Bridge transactional importer", () => {
     const [{ runs, activity }] = await db.execute<{runs: number; activity: number}>(sql`select (select count(*)::int from heartbeat_runs) as runs, (select count(*)::int from activity_log) as activity`);
     expect(runs).toBe(0); expect(activity).toBe(0);
   });
-  it.each([["model.request.completed", 1], ["model.auxiliary_request.completed", 2]] as const)("projects %s usage but only accounts explicitly priced billed USD, exactly once", async (eventKind, expectedCents) => {
+  it.each([["model.request.completed", 1.25], ["model.auxiliary_request.completed", 1.25]] as const)("projects %s usage but only accounts explicitly priced billed USD, exactly once", async (eventKind, expectedCents) => {
     const ledgerBefore = await db.select().from(costEvents);
     const unknown = await event(eventKind, { sessionId, usage: { input_tokens: 20, output_tokens: 30 }, estimated_cost: 1.2 });
     await importer.importEvent(unknown);
@@ -53,7 +53,7 @@ describe("Bridge transactional importer", () => {
     const ledger = await db.select().from(costEvents).where(eq(costEvents.id, billed.id));
     expect(ledger).toHaveLength(1); expect(ledger[0]?.agentId).toBe(agentId);
     expect(ledger[0]?.billedUsdMicros).toBe(12500n);
-    // The binding carry is shared across primary/auxiliary billed events.
+    // Decimal receipts preserve each event without residual cent rounding.
     expect(ledger[0]?.costCents).toBe(expectedCents);
     const projections = await db.select().from(bridgeUsageProjection).where(eq(bridgeUsageProjection.id, billed.id));
     expect(projections).toHaveLength(1);

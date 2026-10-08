@@ -1,13 +1,16 @@
-import { uiText } from "@/i18n";
+import { uiText, useUiTranslator } from "@/i18n";
+import { PrimaryAgentIndicator, SetPrimaryAgentButton } from "@/components/primary-agent/PrimaryAgentPresentation";
+import { AiConnectionPoolRunDetails } from "@/components/ai-connections/AiConnectionPoolRunDetails";
+import { AgentConnectionInstructions } from "@/features/connections/ConnectionInstructions";
 import type { AgentInstructionCandidate, AgentInstructionsBundle } from "@paperclipai/shared";
 import { InstructionHistory } from "../components/InstructionHistory";
 import { AgentCharacter } from "../components/AgentCharacter";
-import { characterStateForAgent } from "@paperclipai/shared";
+import { characterStateForAgent, isUuidLike, type Agent, type AgentDetail as AgentDetailRecord, type HeartbeatRun, type HeartbeatRunEvent, type AgentRuntimeState, type Issue, type LiveEvent, type WorkspaceOperation, isResponsibleUserDenialCode, responsibleUserLabel } from "@paperclipai/shared";
 import { mergeRunLogChunks, readChunkSeq } from "../lib/run-log-chunks";
 import { getPageVisibility, usePageVisibility } from "../lib/page-visibility";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, Link, Navigate, useBeforeUnload, type NavigateFunction } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   agentsApi,
   type AgentKey,
@@ -36,7 +39,7 @@ import { getAdapterDisplay } from "../adapters/adapter-display-registry";
 import { adapterLabels, roleLabels, help } from "../components/agent-config-primitives";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { useAdapterCapabilities } from "@/adapters/use-adapter-capabilities";
-import { redactCommandText as redactCommandSecretText } from "@paperclipai/adapter-utils";
+import { redactCommandText as redactCommandSecretText, redactHomePathUserSegments, redactHomePathUserSegmentsInValue } from "@paperclipai/adapter-utils";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { assetsApi } from "../api/assets";
 import { toolsApi } from "../api/tools";
@@ -62,15 +65,14 @@ import { SourceResolvedFoldBadge } from "../components/SourceResolvedFoldBadge";
 import { readSourceResolvedWatchdogFold } from "../lib/source-resolved-watchdog-fold";
 import { buildSameOriginWebSocketUrl } from "../lib/websocket-url";
 import { tryCreateWebSocket } from "../lib/websocket";
-import { formatDate, relativeTime, formatTokens, visibleRunCostUsd } from "../lib/utils";
-import { cn } from "../lib/utils";
-import { describeRunRetryState } from "../lib/runRetryState";
+import { formatDate, relativeTime, formatTokens, visibleRunCostUsd, visibleRunTokenTotal, cn, agentRouteRef } from "../lib/utils";
+import { RunRetryDetails } from "../components/RunRetryDetails";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { PageTabBar } from "../components/PageTabBar";
 import { AuditFeed } from "./audit/AuditFeed";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
   CheckCircle2,
   XCircle,
@@ -92,33 +94,18 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { RunTranscriptView, type TranscriptMode } from "../components/transcript/RunTranscriptView";
 import { AgentToolsTab } from "./AgentToolsTab";
 import { AgentExternalConversations } from "./AgentExternalConversations";
 import { AgentChannelsPanel } from "../components/chat/AgentChannelsPanel";
 import { useChatConnectorsEnabled } from "@/hooks/useChatConnectorsEnabled";
-import { useUiTranslator } from "@/i18n";
 import {
   appendCapped,
   LIVE_TRANSCRIPT_RENDER_LIMIT,
   MAX_LIVE_EVENTS,
   MAX_LIVE_LOG_LINES,
 } from "../lib/live-log-buffer";
-import {
-  isUuidLike,
-  type Agent,
-  type AgentDetail as AgentDetailRecord,
-  type HeartbeatRun,
-  type HeartbeatRunEvent,
-  type AgentRuntimeState,
-  type Issue,
-  type LiveEvent,
-  type WorkspaceOperation,
-  isResponsibleUserDenialCode,
-  responsibleUserLabel,
-} from "@paperclipai/shared";
 import { ResponsibleUserDenialNotice } from "../components/ResponsibleUserDenialNotice";
 import { RunWorkspaceRecoverySurface } from "../components/RunWorkspaceRecoverySurface";
 import { RunnerInspector } from "../components/RunnerInspector";
@@ -128,8 +115,6 @@ import {
   runRequestedProviderTrace,
 } from "../components/ProviderTraceStatusBadge";
 import { buildPermissionsForTrustPreset, getTrustPreset } from "../lib/trust-policy-ui";
-import { redactHomePathUserSegments, redactHomePathUserSegmentsInValue } from "@paperclipai/adapter-utils";
-import { agentRouteRef } from "../lib/utils";
 import {
   isStarred,
   resourceMembershipState,
@@ -385,7 +370,7 @@ function runMetrics(run: HeartbeatRun) {
     output,
     cached,
     cost,
-    totalTokens: input + output,
+    totalTokens: visibleRunTokenTotal(usage),
     provider,
     model,
   };
@@ -794,8 +779,6 @@ export function AgentDetail() {
               ? "configuration"
               : activeView;
   const needsOverviewData = activeView === "overview";
-  const needsRunData = activeView === "run-detail";
-  const shouldLoadHeartbeats = needsOverviewData || needsRunData;
   const [configDirty, setConfigDirty] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const saveConfigActionRef = useRef<(() => void) | null>(null);
@@ -922,9 +905,9 @@ export function AgentDetail() {
   });
 
   const { data: heartbeats } = useQuery({
-    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), needsOverviewData ? "summary" : "detail-list"],
-    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined, undefined, { summary: needsOverviewData }),
-    enabled: !!resolvedCompanyId && !!agent?.id && shouldLoadHeartbeats,
+    queryKey: [...queryKeys.heartbeats(resolvedCompanyId!, agent?.id ?? undefined), "overview"],
+    queryFn: () => heartbeatsApi.list(resolvedCompanyId!, agent?.id ?? undefined, 1, { summary: true }),
+    enabled: !!resolvedCompanyId && !!agent?.id && needsOverviewData,
   });
 
   const { data: allIssues } = useQuery({
@@ -954,13 +937,6 @@ export function AgentDetail() {
 
   useEffect(() => {
     if (!agent) return;
-    if (!urlRunId && urlTab === "channels") {
-      if (!chatConnectorsLoaded) return;
-      if (!chatConnectorsEnabled) {
-        navigate(agentDetailHref(canonicalAgentRef, "overview"), { replace: true });
-        return;
-      }
-    }
     if (urlRunId) {
       if (routeAgentRef !== canonicalAgentRef) {
         navigate(`/agents/${canonicalAgentRef}/runs/${urlRunId}`, { replace: true });
@@ -968,6 +944,7 @@ export function AgentDetail() {
       return;
     }
     if (legacyAuditSection) return;
+    if (urlTab === "channels" && !chatConnectorsLoaded) return;
     const canonicalTab = activeView === "run-detail" ? "overview" : activeView;
     if (routeAgentRef !== canonicalAgentRef || urlTab !== canonicalTab) {
       navigate(agentDetailHref(canonicalAgentRef, canonicalTab), { replace: true });
@@ -1245,14 +1222,15 @@ export function AgentDetail() {
             <AgentCharacter agent={agent} state={characterStateForAgent(agent.status)} size={96} trackingScope="page" />
           </div>
           <div className="min-w-0 space-y-1">
-            <h1 className="truncate text-2xl font-semibold tracking-tight">{agent.name}</h1>
+            <div className="flex items-center gap-2"><h1 className="truncate text-2xl font-semibold tracking-tight">{agent.name}</h1><PrimaryAgentIndicator agentId={agent.id} companyId={agent.companyId} /></div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {agent.adapterType === "claude_local" || agent.adapterType === "codex_local"
                 ? <img src={`/brands/${agent.adapterType === "claude_local" ? "claude" : "codex"}-color.svg`} className="size-4" alt="" />
                 : null}
-              <span>{getAdapterDisplay(agent.adapterType).label}</span><span>·</span>
+              <span>{getAdapterDisplay(agent.adapterType === "paperclip_runner" && agent.adapterConfig.provider === "openai_dot" ? "openai_dot" : agent.adapterType).label}</span><span>·</span>
               <span>{agent.title || roleLabels[agent.role] || agent.role}</span>
             </div>
+            <SetPrimaryAgentButton agent={agent} />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1403,7 +1381,7 @@ export function AgentDetail() {
       )}
 
       {activeView === "instructions" && (
-        <PromptsTab
+        <div><PromptsTab
           agent={agent}
           companyId={resolvedCompanyId ?? undefined}
           showSaveNotice={false}
@@ -1412,6 +1390,8 @@ export function AgentDetail() {
           onCancelActionChange={setCancelConfigAction}
           onSavingChange={setConfigSaving}
         />
+        {resolvedCompanyId && <AgentConnectionInstructions companyId={resolvedCompanyId} agentId={agent.id} />}
+        </div>
       )}
 
       {activeView === "runtime" && (
@@ -1489,7 +1469,6 @@ export function AgentDetail() {
 
       {activeView === "run-detail" && (
         <RunsTab
-          runs={heartbeats ?? []}
           companyId={resolvedCompanyId!}
           agentId={agent.id}
           agentRouteId={canonicalAgentRef}
@@ -1782,7 +1761,10 @@ export function AgentOverview({
     ?? asNonEmptyString(agent.runtimeConfig?.model)
     ?? tr("Adapter default");
   const lastRun = runs[0] ?? null;
-
+  const identity = useQuery({
+    queryKey: [...queryKeys.agents.identity(agent.id), lastRun?.id, lastRun?.status],
+    queryFn: () => agentsApi.getIdentity(agent.id, agent.companyId),
+  });
   return (
     <div className="space-y-6">
       <LatestRunCard runs={runs} agentId={agentRouteId} issuesById={issuesById} />
@@ -1804,6 +1786,20 @@ export function AgentOverview({
               ) : <span className="text-sm">{tr("Board")}</span>}
             </SummaryRow>
             <SummaryRow label={tr("Direct reports")}><span className="text-sm tabular-nums">{directReportCount}</span></SummaryRow>
+            <SummaryRow label="Public key">
+              {identity.isPending ? <span className="text-sm text-muted-foreground">Loading…</span>
+                : identity.isError ? <span className="text-sm text-destructive">Could not load public key</span>
+                : identity.data ? (
+                  <CopyText text={identity.data.publicKeyPem} ariaLabel="Copy public key" title="Copy public key">
+                    <span className="font-mono text-sm">{identity.data.keyId.slice(0, 19)}…</span>
+                  </CopyText>
+                ) : (
+                  <div className="text-sm">
+                    <div>Not created yet</div>
+                    <div className="text-xs text-muted-foreground">Created automatically on the next managed run</div>
+                  </div>
+                )}
+            </SummaryRow>
           </div>
         </section>
 
@@ -1813,7 +1809,7 @@ export function AgentOverview({
             <Link className="text-xs text-muted-foreground hover:text-foreground" to={agentDetailHref(agentRouteId, "runtime")}>{tr("Configure")}</Link>
           </div>
           <div className="space-y-3">
-            <SummaryRow label={tr("Adapter")}><span className="text-sm">{adapterLabels[agent.adapterType] ?? agent.adapterType}</span></SummaryRow>
+            <SummaryRow label={tr("Adapter")}><span className="text-sm">{getAdapterDisplay(agent.adapterType === "paperclip_runner" && agent.adapterConfig.provider === "openai_dot" ? "openai_dot" : agent.adapterType).label}</span></SummaryRow>
             <SummaryRow label={tr("Model")}><span className="max-w-64 truncate text-sm font-mono">{configuredModel}</span></SummaryRow>
             <SummaryRow label={tr("Session")}><span className="max-w-64 truncate text-sm font-mono">{runtimeState?.sessionDisplayId ?? runtimeState?.sessionId ?? tr("No session")}</span></SummaryRow>
             <SummaryRow label={tr("Last run")}>
@@ -3356,8 +3352,7 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
   );
 }
 
-function RunsTab({
-  runs,
+export function RunsTab({
   companyId,
   agentId,
   agentRouteId,
@@ -3365,7 +3360,6 @@ function RunsTab({
   adapterType,
   adapterConfig,
 }: {
-  runs: HeartbeatRun[];
   companyId: string;
   agentId: string;
   agentRouteId: string;
@@ -3376,8 +3370,27 @@ function RunsTab({
   const tr = useUiTranslator();
   const { isMobile } = useSidebar();
 
-  if (runs.length === 0) {
-    return <p className="text-sm text-muted-foreground">{tr("No runs yet.")}</p>;
+  const history = useInfiniteQuery({
+    queryKey: [...queryKeys.heartbeats(companyId, agentId), "pages"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => heartbeatsApi.list(companyId, agentId, 25, { offset: pageParam, summary: true }),
+    getNextPageParam: (lastPage, pages) => lastPage.length === 25 ? pages.length * 25 : undefined,
+  });
+  const runs = Array.from(new Map((history.data?.pages.flat() ?? []).map((run) => [run.id, run])).values());
+  const selected = useQuery({
+    queryKey: queryKeys.runDetail(selectedRunId ?? ""),
+    queryFn: () => heartbeatsApi.get(selectedRunId!),
+    enabled: Boolean(selectedRunId),
+  });
+  const loadMore = history.hasNextPage ? (
+    <Button variant="ghost" className="w-full" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+      {tr(history.isFetchingNextPage ? "Loading…" : "Load more")}
+    </Button>
+  ) : null;
+  const listError = history.error ? <p role="alert" className="text-sm text-destructive">{history.error.message}</p> : null;
+
+  if (runs.length === 0 && !selected.data) {
+    return <p role={history.error || selected.error ? "alert" : "status"} className="text-sm text-muted-foreground">{history.error?.message ?? selected.error?.message ?? tr(history.isPending || selected.isFetching ? "Loading…" : "No runs yet.")}</p>;
   }
 
   // Sort by created descending
@@ -3387,7 +3400,7 @@ function RunsTab({
 
   // On mobile, don't auto-select so the list shows first; on desktop, auto-select latest
   const effectiveRunId = isMobile ? selectedRunId : (selectedRunId ?? sorted[0]?.id ?? null);
-  const selectedRun = sorted.find((r) => r.id === effectiveRunId) ?? null;
+  const selectedRun = selected.data?.agentId === agentId ? selected.data : sorted.find((r) => r.id === effectiveRunId) ?? null;
 
   // Mobile: show either run list OR run detail with back button
   if (isMobile) {
@@ -3410,6 +3423,8 @@ function RunsTab({
         {sorted.map((run) => (
           <RunListItem key={run.id} run={run} isSelected={false} agentId={agentRouteId} />
         ))}
+        {listError}
+        {loadMore}
       </div>
     );
   }
@@ -3426,6 +3441,8 @@ function RunsTab({
         {sorted.map((run) => (
           <RunListItem key={run.id} run={run} isSelected={run.id === effectiveRunId} agentId={agentRouteId} />
         ))}
+        {listError}
+        {loadMore}
         </div>
       </div>
 
@@ -3660,7 +3677,6 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
   const sessionChanged = run.sessionIdBefore && run.sessionIdAfter && run.sessionIdBefore !== run.sessionIdAfter;
   const sessionId = run.sessionIdAfter || run.sessionIdBefore;
   const hasNonZeroExit = run.exitCode !== null && run.exitCode !== 0;
-  const retryState = describeRunRetryState(run);
 
   return (
     <div className="space-y-4 min-w-0">
@@ -3668,6 +3684,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
           git workspace it could not validate, wired to the same reconcile / repair / re-issue /
           break-glass handlers as the task detail page. */}
       <RunWorkspaceRecoverySurface run={run} />
+      <AiConnectionPoolRunDetails context={run.contextSnapshot} />
       {/* Run summary card */}
       <div className="border border-border rounded-lg overflow-hidden">
         <div className="flex flex-col sm:flex-row">
@@ -3888,30 +3905,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType, adapterConfig }
                 {run.signal && <span className="text-muted-foreground ml-1">(signal: {run.signal})</span>}
               </div>
             )}
-            {retryState && (
-              <div className="rounded-md border border-border/70 bg-accent/20 px-3 py-2 text-xs leading-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded-md border px-1.5 py-0.5 text-(length:--text-micro) font-medium",
-                      retryState.tone,
-                    )}
-                  >
-                    {retryState.badgeLabel}
-                  </span>
-                  {retryState.retryOfRunId ? (
-                    <Link
-                      to={`/agents/${agentRouteId}/runs/${retryState.retryOfRunId}`}
-                      className="font-mono text-foreground hover:underline"
-                    >
-                      {retryState.retryOfRunId.slice(0, 8)}
-                    </Link>
-                  ) : null}
-                </div>
-                {retryState.detail ? <p className="mt-2 text-muted-foreground">{retryState.detail}</p> : null}
-                {retryState.secondary ? <p className="text-muted-foreground">{retryState.secondary}</p> : null}
-              </div>
-            )}
+            <RunRetryDetails run={run} agentRouteId={agentRouteId} />
           </div>
 
           {/* Right column: metrics */}

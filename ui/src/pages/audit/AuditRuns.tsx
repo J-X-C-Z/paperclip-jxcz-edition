@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n";
 import { useUiTranslator } from "@/i18n";
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type { HeartbeatRun, RoutineRunSummary } from "@paperclipai/shared";
 import { Activity, CircleDotDashed } from "lucide-react";
 import { agentsApi } from "@/api/agents";
@@ -23,6 +23,7 @@ import { relativeTime } from "@/lib/utils";
 
 const ALL = "__all";
 const RUN_LIMIT = 200;
+const RUN_PAGE_SIZE = 25;
 
 function runSummary(run: HeartbeatRun) {
   const result = run.resultJson as { summary?: unknown; result?: unknown } | null;
@@ -137,15 +138,22 @@ export function AuditRuns({ companyId, routineId }: { companyId: string; routine
     queryFn: () => agentsApi.list(companyId),
     enabled: !routineId,
   });
-  const runs = useQuery({
-    queryKey: queryKeys.audit.runs(companyId, agentId === ALL ? null : agentId),
-    queryFn: () =>
-      heartbeatsApi.list(companyId, agentId === ALL ? undefined : agentId, RUN_LIMIT, {
+  const runs = useInfiniteQuery({
+    queryKey: [...queryKeys.audit.runs(companyId, agentId === ALL ? null : agentId), "pages"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      heartbeatsApi.list(companyId, agentId === ALL ? undefined : agentId, RUN_PAGE_SIZE, {
         summary: true,
+        offset: pageParam,
       }),
-    refetchInterval: 15_000,
+    getNextPageParam: (lastPage, pages) => lastPage.length === RUN_PAGE_SIZE ? pages.length * RUN_PAGE_SIZE : undefined,
+    refetchInterval: (query) => (query.state.data?.pages.length ?? 0) <= 1 ? 15_000 : false,
     enabled: !routineId,
   });
+  const runRows = useMemo(
+    () => Array.from(new Map((runs.data?.pages.flat() ?? []).map((run) => [run.id, run])).values()),
+    [runs.data],
+  );
   const routineRuns = useQuery({
     queryKey: [...queryKeys.routines.runs(routineId ?? ""), "audit"],
     queryFn: () => routinesApi.listRuns(routineId!, RUN_LIMIT),
@@ -157,12 +165,12 @@ export function AuditRuns({ companyId, routineId }: { companyId: string; routine
     [agents.data],
   );
   const statuses = useMemo(
-    () => Array.from(new Set((runs.data ?? []).map((run) => run.status))).sort(),
-    [runs.data],
+    () => Array.from(new Set(runRows.map((run) => run.status))).sort(),
+    [runRows],
   );
   const visibleRuns = useMemo(
-    () => (runs.data ?? []).filter((run) => status === ALL || run.status === status),
-    [runs.data, status],
+    () => runRows.filter((run) => status === ALL || run.status === status),
+    [runRows, status],
   );
 
   const updateFilter = (key: "agentId" | "runStatus", value: string) => {
@@ -307,7 +315,12 @@ export function AuditRuns({ companyId, routineId }: { companyId: string; routine
         </ul>
       )}
 
-      <p className="text-xs text-muted-foreground">{uiText("Showing the {count} most recent runs.", { count: RUN_LIMIT })}</p>
+      {runs.hasNextPage && (
+        <Button variant="outline" disabled={runs.isFetchingNextPage} onClick={() => void runs.fetchNextPage()}>
+          {tr(runs.isFetchingNextPage ? "Loading…" : "Load more")}
+        </Button>
+      )}
+      <p className="text-xs text-muted-foreground">{uiText("Showing {count} loaded runs.", { count: runRows.length })}</p>
     </div>
   );
 }

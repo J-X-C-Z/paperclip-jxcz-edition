@@ -44,7 +44,7 @@
   "Default branch": "默认分支",
   "View on GitHub": "在 GitHub 上查看",
   "Removed from source · installed copy retained": "已从来源移除 · 保留已安装的副本",
-  "New skill": "新技能",
+  "New skill": "新建技能",
   "Already imported": "已导入",
   "Selected skills with validation errors will be skipped: {count}.": "所选技能中有 {count} 项存在校验错误，将跳过导入。",
   "Connect a GitHub account": "连接 GitHub 账号",

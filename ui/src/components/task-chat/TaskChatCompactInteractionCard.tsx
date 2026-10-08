@@ -27,6 +27,7 @@ import type {
   PaperclipQuestionResponse,
   PaperclipQuestionSet,
 } from "@paperclipai/adapter-utils";
+import { InteractionPreparationNotice } from "@/components/InteractionPreparationNotice";
 import { IssueThreadInteractionCard } from "@/components/IssueThreadInteractionCard";
 import { ConnectionIntentInteractionBody } from "@/features/connections/ConnectionIntentInteractionBody";
 import { MarkdownBody } from "@/components/MarkdownBody";
@@ -43,6 +44,7 @@ import {
   saveStructuredDraft,
 } from "@/lib/composer-draft";
 import {
+  isInteractionPreparingApproval,
   buildIssueThreadInteractionSummary,
   buildSuggestedTaskTree,
   collectSuggestedTaskClientKeys,
@@ -812,6 +814,7 @@ function ConfirmationCard({
   onUploadImage?: SharedInteractionProps["onUploadImage"];
   mentions?: MentionOption[];
 }) {
+  const preparingApproval = isInteractionPreparingApproval(interaction);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState(() =>
     draftKey ? loadStructuredDraft(draftKey, "") : "",
@@ -984,6 +987,7 @@ function ConfirmationCard({
         </div>
       ) : null}
       <InteractionActionError message={actionError} />
+      {preparingApproval ? <InteractionPreparationNotice /> : null}
       <ActionRow>
         {rejecting ? (
           <>
@@ -1033,7 +1037,7 @@ function ConfirmationCard({
             <Button
               type="button"
               size="sm"
-              disabled={working !== null || !onAcceptInteraction}
+              disabled={working !== null || preparingApproval || !onAcceptInteraction}
               onClick={() => void resolve("accept")}
             >
               {working === "accept" ? (
@@ -1077,6 +1081,7 @@ function CheckboxConfirmationCard({
           [],
       ),
   );
+  const preparingApproval = isInteractionPreparingApproval(interaction);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState(restored?.reason ?? "");
   const [filter, setFilter] = useState("");
@@ -1221,6 +1226,7 @@ function CheckboxConfirmationCard({
         </div>
       ) : null}
       <InteractionActionError message={actionError} />
+      {preparingApproval ? <InteractionPreparationNotice /> : null}
       <ActionRow hint={countHint}>
         {rejecting ? (
           <>
@@ -1267,7 +1273,7 @@ function CheckboxConfirmationCard({
             <Button
               type="button"
               size="sm"
-              disabled={working !== null || !validCount || !onAcceptInteraction}
+              disabled={working !== null || preparingApproval || !validCount || !onAcceptInteraction}
               onClick={() => void resolve("accept")}
             >
               {working === "accept" ? (
@@ -1911,18 +1917,12 @@ export function TaskChatCompactInteractionCard({
 
   if (interaction.kind === "connection_intent") {
     return (
-      <InteractionShell
-        interaction={interaction}
-        audienceLabel={audienceLabel}
-        presentation={presentation}
-      >
         <ConnectionIntentInteractionBody
           interaction={interaction}
           currentUserId={currentUserId}
           addresseeLabel={addresseeLabel ?? "the addressed user"}
           addresseeName={interaction.addresseeUserId ? userLabelMap?.get(interaction.addresseeUserId) : undefined}
         />
-      </InteractionShell>
     );
   }
 

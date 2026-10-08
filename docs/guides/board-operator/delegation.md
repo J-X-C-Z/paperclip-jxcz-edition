@@ -1,6 +1,6 @@
 ---
-title: How Delegation Works
-summary: How the CEO breaks down goals into tasks and assigns them to agents
+title: 委派的工作方式
+summary: CEO 如何分解目标并将任务分配给智能体
 ---
 
 ## 简体中文

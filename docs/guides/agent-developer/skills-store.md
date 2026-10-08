@@ -1,6 +1,6 @@
 ---
-title: The Skills Store
-summary: Browse, install, import, fork, and share the reusable skills your agents use
+title: 技能库
+summary: 浏览、安装、导入、分叉和分享智能体使用的可复用技能
 ---
 
 ## 简体中文

@@ -9,6 +9,7 @@ import {
 import type { ExecutionProjection } from "@paperclipai/shared";
 import { EXECUTION_CONTROL_DEADLINE_MS } from "./execution-control-deadline.js";
 import { executionFailureRetryCount } from "./execution-recovery-attempt.js";
+import { retryIdempotentDatabaseOperation } from "../database-retry.js";
 const text = (v: unknown) => (typeof v === "string" ? v : null);
 const executionRunColumns = {
   id: heartbeatRuns.id,
@@ -48,29 +49,33 @@ export async function executionProjectionsForRuns(
   companyId: string,
   runIds: string[],
   now = new Date(),
+  options: { retryDatabaseReads?: boolean } = {},
 ) {
   const projections = new Map<string, ExecutionProjection>();
   if (!runIds.length) return projections;
-  const [runs, coordinators] = await Promise.all([
-    db
-      .select(executionRunColumns)
-      .from(heartbeatRuns)
-      .where(
-        and(
-          eq(heartbeatRuns.companyId, companyId),
-          inArray(heartbeatRuns.id, runIds),
-        ),
+  // Opt in only with a pooled Db outside a transaction. Issue enrichment also
+  // calls this helper with a transaction, whose failed reads must not replay.
+  const read = <T>(query: () => Promise<T>) => options.retryDatabaseReads
+    ? retryIdempotentDatabaseOperation(query)
+    : query();
+  const [runs, coordinators] = await Promise.all([read(async () => db
+    .select(executionRunColumns)
+    .from(heartbeatRuns)
+    .where(
+      and(
+        eq(heartbeatRuns.companyId, companyId),
+        inArray(heartbeatRuns.id, runIds),
       ),
-    db
-      .select()
-      .from(nativeRunFinalizations)
-      .where(
-        and(
-          eq(nativeRunFinalizations.companyId, companyId),
-          inArray(nativeRunFinalizations.runId, runIds),
-        ),
+    )),
+  read(async () => db
+    .select()
+    .from(nativeRunFinalizations)
+    .where(
+      and(
+        eq(nativeRunFinalizations.companyId, companyId),
+        inArray(nativeRunFinalizations.runId, runIds),
       ),
-  ]);
+    ))]);
   const issueIds = [
     ...new Set(
       runs
@@ -78,46 +83,44 @@ export async function executionProjectionsForRuns(
         .filter((id): id is string => !!id),
     ),
   ];
-  const [pending, recovery] = await Promise.all([
-    issueIds.length
-      ? db
-          .select({
-            issueId: issueThreadInteractions.issueId,
-            kind: issueThreadInteractions.kind,
-          })
-          .from(issueThreadInteractions)
-          .where(
-            and(
-              eq(issueThreadInteractions.companyId, companyId),
-              inArray(issueThreadInteractions.issueId, issueIds),
-              eq(issueThreadInteractions.status, "pending"),
-            ),
-          )
-      : [],
-    issueIds.length
-      ? db
-          .select({
-            issueId: issueRecoveryActions.sourceIssueId,
-            cause: issueRecoveryActions.cause,
-            nextAction: issueRecoveryActions.nextAction,
-            evidence: issueRecoveryActions.evidence,
-            status: issueRecoveryActions.status,
-          })
-          .from(issueRecoveryActions)
-          .where(
-            and(
-              eq(issueRecoveryActions.companyId, companyId),
-              inArray(issueRecoveryActions.sourceIssueId, issueIds),
-              inArray(issueRecoveryActions.status, [
-                "active",
-                "escalated",
-                "resolved",
-              ]),
-            ),
-          )
-          .orderBy(desc(issueRecoveryActions.updatedAt))
-      : [],
-  ]);
+  const [pending, recovery] = await Promise.all([issueIds.length
+    ? await read(async () => db
+        .select({
+          issueId: issueThreadInteractions.issueId,
+          kind: issueThreadInteractions.kind,
+        })
+        .from(issueThreadInteractions)
+        .where(
+          and(
+            eq(issueThreadInteractions.companyId, companyId),
+            inArray(issueThreadInteractions.issueId, issueIds),
+            eq(issueThreadInteractions.status, "pending"),
+          ),
+        ))
+    : [],
+  issueIds.length
+    ? await read(async () => db
+        .select({
+          issueId: issueRecoveryActions.sourceIssueId,
+          cause: issueRecoveryActions.cause,
+          nextAction: issueRecoveryActions.nextAction,
+          evidence: issueRecoveryActions.evidence,
+          status: issueRecoveryActions.status,
+        })
+        .from(issueRecoveryActions)
+        .where(
+          and(
+            eq(issueRecoveryActions.companyId, companyId),
+            inArray(issueRecoveryActions.sourceIssueId, issueIds),
+            inArray(issueRecoveryActions.status, [
+              "active",
+              "escalated",
+              "resolved",
+            ]),
+          ),
+        )
+        .orderBy(desc(issueRecoveryActions.updatedAt)))
+    : []]);
   const coordinatorByRun = new Map(coordinators.map((row) => [row.runId, row]));
   for (const run of runs) {
     const issueId = run.nativeIssueId ?? text(run.contextSnapshot?.issueId);

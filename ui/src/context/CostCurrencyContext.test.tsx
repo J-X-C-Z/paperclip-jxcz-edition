@@ -35,13 +35,21 @@ describe("Cost currency formatting", () => {
 
   it("converts finance biller, category and event amounts consistently", () => {
     mount(<CostCurrencyProvider currency="CNY" rate={7}>
-      <FinanceBillerCard row={{ biller: "openai", netCents: 100, debitCents: 200, creditCents: 100, estimatedDebitCents: 50, eventCount: 1, kindCount: 1 }} />
-      <FinanceKindCard rows={[{ eventKind: "byok_fee", netCents: 100, debitCents: 200, creditCents: 100, estimatedDebitCents: 50, eventCount: 1, billerCount: 1 }]} />
-      <FinanceTimelineCard rows={[{ id: "event", companyId: "company", biller: "openai", provider: null, eventKind: "byok_fee", amountCents: 200, direction: "debit", estimated: false, currency: "USD", occurredAt: new Date(), createdAt: new Date(), agentId: null, issueId: null, projectId: null, goalId: null, heartbeatRunId: null, costEventId: null, billingCode: null, description: null, executionAdapterType: null, pricingTier: null, region: null, model: null, quantity: null, unit: null, externalInvoiceId: null, metadataJson: null }]} />
+      <FinanceBillerCard row={{ biller: "openai", currency: "USD", netCents: 100, debitCents: 200, creditCents: 100, estimatedDebitCents: 50, eventCount: 1, kindCount: 1 }} />
+      <FinanceKindCard rows={[{ eventKind: "byok_fee", currency: "USD", netCents: 100, debitCents: 200, creditCents: 100, estimatedDebitCents: 50, eventCount: 1, billerCount: 1 }]} />
+      <FinanceTimelineCard rows={[{ id: "event", idempotencyKey: null, companyId: "company", biller: "openai", provider: null, eventKind: "byok_fee", amountCents: 200, direction: "debit", estimated: false, currency: "USD", occurredAt: new Date(), createdAt: new Date(), agentId: null, issueId: null, projectId: null, goalId: null, heartbeatRunId: null, costEventId: null, billingCode: null, description: null, executionAdapterType: null, pricingTier: null, region: null, model: null, quantity: null, unit: null, externalInvoiceId: null, metadataJson: null }]} />
     </CostCurrencyProvider>);
     expect(container.textContent).toContain("¥7.00");
     expect(container.textContent).toContain("¥14.00");
     expect(container.textContent).toContain("¥3.50");
     expect(container.textContent).not.toContain("$");
   });
+  it("preserves the source currency for non-USD recorded charges", () => {
+    mount(<CostCurrencyProvider currency="CNY" rate={7}>
+      <FinanceBillerCard row={{ biller: "openai", currency: "EUR", netCents: 100, debitCents: 200, creditCents: 100, estimatedDebitCents: 50, eventCount: 1, kindCount: 1 }} />
+    </CostCurrencyProvider>);
+    expect(container.textContent).toContain("€1.00");
+    expect(container.textContent).not.toContain("¥");
+  });
+
 });

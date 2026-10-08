@@ -1,24 +1,15 @@
 ---
-title: Secrets Remote Import
-summary: AWS Secrets Manager metadata-only remote import API
+title: 远程导入密钥
+summary: 仅导入 AWS Secrets Manager 元数据的 API
 ---
 
-Remote import lets the board link existing AWS Secrets Manager entries as
-Paperclip `external_reference` secrets without copying plaintext into
-Paperclip.
+远程导入允许看板将现有 AWS Secrets Manager 条目关联为 Paperclip `external_reference` 密钥，而无需将明文复制到 Paperclip。
 
-Both routes are board-only and company-scoped. The selected provider vault must
-belong to the company, use `aws_secrets_manager`, and have a selectable status
-(`ready` or `warning`). Disabled, coming-soon, or cross-company vaults are
-rejected.
+这两个路由都仅供看板使用，并且以公司为范围。所选提供方保险库必须属于该公司、使用 `aws_secrets_manager`，且状态可选（`ready` 或 `warning`）。已禁用、即将推出或属于其他公司的保险库会被拒绝。
 
-Remote import is an inventory and metadata workflow. Preview calls AWS
-`ListSecrets` only and import stores a Paperclip external reference plus
-fingerprint/version metadata. Neither route calls `GetSecretValue` or
-`BatchGetSecretValue`, requests `SecretString`, requires KMS decrypt, logs raw
-remote metadata, or copies secret plaintext into Paperclip.
+远程导入用于盘点资源和管理元数据。预览操作只会调用 AWS `ListSecrets`；导入操作会保存 Paperclip 外部引用以及指纹/版本元数据。这两个路由都不会调用 `GetSecretValue` 或 `BatchGetSecretValue`，不会请求 `SecretString`、要求 KMS 解密、记录原始远程元数据，也不会将密钥明文复制到 Paperclip。
 
-## Preview Remote AWS Secrets
+## 预览远程 AWS 密钥
 
 ```
 POST /api/companies/{companyId}/secrets/remote-import/preview
@@ -30,12 +21,9 @@ POST /api/companies/{companyId}/secrets/remote-import/preview
 }
 ```
 
-`query` is optional and is sent to AWS as an inventory filter. Treat it as
-non-secret metadata because AWS may record list request parameters in
-CloudTrail. `nextToken` is an opaque AWS cursor; pass it back unchanged.
-`pageSize` is capped at 100.
+`query` 是可选项，会作为盘点筛选条件发送给 AWS。由于 AWS 可能在 CloudTrail 中记录列表请求参数，请将其视为非敏感元数据。`nextToken` 是不透明的 AWS 游标，应原样传回。`pageSize` 上限为 100。
 
-Response:
+响应：
 
 ```json
 {
@@ -61,18 +49,15 @@ Response:
 }
 ```
 
-Candidate `status` values:
+候选项的 `status` 值：
 
-- `ready`: no existing exact external reference and no name/key collision.
-- `duplicate`: an existing secret already has the exact provider `externalRef`.
-- `conflict`: the suggested Paperclip `name` or `key` is already in use.
+- `ready`：没有完全相同的外部引用，也不存在名称/键冲突。
+- `duplicate`：已有密钥包含完全相同的提供方 `externalRef`。
+- `conflict`：建议的 Paperclip `name` 或 `key` 已被使用。
 
-Conflict `type` values are `exact_reference`, `name`, `key`, and
-`provider_guardrail`. AWS refs under Paperclip's own managed namespace are
-blocked as external references so one company cannot import another company's
-Paperclip-managed AWS secret through a broad runtime role.
+冲突 `type` 值包括 `exact_reference`、`name`、`key` 和 `provider_guardrail`。Paperclip 自有受管理命名空间中的 AWS 引用不能作为外部引用，以避免某公司通过权限过宽的运行时角色导入其他公司的 Paperclip 管理密钥。
 
-## Import Remote AWS Secret References
+## 导入远程 AWS 密钥引用
 
 ```
 POST /api/companies/{companyId}/secrets/remote-import
@@ -94,14 +79,8 @@ POST /api/companies/{companyId}/secrets/remote-import
 }
 ```
 
-The import response is row-level. Ready rows become active
-`external_reference` secrets with version metadata only. Exact-reference
-duplicates and name/key conflicts are skipped without failing the whole request.
-The `secrets` array accepts 1-100 rows, and the backend re-checks duplicates and
-conflicts at submit time.
-Each row may include an optional Paperclip `description` entered during review;
-blank descriptions are stored as `null`. AWS provider descriptions are not
-copied into this field.
+导入响应按行返回。状态为 ready 的行会成为活动的 `external_reference` 密钥，只保存版本元数据。完全相同的引用重复项以及名称/键冲突会被跳过，不会导致整个请求失败。`secrets` 数组接受 1–100 行，后端会在提交时重新检查重复项和冲突。
+每行可包含审查时输入的可选 Paperclip `description`；空描述会保存为 `null`。不会将 AWS 提供方的描述复制到此字段。
 
 ```json
 {
@@ -124,10 +103,6 @@ copied into this field.
 }
 ```
 
-Activity logs record aggregate counts and provider/vault ids only, not remote
-secret names, ARNs, tags, or values.
+活动日志只记录汇总数量和提供方/保险库 ID，不会记录远程密钥名称、ARN、标签或值。
 
-Imported references may still fail during a future bound runtime resolution if
-the Paperclip runtime role can list the AWS secret but lacks
-`secretsmanager:GetSecretValue` or required KMS decrypt permission for that
-specific secret.
+即使导入成功，日后在受绑定的运行时中解析引用时仍可能失败：Paperclip 运行时角色可能可以列出 AWS 密钥，但缺少该特定密钥所需的 `secretsmanager:GetSecretValue` 权限或 KMS 解密权限。

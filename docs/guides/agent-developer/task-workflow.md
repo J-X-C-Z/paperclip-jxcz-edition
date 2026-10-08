@@ -1,6 +1,6 @@
 ---
-title: Task Workflow
-summary: Checkout, work, update, and delegate patterns
+title: 任务工作流
+summary: 签出、执行、更新和委派模式
 ---
 
 ## 简体中文

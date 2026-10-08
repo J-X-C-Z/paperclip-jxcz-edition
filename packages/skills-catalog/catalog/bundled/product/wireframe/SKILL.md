@@ -14,13 +14,13 @@ tags:
   - svg
 ---
 
-# Wireframe
+# 线框图
 
-Produce low-fidelity, black-and-white UI wireframes as **standalone SVG files**. The goal is to communicate **structure** — what goes where, in what order, at roughly what size — without committing to colour, brand, or polish.
+将低保真黑白 UI 线框图生成为**独立 SVG 文件**。目标是表达**结构**——各元素的位置、顺序和大致尺寸——而不预设颜色、品牌或视觉精修。
 
-## When to use
+## 适用场景
 
-Trigger on phrases like:
+遇到以下表达时触发：
 
 - "wireframe a [screen / page / flow] for X"
 - "low-fi / lo-fi mockup of X"
@@ -28,13 +28,13 @@ Trigger on phrases like:
 - "rough sketch of the [dashboard / settings / login / ...] page"
 - "show me how X would lay out before I build it"
 
-Skip and defer to `frontend-design` (or similar) when the request mentions: brand, polish, real components, "production-ready", colour palettes, hi-fi, Figma export, or actual code/HTML/React deliverables.
+如果请求提到品牌、视觉精修、真实组件、“production-ready”、调色板、高保真、Figma 导出或实际代码/HTML/React 交付，则改用 `frontend-design` 等相关技能。
 
-## House style — non-negotiable
+## 统一风格——必须遵守
 
-Wireframes are diagnostic, not decorative. Lock these tokens on every output:
+线框图用于分析结构，不用于装饰。每份输出都必须使用以下令牌：
 
-| Token            | Value                                             | Notes                                  |
+| 令牌 | 值 | 说明 |
 | ---------------- | ------------------------------------------------- | -------------------------------------- |
 | Stroke           | `#000` width `1.5`                                | All borders, dividers, outlines        |
 | Fill (boxes)     | `#fff`                                            | Default for cards/containers           |
@@ -46,18 +46,18 @@ Wireframes are diagnostic, not decorative. Lock these tokens on every output:
 | Grid             | 8px snap, 24px gutter                             | All x/y/w/h must be multiples of 8     |
 | Default canvas   | `1280×800` desktop, `375×812` mobile, `768×1024` tablet | Pick one and state it in the comment   |
 
-If you need to highlight a specific region for a callout, use the **annotation layer** (red dashed). Never colourise the wireframe itself.
+如需突出显示某个区域并添加说明，请使用**标注层**（红色虚线）。绝不要给线框图本身上色。
 
-## Workflow
+## 工作流
 
-1. **Confirm scope.** What screen(s)? Which viewport (desktop / tablet / mobile)? Single screen or multi-screen flow? If unclear, ask one question, then proceed with the most likely default.
-2. **Pick a canvas** from the table above. State the viewport in your reply.
-3. **Compose from primitives.** Read `references/components.md` and assemble the screen from the primitive snippets. Snap every coordinate to 8px.
-4. **Write the SVG to a file.** Default path: `wireframes/<slug>.svg` in the working directory. Filename slug describes the screen (`login.svg`, `dashboard.svg`, `settings-account.svg`).
-5. **Emit a textual annotation list** in your reply, mapping each numbered region in the SVG to a one-line description ("1 — primary nav, 2 — search input, 3 — list of recent items"). This makes the wireframe accessible, queryable, and reviewable in text-only channels.
-6. **For multi-screen flows**, produce one SVG per screen and a summary `flow.svg` that arranges thumbnails left-to-right with arrows between them.
+1. **确认范围。** 要设计哪些屏幕？使用哪个视口（桌面/平板/手机）？单屏还是多屏流程？不清楚时先问一个问题，再按最可能的默认情况继续。
+2. 从上表中**选择画布**，并在回复中说明视口。
+3. **使用基本图形组合。** 阅读 `references/components.md` 并使用其中的片段组装屏幕。所有坐标都对齐到 8px 网格。
+4. **将 SVG 写入文件。** 默认路径为工作目录下的 `wireframes/<slug>.svg`。文件名应描述屏幕，例如 `login.svg`、`dashboard.svg`、`settings-account.svg`。
+5. 在回复中提供**文本标注列表**，将 SVG 中每个编号区域对应到一行说明（例如“1 — 主导航，2 — 搜索框，3 — 最近项目列表”）。这样纯文本渠道也能访问、检索和审核线框图。
+6. **对于多屏流程，**每个屏幕分别生成一个 SVG，再生成汇总用的 `flow.svg`，按从左到右的顺序排列缩略图，并用箭头连接。
 
-## Quick start — minimal SVG
+## 快速开始——最小 SVG 示例
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800"
@@ -73,56 +73,56 @@ If you need to highlight a specific region for a callout, use the **annotation l
 </svg>
 ```
 
-Two house-style gotchas worth memorising:
+统一风格中有两点容易出错：
 
-- Always set `stroke="none"` on `<text>` elements (text inherits the parent stroke and gets a halo otherwise).
-- Always wrap text fill explicitly (`fill="#000"`) since the parent group fill is `#fff` for boxes.
+- 始终为 `<text>` 元素设置 `stroke="none"`（否则文本会继承父级描边，出现光晕）。
+- 始终显式设置文本填充色（`fill="#000"`），因为方框的父级组填充色为 `#fff`。
 
-## Primitive library
+## 基本图形库
 
-The full set of reusable primitives lives in `references/components.md`. Load it whenever you need a primitive whose exact markup you do not have in working memory. Do not re-derive primitives from scratch — copy the snippet and adjust coordinates.
+可复用的基本图形全集位于 `references/components.md`。若不记得某个基本图形的准确标记，需随时查阅。不要从头重新推导；复制对应片段并调整坐标即可。
 
-Primitives provided:
+提供的基本图形：
 
-- **Inputs:** button (filled, outlined, icon), text input, textarea, dropdown, checkbox, radio, toggle, search input
-- **Layout:** card, section divider, sidebar, two-column, three-column
-- **Navigation:** navbar, tab bar, breadcrumb, pagination, sidebar nav
-- **Content:** heading, paragraph block, list row, table, key-value pair, metric tile
-- **Media:** image placeholder, avatar (circle/square), video placeholder
-- **Overlay:** modal, drawer, toast, tooltip, dropdown menu (open state)
-- **Annotation:** numbered callout, dashed region highlight, arrow connector
+- **输入控件：**按钮（实心、描边、图标）、文本输入框、多行文本框、下拉框、复选框、单选框、开关、搜索框
+- **布局：**卡片、分区分隔线、侧边栏、双列、三列
+- **导航：**顶部导航栏、标签栏、面包屑导航、分页、侧边栏导航
+- **内容：**标题、段落块、列表行、表格、键值对、指标卡片
+- **媒体：**图片占位符、头像（圆形/方形）、视频占位符
+- **浮层：**模态框、抽屉、Toast、工具提示、下拉菜单（展开状态）
+- **标注：**编号说明、虚线区域高亮、箭头连接线
 
-## Grid, palette, and type scale
+## 网格、调色板与字号比例
 
-For exact pixel values, palette tokens, and type sizes, see `references/grid-system.md`.
+准确像素值、调色板令牌和字号请参阅 `references/grid-system.md`。
 
-## Worked examples
+## 完整示例
 
-`references/examples.md` contains four complete wireframes you can copy and adapt:
+`references/examples.md` 包含四份可复制并修改的完整线框图：
 
-1. Login screen (mobile, 375×812)
-2. Admin dashboard (desktop, 1280×800)
-3. Settings page with form (desktop, 1280×800)
-4. Modal confirmation overlay (desktop, 1280×800)
+1. 登录屏幕（手机，375×812）
+2. 管理后台（桌面，1280×800）
+3. 设置表单页（桌面，1280×800）
+4. 模态确认浮层（桌面，1280×800）
 
-When the user's request is close to one of these, start from the example and modify, rather than building from blank.
+用户请求与这些示例相近时，应从示例开始修改，不要从空白画布起步。
 
-## Output convention
+## 输出约定
 
-Every wireframe response should include:
+每次提交线框图都应包含：
 
-1. The SVG file written to disk (path stated explicitly).
-2. The SVG inlined in your reply (so it renders in markdown previews).
-3. A short numbered annotation list mapping regions to intent.
-4. Any explicit assumption you made (viewport, signed-in state, empty/populated, dark/light not applicable since monochrome).
+1. 已写入磁盘的 SVG 文件（明确注明路径）。
+2. 在回复中内嵌的 SVG（以便在 Markdown 预览中渲染）。
+3. 简短的编号标注列表，说明各区域的用途。
+4. 明确说明所作假设（视口、登录状态、空/有数据状态；由于采用单色设计，深色/浅色不适用）。
 
-## If the user requests a website / viewer page
+## 用户要求制作网站/查看页面时
 
-Trigger on phrases like "make a page that shows the screens", "single page I can scroll", "build a viewer", "let me click through the wireframes", "show them all on one page", or any request to bundle multiple wireframes into a browsable artifact (not a production site).
+当用户说“做一个展示这些屏幕的页面”“做一个可滚动的单页”“搭建查看器”“让我点击浏览线框图”“把它们都放到一个页面”，或要求将多份线框图打包成可浏览产物（而非生产网站）时触发。
 
-Build **one static `index.html`** that loads the SVG wireframes directly. Do not turn this into a React app or component library — it's a review surface, not product UI.
+构建**单个静态 `index.html`**，直接加载 SVG 线框图。不要将其改造成 React 应用或组件库；它是审核界面，不是产品 UI。
 
-**File layout** (default):
+**文件布局**（默认）：
 
 ```
 design/<task-slug>/
@@ -131,36 +131,36 @@ design/<task-slug>/
   screenshots/   # any reference screenshots
 ```
 
-**Page anatomy** (start from `assets/site-template.html` and adjust — do not re-derive the CSS):
+**页面结构**（从 `assets/site-template.html` 开始修改，不要重新编写 CSS）：
 
-- **Sticky sidebar TOC** (240px on desktop) listing every screen with anchor links. Group by Flow / Screens / Open questions.
-- **Hero header** at the top: crumb (issue id), title, one-paragraph summary, pill row of meta tags (`12 screens`, `Lo-fi · monochrome`, `Click any wireframe to zoom`).
-- **One section per screen** with a 2-column grid: wireframe on the left, reference image + numbered annotations + a "Why this changes" callout on the right. The wireframe `<img>` points to the SVG file directly — do not inline it.
-- **Click-to-zoom lightbox** for any element marked `[data-zoom]`. Esc and backdrop click both close.
-- **Flow diagram** section near the top that loads `wireframes/flow.svg` full-width.
-- **Open questions** section at the bottom for unresolved decisions.
+- **固定侧边目录**（桌面端宽 240px），列出每个屏幕并提供锚点链接。按 Flow / Screens / Open questions 分组。
+- **顶部主视觉标题区**：面包屑（issue ID）、标题、一段摘要和一行元数据标签（`12 screens`、`Lo-fi · monochrome`、`Click any wireframe to zoom`）。
+- **每个屏幕一个分区**，采用两列网格：左侧放线框图；右侧放参考图、编号标注和“Why this changes”说明。线框图使用 `<img>` 直接引用 SVG 文件，不要内嵌 SVG 内容。
+- **点击缩放灯箱**：用于带有 `[data-zoom]` 标记的元素。按 Esc 或点击背景均可关闭。
+- **流程图分区**：放在页面上方附近，加载全宽的 `wireframes/flow.svg`。
+- **待解决问题分区**：放在页面底部，列出尚未决定的问题。
 
-**House style for the viewer** (matches the wireframes themselves):
+**查看器的统一风格**（与线框图本身保持一致）：
 
-- Palette: `--bg: #fafaf8`, `--panel: #fff`, `--ink: #111`, `--muted: #666`, `--line: #e5e5e0`, `--accent: #d33` (red dashed callouts only).
-- System font stack only: `-apple-system, system-ui, "Segoe UI", sans-serif`. No web fonts.
-- 8px-based spacing, `border-radius: 8px` on cards, 1px `--line` borders, no shadows except the hover lift on `.wire`.
-- The viewer chrome is allowed to be slightly more polished than the wireframes (subtle hover, rounded cards) — but never colourful. The wireframes themselves stay strictly monochrome.
+- 仅使用以下调色板：`--bg: #fafaf8`、`--panel: #fff`、`--ink: #111`、`--muted: #666`、`--line: #e5e5e0`、`--accent: #d33`（红色虚线仅用于标注）。
+- 仅使用系统字体栈：`-apple-system, system-ui, "Segoe UI", sans-serif`。不要使用网络字体。
+- 间距基于 8px，卡片使用 `border-radius: 8px`，边框为 1px `--line`；除 `.wire` 悬停时的轻微抬升效果外，不使用阴影。
+- 查看器外框可以比线框图稍显精致（轻微悬停效果、圆角卡片），但不得使用彩色。线框图本身必须严格保持单色。
 
-**Responsive** (verify before reporting done):
+**响应式布局**（报告完成前需验证）：
 
 - ≥980px: two-column grid, sidebar TOC visible.
 - 900–980px: grid stacks to one column, TOC still sidebar.
 - <900px (tablet/phone): TOC collapses to a sticky `<details>` disclosure at the top of the page, defaults closed; tapping a link auto-closes it. Sections get `scroll-margin-top: 80px` so anchor jumps clear the sticky bar.
 - <560px (phone): tighter type/spacing scale, hero shrinks, lightbox switches from flex-centered to block layout at full viewport width with `touch-action: pinch-zoom` so users can pinch in further.
 
-**Verification** before handing off: open the file in a browser and walk it at 1440×900, 768×1024, and 390×844. Confirm anchor jumps land cleanly, lightbox opens/closes, and SVGs render at the right aspect.
+**交付前验证：**在浏览器中打开文件，分别检查 1440×900、768×1024 和 390×844。确认锚点跳转位置正确、灯箱可正常打开/关闭，并且 SVG 宽高比正确。
 
-## If the user asks to deploy / publish / host the wireframes
+## 用户要求部署/发布/托管线框图时
 
-Defer to the **`here-now` skill** — it owns publishing, anonymous vs. permanent sites, claim tokens, and credentials. Do not roll your own hosting.
+遵循 **`here-now` skill** 的流程；发布、匿名/永久站点、认领令牌和凭据均由该技能负责。不要自行实现托管。
 
-Load the `here-now` skill and follow its `publish.sh` recipe. The shape is:
+加载 `here-now` skill 并按其 `publish.sh` 流程操作，命令形式如下：
 
 ```bash
 cd design/<task-slug>
@@ -168,26 +168,26 @@ cd design/<task-slug>
 # → https://{adjective-noun-suffix}.here.now/
 ```
 
-If `here-now` isn't installed for the current agent, install it (`npx skills add heredotnow/skill --skill here-now -g`) or escalate to whoever owns the agent's skill set. Do not roll your own hosting.
+如果当前 agent 尚未安装 `here-now`，请安装（`npx skills add heredotnow/skill --skill here-now -g`），或联系负责该 agent 技能集的人员处理。不要自行实现托管。
 
-Things to remember when invoking it:
+调用时注意：
 
-- Publish the **directory containing `index.html` at its root**, not the parent. `index.html` must be at the root of the published tree.
-- Without saved credentials the site is **anonymous and expires in 24 hours**. With a saved API key, it's permanent. If the user wants a permanent URL, follow the `here-now` skill's sign-in-code flow — don't fake your way around it.
-- For an update, pass `--slug {existing-slug}` so the URL stays stable across review rounds (the script auto-loads the claim token from `.herenow/state.json`).
-- Read `publish_result.*` lines from script stderr to determine `auth_mode` and the claim URL — do not read `.herenow/state.json` and present its contents as the source of truth.
-- Always share the `siteUrl` from the current run; if anonymous, also share the claim URL and the 24h expiry warning.
+- 发布目录应是**根目录直接包含 `index.html` 的目录**，而不是其父目录。发布树的根目录必须有 `index.html`。
+- 未保存凭据时，站点为**匿名站点，24 小时后过期**。保存了 API key 后则为永久站点。用户需要永久 URL 时，按 `here-now` skill 的登录码流程操作，不要伪造绕过流程。
+- 更新站点时传入 `--slug {existing-slug}`，使 URL 在多轮审核中保持稳定（脚本会自动从 `.herenow/state.json` 加载认领令牌）。
+- 从脚本 stderr 中读取 `publish_result.*` 行，以确定 `auth_mode` 和认领 URL；不要读取 `.herenow/state.json` 并将其内容当作事实来源。
+- 始终分享本次运行返回的 `siteUrl`；如果是匿名站点，也要提供认领 URL 并说明 24 小时后过期。
 
-## What this skill is NOT for
+## 本技能不适用于
 
-- **Production UI code** — use `frontend-design` or write React/HTML directly.
-- **Hi-fi or branded mockups** — use Figma or a design tool, not this.
-- **Interactive prototypes** — SVG is static; export multi-screen flows as a flow.svg.
-- **Diagrams of system architecture, sequence flows, or data models** — use mermaid or plantuml.
-- **Illustrations or art** — use `example-skills:canvas-design` or `algorithmic-art`.
+- **生产 UI 代码**——使用 `frontend-design`，或直接编写 React/HTML。
+- **高保真或品牌化样稿**——使用 Figma 或设计工具。
+- **交互原型**——SVG 是静态的；多屏流程请导出为 flow.svg。
+- **系统架构图、时序图或数据模型图**——使用 mermaid 或 plantuml。
+- **插画或艺术创作**——使用 `example-skills:canvas-design` 或 `algorithmic-art`。
 
-## Bundled assets
+## 捆绑资源
 
-- `assets/template.svg` — blank desktop canvas with hidden 8px-grid guides; copy as a starting point.
-- `assets/template-mobile.svg` — same for 375×812 mobile.
-- `assets/site-template.html` — minimal review-viewer page (sticky TOC + responsive collapse + lightbox). Copy to `design/<task-slug>/index.html` and fill in the sections when the user requests a website.
+- `assets/template.svg` — 含隐藏 8px 网格参考线的空白桌面画布；可复制后作为起点。
+- `assets/template-mobile.svg` — 375×812 手机画布模板。
+- `assets/site-template.html` — 最简审核查看页面（固定目录 + 响应式折叠 + 灯箱）。用户要求制作网站时，将其复制到 `design/<task-slug>/index.html` 并补全各分区。

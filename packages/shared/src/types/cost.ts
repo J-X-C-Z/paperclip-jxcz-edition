@@ -2,14 +2,17 @@ import type { AgentAppearance } from "../agent-appearance.js";
 import type { BillingType, CostStatus } from "../constants.js";
 
 export interface CostEvent {
+  usageKind?: "agent" | "decision";
+  responsibleUserId?: string | null;
   id: string;
   companyId: string;
-  agentId: string;
+  agentId: string | null;
   issueId: string | null;
   projectId: string | null;
   goalId: string | null;
   heartbeatRunId: string | null;
   billingCode: string | null;
+  idempotencyKey: string | null;
   provider: string;
   biller: string;
   billingType: BillingType;
@@ -19,11 +22,17 @@ export interface CostEvent {
   cachedInputTokens: number;
   outputTokens: number;
   costCents: number;
+  costCentsExact?: string;
   occurredAt: Date;
   createdAt: Date;
 }
 
 export interface CostSummary {
+  eventCount: number;
+  pendingRunCount: number;
+  unpricedEventCount: number;
+  estimatedEventCount?: number;
+  pricingComplete: boolean;
   companyId: string;
   /** Project work costs; company governance budget fields are zero in this mode. */
   projectId?: string;
@@ -31,11 +40,11 @@ export interface CostSummary {
   spendCents: number;
   /** Billed spend plus standard API reference estimates. May contain fractional cents. */
   referenceCostCents?: number;
+  spendCentsExact?: string;
   budgetCents: number;
   utilizationPercent: number;
   reportedCostCents?: number;
   estimatedCostCents?: number;
-  unpricedEventCount?: number;
   trackingEnabled?: boolean;
 }
 
@@ -44,6 +53,7 @@ export interface IssueCostSummary {
   issueCount: number;
   includeDescendants: boolean;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -55,18 +65,48 @@ export interface IssueCostSummary {
 }
 
 export interface CostReferenceTotals {
+  referenceCostCents?: number;
   reportedCostCents?: number;
   estimatedCostCents?: number;
   unpricedEventCount?: number;
 }
 
+export interface CostByUser {
+  /** The run's recorded responsible user; null means unattributed. */
+  userId: string | null;
+  userName: string | null;
+  userImage: string | null;
+  eventCount: number;
+  estimatedEventCount: number;
+  unpricedEventCount: number;
+  costCents: number;
+  costCentsExact: string;
+  /** Input excludes cached input, as in other cost reports. */
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  /** Distinct recorded runs with cost events in the selected period. */
+  runCount: number;
+}
+
+export interface CostByUserReport {
+  /** Active human members, excluding the synthetic local-board principal. */
+  activeUserCount: number;
+  /** Includes zero-spend active users, even in single-user companies. */
+  rows: CostByUser[];
+}
+
 export interface CostByAgent extends CostReferenceTotals {
-  agentId: string;
+  agentId: string | null;
   agentName: string | null;
   agentAppearance?: AgentAppearance | null;
   avatarUrl?: string;
   agentStatus: string | null;
+  /** Ledger events in this group and selected date range, not distinct runs. */
+  eventCount: number;
+  estimatedEventCount: number;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -83,6 +123,7 @@ export interface CostByProviderModel extends CostReferenceTotals {
   billingType: BillingType;
   model: string;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -96,6 +137,7 @@ export interface CostByProviderModel extends CostReferenceTotals {
 export interface CostByBiller extends CostReferenceTotals {
   biller: string;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -110,7 +152,7 @@ export interface CostByBiller extends CostReferenceTotals {
 
 /** per-agent breakdown by provider + model, for identifying token-hungry agents */
 export interface CostByAgentModel extends CostReferenceTotals {
-  agentId: string;
+  agentId: string | null;
   agentName: string | null;
   agentAppearance?: AgentAppearance | null;
   avatarUrl?: string;
@@ -118,7 +160,11 @@ export interface CostByAgentModel extends CostReferenceTotals {
   biller: string;
   billingType: BillingType;
   model: string;
+  /** Ledger events in this group and selected date range, not distinct runs. */
+  eventCount: number;
+  estimatedEventCount: number;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -133,6 +179,7 @@ export interface CostWindowSpendRow extends CostReferenceTotals {
   /** rolling window duration in hours */
   windowHours: number;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;
@@ -140,12 +187,14 @@ export interface CostWindowSpendRow extends CostReferenceTotals {
 
 /** Reported plus reference-estimated costs, using stored project, issue, or unambiguous run attribution. */
 export interface CostByProject {
+  referenceCostCents?: number;
   reportedCostCents?: number;
   estimatedCostCents?: number;
   unpricedEventCount?: number;
   projectId: string | null;
   projectName: string | null;
   costCents: number;
+  costCentsExact?: string;
   inputTokens: number;
   cachedInputTokens: number;
   outputTokens: number;

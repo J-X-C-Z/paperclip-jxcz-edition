@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { agents, companies, createDb, heartbeatRuns } from "@paperclipai/db";
+import { costEvents, agents, companies, createDb, heartbeatRuns } from "@paperclipai/db";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
@@ -26,6 +26,7 @@ describeEmbeddedPostgres("heartbeat list", () => {
   }, 20_000);
 
   afterEach(async () => {
+    await db.delete(costEvents);
     await db.delete(heartbeatRuns);
     await db.delete(agents);
     await db.delete(companies);
@@ -33,6 +34,49 @@ describeEmbeddedPostgres("heartbeat list", () => {
 
   afterAll(async () => {
     await tempDb?.cleanup();
+  });
+
+  it("paginates tied timestamps, aggregates UTC days, and only reports each agent's latest failure", async () => {
+    const companyId = randomUUID();
+    const otherCompanyId = randomUUID();
+    const agentId = randomUUID();
+    const failedAgentId = randomUUID();
+    const foreignAgentId = randomUUID();
+    await db.insert(companies).values([companyId, otherCompanyId].map((id) => ({
+      id, name: "List test", issuePrefix: `T${id.slice(0, 6).toUpperCase()}`,
+      requireBoardApprovalForNewAgents: false,
+    })));
+    await db.insert(agents).values([
+      { id: agentId, companyId }, { id: failedAgentId, companyId },
+      { id: foreignAgentId, companyId: otherCompanyId },
+    ].map((row) => ({ ...row, name: "Builder", role: "engineer", adapterType: "codex_local" })));
+    const today = new Date();
+    today.setUTCHours(1, 0, 0, 0);
+    const old = new Date(today);
+    old.setUTCDate(old.getUTCDate() - 14);
+    const ids = ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2"];
+    const failedRunId = randomUUID();
+    await db.insert(heartbeatRuns).values([
+      { id: ids[0], companyId, agentId, status: "failed", createdAt: today },
+      { id: ids[1], companyId, agentId, status: "succeeded", createdAt: today },
+      { id: failedRunId, companyId, agentId: failedAgentId, status: "timed_out", createdAt: today,
+        resultJson: { stdout: "x".repeat(100_000) } },
+      { id: randomUUID(), companyId, agentId, status: "failed", createdAt: old },
+      { id: randomUUID(), companyId: otherCompanyId, agentId: foreignAgentId, status: "failed", createdAt: today },
+    ].map((row) => ({ ...row, invocationSource: "assignment" })));
+    const service = heartbeatService(db);
+    const page1 = await service.list(companyId, agentId, 1, { summary: true });
+    const page2 = await service.list(companyId, agentId, 1, { summary: true, offset: 1 });
+    expect(page1.map((run) => run.id)).toEqual([ids[1]]);
+    expect(page2.map((run) => run.id)).toEqual([ids[0]]);
+    expect(await service.stats(companyId, agentId)).toEqual([
+      { date: today.toISOString().slice(0, 10), status: "failed", count: 1 },
+      { date: today.toISOString().slice(0, 10), status: "succeeded", count: 1 },
+    ]);
+    const failures = await service.latestFailed(companyId);
+    expect(failures.map((run) => run.id)).toEqual([failedRunId]);
+    expect(failures[0].resultJson).toBeNull();
+    expect(await service.list(companyId, foreignAgentId, 25)).toEqual([]);
   });
 
   it("returns runs even when the linked db schema lacks processGroupId", async () => {
@@ -288,6 +332,12 @@ describeEmbeddedPostgres("heartbeat list", () => {
           privateSyncMetadata: oversizedNestedPayload,
         },
         workspaceRestoreFailure: "restore_unsafe_archive",
+        cancellation: { source: "provider", expected: false, initiator: { type: "provider" },
+          reason: "Provider cancelled execution ".repeat(50), recordedAt: "2026-10-02T15:00:00.000Z",
+          privateMetadata: oversizedNestedPayload },
+        acpToolInventoryComplete: true,
+        acpPendingToolCount: 0,
+        errorFamily: "configuration",
         finalResponseRecorded: true,
         executionBeforeRestore: { errorCode: "model_error", exitCode: 2, timedOut: false },
       },
@@ -312,6 +362,11 @@ describeEmbeddedPostgres("heartbeat list", () => {
         storageWarning: "Agent storage is full. Runs can continue.".repeat(50).slice(0, 1024),
       },
       workspaceRestoreFailure: "restore_unsafe_archive",
+      cancellation: { source: "provider", expected: false, initiator: { type: "provider" },
+        reason: "Provider cancelled execution ".repeat(50).slice(0, 512), recordedAt: "2026-10-02T15:00:00.000Z" },
+      acpToolInventoryComplete: true,
+      acpPendingToolCount: 0,
+      errorFamily: "configuration",
       finalResponseRecorded: true,
       executionBeforeRestore: { errorCode: "model_error", exitCode: 2, timedOut: false },
     });
@@ -319,6 +374,7 @@ describeEmbeddedPostgres("heartbeat list", () => {
     expect((result?.stdout as string).length).toBeLessThan(oversizedStdout.length);
     expect(result).not.toHaveProperty("nestedHuge");
     expect(result?.instructionSave).not.toHaveProperty("privateSyncMetadata");
+    expect(result?.cancellation).not.toHaveProperty("privateMetadata");
     expect(result?.terminalSessionFailure).not.toHaveProperty("privateMetadata");
     const diagnostic = result?.terminalSessionFailure as { details: string };
     expect(diagnostic.details).toContain("[truncated for run retrieval; full text in run error/transcript]");

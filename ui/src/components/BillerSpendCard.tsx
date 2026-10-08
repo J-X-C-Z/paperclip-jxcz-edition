@@ -10,6 +10,8 @@ interface BillerSpendCardProps {
   row: CostByBiller;
   weekSpendCents: number;
   budgetMonthlyCents: number;
+  /** Only compare a current-month report with the monthly budget. */
+  showBudgetUtilization?: boolean;
   totalCompanySpendCents: number;
   providerRows: CostByProviderModel[];
 }
@@ -18,6 +20,7 @@ export function BillerSpendCard({
   row,
   weekSpendCents,
   budgetMonthlyCents,
+  showBudgetUtilization = true,
   totalCompanySpendCents,
   providerRows,
 }: BillerSpendCardProps) {
@@ -32,7 +35,7 @@ export function BillerSpendCard({
         inputTokens: 0,
         outputTokens: 0,
       };
-      current.costCents += entry.costCents;
+      current.costCents += entry.referenceCostCents ?? entry.costCents;
       current.unpricedEventCount += entry.unpricedEventCount ?? 0;
       current.inputTokens += entry.inputTokens + entry.cachedInputTokens;
       current.outputTokens += entry.outputTokens;
@@ -44,7 +47,7 @@ export function BillerSpendCard({
   const billingTypeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     for (const entry of providerRows) {
-      map.set(entry.billingType, (map.get(entry.billingType) ?? 0) + entry.costCents);
+      map.set(entry.billingType, (map.get(entry.billingType) ?? 0) + (entry.referenceCostCents ?? entry.costCents));
     }
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [providerRows]);
@@ -68,8 +71,8 @@ export function BillerSpendCard({
               {providerDisplayName(row.biller)}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
-              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> {uiText("in")} {" · "}
-              <span className="font-mono">{formatTokens(row.outputTokens)}</span> out
+              <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> {uiText("Input")} {" · "}
+              <span className="font-mono">{formatTokens(row.outputTokens)}</span> {uiText("Output")}
               {" · "}
               {row.providerCount} provider{row.providerCount === 1 ? "" : "s"}
               {" · "}
@@ -77,14 +80,14 @@ export function BillerSpendCard({
             </CardDescription>
           </div>
           <span className="text-xl font-bold tabular-nums shrink-0">
-            {formatCents(row.costCents, row.unpricedEventCount)}
+            {formatCents(row.referenceCostCents ?? row.costCents, row.unpricedEventCount)}
           </span>
         </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-4 pt-3 space-y-4">
         <p className="text-xs text-muted-foreground">参考合计 · 实际 {formatCents(reportedCostCents)} · 估算 {row.estimatedCostCents == null ? "未分类" : formatCents(row.estimatedCostCents)}</p>
-        {budgetMonthlyCents > 0 && (
+        {showBudgetUtilization && budgetMonthlyCents > 0 && (
           <QuotaBar
             label="期间实付"
             percentUsed={budgetPct}

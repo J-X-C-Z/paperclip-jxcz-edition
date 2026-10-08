@@ -106,7 +106,7 @@
   "Detecting...": "正在检测…",
   "Dirty changes were quarantined onto a rescue branch and the recorded branch restored; the task will resume.": "未提交的更改已隔离到救援分支，并已恢复记录的分支；任务即将继续。",
   "Disabled": "已停用",
-  "Done": "已完成",
+  "Done": "完成",
   "Edit user secret": "编辑用户密钥",
   "Enter a 5-field cron expression.": "请输入包含 5 个字段的 Cron 表达式。",
   "Environment": "环境",

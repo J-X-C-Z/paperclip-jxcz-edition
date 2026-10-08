@@ -465,7 +465,7 @@
   "Keep policy controls secondary to the work definition.": "优先定义工作内容，策略控制放在次要位置。",
   "Recurring work definitions that materialize into auditable execution tasks.": "将重复工作定义转化为可审计的执行任务。",
   "filed in": "归档于",
-  "in": "位于",
+  "in": "在",
   "Skip to section": "跳转到章节",
   "Installed from the app-shipped skills catalog. Provenance is signed by package version and content hash.": "已从应用内置技能目录安装。来源信息由软件包版本和内容哈希签名验证。",
   "Installed · Open in library": "已安装 · 在技能库中打开",

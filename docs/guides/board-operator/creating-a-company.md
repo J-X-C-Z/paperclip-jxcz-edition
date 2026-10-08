@@ -1,6 +1,6 @@
 ---
-title: Creating a Company
-summary: Set up your first autonomous AI company
+title: 创建公司
+summary: 设置你的首个自主 AI 公司
 ---
 
 ## 简体中文

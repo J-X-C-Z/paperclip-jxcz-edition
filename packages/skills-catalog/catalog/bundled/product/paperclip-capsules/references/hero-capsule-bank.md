@@ -5,7 +5,7 @@ Hero 胶囊素材库是“胶囊代表单个 agent”这一规则唯一获准的
 ## 来源优先级
 
 1. `paperclip-content/td/capsules.md` - byte-accurate technical source for geometry, gradients, grain, crop, and wave.
-2. Paperclip feature-video HyperFrames skill:
+2. Paperclip 功能视频 HyperFrames skill：
    - `references/capsule-bank-spec.md`
    - `references/brand-tokens.md`
    - `references/composition-recipes.md`
@@ -47,7 +47,7 @@ Hero 胶囊素材库是“胶囊代表单个 agent”这一规则唯一获准的
 | 6 | 775 | 150.630 |
 | 7 | 845 | 123.362 |
 
-Formula:
+公式：
 
 ```txt
 STRIDE_Y = 380 / 11
@@ -109,7 +109,7 @@ cy = ty0[column] + slot * STRIDE_Y
 | g43 | 119.455 | `#1aa657` | `#ab1b8a` |
 | g44 | 122.727 | `#1b9f72` | `#ae1b82` |
 
-SVG template:
+SVG 模板：
 
 ```xml
 <linearGradient id="g0" gradientUnits="objectBoundingBox"
@@ -149,7 +149,7 @@ SVG template:
 | Blend mode | `overlay` |
 | Mask | union of capsule shapes only |
 
-Overlay formula per channel:
+每个通道的叠加公式：
 
 ```txt
 overlay(b, o) = 2 * b * o                     if b < 0.5
@@ -170,7 +170,7 @@ final = mix(b, overlay(b, o), 0.86)
 | Per-column phase factor | `2 * PI / 280` |
 | Loop period | 4 seconds |
 
-Formula:
+公式：
 
 ```txt
 dy(column, slot, t) =

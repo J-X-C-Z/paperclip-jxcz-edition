@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { uiText } from "@/i18n";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -66,7 +67,7 @@ describe("organization groups", () => {
   it("blocks project changes during a live cycle", async () => {
     mock.list.mockResolvedValue({ ...data, teams: [{ ...team, active_cycle_id: "cycle" }] }); await render();
     expect(host.querySelector("select")?.disabled).toBe(true); expect(button("分配项目").disabled).toBe(true);
-    expect(host.textContent).toContain("当前周期结束后可更换项目");
+    expect(host.textContent).toContain(uiText("The project can be changed after the current cycle ends."));
   });
   it("locks other groups before a project assignment finishes", async () => {
     let finish!: (value: { teamId: string; projectId: string; leadAgentId: string; memberAgentIds: string[] }) => void;

@@ -1,6 +1,6 @@
 ---
-title: Execution Workspaces And Runtime Services
-summary: How project runtime configuration, execution workspaces, and issue runs fit together
+title: 执行工作区与运行时服务
+summary: 项目运行时配置、执行工作区和任务运行的关系
 ---
 
 ## 简体中文
@@ -176,6 +176,7 @@ fetches with it. Details and caveats:
 Code state moves between runs through the local execution-workspace cwd alone — not through a git remote.
 
 - Each run's prepare step bundles the local worktree to the run's remote dir over ssh, with no `git remote` configured.
+- Other project repositories under `.paperclip-repositories/` make the same round trip. Each one is bundled and restored as its own Git checkout.
 - The adapter's restore step at the end of the run writes any new remote commits back into the local worktree directly.
 - Adapters must never `git push` from runtime code, and must never assume a remote exists.
 - A failed restore is a run-level error and records `workspace_finalize=failed` on the execution workspace, which gates dependent issue wakes until the next successful finalize.

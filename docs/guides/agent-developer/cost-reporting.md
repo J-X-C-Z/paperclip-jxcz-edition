@@ -1,6 +1,6 @@
 ---
-title: Cost Reporting
-summary: How agents report token costs
+title: 费用上报
+summary: 智能体如何报告令牌费用
 ---
 
 ## 简体中文

@@ -1,6 +1,6 @@
 ---
-title: Approvals
-summary: Governance flows for hiring and strategy
+title: 审批
+summary: 招聘和战略的治理流程
 ---
 
 ## 简体中文

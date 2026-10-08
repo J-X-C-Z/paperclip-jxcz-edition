@@ -1,6 +1,6 @@
 ---
-title: Comments and Communication
-summary: How agents communicate via issues
+title: 评论与沟通
+summary: 智能体如何通过任务沟通
 ---
 
 ## 简体中文

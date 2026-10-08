@@ -16,7 +16,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { createServer } from "node:net";
 import { Readable } from "node:stream";
 import * as p from "@clack/prompts";
@@ -118,6 +118,7 @@ type WorktreeInitOptions = {
   serverPort?: number;
   dbPort?: number;
   seed?: boolean;
+  empty?: boolean;
   seedMode?: string;
   preserveLiveWork?: boolean;
   force?: boolean;
@@ -245,6 +246,7 @@ export type EnsureWorktreeSeededResult = {
     | "seeded"
     | "verified_manifest"
     | "complete_marker"
+    | "explicitly_empty"
     | "legacy_unmarked"
     | "legacy_database";
   details?: SeedWorktreeDatabaseResult;
@@ -2221,6 +2223,9 @@ export async function ensureWorktreeSeeded(
 ): Promise<EnsureWorktreeSeededResult> {
   const configPath = resolveConfigPath(opts.config);
   const markers = resolveWorktreeSeedMarkerPaths(configPath);
+  if (existsSync(markers.empty)) {
+    return { seeded: false, reason: "explicitly_empty" };
+  }
   const initialManifest = readWorktreeSeedManifest(configPath);
   if (initialManifest?.state === "verified") {
     return { seeded: false, reason: "verified_manifest" };
@@ -2282,6 +2287,9 @@ export async function ensureWorktreeSeeded(
   mkdirSync(path.dirname(markers.lock), { recursive: true });
   const releaseLock = await acquireWorktreeSeedLock(markers.lock);
   try {
+    if (existsSync(markers.empty)) {
+      return { seeded: false, reason: "explicitly_empty" };
+    }
     // These checks deliberately happen under the cross-process lock. A second
     // service process waits for the first seed transaction, then observes the
     // verified manifest instead of cloning the same database concurrently.
@@ -2434,8 +2442,10 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
     rmSync(paths.configPath, { force: true });
     rmSync(paths.envPath, { force: true });
     const seedMarkers = resolveWorktreeSeedMarkerPaths(paths.configPath);
+    rmSync(seedMarkers.manifest, { force: true });
     rmSync(seedMarkers.pending, { force: true });
     rmSync(seedMarkers.complete, { force: true });
+    rmSync(seedMarkers.empty, { force: true });
     rmSync(paths.instanceRoot, { recursive: true, force: true });
   }
 
@@ -2464,6 +2474,11 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
       });
 
       try {
+        // Persist the no-copy choice before the config becomes visible to managed startup.
+        if (opts.empty) {
+          mkdirSync(paths.repoConfigDir, { recursive: true });
+          writeFileSync(resolveWorktreeSeedMarkerPaths(paths.configPath).empty, "Explicitly empty instance; automatic database copying is disabled.\n", { mode: 0o600 });
+        }
         writeConfig(selectedConfig, paths.configPath);
         writeWorktreePortRegistry(paths.homeDir, [
           ...registeredConfigPaths,
@@ -2471,6 +2486,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
         ]);
       } catch (error) {
         rmSync(paths.configPath, { force: true });
+        if (opts.empty) rmSync(resolveWorktreeSeedMarkerPaths(paths.configPath).empty, { force: true });
         throw error;
       }
 
@@ -2481,18 +2497,20 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
       };
     },
   );
-  markWorktreeSeedPending({
-    configPath: paths.configPath,
-    sourceConfigPath,
-    targetInstanceId: instanceId,
-    seedMode,
-  });
+  if (!opts.empty) {
+    markWorktreeSeedPending({
+      configPath: paths.configPath,
+      sourceConfigPath,
+      targetInstanceId: instanceId,
+      seedMode,
+    });
+  }
   const sourceEnvEntries = readPaperclipEnvEntries(resolvePaperclipEnvFile(sourceConfigPath));
   const existingAgentJwtSecret =
-    nonEmpty(sourceEnvEntries.PAPERCLIP_AGENT_JWT_SECRET) ??
+    opts.empty ? randomBytes(32).toString("base64url") : nonEmpty(sourceEnvEntries.PAPERCLIP_AGENT_JWT_SECRET) ??
     nonEmpty(process.env.PAPERCLIP_AGENT_JWT_SECRET);
   const existingToolActionSigningSecret =
-    nonEmpty(sourceEnvEntries.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET) ??
+    opts.empty ? randomBytes(32).toString("base64url") : nonEmpty(sourceEnvEntries.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET) ??
     nonEmpty(process.env.PAPERCLIP_TOOL_ACTION_SIGNING_SECRET);
   mergePaperclipEnvEntries(
     {
@@ -2511,7 +2529,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   let seedExecutionQuarantineSummary: SeededWorktreeExecutionQuarantineSummary | null = null;
   let pausedScheduledRoutineCount: number | null = null;
   let reboundWorkspaceSummary: SeedWorktreeDatabaseResult["reboundWorkspaces"] = [];
-  if (opts.seed !== false) {
+  if (!opts.empty && opts.seed !== false) {
     if (!sourceConfig) {
       throw new Error(
         `找不到源配置文件 ${sourceConfigPath}，无法为 worktree 数据库写入种子数据。请使用 --no-seed 或传入 --from-config。`,
@@ -2601,6 +2619,8 @@ export async function worktreeEnsureSeededCommand(opts: WorktreeEnsureSeededOpti
       spinner.stop("已为隔离 worktree 数据库写入最小种子数据。");
     } else if (result.reason === "legacy_database") {
       spinner.stop("已验证并采用现有旧版 worktree 数据库。");
+    } else if (result.reason === "explicitly_empty") {
+      spinner.stop("空实例已就绪，自动复制数据库已禁用。");
     } else {
       spinner.stop("Worktree 数据库已有经过验证的种子数据清单。");
     }
@@ -2618,7 +2638,7 @@ export async function worktreeEnsureSeededCommand(opts: WorktreeEnsureSeededOpti
         );
       }
     }
-    p.outro(pc.green("Worktree 数据库种子数据已完成。"));
+    p.outro(pc.green(result.reason === "explicitly_empty" ? "空 worktree 已就绪。" : "Worktree 数据库种子数据已完成。"));
   } catch (error) {
     spinner.stop(pc.red("写入 worktree 数据库种子数据失败。"));
     throw error;
@@ -3575,14 +3595,14 @@ async function promptForProjectMappings(input: {
         ...(nameMatch
           ? [{
               value: nameMatch.id,
-              label: `Map to ${nameMatch.name}`,
-              hint: "Recommended: exact name match",
+              label: `映射到 ${nameMatch.name}`,
+              hint: "推荐：名称完全匹配",
             }]
           : []),
         {
           value: null,
-          label: "Leave unset",
-          hint: "Keep imported issues without a project",
+          label: "不设置",
+          hint: "导入的任务不关联项目",
         },
         ...targetChoices.filter((choice) => choice.value !== nameMatch?.id),
       ],
@@ -4320,6 +4340,8 @@ async function runWorktreeReseed(opts: WorktreeReseedOptions): Promise<void> {
       expectedCompanyId: nonEmpty(process.env.PAPERCLIP_SEED_EXPECTED_COMPANY_ID) ?? undefined,
       seedDatabase: seedWorktreeDatabase,
     });
+    // 成功重新写入种子数据后，清除此前的空实例选择。
+    rmSync(markers.empty, { force: true });
     spinner.stop(`已为 ${targetEndpoint.label} 重新写入种子数据（${seedMode}）。`);
     p.log.message(pc.dim(`来源：${source.configPath}`));
     p.log.message(pc.dim(`目标：${targetEndpoint.configPath}`));
@@ -4456,6 +4478,7 @@ export function registerWorktreeCommands(program: Command): void {
     .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：minimal）", "minimal")
     .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
     .option("--no-seed", "跳过从源实例导入数据库种子数据")
+    .option("--empty", "创建空实例，不立即或延后复制数据库", false)
     .option("--force", "替换现有仓库本地配置和隔离实例数据", false)
     .action(worktreeMakeCommand);
 
@@ -4473,6 +4496,7 @@ export function registerWorktreeCommands(program: Command): void {
     .option("--seed-mode <mode>", "种子数据配置：minimal 或 full（默认：minimal）", "minimal")
     .option("--preserve-live-work", "不要隔离种子 worktree 中复制的智能体工作或工作区运行时服务", false)
     .option("--no-seed", "跳过从源实例导入数据库种子数据")
+    .option("--empty", "创建空实例，不立即或延后复制数据库", false)
     .option("--force", "替换现有仓库本地配置和隔离实例数据", false)
     .action(worktreeInitCommand);
 

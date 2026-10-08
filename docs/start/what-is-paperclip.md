@@ -1,6 +1,6 @@
 ---
-title: What is Paperclip?
-summary: The control plane for autonomous AI companies
+title: Paperclip 是什么？
+summary: 自主 AI 公司的控制平面
 ---
 
 ## 简体中文

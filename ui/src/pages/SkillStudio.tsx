@@ -1,5 +1,5 @@
-import { uiText } from "@/i18n";
-import { useUiTranslator } from "@/i18n";
+import { uiText, useUiTranslator } from "@/i18n";
+import { interactionReadinessRefetchInterval } from "@/lib/issue-thread-interactions";
 import { SkillBinaryFile } from "../components/SkillBinaryFile";
 import { SkillSourceProvenance } from "../components/SkillSourceProvenance";
 import { AgentIdentity } from "@/components/AgentIdentity";
@@ -3366,7 +3366,7 @@ function InteractionSection({
     queryKey: ["skill-studio", "interactions", harnessIssueId],
     queryFn: () => issuesApi.listInteractions(harnessIssueId!),
     enabled: Boolean(harnessIssueId && hasInlineAnswerable),
-    refetchInterval: hasInlineAnswerable ? POLL_MS : false,
+    refetchInterval: (query) => interactionReadinessRefetchInterval(query.state.data, hasInlineAnswerable ? POLL_MS : false),
   });
   const fullById = useMemo(
     () => new Map((fullQuery.data ?? []).map((i) => [i.id, i])),

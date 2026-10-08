@@ -1,7 +1,7 @@
 import { uiText } from "@/i18n";
 import { ChevronLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { humanizeConnectionDisplayName } from "@paperclipai/shared";
+import { aiConnectionRouterPluginKey, aiConnectionRouterSlug, humanizeConnectionDisplayName } from "@paperclipai/shared";
 import type { ToolApplication, ToolConnection } from "@paperclipai/shared";
 import { Link } from "@/lib/router";
 import { toolsApi } from "@/api/tools";
@@ -62,6 +62,7 @@ export function AppDetailSidebar(props: AppDetailSidebarProps) {
   });
 
   const connection = connectionQuery.data;
+  const poolPluginKey = connection && aiConnectionRouterPluginKey(connection);
   const applicationId = props.kind === "application" ? props.applicationId : connection?.applicationId;
   const application = (applicationsQuery.data?.applications ?? []).find((app) => app.id === applicationId) ?? null;
   const appConnections = props.kind === "application"
@@ -113,11 +114,11 @@ export function AppDetailSidebar(props: AppDetailSidebarProps) {
 
       <nav className="scrollbar-auto-hide min-h-0 flex-1 overflow-y-auto px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          {APP_TABS.map((tab) => (
+          {APP_TABS.filter(tab => !poolPluginKey || tab.key === "permissions").map((tab) => (
             <SidebarNavItem
               key={tab.key}
               to={tabHref(props, tab.key)}
-              label={tab.label}
+              label={poolPluginKey ? "Settings" : tab.label}
               icon={tab.icon}
               end
               badge={tab.key === "review" && reviewCount > 0 ? reviewCount : undefined}
@@ -142,6 +143,8 @@ function galleryEntryFor(
   connection: ToolConnection | undefined,
   application: ToolApplication | undefined,
 ): AppGalleryDisplayEntry | null {
+  const router = connection && aiConnectionRouterPluginKey(connection);
+  if (router) return apps.find(app => appDefinitionSlug(app) === aiConnectionRouterSlug(router)) ?? null;
   const sourceSlug = appApplicationSourceSlug(application) ?? appConnectionSourceSlug(connection);
   if (sourceSlug) {
     const keyed = apps.find((app) => appDefinitionSlug(app) === sourceSlug);

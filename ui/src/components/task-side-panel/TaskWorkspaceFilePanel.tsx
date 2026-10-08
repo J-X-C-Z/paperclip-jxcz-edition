@@ -1,10 +1,13 @@
 import { uiText } from "@/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { isCsvFile } from "@/lib/csv-preview";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Download } from "lucide-react";
 import { fileResourcesApi } from "@/api/file-resources";
 import { FileViewerBody, FileViewerMetadataRow } from "@/components/FileViewerSheet";
 import { Button } from "@/components/ui/button";
+import { FilePreviewModeToggle, type FilePreviewMode } from "@/components/FilePreviewModeToggle";
+import { isHtmlPreview } from "@/lib/html-preview";
 import type { FileViewerUrlState } from "@/context/FileViewerContext";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { queryKeys } from "@/lib/queryKeys";
@@ -21,6 +24,8 @@ export function TaskWorkspaceFilePanel({
   payload: WorkspaceFilePayload;
   onFallbackToProject?: () => void;
 }) {
+  const [previewMode, setPreviewMode] = useState<"raw" | "rendered">("rendered");
+  useEffect(() => setPreviewMode("rendered"), [payload.path, payload.workspace, payload.workspaceId, payload.projectId]);
   const [copied, setCopied] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const state: FileViewerUrlState = {
@@ -46,6 +51,8 @@ export function TaskWorkspaceFilePanel({
   const downloadUrl = resource?.capabilities.download
     ? fileResourcesApi.downloadUrl(issueId, state)
     : null;
+
+  const renderedPreview = resource && (isHtmlPreview(resource.contentType, resource.displayPath || resource.title) || isCsvFile(resource.displayPath || resource.title, resource.contentType ?? "") || /\.(md|markdown|mdown|mkdn|mkd)$/i.test(resource.displayPath || resource.title) || resource.contentType?.includes("markdown"));
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-muted/20">
@@ -73,6 +80,7 @@ export function TaskWorkspaceFilePanel({
               {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
             </Button>
           ) : null}
+          {renderedPreview && contentQuery.data ? <FilePreviewModeToggle mode={previewMode} onChange={setPreviewMode} label="File preview mode" /> : null}
           {downloadUrl ? (
             <Button asChild variant="ghost" size="icon-sm">
               <a href={downloadUrl} download={resource?.title} aria-label={uiText("Download file")} title={uiText("Download file")}>
@@ -82,9 +90,10 @@ export function TaskWorkspaceFilePanel({
           ) : null}
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="sr-only" aria-live="polite">{announcement}</div>
         <FileViewerBody
+          previewMode={previewMode}
           resolveQuery={resourceQuery}
           contentQuery={contentQuery}
           elapsedMs={0}

@@ -20,7 +20,7 @@ const attributed = {
   costCents: 13, reportedCostCents: 10, estimatedCostCents: 3, unpricedEventCount: 1,
   inputTokens: 10, cachedInputTokens: 2, outputTokens: 4,
 };
-const aggregate = { ...attributed, agentName: "Agent", agentAppearance: null, agentStatus: "idle", total: 5 };
+const aggregate = { ...attributed, agentName: "Agent", agentAppearance: null, agentStatus: "idle", total: 5, totalExact: "5.0000000", costCentsExact: "13.0000000", eventCount: 1, estimatedEventCount: 0 };
 const range = { from: new Date("2026-01-01T00:00:00Z"), to: new Date("2026-01-31T23:59:59Z") };
 
 function fixture(options: { missingCompany?: boolean } = {}) {
@@ -45,7 +45,7 @@ function fixture(options: { missingCompany?: boolean } = {}) {
     };
     return query;
   });
-  const db = { select } as unknown as Db;
+  const db = { select, transaction: (work: (tx: unknown) => Promise<unknown>) => work(db) } as unknown as Db;
   return { db, service: costService(db), gate, started, predicates };
 }
 
@@ -78,7 +78,7 @@ describe("cost read overlap", () => {
     const test = fixture();
     const summary = test.service.summary(companyId, range);
     await vi.waitFor(() => {
-      expect(test.started).toEqual(["companies", "cost_events"]);
+      expect(test.started).toEqual(["companies", "companies", "cost_events"]);
       expect(attributedCosts).toHaveBeenCalledExactlyOnceWith(test.db, companyId, range, undefined);
     });
     test.gate.resolve([aggregate]);

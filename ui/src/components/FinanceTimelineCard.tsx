@@ -17,14 +17,14 @@ interface FinanceTimelineCardProps {
 
 export function FinanceTimelineCard({
   rows,
-  emptyMessage = uiText("No financial events in this period."),
+  emptyMessage = "No financial events recorded in this period. Events appear when reported through the API, CLI, or a supported integration.",
 }: FinanceTimelineCardProps) {
   const { formatCost: formatCents } = useCostCurrency();
   return (
     <Card>
       <CardHeader className="px-4 pt-4 pb-1">
         <CardTitle className="text-base">{uiText("Recent financial events")}</CardTitle>
-        <CardDescription>{uiText("Top-ups, fees, credits, commitments, and other non-request charges.")}</CardDescription>
+        <CardDescription>Provider charges, subscriptions, fees, and credits. Reported separately from run-cost estimates.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 px-4 pb-4 pt-3">
         {rows.length === 0 ? (
@@ -38,7 +38,7 @@ export function FinanceTimelineCard({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{financeEventKindDisplayName(row.eventKind)}</Badge>
+                    <Badge variant="secondary">{row.metadataJson?.source === "provider_cost_report" ? "Provider cost report" : financeEventKindDisplayName(row.eventKind)}</Badge>
                     <Badge variant={row.direction === "credit" ? "outline" : "secondary"}>
                       {financeDirectionDisplayName(row.direction)}
                     </Badge>
@@ -59,7 +59,7 @@ export function FinanceTimelineCard({
                   )}
                 </div>
                 <div className="text-right tabular-nums">
-                  <div className="text-sm font-semibold">{formatCents(row.amountCents)}</div>
+                  <div className="text-sm font-semibold">{formatCents(row.amountCents, 0, row.currency)}</div>
                   <div className="text-xs text-muted-foreground">{row.currency}</div>
                   {row.estimated ? <div className="text-(length:--text-micro) uppercase tracking-(--tracking-eyebrow) text-amber-600">{uiText("estimated")}</div> : null}
                 </div>

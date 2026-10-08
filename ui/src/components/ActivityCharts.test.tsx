@@ -5,6 +5,8 @@ import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import type { HeartbeatRun } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/i18n", () => ({ uiText: (text: string) => text }));
+
 import { RunActivityChart, SuccessRateChart } from "./ActivityCharts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,6 +40,7 @@ function createRun(overrides: Partial<HeartbeatRun> = {}): HeartbeatRun {
     id: "run-1",
     companyId: "company-1",
     agentId: "agent-1",
+    issueId: null,
     responsibleUserId: null,
     invocationSource: "on_demand",
     triggerDetail: "manual",
@@ -82,6 +85,7 @@ function createRun(overrides: Partial<HeartbeatRun> = {}): HeartbeatRun {
     createdAt: new Date("2026-04-20T11:58:00.000Z"),
     updatedAt: new Date("2026-04-20T11:59:00.000Z"),
     ...overrides,
+    scopeKind: overrides.scopeKind ?? "company",
   };
 }
 
@@ -92,6 +96,19 @@ describe("ActivityCharts", () => {
 
     render(<SuccessRateChart activity={undefined} />);
     expect(container.textContent).toContain("No runs yet");
+  });
+
+  it("renders aggregate counts independently of bounded history pages", () => {
+    const stats = [
+      { date: "2026-04-20", status: "succeeded", count: 100 },
+      { date: "2026-04-20", status: "failed", count: 2 },
+      { date: "2026-04-20", status: "timed_out", count: 3 },
+      { date: "2026-04-20", status: "cancelled", count: 1 },
+    ];
+    render(<RunActivityChart stats={stats} />);
+    expect(container.querySelector("[title^='2026-04-20: 106 runs']")?.getAttribute("title")).toContain("failed: 5");
+    render(<SuccessRateChart stats={stats} />);
+    expect(container.textContent).not.toContain("No runs yet");
   });
 
   it("still aggregates raw agent runs for detail charts", () => {

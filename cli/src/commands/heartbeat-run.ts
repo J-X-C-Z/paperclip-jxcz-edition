@@ -90,16 +90,16 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
     },
   );
   if (!invokeRes) {
-    console.error(pc.red("Failed to invoke heartbeat"));
+    console.error(pc.red("调用心跳失败"));
     return;
   }
   if ((invokeRes as { status?: string }).status === "skipped") {
-    console.log(pc.yellow("Heartbeat invocation was skipped"));
+    console.log(pc.yellow("已跳过心跳调用"));
     return;
   }
 
   const run = invokeRes as HeartbeatRun;
-  console.log(pc.cyan(`Invoked heartbeat run ${run.id} for agent ${agent.name} (${agent.id})`));
+  console.log(pc.cyan(`已为智能体 ${agent.name}（${agent.id}）调用心跳运行 ${run.id}`));
 
   const runId = run.id;
   let activeRunId: string | null = null;
@@ -211,7 +211,7 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
 
   const deadline = timeoutMs > 0 ? Date.now() + timeoutMs : null;
   if (!activeRunId) {
-    console.error(pc.red("Failed to capture heartbeat run id"));
+    console.error(pc.red("未能获取心跳运行 ID"));
     return;
   }
 
@@ -229,7 +229,7 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
       const currentRun = runList.find((r) => r && r.id === activeRunId) ?? null;
 
     if (!currentRun) {
-      console.error(pc.red("Heartbeat run disappeared"));
+      console.error(pc.red("心跳运行记录已消失"));
       break;
     }
 
@@ -279,7 +279,7 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
       cliAdapter.formatStdoutEvent(stdoutJsonBuffer, debug);
       stdoutJsonBuffer = "";
     }
-    const label = `Run ${activeRunId} completed with status ${finalStatus}`;
+    const label = `运行 ${activeRunId} 已结束，状态：${finalStatus}`;
     if (finalStatus === "succeeded") {
       console.log(pc.green(label));
       return;
@@ -287,7 +287,7 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
 
     console.log(pc.red(label));
     if (finalError) {
-      console.log(pc.red(`Error: ${finalError}`));
+      console.log(pc.red(`错误：${finalError}`));
     }
     if (finalRun) {
       const resultObj = asRecord(finalRun.resultJson);
@@ -297,7 +297,7 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
         const errors = Array.isArray(resultObj.errors) ? resultObj.errors.map(asErrorText).filter(Boolean) : [];
         const resultText = typeof resultObj.result === "string" ? resultObj.result.trim() : "";
         if (subtype || isError || errors.length > 0 || resultText) {
-          console.log(pc.red("Claude result details:"));
+          console.log(pc.red("Claude 结果详情："));
           if (subtype) console.log(pc.red(`  subtype: ${subtype}`));
           if (isError) console.log(pc.red("  is_error: true"));
           if (errors.length > 0) console.log(pc.red(`  errors: ${errors.join(" | ")}`));
@@ -308,18 +308,18 @@ export async function heartbeatRun(opts: HeartbeatRunOptions): Promise<void> {
       const stderrExcerpt = typeof finalRun.stderrExcerpt === "string" ? finalRun.stderrExcerpt.trim() : "";
       const stdoutExcerpt = typeof finalRun.stdoutExcerpt === "string" ? finalRun.stdoutExcerpt.trim() : "";
       if (stderrExcerpt) {
-        console.log(pc.red("stderr excerpt:"));
+        console.log(pc.red("stderr 摘要："));
         console.log(stderrExcerpt);
       }
       if (stdoutExcerpt && (debug || !stderrExcerpt)) {
-        console.log(pc.gray("stdout excerpt:"));
+        console.log(pc.gray("stdout 摘要："));
         console.log(stdoutExcerpt);
       }
     }
     process.exitCode = 1;
   } else {
     process.exitCode = 1;
-    console.log(pc.gray("Heartbeat stream ended without terminal status"));
+    console.log(pc.gray("心跳流结束时尚无终态"));
   }
 }
 

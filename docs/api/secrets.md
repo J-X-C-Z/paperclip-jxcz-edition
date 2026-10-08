@@ -1,17 +1,15 @@
 ---
-title: Secrets
-summary: Secrets CRUD
+title: 密钥
+summary: 密钥增删改查
 ---
 
-Manage encrypted secrets that agents receive through environment bindings or fetch on demand.
+管理加密密钥。Agent 可通过环境绑定接收密钥，也可按需获取。
 
-## Agent List and Fetch
+## Agent 查询与获取
 
-These routes require the current run-bound agent JWT. They are not available to
-long-lived agent keys, low-trust review agents, task-bridge keys, or skill-test
-tokens.
+这些路由要求使用与当前运行绑定的 agent JWT。长期有效的 agent key、低信任审查 agent、task-bridge key 和技能测试 token 均不可使用这些路由。
 
-List the secrets accessible to the current run without materializing values:
+列出当前运行可访问的密钥，但不返回密钥值：
 
 ```
 GET /api/agents/me/secrets
@@ -35,14 +33,10 @@ GET /api/agents/me/secrets
 }
 ```
 
-`delivery` is `env`, `api`, or `both`. `secretRef` is a stable opaque handle,
-not secret material or a capability; every consuming route re-authorizes it.
-The list never returns values, the internal `secretId` field, binding IDs, or
-config paths. An `env.*` binding implies read access through this API; an
-`access.*` binding grants API access without environment injection.
+`delivery` 的取值为 `env`、`api` 或 `both`。`secretRef` 是稳定的不透明句柄，并非密钥材料或访问凭证；每个使用它的路由都会重新授权。
+列表不会返回密钥值、内部 `secretId` 字段、绑定 ID 或配置路径。`env.*` 绑定意味着可通过此 API 读取；`access.*` 绑定只授予 API 访问权限，不会注入环境变量。
 
-Fetch a value only when it is needed. The request has no body and the response
-uses `Cache-Control: no-store`:
+仅在需要时获取密钥值。请求没有请求体，响应使用 `Cache-Control: no-store`：
 
 ```
 POST /api/agents/me/secrets/github_token/value
@@ -56,17 +50,11 @@ POST /api/agents/me/secrets/github_token/value
 }
 ```
 
-Prefer env injection when the adapter or its child processes need the value on
-every run. Prefer on-demand fetch for values used only on some runs, large or
-structured values, or skills and tools that do not inherit adapter env. Every
-successful or failed value fetch is audited in both `secret_access_events` and
-`activity_log`; agents must not log or paste fetched values into issues,
-comments, or documents.
+如果 adapter 或其子进程每次运行都需要该值，优先使用环境变量注入。如果只有部分运行会用到、值较大或结构化，或者技能和工具不会继承 adapter 环境变量，则优先按需获取。每次成功或失败的值获取都会记录到 `secret_access_events` 和 `activity_log`；agent 不得将获取到的值写入日志，也不得粘贴到 issue、评论或文档中。
 
-## Agent Secret Proposals
+## Agent 密钥绑定提案
 
-These routes use the same current run-bound agent JWT as the list and fetch
-routes:
+这些路由与查询和获取路由使用相同的当前运行绑定 agent JWT：
 
 ```
 POST /api/agents/me/secret-proposals
@@ -74,9 +62,7 @@ GET /api/agents/me/secret-proposals
 DELETE /api/agents/me/secret-proposals/{proposalId}
 ```
 
-An agent can ask Paperclip to bind an existing secret under a new path without
-knowing a secret ID. Set `kind` to `binding` and identify the source by the
-agent's own existing `env.*` or `access.*` config path:
+Agent 可以请求 Paperclip 将已有密钥绑定到新路径，而无需知道 secret ID。将 `kind` 设为 `binding`，并通过该 agent 自己已有的 `env.*` 或 `access.*` 配置路径指定来源：
 
 ```json
 POST /api/agents/me/secret-proposals
@@ -88,45 +74,28 @@ POST /api/agents/me/secret-proposals
 }
 ```
 
-`sourceConfigPath` must resolve from the proposing agent's own binding. An
-unknown path or another agent's path returns `404`. A binding request must
-provide exactly one of `sourceConfigPath`, `secretId`, or `secretProposalId`.
-Omit `targetAgentId` to target the proposing agent; under the default policy a
-manager may instead target one of its reports. `configPath` accepts
-`env.<KEY>` for environment injection or `access.<ALIAS>` for API-only access.
+`sourceConfigPath` 必须解析到提案 agent 自己的绑定。未知路径或其他 agent 的路径会返回 `404`。绑定请求必须且只能提供 `sourceConfigPath`、`secretId` 或 `secretProposalId` 其中之一。
+省略 `targetAgentId` 时，目标为提案 agent；按默认策略，manager 也可以指定自己的下属为目标。`configPath` 支持用于环境变量注入的 `env.<KEY>`，或用于仅 API 访问的 `access.<ALIAS>`。
 
-For a run with a checked-out origin issue, a successful proposal automatically
-creates a human-only **Confirm secret binding** card in that issue. API clients
-must not create a second interaction. The card contains only non-secret
-metadata: the source label, target agent, new config path, justification, and
-expiry.
+如果运行关联的源 issue 已检出，成功提交提案后会在该 issue 中自动创建仅供人工处理的 **确认密钥绑定**卡片。API 客户端不得再创建第二个交互。卡片仅包含非敏感元数据：来源标签、目标 agent、新配置路径、理由和过期时间。
 
-Selecting **Create binding** accepts the card and then triggers a separate,
-freshly authorized binding write. Card acceptance is not execution. Read
-`result.secretProposal.status` for the actual outcome:
+选择**创建绑定**会接受卡片，并随后触发一次单独且重新授权的绑定写入。接受卡片不等于执行。请读取 `result.secretProposal.status` 查看实际结果：
 
-- `executed` means the binding write completed.
-- `failed` means the card was accepted but execution failed. The card renders
-  **FAILED**, exposes a non-secret `errorCode`, and Paperclip posts a **Secret
-  binding execution failed** comment with `Binding created: no`.
-- `rejected`, `withdrawn`, or `expired` means no binding was created.
+- `executed` 表示绑定写入已完成。
+- `failed` 表示卡片已接受，但执行失败。卡片显示 **FAILED**，提供非敏感的 `errorCode`，Paperclip 还会发布 **密钥绑定执行失败**评论，并注明 `Binding created: no`。
+- `rejected`、`withdrawn` 或 `expired` 表示未创建绑定。
 
-The card wakes the issue assignee after resolution. The wake payload includes
-`secretProposal.configPath`, `decision`, `executionStatus`, and instructions.
-After any secret card, call `GET /api/agents/me/secrets` again and confirm the
-expected secret metadata and delivery before using the new binding. Acceptance
-is not execution; a failed wake or missing metadata means the alias must be
-treated as unavailable until a fresh proposal executes successfully.
+处理完成后，卡片会唤醒 issue 负责人。唤醒 payload 包含 `secretProposal.configPath`、`decision`、`executionStatus` 和操作说明。任何密钥卡片处理完成后，使用新绑定前都应再次调用 `GET /api/agents/me/secrets`，确认预期的密钥元数据和交付方式。接受卡片并不代表执行成功；若唤醒失败或缺少元数据，必须将该别名视为不可用，直到新的提案成功执行。
 
-## List Secrets
+## 列出密钥
 
 ```
 GET /api/companies/{companyId}/secrets
 ```
 
-Returns secret metadata (not decrypted values).
+返回密钥元数据（不包含解密后的值）。
 
-## Create Secret
+## 创建密钥
 
 ```
 POST /api/companies/{companyId}/secrets
@@ -136,10 +105,9 @@ POST /api/companies/{companyId}/secrets
 }
 ```
 
-The value is encrypted at rest. Only the secret ID and metadata are returned.
+密钥值会以静态加密方式存储。响应仅返回 secret ID 和元数据。
 
-To link a provider-owned secret without copying the value into Paperclip, create
-an external-reference secret:
+如需关联由 provider 管理的密钥，而不将密钥值复制到 Paperclip，请创建外部引用密钥：
 
 ```json
 {
@@ -151,54 +119,41 @@ an external-reference secret:
 }
 ```
 
-Paperclip stores the provider reference and a non-sensitive fingerprint only.
-The value is resolved, when the provider is configured, through the server
-runtime path that enforces binding context and records access events.
+Paperclip 只存储 provider 引用和非敏感指纹。配置好 provider 后，服务器运行时会通过强制检查绑定上下文并记录访问事件的路径解析密钥值。
 
-## Provider Health
+## Provider 健康状态
 
 ```
 GET /api/companies/{companyId}/secret-providers/health
 ```
 
-Returns provider setup diagnostics, warnings, and local backup guidance. Health
-responses must not include secret values or provider credentials.
+返回 provider 配置诊断、警告和本地备份指南。健康状态响应不得包含密钥值或 provider 凭据。
 
-For `aws_secrets_manager`, an unready health response names the missing
-non-secret provider environment variables, the AWS SDK default credential source
-expected by the server runtime, and the custody rule that AWS bootstrap
-credentials must not be stored in Paperclip `company_secrets`.
+对于 `aws_secrets_manager`，未就绪的健康状态响应会列出缺失的非敏感 provider 环境变量、服务器运行时预期使用的 AWS SDK 默认凭据来源，并说明不得将 AWS 引导凭据存储在 Paperclip 的 `company_secrets` 中。
 
-The equivalent CLI check is:
+对应的 CLI 检查命令：
 
 ```sh
 npx paperclipai secrets doctor --company-id {companyId}
 ```
 
-## Provider Vaults
+<a id="provider-vaults"></a>
 
-Provider vaults are named, company-scoped configurations that route secret
-material to one of the supported provider backends. See the
-[secrets deploy guide](/deploy/secrets#provider-vaults) for the operator model
-and custody rules.
+## Provider 密钥库
 
-All routes below require board auth and company access. Mutating routes emit
-`secret_provider_config.*` activity-log entries. No route in this surface
-returns provider credential values; submitting credential-shaped fields in
-`config` is rejected at validation time.
+Provider 密钥库是按名称标识、限定公司范围的配置，用于将密钥材料路由到受支持的 provider 后端。运维模型和保管规则请参阅[密钥部署指南](/deploy/secrets#provider-vaults)。
 
-### List Vaults
+以下所有路由都要求 board 身份验证和公司访问权限。变更路由会生成 `secret_provider_config.*` activity-log 条目。此接口不会返回 provider 凭据值；在 `config` 中提交类似凭据的字段会在校验时被拒绝。
+
+### 列出密钥库
 
 ```
 GET /api/companies/{companyId}/secret-provider-configs
 ```
 
-Returns every vault for the company (including disabled rows for audit), each
-with id, provider, displayName, status, isDefault, non-sensitive `config`,
-latest health snapshot (`healthStatus`, `healthCheckedAt`, `healthMessage`,
-`healthDetails`), `disabledAt`, and audit columns.
+返回该公司的所有密钥库（包括为审计保留的已禁用记录）。每项包含 id、provider、displayName、status、isDefault、非敏感的 `config`、最新健康状态快照（`healthStatus`、`healthCheckedAt`、`healthMessage`、`healthDetails`）、`disabledAt` 和审计字段。
 
-### Create Vault
+### 创建密钥库
 
 ```
 POST /api/companies/{companyId}/secret-provider-configs
@@ -216,7 +171,7 @@ POST /api/companies/{companyId}/secret-provider-configs
 }
 ```
 
-Per-provider `config` shapes:
+各 provider 对应的 `config` 结构：
 
 - `local_encrypted`: optional `backupReminderAcknowledged: boolean`.
 - `aws_secrets_manager`: required `region`; optional `namespace`,
@@ -227,18 +182,15 @@ Per-provider `config` shapes:
   `mountPath`, `secretPathPrefix`. `address` values with embedded credentials,
   paths, query strings, or fragments are rejected.
 
-`status` defaults to `ready` for `local_encrypted` and `aws_secrets_manager`,
-and to `coming_soon` for `gcp_secret_manager` and `vault`. Coming-soon and
-disabled vaults cannot be marked `isDefault`. Setting `isDefault: true` clears
-the previous default for the same provider in the same transaction.
+`local_encrypted` 和 `aws_secrets_manager` 的 `status` 默认值为 `ready`，`gcp_secret_manager` 和 `vault` 的默认值为 `coming_soon`。即将推出或已禁用的密钥库不能设为 `isDefault`。将 `isDefault: true` 会在同一事务中清除同一 provider 之前的默认项。
 
-### Get Vault
+### 获取密钥库
 
 ```
 GET /api/secret-provider-configs/{id}
 ```
 
-### Update Vault
+### 更新密钥库
 
 ```
 PATCH /api/secret-provider-configs/{id}
@@ -251,38 +203,31 @@ PATCH /api/secret-provider-configs/{id}
 }
 ```
 
-`config` is replaced wholesale on update — pass the full provider config
-payload, not a partial diff. Status transitions for `gcp_secret_manager` and
-`vault` are constrained to `coming_soon` and `disabled` until their runtime
-modules ship.
+更新时会整体替换 `config`；请传入完整 provider 配置 payload，而非部分 diff。在运行时模块发布前，`gcp_secret_manager` 和 `vault` 的状态只能设为 `coming_soon` 或 `disabled`。
 
-### Disable Vault
+### 禁用密钥库
 
 ```
 DELETE /api/secret-provider-configs/{id}
 ```
 
-Soft-deletes the vault: status flips to `disabled`, `isDefault` clears, and
-`disabledAt` is stamped. Disabled vaults remain in `GET` results for audit
-purposes but are no longer offered in the secret create/rotate flow.
+软删除该密钥库：状态改为 `disabled`、清除 `isDefault` 并写入 `disabledAt`。为保留审计记录，已禁用的密钥库仍会出现在 `GET` 结果中，但不会再出现在创建/轮换密钥流程中。
 
-### Set Default
+### 设置默认密钥库
 
 ```
 POST /api/secret-provider-configs/{id}/default
 ```
 
-Marks the target vault as the default for its provider family and clears the
-previous default. Returns 422 when the target is `coming_soon` or `disabled`.
+将目标密钥库设为其 provider 类型的默认项，并清除之前的默认项。如果目标状态为 `coming_soon` 或 `disabled`，则返回 422。
 
-### Run Health Check
+### 运行健康检查
 
 ```
 POST /api/secret-provider-configs/{id}/health
 ```
 
-Runs a provider-specific health probe and persists the result on the vault.
-Response shape:
+运行 provider 专属的健康探测，并将结果保存到密钥库。响应结构：
 
 ```json
 {
@@ -299,23 +244,11 @@ Response shape:
 }
 ```
 
-Health responses never include provider credentials or secret values. For AWS
-vaults, `details.guidance` may include missing non-secret env names and the
-expected AWS SDK credential source; coming-soon vaults always return
-`status: "coming_soon"` with `code: "runtime_locked"` and never call into
-provider modules.
+健康状态响应始终不会包含 provider 凭据或密钥值。对于 AWS 密钥库，`details.guidance` 可能会包含缺失的非敏感环境变量名称及预期的 AWS SDK 凭据来源；即将推出的密钥库始终返回 `status: "coming_soon"` 和 `code: "runtime_locked"`，不会调用 provider 模块。
 
-### Selecting A Vault When Creating Or Rotating Secrets
+### 创建或轮换密钥时选择密钥库
 
-`POST /api/companies/{companyId}/secrets` and
-`POST /api/secrets/{secretId}/rotate` both accept an optional
-`providerConfigId` field that pins the secret to a specific vault. When
-omitted (or null), the operation runs through the deployment-level provider
-configuration — the same path existing installs already use. The board UI
-preselects the company's default vault for the chosen provider before
-submitting, so callers should usually send an explicit `providerConfigId`.
-Coming-soon and disabled vaults are rejected with a 422; a vault that does not
-match the secret's provider is rejected the same way.
+`POST /api/companies/{companyId}/secrets` 和 `POST /api/secrets/{secretId}/rotate` 都接受可选字段 `providerConfigId`，用于将密钥固定到特定密钥库。省略该字段或设为 null 时，操作会使用部署级 provider 配置，即现有安装已使用的路径。board UI 会在提交前预选所选 provider 对应的公司默认密钥库，因此调用方通常应显式传入 `providerConfigId`。即将推出或已禁用的密钥库会被拒绝并返回 422；与密钥 provider 不匹配的密钥库也会同样被拒绝。
 
 ```json
 POST /api/companies/{companyId}/secrets
@@ -328,32 +261,21 @@ POST /api/companies/{companyId}/secrets
 }
 ```
 
-### Response Redaction Rules
+### 响应脱敏规则
 
-Every route in this surface enforces the same redaction contract:
+此接口中的所有路由都遵循相同的脱敏约定：
 
-- Secret values are never returned. The board UI never has a "reveal value"
-  affordance; resolution happens server-side at runtime under a binding.
-- Provider credential values are never accepted, stored, returned, logged, or
-  echoed in error messages. Submitting credential-shaped fields fails
-  validation with a non-leaking error.
-- Activity log entries record vault id, provider, displayName, status, and
-  isDefault transitions — never `config` payloads or health detail bodies.
+- 绝不返回密钥值。board UI 不提供“显示密钥值”操作；密钥会在运行时由服务器根据绑定进行解析。
+- 绝不接受、存储、返回或记录 provider 凭据值，也不会在错误消息中回显。提交类似凭据的字段时，校验会以不泄露信息的错误拒绝请求。
+- activity log 条目记录密钥库 id、provider、displayName、status 和 isDefault 状态变更，绝不记录 `config` payload 或健康状态详情正文。
 
-## Remote Import From AWS Secrets Manager
+## 从 AWS Secrets Manager 远程导入
 
-Remote import links existing AWS Secrets Manager entries into Paperclip as
-`external_reference` secrets. Import stores provider reference metadata only; it
-does not copy the remote secret plaintext into Paperclip.
+远程导入会将 AWS Secrets Manager 中已有条目关联到 Paperclip，作为 `external_reference` 密钥。导入时仅存储 provider 引用元数据，不会将远程密钥明文复制到 Paperclip。
 
-The routes are board-only and company-scoped. `providerConfigId` must point to
-a same-company AWS provider vault with status `ready` or `warning`. Disabled,
-coming-soon, non-AWS, and cross-company vaults are rejected. Imported secrets
-resolve later through the selected vault, so runtime reads still need
-`secretsmanager:GetSecretValue` and any required KMS decrypt permission on the
-selected external secret.
+这些路由仅供 board 使用，并限定在公司范围内。`providerConfigId` 必须指向同一公司的 AWS provider 密钥库，且其状态为 `ready` 或 `warning`。已禁用、即将推出、非 AWS 或属于其他公司的密钥库都会被拒绝。导入的密钥之后会通过所选密钥库解析，因此运行时读取仍需对所选外部密钥具备 `secretsmanager:GetSecretValue` 权限，以及所需的 KMS 解密权限。
 
-### Preview Remote Import Candidates
+### 预览远程导入候选项
 
 ```
 POST /api/companies/{companyId}/secrets/remote-import/preview
@@ -365,16 +287,9 @@ POST /api/companies/{companyId}/secrets/remote-import/preview
 }
 ```
 
-`query` is optional and is passed to AWS Secrets Manager inventory filtering.
-Treat it as non-secret metadata because AWS may record list request parameters
-in CloudTrail. `nextToken` is an opaque AWS cursor; callers must pass it back
-unchanged and must not synthesize offsets. `pageSize` is optional, defaults to
-50 in the UI, and is capped at 100.
+`query` 是可选项，会传给 AWS Secrets Manager 用于筛选清单。应将其视为非密钥元数据，因为 AWS 可能会在 CloudTrail 中记录列表请求参数。`nextToken` 是不透明的 AWS 游标；调用方必须原样传回，不能自行生成偏移值。`pageSize` 是可选项，UI 中默认为 50，最大为 100。
 
-Preview uses AWS `ListSecrets` only. It must not call `GetSecretValue` or
-`BatchGetSecretValue`, must not request `SecretString`, and must not require KMS
-decrypt. The response contains sanitized metadata for display and conflict
-decisions:
+预览仅使用 AWS `ListSecrets`。不得调用 `GetSecretValue` 或 `BatchGetSecretValue`，不得请求 `SecretString`，也不得要求 KMS 解密。响应包含经过脱敏、供展示和冲突判断使用的元数据：
 
 ```json
 {
@@ -403,19 +318,15 @@ decisions:
 }
 ```
 
-Candidate statuses:
+候选项状态：
 
-- `ready`: the row can be selected for import.
-- `duplicate`: a Paperclip secret already links the same canonical provider
-  reference for the same provider vault.
-- `conflict`: the row has a name/key collision or provider guardrail failure.
+- `ready`：该行可选中并导入。
+- `duplicate`：Paperclip 密钥已通过同一个 provider 密钥库关联相同的规范化 provider 引用。
+- `conflict`：该行存在名称/key 冲突，或未通过 provider 防护规则。
 
-Conflict types are `exact_reference`, `name`, `key`, and
-`provider_guardrail`. AWS refs under Paperclip's own managed namespace are
-blocked as external references; use the Paperclip-managed secret flow for those
-resources instead.
+冲突类型包括 `exact_reference`、`name`、`key` 和 `provider_guardrail`。Paperclip 自有托管命名空间下的 AWS 引用不能作为外部引用；这类资源应改用 Paperclip 托管密钥流程。
 
-### Import Selected Remote References
+### 导入选定的远程引用
 
 ```
 POST /api/companies/{companyId}/secrets/remote-import
@@ -436,14 +347,9 @@ POST /api/companies/{companyId}/secrets/remote-import
 }
 ```
 
-The `secrets` array accepts 1-100 rows. Each row may override the suggested
-Paperclip `name`, `key`, optional Paperclip `description`,
-`providerVersionRef`, and sanitized `providerMetadata`. Blank descriptions are
-stored as `null`; AWS provider descriptions are not copied into Paperclip
-descriptions. The backend re-checks duplicate refs and name/key conflicts at
-submit time; a stale preview does not bypass those checks.
+`secrets` 数组接受 1–100 行。每行都可以覆盖建议的 Paperclip `name`、`key`、可选的 Paperclip `description`、`providerVersionRef` 和经过脱敏的 `providerMetadata`。空白描述会存储为 `null`；AWS provider 描述不会复制到 Paperclip 的描述字段。后端会在提交时重新检查重复引用和名称/key 冲突；预览结果过期也不能绕过这些检查。
 
-The import response is row-level:
+导入响应以行为单位返回：
 
 ```json
 {
@@ -466,18 +372,15 @@ The import response is row-level:
 }
 ```
 
-Row statuses:
+行状态：
 
-- `imported`: Paperclip created an active `external_reference` secret and one
-  metadata-only version row.
-- `skipped`: the row had an exact-reference duplicate or name/key conflict.
-- `error`: the provider rejected the reference or the row failed validation.
+- `imported`：Paperclip 创建了一个有效的 `external_reference` 密钥，以及一条仅含元数据的版本记录。
+- `skipped`：该行与现有引用完全重复，或存在名称/key 冲突。
+- `error`：provider 拒绝该引用，或该行校验失败。
 
-Activity logs for preview/import store aggregate counts, provider id, and vault
-id only. They must not store remote secret names, ARNs, descriptions, tags,
-plaintext values, provider credentials, or raw AWS error blobs.
+预览/导入的 activity log 仅存储汇总数量、provider id 和密钥库 id。不得存储远程密钥名称、ARN、描述、tag、明文值、provider 凭据或原始 AWS 错误内容。
 
-## Rotate Secret
+## 轮换密钥
 
 ```
 POST /api/secrets/{secretId}/rotate
@@ -486,13 +389,11 @@ POST /api/secrets/{secretId}/rotate
 }
 ```
 
-Creates a new version of the secret. Agents referencing `"version": "latest"`
-automatically get the new value on next heartbeat. Pin to a specific version
-when a bad `latest` rollout would affect many agents at once.
+创建密钥的新版本。使用 `"version": "latest"` 的 agent 会在下次 heartbeat 时自动获取新值。如果错误的 `latest` 发布会同时影响许多 agent，请将其固定到特定版本。
 
-## Using Secrets in Agent Config
+## 在 Agent 配置中使用密钥
 
-Reference secrets in agent adapter config instead of inline values:
+在 agent adapter 配置中引用密钥，避免直接填写密钥值：
 
 ```json
 {
@@ -506,14 +407,9 @@ Reference secrets in agent adapter config instead of inline values:
 }
 ```
 
-The server resolves and decrypts secret references at runtime, injecting the
-real value into the agent process environment. Paperclip's custody guarantees
-end at injection: the agent process can read, log, or forward the value, so
-treat any secret bound to an agent as exposed to that agent. See the custody
-boundaries note in the [secrets deploy guide](/deploy/secrets#custody-boundaries).
+服务器会在运行时解析并解密密钥引用，再将真实值注入 agent 进程环境。Paperclip 的保管保障在注入时结束：agent 进程可以读取、记录或转发该值，因此应将绑定给 agent 的密钥视为已暴露给该 agent。请参阅[密钥部署指南](/deploy/secrets#custody-boundaries)中的保管边界说明。
 
-User-specific env bindings use a definition key instead of a concrete
-`secretId`. The concrete value is resolved for the run's responsible user:
+用户专属环境绑定使用定义 key，而不是具体的 `secretId`。运行时会解析该运行负责用户对应的实际值：
 
 ```json
 {
@@ -529,21 +425,14 @@ User-specific env bindings use a definition key instead of a concrete
 }
 ```
 
-`required` defaults to `true` and `allowMissingOverride` defaults to `false`.
-Missing required user-secret values must fail closed before adapter dispatch.
-Optional missing values omit the environment variable; they must not inject an
-empty string or another user's value. Paperclip records value-free access
-events with `secretScope`, `responsibleUserId`, `credentialOwnerUserId`, and
-`userSecretDefinitionId`.
+`required` 默认为 `true`，`allowMissingOverride` 默认为 `false`。缺少必需的用户密钥值时，必须在分派给 adapter 前以 fail-closed 方式终止。可选值缺失时应省略该环境变量；不得注入空字符串或其他用户的值。Paperclip 记录不含密钥值的访问事件，字段包括 `secretScope`、`responsibleUserId`、`credentialOwnerUserId` 和 `userSecretDefinitionId`。
 
-## Portability
+## 可移植性
 
-Company export/import APIs represent agent and project environment requirements
-as declarations in the package manifest. Exports omit secret values, secret IDs,
-provider references, and encrypted provider material. Use:
+公司导出/导入 API 会在 package manifest 中以声明形式表示 agent 和项目的环境变量要求。导出时会省略密钥值、secret ID、provider 引用和加密的 provider 材料。使用以下命令：
 
 ```sh
 npx paperclipai secrets declarations --company-id {companyId}
 ```
 
-to inspect the declarations that an export would emit before moving a package.
+在迁移 package 前检查导出内容中将包含的声明。

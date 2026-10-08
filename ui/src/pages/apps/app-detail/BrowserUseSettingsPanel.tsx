@@ -107,7 +107,7 @@ function CredentialSettings({
               variant="ghost"
               onClick={() => void profiles.refetch()}
             >
-              Retry
+              {uiText("Retry")}
             </Button>
           </p>
         )}

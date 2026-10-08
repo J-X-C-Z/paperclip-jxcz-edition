@@ -1,4 +1,5 @@
 import { uiText } from "@/i18n";
+import { quotaUnavailableMessage } from "@/lib/quota-refresh";
 import type { QuotaWindow } from "@paperclipai/shared";
 import { cn, quotaSourceDisplayName } from "@/lib/utils";
 
@@ -70,7 +71,7 @@ export function CodexSubscriptionPanel({
             Codex subscription
           </div>
           <div className="mt-1 text-sm text-muted-foreground">
-            Live Codex quota windows.
+            Quota from the Codex subscription connected to this server.
           </div>
         </div>
         {source ? (
@@ -81,8 +82,8 @@ export function CodexSubscriptionPanel({
       </div>
 
       {error ? (
-        <div className="mt-4 border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
+        <div role="status" className="mt-4 text-sm text-muted-foreground">
+          {quotaUnavailableMessage(windows.length > 0)}
         </div>
       ) : null}
 

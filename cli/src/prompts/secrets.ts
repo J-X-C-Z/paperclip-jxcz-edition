@@ -26,23 +26,23 @@ export async function promptSecrets(current?: SecretsConfig): Promise<SecretsCon
     options: [
       {
         value: "local_encrypted" as const,
-        label: "Local encrypted (recommended)",
-        hint: "best for single-developer installs",
+        label: "本地加密（推荐）",
+        hint: "适合单人开发者安装",
       },
       {
         value: "aws_secrets_manager" as const,
         label: "AWS Secrets Manager",
-        hint: "requires runtime AWS credentials and provider env config",
+        hint: "需要运行时 AWS 凭据和提供方环境配置",
       },
       {
         value: "gcp_secret_manager" as const,
         label: "GCP Secret Manager",
-        hint: "requires external adapter integration",
+        hint: "需要集成外部适配器",
       },
       {
         value: "vault" as const,
         label: "HashiCorp Vault",
-        hint: "requires external adapter integration",
+        hint: "需要集成外部适配器",
       },
     ],
     initialValue: base.provider,

@@ -31,7 +31,7 @@ let root: Root | undefined;
 const leader = { id: "leader-a", companyId: "company-a", name: "Current leader", role: "general", status: "idle", metadata: { agentTemplate: { id: "team-leader", version: 1, role: "leader" } } } as unknown as Agent;
 async function flush() { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); }); }
 async function render(role: "leader" | "member" | "department_head" | "custom") {
-  mocks.params = new URLSearchParams({ name: "Template agent", adapterType: "codex_local", templateId: AGENT_TEMPLATES.find(template => template.role === role)!.id });
+  mocks.params = new URLSearchParams({ name: "Template agent", adapterType: "codex_local", templateId: role === "custom" ? "custom" : AGENT_TEMPLATES.find(template => template.role === role)!.id });
   const container = document.createElement("div"); document.body.append(container); root = createRoot(container);
   await act(async () => root!.render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><NewAgentSetup /></QueryClientProvider>));
   for (let i = 0; i < 4; i++) await flush();

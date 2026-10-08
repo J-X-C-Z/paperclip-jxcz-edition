@@ -1,4 +1,4 @@
-import { uiText } from "@/i18n";
+import { uiText, useUiTranslator } from "@/i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Project } from "@paperclipai/shared";
@@ -24,9 +24,8 @@ import {
 } from "../hooks/useResourceMemberships";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Archive, ArchiveRestore, ArrowUpDown, Check, Hexagon, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowUpDown, Check, Hexagon, Plus, Lock } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useUiTranslator } from "@/i18n";
 
 type ProjectSortField = "name" | "updated" | "created" | "targetDate";
 type ProjectSortDir = "asc" | "desc";
@@ -259,6 +258,7 @@ export function Projects() {
                         )}
                         trailing={
                           <div className="flex items-center gap-3">
+                            {project.visibility === "private" ? <Lock className="size-4 shrink-0 text-muted-foreground" aria-label="Private project" /> : null}
                             <span
                               className="hidden text-xs text-muted-foreground tabular-nums sm:inline"
                               title={`${formatNumber(project.taskCount ?? 0)} ${tr("task")}${(project.taskCount ?? 0) === 1 ? "" : tr("s")}`}

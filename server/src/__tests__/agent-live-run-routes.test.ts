@@ -9,6 +9,9 @@ const mockAgentService = vi.hoisted(() => ({
 }));
 
 const mockHeartbeatService = vi.hoisted(() => ({
+  list: vi.fn(),
+  stats: vi.fn(),
+  latestFailed: vi.fn(),
   buildRunOutputSilence: vi.fn(),
   decorateActiveRunStatus: vi.fn(),
   getRunIssueSummary: vi.fn(),
@@ -23,6 +26,7 @@ const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
 }));
+const mockNativeReviewAssignment = vi.hoisted(() => vi.fn());
 
 const mockExecutionProjection = vi.hoisted(() => ({
   executionProjectionForRun: vi.fn(async () => null),
@@ -79,6 +83,10 @@ const mockChatRunRetries = vi.hoisted(() => ({
 }));
 
 function registerModuleMocks() {
+  vi.doMock("../services/native-runtime/native-review-participant.js", async () => ({
+    ...(await vi.importActual<typeof import("../services/native-runtime/native-review-participant.js")>("../services/native-runtime/native-review-participant.js")),
+    getNativeReviewAssignment: mockNativeReviewAssignment,
+  }));
   vi.doMock("../services/execution-projection.js", () => mockExecutionProjection);
   vi.doMock("../routes/authz.js", async () =>
     vi.importActual("../routes/authz.js"),
@@ -188,6 +196,7 @@ function createLiveRunsDbStub(rows: Array<Record<string, unknown>>) {
       Promise.resolve(rows).then(resolve),
   };
   const query = {
+    then: orderedQuery.then,
     from: vi.fn().mockReturnThis(),
     innerJoin: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -287,6 +296,7 @@ describe("agent live run routes", () => {
     vi.clearAllMocks();
     mockChatRunRetries.prepareFailedChatRunRetry.mockReset();
     mockChatRunRetries.processFailedChatRunRetry.mockReset();
+    mockNativeReviewAssignment.mockReset().mockResolvedValue(null);
     mockAccessService.canUser.mockResolvedValue(true);
     mockAccessService.decide.mockImplementation(async (input: { action?: string }) => ({
       allowed: true,
@@ -348,6 +358,8 @@ describe("agent live run routes", () => {
     mockHeartbeatService.getRunLogAccess.mockResolvedValue({
       id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       companyId: "company-1",
+      scopeKind: "company",
+      issueId: null,
       logStore: "local_file",
       logRef: "logs/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.ndjson",
     });
@@ -592,6 +604,8 @@ describe("agent live run routes", () => {
       {
         id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         companyId: "company-1",
+      scopeKind: "company",
+      issueId: null,
         logStore: "local_file",
         logRef: "logs/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.ndjson",
       },
@@ -632,6 +646,8 @@ describe("agent live run routes", () => {
       const app = await createApp({}, actor);
       const paths = [
         "/api/companies/company-1/heartbeat-runs",
+        "/api/companies/company-1/heartbeat-runs/stats",
+        "/api/companies/company-1/heartbeat-runs/latest-failed",
         "/api/companies/company-1/live-runs",
         "/api/heartbeat-runs/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         "/api/heartbeat-runs/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/events",
@@ -654,6 +670,36 @@ describe("agent live run routes", () => {
       }));
     },
   );
+
+  it("defaults history to 200 rows and forwards validated pagination", async () => {
+    mockHeartbeatService.list.mockResolvedValue([]);
+    const app = await createApp({});
+    const response = await requestApp(app, (url) => request(url).get("/api/companies/company-1/heartbeat-runs"));
+    expect(response.status).toBe(200);
+    expect(mockHeartbeatService.list).toHaveBeenLastCalledWith("company-1", undefined, 200, { summary: false, offset: 0 });
+    const paged = await requestApp(app, (url) => request(url).get("/api/companies/company-1/heartbeat-runs?agentId=agent-1&limit=25&offset=50&summary=1"));
+    expect(paged.status).toBe(200);
+    expect(mockHeartbeatService.list).toHaveBeenLastCalledWith("company-1", "agent-1", 25, { summary: true, offset: 50 });
+    for (const query of ["limit=0", "limit=1001", "limit=1x", "offset=-1", "offset=1.5"]) {
+      const invalid = await requestApp(app, (url) => request(url).get(`/api/companies/company-1/heartbeat-runs?${query}`));
+      expect(invalid.status, query).toBe(400);
+    }
+  });
+
+  it("returns aggregated stats and redacts latest failed history", async () => {
+    const stats = [{ date: "2026-10-08", status: "failed", count: 2 }];
+    const runs = [{ id: "run-1", status: "failed" }];
+    mockHeartbeatService.stats.mockResolvedValue(stats);
+    mockHeartbeatService.latestFailed.mockResolvedValue(runs);
+    const app = await createApp({});
+    const response = await requestApp(app, (url) => request(url).get("/api/companies/company-1/heartbeat-runs/stats?agentId=agent-1"));
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(stats);
+    expect(mockHeartbeatService.stats).toHaveBeenCalledWith("company-1", "agent-1");
+    const failed = await requestApp(app, (url) => request(url).get("/api/companies/company-1/heartbeat-runs/latest-failed"));
+    expect(failed.status).toBe(200);
+    expect(mockRunSecretRedactionRegistry.redactForRuns).toHaveBeenCalledWith("company-1", [expect.objectContaining({ id: "run-1", status: "failed", redacted: true, usageJson: null })]);
+  });
 
   it("caps company live run polling by default", async () => {
     const rows = Array.from({ length: 75 }, (_, index) => ({
@@ -681,7 +727,8 @@ describe("agent live run routes", () => {
       lastOutputStream: null,
       lastOutputBytes: 0,
       processStartedAt: null,
-      issueId: "issue-1",
+      scopeKind: "company",
+      issueId: null,
     }));
     const { db, limit } = createLiveRunsDbStub(rows);
 
@@ -738,7 +785,7 @@ describe("agent live run routes", () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toHaveLength(60);
     expect(limit).not.toHaveBeenCalled();
-    expect(db.select).toHaveBeenCalledTimes(1);
+    expect(db.select).toHaveBeenCalledTimes(61); // live query plus per-run privacy authorization
     expect(mockRunSecretRedactionRegistry.redactForRuns).toHaveBeenCalledTimes(1);
   });
 
@@ -768,7 +815,8 @@ describe("agent live run routes", () => {
       lastOutputStream: null,
       lastOutputBytes: 0,
       processStartedAt: null,
-      issueId: "issue-1",
+      scopeKind: "company",
+      issueId: null,
     }));
     const { db, limit } = createLiveRunsDbStub(rows);
 
@@ -811,7 +859,8 @@ describe("agent live run routes", () => {
       lastOutputStream: null,
       lastOutputBytes: 0,
       processStartedAt: null,
-      issueId: "issue-1",
+      scopeKind: "company",
+      issueId: null,
     }));
 
     const selectCalls: Array<ReturnType<typeof vi.fn>> = [];
@@ -871,7 +920,8 @@ describe("agent live run routes", () => {
       lastOutputStream: null,
       lastOutputBytes: 0,
       processStartedAt: null,
-      issueId: "issue-1",
+      scopeKind: "company",
+      issueId: null,
     }));
     const recentRows = Array.from({ length: 4 }, (_, index) => ({
       id: `run-recent-${index}`,
@@ -898,7 +948,8 @@ describe("agent live run routes", () => {
       lastOutputStream: null,
       lastOutputBytes: 0,
       processStartedAt: null,
-      issueId: "issue-1",
+      scopeKind: "company",
+      issueId: null,
     }));
 
     let selectCallCount = 0;
@@ -1007,6 +1058,68 @@ describe("agent live run routes", () => {
     expect(res.status, JSON.stringify(res.body)).toBe(202);
     expect(mockAccessService.decide).toHaveBeenCalledWith(expect.objectContaining({ action: "agent:wake" }));
     expect(mockHeartbeatService.wakeup).toHaveBeenCalledWith(routeAgentId, expect.objectContaining({ manualUserWake: true }));
+  });
+
+  describe("exact native model-rejected review retry", () => {
+    const reviewContext = {
+      nativeReviewInteractionId: "55555555-5555-4555-8555-555555555555",
+      nativeReviewDecisionId: "66666666-6666-4666-8666-666666666666",
+    };
+    const selectedRun = {
+      id: failedChatRunId, companyId: "company-1", agentId: routeAgentId,
+      status: "failed", runtimeMode: "native", errorCode: "native_provider_model_rejected",
+      nativeIssueId: failedChatIssueId,
+      contextSnapshot: { issueId: failedChatIssueId, ...reviewContext },
+    };
+    const selectedIssue = { id: failedChatIssueId, companyId: "company-1", status: "in_review", assigneeAgentId: "worker", assigneeUserId: null };
+    const retryBody = { failedRunId: failedChatRunId, reason: "retry_failed_run" };
+    beforeEach(() => {
+      mockAgentService.getById.mockResolvedValue({ id: routeAgentId, companyId: "company-1" });
+      mockHeartbeatService.getRun.mockResolvedValue(selectedRun);
+      mockIssueService.getById.mockResolvedValue(selectedIssue);
+      mockNativeReviewAssignment.mockResolvedValue({ interaction: { status: "pending" } });
+    });
+
+    it("permits the Board to retry the exact pending review using only saved context", async () => {
+      const fixture = createFailedChatRetryDb(false);
+      const res = await requestApp(await createApp(fixture.db), url => request(url).post(`/api/agents/${routeAgentId}/wakeup`).send({
+        ...retryBody, payload: { issueId: "forged", nativeReviewInteractionId: "forged", nativeReviewDecisionId: "forged" },
+      }));
+      expect(res.status, JSON.stringify(res.body)).toBe(202);
+      expect(mockNativeReviewAssignment).toHaveBeenCalledExactlyOnceWith(fixture.db, {
+        companyId: "company-1", issueId: failedChatIssueId, agentId: routeAgentId, contextSnapshot: reviewContext,
+      });
+      expect(mockHeartbeatService.wakeup).toHaveBeenCalledExactlyOnceWith(routeAgentId, expect.objectContaining({
+        failedRunId: failedChatRunId, reason: "retry_failed_run", payload: { issueId: failedChatIssueId },
+        requestedByActorType: "user", contextSnapshot: expect.objectContaining(reviewContext),
+      }));
+      expect(JSON.stringify(mockHeartbeatService.wakeup.mock.calls)).not.toContain("forged");
+    });
+
+    it.each(["agent-caller", "denied-task", "foreign-company", "foreign-agent", "foreign-issue", "legacy", "unknown-error", "missing-context", "stale", "resolved", "changed-reviewer"])(
+      "rejects an ineligible exact review retry (%s)", async scenario => {
+        let actor: Record<string, unknown> | undefined;
+        if (scenario === "agent-caller") actor = { type: "agent", agentId: routeAgentId, companyId: "company-1" };
+        if (scenario === "denied-task") mockAccessService.decide.mockImplementation(async ({ action }) => ({ allowed: action !== "issue:comment", explanation: "Denied" }));
+        if (scenario === "foreign-company") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, companyId: "company-2" });
+        if (scenario === "foreign-agent") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, agentId: "other-reviewer" });
+        if (scenario === "foreign-issue") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, nativeIssueId: "other-task" });
+        if (scenario === "legacy") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, runtimeMode: "legacy" });
+        if (scenario === "unknown-error") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, errorCode: "adapter_failed" });
+        if (scenario === "missing-context") mockHeartbeatService.getRun.mockResolvedValue({ ...selectedRun, contextSnapshot: { issueId: failedChatIssueId } });
+        if (scenario === "stale" || scenario === "changed-reviewer") mockNativeReviewAssignment.mockResolvedValue(null);
+        if (scenario === "resolved") mockNativeReviewAssignment.mockResolvedValue({ interaction: { status: "accepted" } });
+        const fixture = createFailedChatRetryDb(false);
+        const res = await requestApp(await createApp(fixture.db, actor), url => request(url).post(`/api/agents/${routeAgentId}/wakeup`).send({
+          ...retryBody, payload: { ...reviewContext },
+        }));
+        expect(res.status).toBe(["agent-caller", "denied-task"].includes(scenario) ? 403 : ["foreign-company", "foreign-agent"].includes(scenario) ? 404 : 409);
+        expect(mockHeartbeatService.wakeup).not.toHaveBeenCalled();
+        if (["agent-caller", "denied-task", "foreign-company", "foreign-agent", "foreign-issue", "legacy", "unknown-error", "missing-context"].includes(scenario)) {
+          expect(mockNativeReviewAssignment).not.toHaveBeenCalled();
+        }
+      },
+    );
   });
 
   describe("exact failed chat run retry", () => {
@@ -1206,7 +1319,7 @@ describe("agent live run routes", () => {
         expect(res.status, JSON.stringify(res.body)).toBe(202);
         expect(res.body).toEqual(receipt);
         expect(mockHeartbeatService.getRun).toHaveBeenCalledWith(
-          failedChatRunId,
+          failedChatRunId, { includeExecutionEvidence: true },
         );
         expect(
           mockChatRunRetries.prepareFailedChatRunRetry,

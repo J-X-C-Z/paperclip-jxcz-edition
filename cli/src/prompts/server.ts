@@ -25,23 +25,23 @@ export async function promptServer(opts?: {
     options: [
       {
         value: "loopback" as const,
-        label: "Trusted local",
-        hint: "Recommended for first run: localhost only, no login friction",
+        label: "本地可信访问",
+        hint: "推荐首次运行使用：仅本地主机访问，无需登录",
       },
       {
         value: "lan" as const,
-        label: "Private network",
-        hint: "Broad private bind for LAN, VPN, or legacy --tailscale-auth style access",
+        label: "私有网络",
+        hint: "广泛的私有网络绑定，适用于 LAN、VPN 或旧式 --tailscale-auth 访问方式",
       },
       {
         value: "tailnet" as const,
-        label: "Tailnet",
-        hint: "Private authenticated access using the machine's detected Tailscale address",
+        label: "Tailnet 网络",
+        hint: "使用检测到的 Tailscale 地址进行私有身份验证访问",
       },
       {
         value: "custom" as const,
-        label: "Custom",
-        hint: "Choose exact auth mode, exposure, and host manually",
+        label: "自定义",
+        hint: "手动选择身份验证模式、暴露方式和主机",
       },
     ],
     initialValue: currentBind,
@@ -114,13 +114,13 @@ export async function promptServer(opts?: {
     options: [
       {
         value: "local_trusted",
-        label: "Local trusted",
-        hint: "No login required; only safe with loopback-only or similarly trusted access",
+        label: "本地可信模式",
+        hint: "无需登录；仅适用于 loopback 或类似可信访问方式",
       },
       {
         value: "authenticated",
-        label: "Authenticated",
-        hint: "Login required; supports both private-network and public deployments",
+        label: "身份验证模式",
+        hint: "需要登录；支持私有网络和公开部署",
       },
     ],
     initialValue: currentServer?.deploymentMode ?? "authenticated",
@@ -136,13 +136,13 @@ export async function promptServer(opts?: {
       options: [
         {
           value: "private",
-          label: "Private network",
-          hint: "Private access only, with automatic URL handling",
+          label: "私有网络",
+          hint: "仅限私有访问，自动处理 URL",
         },
         {
           value: "public",
-          label: "Public internet",
-          hint: "Internet-facing deployment with explicit public URL requirements",
+          label: "公开互联网",
+          hint: "面向互联网的部署，必须显式设置公开 URL",
         },
       ],
       initialValue: currentServer?.exposure ?? "private",

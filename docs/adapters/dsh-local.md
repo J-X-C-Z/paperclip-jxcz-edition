@@ -1,14 +1,7 @@
-# DeepSeek Harness (DSH)
+# DeepSeek Harness（DSH）
 
-The `dsh_local` adapter runs DeepSeek Harness as an ACP coding agent using
-`dsh --profile acp`. It creates persistent ACP sessions that Paperclip can
-resume across heartbeat runs.
+`dsh_local` 适配器通过 `dsh --profile acp` 将 DeepSeek Harness 作为 ACP 编程智能体运行。它会创建持久化 ACP 会话，供 Paperclip 在多次心跳运行之间恢复使用。
 
-Install `@deepseek-ai/dsh` on the machine or remote execution environment that
-runs the agent. The adapter checks that the `dsh` executable is available.
-Authentication uses DSH's own credential store or `DEEPSEEK_API_KEY` in the
-agent environment. The default model is `deepseek-v4-flash`.
+请在运行智能体的本机或远程执行环境中安装 `@deepseek-ai/dsh`。适配器会检查 `dsh` 可执行文件是否可用。身份验证使用 DSH 自带凭据存储，或智能体环境中的 `DEEPSEEK_API_KEY`。默认模型为 `deepseek-v4-flash`。
 
-The interactive `dsh-tui` profile is designed for a human terminal and is not
-used by Paperclip. The ACP automation profile provides structured task output,
-session lifecycle, and cancellation over the standard Agent Client Protocol.
+交互式 `dsh-tui` 配置面向人工终端操作，Paperclip 不会使用它。ACP 自动化配置基于标准 Agent Client Protocol 提供结构化任务输出、会话生命周期管理和取消功能。

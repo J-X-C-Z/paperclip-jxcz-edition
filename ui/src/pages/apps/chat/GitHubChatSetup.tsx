@@ -244,7 +244,7 @@ export function GitHubChatSetup() {
         </p>
         <h1 className="mt-2 text-2xl font-semibold">{steps[step]}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          GitHub conversations run as Paperclip tasks on one assigned agent.
+          {uiText("GitHub conversations run as Paperclip tasks on one assigned agent.")}
         </p>
       </div>
       {(error || current.error || agents.error) && (
@@ -252,15 +252,14 @@ export function GitHubChatSetup() {
           role="alert"
           className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm"
         >
-          {error || "Could not load this setup. Refresh to try again."}
+          {error || uiText("Could not load this setup. Refresh to try again.")}
         </p>
       )}
       {step === 0 && (
         <>
           <GitHubSetupPrompt />
           <p className="text-sm">
-            This assignment is permanent. The agent works through its existing
-            permissions, budgets, and tools.
+            {uiText("This assignment is permanent. The agent works through its existing permissions, budgets, and tools.")}
           </p>
           {endpoint ? (
             <Input
@@ -440,8 +439,7 @@ export function GitHubChatSetup() {
               {uiText("App permissions and callback details")}
             </summary>
             <p className="mt-3 text-sm">
-              Contents: read. Issues, Pull requests, Checks: write. Events:
-              issue_comment, pull_request_review_comment, pull_request.
+              {uiText("Contents: read. Issues, Pull requests, Checks: write. Events: issue_comment, pull_request_review_comment, pull_request.")}
             </p>
             <p className="mt-2 break-all text-xs">
               {endpoint.setup?.webhookUrl ?? "Public webhook URL unavailable"}

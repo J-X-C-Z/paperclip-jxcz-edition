@@ -1,7 +1,7 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { costAccountingOutbox } from "@paperclipai/db";
-import type { BudgetEnforcementScope } from "./budgets.js";
+import { budgetService, type BudgetEnforcementScope } from "./budgets.js";
 
 export type CostAccountingOutboxHooks = {
   cancelWorkForScope: (scope: BudgetEnforcementScope) => Promise<void>;
@@ -19,8 +19,11 @@ export function costAccountingOutboxService(db: Db, hooks: CostAccountingOutboxH
         await db.update(costAccountingOutbox).set({ attempts: sql`${costAccountingOutbox.attempts} + 1` })
           .where(eq(costAccountingOutbox.id, row.id));
         try {
-          await hooks.cancelWorkForScope({ companyId: row.companyId,
-            scopeType: row.scopeType as BudgetEnforcementScope["scopeType"], scopeId: row.scopeId });
+          // Legacy intents are revalidated and delivered by the current policy
+          // engine, whose version fence preserves work admitted after a grant.
+          await budgetService(db, hooks).getInvocationBlock(row.companyId,
+            row.scopeType === "agent" ? row.scopeId : null,
+            row.scopeType === "project" ? { projectId: row.scopeId } : undefined);
           await db.update(costAccountingOutbox).set({ status: "delivered", deliveredAt: new Date(), lastError: null })
             .where(eq(costAccountingOutbox.id, row.id));
           delivered += 1;

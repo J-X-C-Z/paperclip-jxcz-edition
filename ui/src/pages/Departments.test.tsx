@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DepartmentWorkspace } from "./Departments";
+import { uiText } from "@/i18n";
 const mock = vi.hoisted(() => ({ list: vi.fn(), saveDepartment: vi.fn() }));
 vi.mock("@/api/improvementTeams", async original => ({ ...await original<typeof import("@/api/improvementTeams")>(), improvementTeamsApi: mock }));
 vi.mock("@/lib/router", () => ({ Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a> }));
@@ -57,7 +58,7 @@ describe("department management", () => {
     await render();
     expect(host.textContent).toContain("开发部");
     expect(host.textContent).toContain("运营部");
-    expect(host.textContent).toContain("正在显示上次加载的部门");
+    expect(host.textContent).toContain(uiText("Could not refresh; showing the previously loaded departments."));
     expect(button("重试")).toBeDefined();
   });
   it("adds available teams without taking another department's teams", async () => {
@@ -65,7 +66,7 @@ describe("department management", () => {
     const dialog = document.querySelector('[role="dialog"]')!;
     const checks = [...dialog.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
     expect(checks.map(entry => [entry.checked, entry.disabled])).toEqual([[true, false], [false, false], [false, true]]);
-    await act(async () => button("一键带入可分配小组", dialog).click());
+    await act(async () => button(uiText("Add all available groups"), dialog).click());
     await act(async () => dialog.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))); await flush();
     expect(mock.saveDepartment).toHaveBeenCalledWith("plugin", { companyId: "company", departmentId: "dev", name: "开发部", headAgentId: "head", teamIds: ["desktop", "mobile"] });
     expect(host.textContent).toContain("部门配置已保存");

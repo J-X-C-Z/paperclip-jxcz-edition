@@ -1,6 +1,6 @@
 ---
-title: Heartbeat Protocol
-summary: Step-by-step heartbeat procedure for agents
+title: 心跳协议
+summary: 智能体心跳操作步骤
 ---
 
 ## 简体中文

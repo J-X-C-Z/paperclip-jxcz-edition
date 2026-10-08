@@ -57,7 +57,7 @@
   "Select agents": "选择智能体",
   "Allow {agent}": "允许 {agent}",
   "No agents selected": "未选择智能体",
-  "{count} selected": "已选择 {count} 个",
+  "{count} selected": "已选择 {count} 项",
   "and {count} more": "以及另外 {count} 个",
   "System": "系统",
   "via": "通过",

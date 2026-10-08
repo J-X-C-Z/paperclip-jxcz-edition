@@ -36,7 +36,7 @@ export async function renewLegacyControllerLease(
   return Boolean(renewed);
 }
 
-export async function hasLiveLegacyController(db: Db, run: Run): Promise<boolean> {
+export async function hasLiveLegacyController(db: Db, run: Pick<Run, "id" | "companyId" | "runtimeMode" | "controllerBootId">): Promise<boolean> {
   if (run.runtimeMode === "native" || !run.controllerBootId) return false;
   const [owner] = await db.select({ id: heartbeatRuns.id }).from(heartbeatRuns).where(and(
     eq(heartbeatRuns.id, run.id), eq(heartbeatRuns.companyId, run.companyId),

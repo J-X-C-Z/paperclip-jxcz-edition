@@ -36,12 +36,12 @@ describe("read-time token estimates", () => {
     const db = { execute: async () => [
       { ...base, costStatus: "unpriced", billingType: "metered_api" },
       { ...base, costStatus: "reported", billingType: "subscription_included" },
-      { ...base, costStatus: "estimated", billingType: "metered_api", estimatedCostCents: 75 },
+      { ...base, costStatus: "estimated", billingType: "metered_api", costCents: 75, estimatedCostCents: 75 },
       { ...base, model: "unknown", costStatus: "unpriced", billingType: "metered_api" },
-      { ...base, costStatus: "reported", billingType: "metered_api", reportedCostCents: 120 },
+      { ...base, costStatus: "reported", billingType: "metered_api", costCents: 120, reportedCostCents: 120 },
     ] };
     const rows = await attributedCosts(db as never, "company");
-    expect(rows.map((row) => [row.reportedCostCents, row.estimatedCostCents, row.unpricedEventCount, row.costCents])).toEqual([
+    expect(rows.map((row) => [row.reportedCostCents, row.estimatedCostCents, row.unpricedEventCount, row.referenceCostCents])).toEqual([
       [0, 200, 0, 200], [0, 200, 0, 200], [0, 75, 0, 75], [0, 0, 1, 0], [120, 0, 0, 120],
     ]);
   });
@@ -53,7 +53,7 @@ describe("fractional reference costs", () => {
     const tiny = { agentId: "a", projectId: null, projectName: null, provider: "openai", model: "gpt-6.1-sol", billingType: "subscription_included", costStatus: "reported", inputTokens: 10, cachedInputTokens: 0, outputTokens: 0, costCents: 0, reportedCostCents: 0 };
     const rows = await attributedCosts({ execute: async () => [tiny, tiny] } as never, "company");
     expect(rows[0].estimatedCostCents).toBeCloseTo(0.002);
-    expect(aggregateOrganizationCosts(rows, []).teams[0].costCents).toBeCloseTo(0.004);
+    expect(aggregateOrganizationCosts(rows, []).teams[0].referenceCostCents).toBeCloseTo(0.004);
   });
   it("does not add a reference estimate on top of a positive reported subscription charge", async () => {
     const row = { agentId: "a", projectId: null, projectName: null, provider: "openai", model: "gpt-6.1-sol", billingType: "subscription_included", costStatus: "reported", inputTokens: 1_000_000, cachedInputTokens: 0, outputTokens: 0, costCents: 50, reportedCostCents: 50 };
@@ -66,4 +66,10 @@ it("uses only the same historical run's recorded model to price a missing model"
   const rows = await attributedCosts({ execute: async () => [{ ...base, pricingModel: "gpt-6.1-sol" }, base] } as never, "company");
   expect(rows[0]).toMatchObject({ model: "unknown", estimatedCostCents: 200, unpricedEventCount: 0 });
   expect(rows[1]).toMatchObject({ model: "unknown", estimatedCostCents: 0, unpricedEventCount: 1 });
+});
+
+it("preserves exact billed totals independently of reference estimates", () => {
+  const rows = [0, 1].map(() => ({ ...cost, costCents: 0.0000001, costCentsExact: "0.0000001", referenceCostCents: 20 }));
+  const { teams, departments } = aggregateOrganizationCosts(rows, [membership]);
+  for (const row of [...teams, ...departments]) expect(row).toMatchObject({ costCents: 0.0000002, costCentsExact: "0.0000002", referenceCostCents: 40 });
 });

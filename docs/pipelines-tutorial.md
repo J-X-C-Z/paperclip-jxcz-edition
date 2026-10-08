@@ -1,4 +1,4 @@
-# Pipelines Tutorial: Release to Published Content
+# 流程模板教程：从发布到已发布内容
 
 
 ## 简体中文

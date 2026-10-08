@@ -106,7 +106,14 @@ export type RuntimeRequestResolution =
   | { action: "submit"; content: Record<string, unknown> }
   | { action: "submit"; response: import("@paperclipai/adapter-utils").PaperclipQuestionResponse };
 
+export interface HeartbeatRunStat {
+  date: string;
+  status: string;
+  count: number;
+}
+
 export interface HeartbeatRunListOptions {
+  offset?: number;
   summary?: boolean;
 }
 
@@ -126,12 +133,17 @@ export const heartbeatsApi = {
     const searchParams = new URLSearchParams();
     if (agentId) searchParams.set("agentId", agentId);
     if (limit) searchParams.set("limit", String(limit));
+    if (options.offset !== undefined) searchParams.set("offset", String(options.offset));
     if (options.summary) searchParams.set("summary", "true");
     const qs = searchParams.toString();
     return api.get<HeartbeatRun[]>(
       `/companies/${companyId}/heartbeat-runs${qs ? `?${qs}` : ""}`,
     );
   },
+  latestFailed: (companyId: string) =>
+    api.get<HeartbeatRun[]>(`/companies/${companyId}/heartbeat-runs/latest-failed`),
+  stats: (companyId: string, agentId?: string) =>
+    api.get<HeartbeatRunStat[]>(`/companies/${companyId}/heartbeat-runs/stats${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ""}`),
   get: (runId: string) => api.get<HeartbeatRun>(`/heartbeat-runs/${runId}`),
   events: (runId: string, afterSeq = 0, limit = 200, options?: RequestOptions) =>
     api.get<HeartbeatRunEvent[]>(

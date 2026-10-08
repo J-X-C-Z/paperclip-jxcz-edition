@@ -5,10 +5,10 @@ export type CostCurrency = "USD" | "CNY";
 
 interface CostCurrencyValue {
   currency: CostCurrency;
-  formatCost: (usdCents: number, unpricedEventCount?: number) => string;
+  formatCost: (usdCents: number, unpricedEventCount?: number, sourceCurrency?: string) => string;
 }
 
-const CostCurrencyContext = createContext<CostCurrencyValue>({ currency: "USD", formatCost: formatCents });
+const CostCurrencyContext = createContext<CostCurrencyValue>({ currency: "USD", formatCost: (cents, _unpriced, sourceCurrency) => formatCents(cents, sourceCurrency) });
 
 export function CostCurrencyProvider({ currency, rate, children }: {
   currency: CostCurrency;
@@ -17,7 +17,7 @@ export function CostCurrencyProvider({ currency, rate, children }: {
 }) {
   const value = useMemo(() => ({
     currency,
-    formatCost: (usdCents: number, unpricedEventCount = 0) => usdCents === 0 && unpricedEventCount > 0 ? "未定价" : currency === "USD"
+    formatCost: (usdCents: number, unpricedEventCount = 0, sourceCurrency = "USD") => sourceCurrency !== "USD" ? formatCents(usdCents, sourceCurrency) : usdCents === 0 && unpricedEventCount > 0 ? "未定价" : currency === "USD"
       ? usdCents !== 0 && Math.abs(usdCents) < 1
         ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(usdCents / 100)
         : formatCents(usdCents)

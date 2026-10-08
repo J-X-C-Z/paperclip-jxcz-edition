@@ -192,7 +192,7 @@ describe("company CLI commands", () => {
       expect.objectContaining({ method: "POST" }),
     );
     const rendered = String(errorSpy.mock.calls[0]?.[0]);
-    expect(rendered).toContain("Creating companies requires board/instance-admin authentication");
+    expect(rendered).toContain("创建公司需要看板或 instance-admin 身份验证");
     expect(rendered).toContain("company list --json");
   });
 });
@@ -241,7 +241,7 @@ describe("resolveCompanyImportApiPath", () => {
         targetMode: "existing_company",
         companyId: " ",
       })
-    ).toThrow(/require a companyId/i);
+    ).toThrow(/必须提供 companyId/);
   });
 });
 
@@ -273,7 +273,7 @@ describe("resolveCompanyImportApplyConfirmationMode", () => {
         interactive: false,
         json: false,
       })
-    ).toThrow(/non-interactive terminal requires --yes/i);
+    ).toThrow(/在非交互终端中应用公司导入时必须传入 --yes/);
   });
 
   it("requires --yes for json apply", () => {
@@ -283,7 +283,7 @@ describe("resolveCompanyImportApplyConfirmationMode", () => {
         interactive: false,
         json: true,
       })
-    ).toThrow(/with --json requires --yes/i);
+    ).toThrow(/使用 --json 应用公司导入时必须传入 --yes/);
   });
 });
 
@@ -473,16 +473,16 @@ describe("renderCompanyImportPreview", () => {
       infoMessages: ["Using claude-local adapter"],
     });
 
-    expect(rendered).toContain("Include");
-    expect(rendered).toContain("company, projects, tasks, agents, skills");
-    expect(rendered).toContain("7 agents total");
-    expect(rendered).toContain("1 project total");
-    expect(rendered).toContain("1 task total");
-    expect(rendered).toContain("skills: 1 skill packaged");
+    expect(rendered).toContain("包含");
+    expect(rendered).toContain("公司、项目、任务、智能体、技能");
+    expect(rendered).toContain("共 7 个智能体");
+    expect(rendered).toContain("共 1 个项目");
+    expect(rendered).toContain("共 1 个任务");
+    expect(rendered).toContain("技能：已打包 1 项");
     expect(rendered).toContain("+1 more");
     expect(rendered).toContain("Using claude-local adapter");
-    expect(rendered).toContain("Warnings");
-    expect(rendered).toContain("Errors");
+    expect(rendered).toContain("警告");
+    expect(rendered).toContain("错误");
   });
 });
 
@@ -529,14 +529,14 @@ describe("renderCompanyImportResult", () => {
       },
     );
 
-    expect(rendered).toContain("Company");
+    expect(rendered).toContain("公司");
     expect(rendered).toContain("https://paperclip.example/PAP/dashboard");
-    expect(rendered).toContain("3 agents total (1 created, 1 updated, 1 skipped)");
-    expect(rendered).toContain("1 skill total (1 renamed)");
-    expect(rendered).toContain("3 projects total (1 created, 1 updated, 1 skipped)");
-    expect(rendered).toContain("Agent results");
-    expect(rendered).toContain("Skill results");
-    expect(rendered).toContain("Project results");
+    expect(rendered).toContain("共 3 个智能体（1 个新建，1 个更新，1 个跳过）");
+    expect(rendered).toContain("共 1 项技能（1 个重命名）");
+    expect(rendered).toContain("共 3 个项目（1 个新建，1 个更新，1 个跳过）");
+    expect(rendered).toContain("智能体结果");
+    expect(rendered).toContain("技能结果");
+    expect(rendered).toContain("项目结果");
     expect(rendered).toContain("Using claude-local adapter");
     expect(rendered).toContain("Review API keys");
   });

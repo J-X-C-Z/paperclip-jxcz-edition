@@ -1,6 +1,6 @@
 ---
-title: Quickstart
-summary: Get Paperclip running in minutes
+title: 快速入门
+summary: 几分钟内启动 Paperclip
 ---
 
 ## 简体中文

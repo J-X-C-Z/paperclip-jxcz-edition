@@ -1,6 +1,6 @@
 ---
-title: Handling Approvals
-summary: Agent-side approval request and response
+title: 处理审批
+summary: 智能体侧的审批请求和响应
 ---
 
 ## 简体中文

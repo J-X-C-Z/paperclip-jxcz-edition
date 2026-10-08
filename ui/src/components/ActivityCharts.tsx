@@ -1,4 +1,5 @@
 import { uiText } from "@/i18n";
+import type { HeartbeatRunStat } from "../api/heartbeats";
 import type { DashboardRunActivityDay, HeartbeatRun } from "@paperclipai/shared";
 
 /* ---- Utilities ---- */
@@ -6,7 +7,7 @@ import type { DashboardRunActivityDay, HeartbeatRun } from "@paperclipai/shared"
 export function getLast14Days(): string[] {
   return Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - (13 - i));
+    d.setUTCDate(d.getUTCDate() - (13 - i));
     return d.toISOString().slice(0, 10);
   });
 }
@@ -85,8 +86,9 @@ export function ChartCard({ title, subtitle, children }: { title: string; subtit
 /* ---- Chart Components ---- */
 
 type RunChartProps =
-  | { activity?: DashboardRunActivityDay[] | null; runs?: never }
-  | { runs?: HeartbeatRun[] | null; activity?: never };
+  | { activity?: DashboardRunActivityDay[] | null; runs?: never; stats?: never }
+  | { runs?: HeartbeatRun[] | null; activity?: never; stats?: never }
+  | { stats?: HeartbeatRunStat[] | null; activity?: never; runs?: never };
 
 function aggregateRuns(runs: readonly HeartbeatRun[] = []): DashboardRunActivityDay[] {
   const days = getLast14Days();
@@ -114,6 +116,18 @@ function aggregateRuns(runs: readonly HeartbeatRun[] = []): DashboardRunActivity
 }
 
 function resolveRunActivity(props: RunChartProps): DashboardRunActivityDay[] {
+  if (Array.isArray(props.stats)) {
+    const grouped = new Map(getLast14Days().map((date) => [date, emptyRunDay(date)]));
+    for (const { date, status, count } of props.stats) {
+      const day = grouped.get(date);
+      if (!day) continue;
+      if (status === "succeeded") day.succeeded += count;
+      else if (status === "failed" || status === "timed_out") day.failed += count;
+      else day.other += count;
+      day.total += count;
+    }
+    return Array.from(grouped.values());
+  }
   if (Array.isArray(props.activity)) return props.activity;
   if (Array.isArray(props.runs)) return aggregateRuns(props.runs);
   return [];

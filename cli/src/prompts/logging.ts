@@ -7,8 +7,8 @@ export async function promptLogging(): Promise<LoggingConfig> {
   const mode = await p.select({
     message: "日志模式",
     options: [
-      { value: "file" as const, label: "File-based logging", hint: "recommended" },
-      { value: "cloud" as const, label: "Cloud logging", hint: "coming soon" },
+      { value: "file" as const, label: "文件日志", hint: "推荐" },
+      { value: "cloud" as const, label: "云端日志", hint: "即将推出" },
     ],
   });
 
@@ -32,6 +32,6 @@ export async function promptLogging(): Promise<LoggingConfig> {
     return { mode: "file", logDir: logDir || defaultLogDir };
   }
 
-  p.note("Cloud logging is coming soon. Using file-based logging for now.");
+  p.note("云端日志即将推出，当前使用文件日志。");
   return { mode: "file", logDir: defaultLogDir };
 }

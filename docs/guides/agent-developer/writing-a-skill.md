@@ -1,6 +1,6 @@
 ---
-title: Writing a Skill
-summary: SKILL.md format and best practices
+title: 编写技能
+summary: SKILL.md 格式和最佳实践
 ---
 
 ## 简体中文

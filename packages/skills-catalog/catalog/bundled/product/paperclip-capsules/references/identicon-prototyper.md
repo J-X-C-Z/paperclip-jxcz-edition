@@ -172,7 +172,7 @@ UI 密度预设为 `32`、`56` 和 `80`，但渲染器接受数值型密度。
 - Share standalone card URL
 - Restore settings from URL hash
 
-URL hash fields:
+URL hash 字段：
 
 - `s`: seed
 - `v`: variant id

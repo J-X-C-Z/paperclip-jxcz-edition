@@ -1,6 +1,6 @@
 ---
-title: Importing & Exporting Companies
-summary: Export companies to portable packages and import them from local paths or GitHub
+title: 导入和导出公司
+summary: 将公司导出为可移植软件包，或从本地路径和 GitHub 导入
 ---
 
 ## 简体中文

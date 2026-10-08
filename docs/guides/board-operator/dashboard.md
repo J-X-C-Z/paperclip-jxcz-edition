@@ -1,6 +1,6 @@
 ---
-title: Dashboard
-summary: Understanding the Paperclip dashboard
+title: 仪表盘
+summary: 了解 Paperclip 仪表盘
 ---
 
 ## 简体中文

@@ -1,6 +1,6 @@
 ---
-title: Experimental Features
-summary: What Paperclip experimental features mean for board operators
+title: 实验性功能
+summary: Paperclip 实验性功能对看板操作员的影响
 ---
 
 ## 简体中文

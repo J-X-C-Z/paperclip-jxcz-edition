@@ -1,6 +1,6 @@
 ---
-title: Architecture
-summary: Stack overview, request flow, and adapter model
+title: 架构
+summary: 技术栈、请求流程和适配器模型概览
 ---
 
 ## 简体中文

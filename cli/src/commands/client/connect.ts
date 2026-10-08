@@ -166,8 +166,8 @@ async function choosePersona(input: string | undefined): Promise<"board" | "agen
   const selected = await p.select({
     message: "连接身份",
     options: [
-      { value: "board", label: "Board operator" },
-      { value: "agent", label: "Agent in a company" },
+      { value: "board", label: "看板管理员" },
+      { value: "agent", label: "公司中的智能体" },
     ],
   });
   assertNotCancelled(selected);

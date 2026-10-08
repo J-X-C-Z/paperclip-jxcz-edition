@@ -125,11 +125,11 @@ const IMPORT_INCLUDE_OPTIONS: Array<{
   label: string;
   hint: string;
 }> = [
-  { value: "company", label: "Company", hint: "name, branding, and company settings" },
-  { value: "projects", label: "Projects", hint: "projects and workspace metadata" },
-  { value: "issues", label: "Tasks", hint: "tasks and recurring routines" },
-  { value: "agents", label: "Agents", hint: "agent records and org structure" },
-  { value: "skills", label: "Skills", hint: "company skill packages and references" },
+  { value: "company", label: "公司", hint: "名称、品牌和公司设置" },
+  { value: "projects", label: "项目", hint: "项目和工作区元数据" },
+  { value: "issues", label: "任务", hint: "任务和定期例程" },
+  { value: "agents", label: "智能体", hint: "智能体记录和组织架构" },
+  { value: "skills", label: "技能", hint: "公司技能包和引用" },
 ];
 
 const IMPORT_PREVIEW_SAMPLE_LIMIT = 6;
@@ -340,7 +340,7 @@ function countTotal(catalog: ImportSelectionCatalog, group: ImportSelectableGrou
 }
 
 function summarizeGroupSelection(catalog: ImportSelectionCatalog, state: ImportSelectionState, group: ImportSelectableGroup): string {
-  return `${countSelected(state, group)}/${countTotal(catalog, group)} selected`;
+  return `已选 ${countSelected(state, group)}/${countTotal(catalog, group)} 项`;
 }
 
 function getGroupLabel(group: ImportSelectableGroup): string {
@@ -426,33 +426,33 @@ async function promptForImportSelection(preview: CompanyPortabilityPreviewResult
       options: [
         {
           value: "company",
-          label: state.company ? "Company: included" : "Company: skipped",
-          hint: catalog.company.files.length > 0 ? "toggle company metadata" : "no company metadata in package",
+          label: state.company ? "公司：包含" : "公司：跳过",
+          hint: catalog.company.files.length > 0 ? "切换公司元数据" : "软件包中没有公司元数据",
         },
         {
           value: "projects",
-          label: "Select Projects",
+          label: "选择项目",
           hint: summarizeGroupSelection(catalog, state, "projects"),
         },
         {
           value: "issues",
-          label: "Select Tasks",
+          label: "选择任务",
           hint: summarizeGroupSelection(catalog, state, "issues"),
         },
         {
           value: "agents",
-          label: "Select Agents",
+          label: "选择智能体",
           hint: summarizeGroupSelection(catalog, state, "agents"),
         },
         {
           value: "skills",
-          label: "Select Skills",
+          label: "选择技能",
           hint: summarizeGroupSelection(catalog, state, "skills"),
         },
         {
           value: "confirm",
           label: "确认",
-          hint: `${buildSelectedFilesFromImportSelection(catalog, state).length} files selected`,
+          hint: `已选择 ${buildSelectedFilesFromImportSelection(catalog, state).length} 个文件`,
         },
       ],
       initialValue: "confirm",
@@ -511,14 +511,14 @@ function summarizeInclude(include: CompanyPortabilityInclude): string {
   const labels = IMPORT_INCLUDE_OPTIONS
     .filter((option) => include[option.value])
     .map((option) => option.label.toLowerCase());
-  return labels.length > 0 ? labels.join(", ") : "nothing selected";
+  return labels.length > 0 ? labels.join("、") : "未选择内容";
 }
 
 function formatSourceLabel(source: { type: "inline"; rootPath?: string | null } | { type: "github"; url: string }): string {
   if (source.type === "github") {
     return `GitHub: ${source.url}`;
   }
-  return `Local package: ${source.rootPath?.trim() || "(current folder)"}`;
+  return `本地软件包：${source.rootPath?.trim() || "（当前目录）"}`;
 }
 
 function formatTargetLabel(
@@ -530,7 +530,7 @@ function formatTargetLabel(
     const targetId = preview?.targetCompanyId?.trim() || target.companyId?.trim() || "unknown-company";
     return targetName ? `${targetName} (${targetId})` : targetId;
   }
-  return target.newCompanyName?.trim() || preview?.manifest.company?.name || "new company";
+  return target.newCompanyName?.trim() || preview?.manifest.company?.name || "新公司";
 }
 
 function pluralize(count: number, singular: string, plural = `${singular}s`): string {
@@ -541,15 +541,16 @@ function summarizePlanCounts(
   plans: Array<{ action: "create" | "update" | "skip" }>,
   noun: string,
 ): string {
-  if (plans.length === 0) return `0 ${pluralize(0, noun)} selected`;
+  const nounLabel = { agent: "智能体", project: "项目", task: "任务" }[noun] ?? noun;
+  if (plans.length === 0) return `未选择${nounLabel}`;
   const createCount = plans.filter((plan) => plan.action === "create").length;
   const updateCount = plans.filter((plan) => plan.action === "update").length;
   const skipCount = plans.filter((plan) => plan.action === "skip").length;
   const parts: string[] = [];
-  if (createCount > 0) parts.push(`${createCount} create`);
-  if (updateCount > 0) parts.push(`${updateCount} update`);
-  if (skipCount > 0) parts.push(`${skipCount} skip`);
-  return `${plans.length} ${pluralize(plans.length, noun)} total (${parts.join(", ")})`;
+  if (createCount > 0) parts.push(`${createCount} 个新建`);
+  if (updateCount > 0) parts.push(`${updateCount} 个更新`);
+  if (skipCount > 0) parts.push(`${skipCount} 个跳过`);
+  return `共 ${plans.length} 个${nounLabel}（${parts.join("，")}）`;
 }
 
 function summarizeImportAgentResults(agents: CompanyPortabilityImportResult["agents"]): string {
@@ -558,10 +559,10 @@ function summarizeImportAgentResults(agents: CompanyPortabilityImportResult["age
   const updated = agents.filter((agent) => agent.action === "updated").length;
   const skipped = agents.filter((agent) => agent.action === "skipped").length;
   const parts: string[] = [];
-  if (created > 0) parts.push(`${created} created`);
-  if (updated > 0) parts.push(`${updated} updated`);
-  if (skipped > 0) parts.push(`${skipped} skipped`);
-  return `${agents.length} ${pluralize(agents.length, "agent")} total (${parts.join(", ")})`;
+  if (created > 0) parts.push(`${created} 个新建`);
+  if (updated > 0) parts.push(`${updated} 个更新`);
+  if (skipped > 0) parts.push(`${skipped} 个跳过`);
+  return `共 ${agents.length} 个智能体（${parts.join("，")}）`;
 }
 
 function summarizeImportSkillResults(skills: CompanyPortabilityImportResult["skills"]): string {
@@ -569,9 +570,10 @@ function summarizeImportSkillResults(skills: CompanyPortabilityImportResult["ski
   const actions = ["created", "renamed", "replaced", "skipped"] as const;
   const parts = actions.flatMap((action) => {
     const count = skills.filter((skill) => skill.action === action).length;
-    return count > 0 ? [`${count} ${action}`] : [];
+    const labels = { created: "新建", renamed: "重命名", replaced: "替换", skipped: "跳过" };
+    return count > 0 ? [`${count} 个${labels[action]}`] : [];
   });
-  return `${skills.length} ${pluralize(skills.length, "skill")} total (${parts.join(", ")})`;
+  return `共 ${skills.length} 项技能（${parts.join("，")}）`;
 }
 
 function summarizeImportProjectResults(projects: CompanyPortabilityImportResult["projects"]): string {
@@ -580,10 +582,10 @@ function summarizeImportProjectResults(projects: CompanyPortabilityImportResult[
   const updated = projects.filter((project) => project.action === "updated").length;
   const skipped = projects.filter((project) => project.action === "skipped").length;
   const parts: string[] = [];
-  if (created > 0) parts.push(`${created} created`);
-  if (updated > 0) parts.push(`${updated} updated`);
-  if (skipped > 0) parts.push(`${skipped} skipped`);
-  return `${projects.length} ${pluralize(projects.length, "project")} total (${parts.join(", ")})`;
+  if (created > 0) parts.push(`${created} 个新建`);
+  if (updated > 0) parts.push(`${updated} 个更新`);
+  if (skipped > 0) parts.push(`${skipped} 个跳过`);
+  return `共 ${projects.length} 个项目（${parts.join("，")}）`;
 }
 
 function actionChip(action: string): string {
@@ -640,37 +642,37 @@ export function renderCompanyImportPreview(
   },
 ): string {
   const lines: string[] = [
-    `${pc.bold("Source")}  ${meta.sourceLabel}`,
-    `${pc.bold("Target")}  ${meta.targetLabel}`,
-    `${pc.bold("Include")} ${summarizeInclude(preview.include)}`,
-    `${pc.bold("Mode")}    ${preview.collisionStrategy} collisions`,
+    `${pc.bold("来源")}  ${meta.sourceLabel}`,
+    `${pc.bold("目标")}  ${meta.targetLabel}`,
+    `${pc.bold("包含")} ${summarizeInclude(preview.include)}`,
+    `${pc.bold("模式")}    冲突策略：${preview.collisionStrategy}`,
     "",
-    pc.bold("Package"),
-    `- company: ${preview.manifest.company?.name ?? preview.manifest.source?.companyName ?? "not included"}`,
-    `- agents: ${preview.manifest.agents.length}`,
-    `- projects: ${preview.manifest.projects.length}`,
-    `- tasks: ${preview.manifest.issues.length}`,
-    `- skills: ${preview.manifest.skills.length}`,
+    pc.bold("软件包"),
+    `- 公司：${preview.manifest.company?.name ?? preview.manifest.source?.companyName ?? "未包含"}`,
+    `- 智能体：${preview.manifest.agents.length}`,
+    `- 项目：${preview.manifest.projects.length}`,
+    `- 任务：${preview.manifest.issues.length}`,
+    `- 技能：${preview.manifest.skills.length}`,
   ];
 
   if (preview.envInputs.length > 0) {
     const requiredCount = preview.envInputs.filter((item) => item.requirement === "required").length;
-    lines.push(`- env inputs: ${preview.envInputs.length} (${requiredCount} required)`);
+    lines.push(`- 环境变量输入：${preview.envInputs.length}（${requiredCount} 个必填）`);
   }
 
   lines.push("");
-  lines.push(pc.bold("Plan"));
-  lines.push(`- company: ${actionChip(preview.plan.companyAction === "none" ? "unchanged" : preview.plan.companyAction)}`);
-  lines.push(`- agents: ${summarizePlanCounts(preview.plan.agentPlans, "agent")}`);
-  lines.push(`- projects: ${summarizePlanCounts(preview.plan.projectPlans, "project")}`);
-  lines.push(`- tasks: ${summarizePlanCounts(preview.plan.issuePlans, "task")}`);
+  lines.push(pc.bold("计划"));
+  lines.push(`- 公司：${actionChip(preview.plan.companyAction === "none" ? "unchanged" : preview.plan.companyAction)}`);
+  lines.push(`- 智能体：${summarizePlanCounts(preview.plan.agentPlans, "agent")}`);
+  lines.push(`- 项目：${summarizePlanCounts(preview.plan.projectPlans, "project")}`);
+  lines.push(`- 任务：${summarizePlanCounts(preview.plan.issuePlans, "task")}`);
   if (preview.include.skills) {
-    lines.push(`- skills: ${preview.manifest.skills.length} ${pluralize(preview.manifest.skills.length, "skill")} packaged`);
+    lines.push(`- 技能：已打包 ${preview.manifest.skills.length} 项`);
   }
 
   appendPreviewExamples(
     lines,
-    "Agent examples",
+    "智能体示例",
     preview.plan.agentPlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedName}`,
@@ -679,7 +681,7 @@ export function renderCompanyImportPreview(
   );
   appendPreviewExamples(
     lines,
-    "Project examples",
+    "项目示例",
     preview.plan.projectPlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedName}`,
@@ -688,7 +690,7 @@ export function renderCompanyImportPreview(
   );
   appendPreviewExamples(
     lines,
-    "Task examples",
+    "任务示例",
     preview.plan.issuePlans.map((plan) => ({
       action: plan.action,
       label: `${plan.slug} -> ${plan.plannedTitle}`,
@@ -696,9 +698,9 @@ export function renderCompanyImportPreview(
     })),
   );
 
-  appendMessageBlock(lines, pc.cyan("Info"), meta.infoMessages ?? []);
-  appendMessageBlock(lines, pc.yellow("Warnings"), preview.warnings);
-  appendMessageBlock(lines, pc.red("Errors"), preview.errors);
+  appendMessageBlock(lines, pc.cyan("信息"), meta.infoMessages ?? []);
+  appendMessageBlock(lines, pc.yellow("警告"), preview.warnings);
+  appendMessageBlock(lines, pc.red("错误"), preview.errors);
 
   return lines.join("\n");
 }
@@ -709,11 +711,11 @@ export function renderCompanyImportResult(
 ): string {
   const skills = result.skills ?? [];
   const lines: string[] = [
-    `${pc.bold("Target")}  ${meta.targetLabel}`,
-    `${pc.bold("Company")} ${result.company.name} (${actionChip(result.company.action)})`,
-    `${pc.bold("Agents")}  ${summarizeImportAgentResults(result.agents)}`,
-    `${pc.bold("Skills")}  ${summarizeImportSkillResults(skills)}`,
-    `${pc.bold("Projects")} ${summarizeImportProjectResults(result.projects)}`,
+    `${pc.bold("目标")}  ${meta.targetLabel}`,
+    `${pc.bold("公司")} ${result.company.name}（${actionChip(result.company.action)}）`,
+    `${pc.bold("智能体")}  ${summarizeImportAgentResults(result.agents)}`,
+    `${pc.bold("技能")}  ${summarizeImportSkillResults(skills)}`,
+    `${pc.bold("项目")} ${summarizeImportProjectResults(result.projects)}`,
   ];
 
   if (meta.companyUrl) {
@@ -722,7 +724,7 @@ export function renderCompanyImportResult(
 
   appendPreviewExamples(
     lines,
-    "Agent results",
+    "智能体结果",
     result.agents.map((agent) => ({
       action: agent.action,
       label: `${agent.slug} -> ${agent.name}`,
@@ -731,7 +733,7 @@ export function renderCompanyImportResult(
   );
   appendPreviewExamples(
     lines,
-    "Skill results",
+    "技能结果",
     skills.map((skill) => ({
       action: skill.action,
       label: `${skill.originalSlug} -> ${skill.slug}`,
@@ -740,7 +742,7 @@ export function renderCompanyImportResult(
   );
   appendPreviewExamples(
     lines,
-    "Project results",
+    "项目结果",
     result.projects.map((project) => ({
       action: project.action,
       label: `${project.slug} -> ${project.name}`,
@@ -750,14 +752,14 @@ export function renderCompanyImportResult(
 
   if (result.envInputs.length > 0) {
     lines.push("");
-    lines.push(pc.bold("Env inputs"));
+    lines.push(pc.bold("环境变量输入"));
     lines.push(
-      `- ${result.envInputs.length} ${pluralize(result.envInputs.length, "input")} may need values after import`,
+      `- 导入后可能需要为 ${result.envInputs.length} 个输入项设置值`,
     );
   }
 
-  appendMessageBlock(lines, pc.cyan("Info"), meta.infoMessages ?? []);
-  appendMessageBlock(lines, pc.yellow("Warnings"), result.warnings);
+  appendMessageBlock(lines, pc.cyan("信息"), meta.infoMessages ?? []);
+  appendMessageBlock(lines, pc.yellow("警告"), result.warnings);
 
   return lines.join("\n");
 }

@@ -1,4 +1,5 @@
-import { uiText } from "@/i18n";
+import { uiText, useUiTranslator } from "@/i18n";
+import { DecisionModelSettingsSection } from "../components/decision-models/DecisionModelSettings";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import {
 } from "@paperclipai/shared";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useUiTranslator } from "@/i18n";
 import { useOptionalToastActions } from "../context/ToastContext";
 import { useCloudInstance } from "../hooks/useCloudInstance";
 import { resolveCompanyArchiveDeparture } from "../lib/company-selection";
@@ -355,6 +355,8 @@ export function CompanySettings() {
       </div>
 
       {/* Interaction governance */}
+      {selectedCompanyId && <DecisionModelSettingsSection key={selectedCompanyId} companyId={selectedCompanyId} />}
+
       <InteractionGovernancePanel
         governance={governance}
         onChange={handleGovernanceChange}

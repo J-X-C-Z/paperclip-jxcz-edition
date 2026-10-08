@@ -1,6 +1,6 @@
 ---
-title: Core Concepts
-summary: Companies, agents, issues, delegation, heartbeats, and governance
+title: 核心概念
+summary: 公司、智能体、任务、委派、心跳和治理
 ---
 
 ## 简体中文

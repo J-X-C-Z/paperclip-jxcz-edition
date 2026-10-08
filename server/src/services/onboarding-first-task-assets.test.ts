@@ -113,6 +113,8 @@ describe("chief-of-staff persona", () => {
       organizationName: "Acme",
     });
     expect(bundle.entryFile).toBe("AGENTS.md");
-    expect(bundle.files["AGENTS.md"]).toContain("你是 Acme 的幕僚长 Ada。");
+    expect(bundle.files).toEqual({
+      "AGENTS.md": await renderChiefOfStaffPersona({ agentName: "Ada", organizationName: "Acme" }),
+    });
   });
 });

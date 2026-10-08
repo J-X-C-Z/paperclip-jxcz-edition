@@ -11,6 +11,8 @@ import { uiText } from "@/i18n";
 
 export interface AgentConversationSidebarProps {
   agents: Agent[];
+  /** Agents with a saved conversation; defaults to every listed agent. */
+  existingChatAgentIds?: readonly string[];
   availableAgents?: Agent[];
   activeId?: string;
   previews?: Record<string, string>;
@@ -27,7 +29,7 @@ export interface AgentConversationSidebarProps {
 }
 
 /** Searchable navigation for one conversation per agent. */
-export function AgentConversationSidebar({ agents, availableAgents = agents, activeId, previews = {}, loading = false, error, onRetry, initialSearch = "", onSelect, onBrowse, onAddChat, historyLoading, historyError, onRetryHistory }: AgentConversationSidebarProps) {
+export function AgentConversationSidebar({ agents, existingChatAgentIds, availableAgents = agents, activeId, previews = {}, loading = false, error, onRetry, initialSearch = "", onSelect, onBrowse, onAddChat, historyLoading, historyError, onRetryHistory }: AgentConversationSidebarProps) {
   const navigate = useNavigate();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState(initialSearch);
@@ -95,7 +97,7 @@ export function AgentConversationSidebar({ agents, availableAgents = agents, act
       </Button>
     </div>
     <AgentChatPicker agents={availableAgents} open={pickerOpen} onOpenChange={setPickerOpen}
-      existingChatAgentIds={agents.map(agent => agent.id)} loading={loading} error={error} onRetry={onRetry}
+      existingChatAgentIds={existingChatAgentIds ?? agents.map(agent => agent.id)} loading={loading} error={error} onRetry={onRetry}
       renderAgentIcon={agent => <AgentAvatar agent={agent} size={32} />}
       onSelect={async (agent, signal) => {
         if (onAddChat) await onAddChat(agent, signal);

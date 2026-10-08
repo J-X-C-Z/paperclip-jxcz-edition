@@ -1,6 +1,6 @@
 ---
-title: Managing Agents
-summary: Hiring, configuring, pausing, and terminating agents
+title: 管理智能体
+summary: 招聘、配置、暂停和终止智能体
 ---
 
 ## 简体中文
